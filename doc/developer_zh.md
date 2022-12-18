@@ -53,17 +53,17 @@ $ xmake f --example=true
 ```cpp
 #include <muda/muda.h>
 #include <catch2/catch.hpp>
-#include "../example_common.h"
+#include "../example_common.h" // to use example_desc
 using namespace muda;
 
-void hello_muda()
+void muda_example()
 {
-    example_desc("this is an example for how to write an muda example");// to print example description when play this example
+    example_desc("this is an example for how to write an muda example.");// to print example description when play this example
 }
 
 TEST_CASE("example_name", "[example_tag]")
 {
-    
+    muda_example();
 }
 ```
 
