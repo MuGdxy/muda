@@ -8,32 +8,34 @@ void graph_quick_start()
     example_desc("use muda to create graph.");
     device_var<int> value = 1;
     auto            graph = graph::create();
-    {
-        auto pA = parallel_for(1).asNodeParms(
-            1, [] __device__(int i) mutable { printf("A\n"); });
 
-        auto pB = parallel_for(1).asNodeParms(
-            1, [] __device__(int i) mutable { printf("B\n"); });
+    // setup graph
+    auto pA = parallel_for(1).asNodeParms(1, 
+        [] __device__(int i) mutable { print("A\n"); });
 
-        auto phB = host_call().asNodeParms([&] __host__()
-                                           { std::cout << "host" << std::endl; });
+    auto pB = parallel_for(1).asNodeParms(1, 
+        [] __device__(int i) mutable { print("B\n"); });
 
-        auto pC =
-            parallel_for(1).asNodeParms(1,
-                                        [value = make_viewer(value)] __device__(int i) mutable
-                                        {
-                                            printf("C, value=%d\n", value());
-                                            value = 2;
-                                        });
-        auto pD = launch(1, 1).asNodeParms([value = make_viewer(value)] __device__() mutable
-                                           { printf("D, value=%d\n", value()); });
+    auto phB = host_call().asNodeParms(
+        [&] __host__() { std::cout << "host" << std::endl; });
 
-        auto kA = graph->addKernelNode(pA);
-        auto kB = graph->addKernelNode(pB);
-        auto hB = graph->addHostNode(phB, {kA, kB});
-        auto kC = graph->addKernelNode(pC, {hB});
-        auto kD = graph->addKernelNode(pD, {kC});
-    }
+    auto pC = parallel_for(1).asNodeParms(1,
+        [value = make_viewer(value)] __device__(int i) mutable
+        {
+            print("C, value=%d\n", value);
+            value = 2;
+        });
+
+    auto pD = launch(1, 1).asNodeParms(
+        [value = make_viewer(value)] __device__() mutable
+        { print("D, value=%d\n", value); });
+
+    auto kA = graph->addKernelNode(pA);
+    auto kB = graph->addKernelNode(pB);
+    auto hB = graph->addHostNode(phB, {kA, kB});
+    auto kC = graph->addKernelNode(pC, {hB});
+    auto kD = graph->addKernelNode(pD, {kC});
+
     auto instance = graph->instantiate();
     instance->launch();
 }

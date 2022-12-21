@@ -58,12 +58,24 @@ using namespace muda;
 
 void muda_example()
 {
-    example_desc("this is an example for how to write an muda example.");// to print example description when play this example
+    example_desc("this is an example for how to write a muda example.");// to print example description when play this example
 }
 
 TEST_CASE("example_name", "[example_tag]")
 {
     muda_example();
 }
+```
+
+## 启用全部选项
+
+```shell
+$ xmake f --dev=true
+```
+
+上面的命令等价于
+
+```shell
+$ xmake f --example=true --test=true --playground=true
 ```
 
