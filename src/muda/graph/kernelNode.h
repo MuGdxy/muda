@@ -11,7 +11,7 @@ class kernelNode : public graphNode
 };
 
 template <typename U>
-class kernelNodeParms
+class kernelNodeParms : public nodeParms
 {
     std::vector<void*>   args;
     cudaKernelNodeParams parms;

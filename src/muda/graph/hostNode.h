@@ -11,23 +11,23 @@ class hostNode : public graphNode
 };
 
 template <typename T>
-class hostNodeParms
+class hostNodeParms : public nodeParms
 {
     cudaHostNodeParams parms;
 
   public:
-    T* hostData;
+    T hostData;
     using this_type = hostNodeParms;
     friend class graph;
     friend class std::shared_ptr<this_type>;
     friend class std::unique_ptr<this_type>;
     friend class std::weak_ptr<this_type>;
 
-    hostNodeParms(T* f)
+    hostNodeParms(const T& f)
         : hostData(f)
         , parms({})
     {
-        parms.userData = hostData;
+        parms.userData = &hostData;
     }
     auto fn() const { return parms.fn; }
     void fn(cudaHostFn_t fn) { parms.fn = fn; }

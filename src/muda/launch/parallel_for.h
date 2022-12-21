@@ -116,10 +116,13 @@ class parallel_for : public launch_base<parallel_for>
 
         if(gridDim <= 0)  // parallel_for
         {
-            // calculate the blocks we need
-            auto nBlocks = calculateGridDim(begin, end, step);
-            details::parallelForKernel<<<nBlocks, blockDim, sharedMemSize, stream_>>>(
-                f, begin, end, step);
+            if(begin != end)
+            {
+                // calculate the blocks we need
+                auto nBlocks = calculateGridDim(begin, end, step);
+                details::parallelForKernel<<<nBlocks, blockDim, sharedMemSize, stream_>>>(
+                    f, begin, end, step);
+            }
         }
         else  // grid stride loop
         {
@@ -225,19 +228,19 @@ class parallel_for : public launch_base<parallel_for>
     int calculateGridDim(int begin, int end, int step)
     {
         auto stride     = end - begin;
-        auto nMinthread = stride / step + ((stride % step) > 0 ? 1 : 0);
+        auto nMinthread = stride / step + ((stride % step) != 0 ? 1 : 0);
         auto nMinblocks = nMinthread / blockDim + ((nMinthread % blockDim) > 0 ? 1 : 0);
         return nMinblocks;
     }
 
-    void checkInput(int begin, int end, int step)
+    static void checkInput(int begin, int end, int step)
     {
         if(step == 0)
             throw std::logic_error("step should not be 0!");
         else if(step * (end - begin) < 0)
             throw std::logic_error("step direction is not consistent with [begin, end)!");
-        else if(begin == end)
-            throw std::logic_error("begin should not equal to end!");
+        //else if(begin == end)
+        //    throw std::logic_error("begin should not equal to end!");
     }
 };
 }  // namespace muda

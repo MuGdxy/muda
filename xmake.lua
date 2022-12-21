@@ -76,10 +76,12 @@ end
 if has_config("test") or has_config("dev") then
     target("muda_test")
         muda_app_base()
+        test_data_dir = path.absolute("test/data")
+        add_defines("MUDA_TEST_DATA_DIR=R\"(".. test_data_dir..")\"")
         add_files("test/muda_test/**.cu","test/muda_test/**.cpp")
 end
 
-if has_config("test") or has_config("dev") then
+if has_config("example") or has_config("dev") then
     target("muda_example")
         muda_app_base()
         add_files("example/**.cu","example/**.cpp")

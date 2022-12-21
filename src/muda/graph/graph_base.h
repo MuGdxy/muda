@@ -21,6 +21,13 @@ using wptr = std::weak_ptr<T>;
 class graph;
 class graphExec;
 
+class nodeParms
+{
+  public:
+    nodeParms()          = default;
+    virtual ~nodeParms() = default;
+};
+
 class graphNode
 {
   protected:

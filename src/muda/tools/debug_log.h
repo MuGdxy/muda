@@ -24,12 +24,18 @@
 #define muda_kernel_assert(res, fmt, ...)                                      \
     if(!(res))                                                                 \
     {                                                                          \
-        muda_kernel_printf("assert failed "#res fmt, __VA_ARGS__);                                  \
+        muda_kernel_printf("assert failed " #res fmt, __VA_ARGS__);            \
         if constexpr(::muda::trapOnError)                                      \
             ::muda::trap();                                                    \
     }
 
-#define muda_kernel_error(fmt, ...)                                     \
+#define muda_kernel_check(res, fmt, ...)                                       \
+    if(!(res))                                                                 \
+    {                                                                          \
+        muda_kernel_printf("check failed " #res fmt, __VA_ARGS__);             \
+    }
+
+#define muda_kernel_error(fmt, ...)                                            \
     {                                                                          \
         muda_kernel_printf(fmt, __VA_ARGS__);                                  \
         if constexpr(::muda::trapOnError)                                      \

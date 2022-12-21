@@ -13,7 +13,7 @@ class memAllocNode : public graphNode
 };
 
 template <typename T>
-class memAllocNodeParms
+class memAllocNodeParms : public nodeParms
 {
     cudaMemAllocNodeParams parms;
 

@@ -116,7 +116,7 @@ void alloc_cpy_free(int half, host_vector<int>& host_data, host_vector<int>& gro
     launch::wait_device();
 }
 
-TEST_CASE("graph alloc copy free kernel node test", "[graph]")
+TEST_CASE("graph_memop_node", "[graph]")
 {
     host_vector<int> v;
     host_vector<int> gt;
@@ -130,4 +130,28 @@ TEST_CASE("graph alloc copy free kernel node test", "[graph]")
     }
 }
 
+void host_call_graph(int& gt, int& res)
+{
+    universal_var<int> v = 0;
 
+    auto hp = host_for().asNodeParms(
+        5, [v = make_viewer(v)] __host__ (int i) mutable { v++; });
+
+    auto g = graph::create();
+    g->addHostNode(hp);
+    auto instance = g->instantiate();
+    for(size_t i = 0; i < 10; i++)
+        instance->launch();
+    launch::wait_device();
+
+    gt = 0;
+    for(size_t i = 0; i < 50; i++)
+        gt++;
+    res = v;
+}
+TEST_CASE("host_call_node", "[graph]") 
+{
+    int gt, res;
+    host_call_graph(gt, res);
+    REQUIRE(gt == res);
+}

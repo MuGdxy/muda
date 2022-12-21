@@ -23,7 +23,7 @@ TEST_CASE("parallel_for_input", "[launch]")
     REQUIRE(parallel_for_input_test(0, 99, 1) == true);
     REQUIRE(parallel_for_input_test(0, -10, -2) == true);
 
-    REQUIRE(parallel_for_input_test(0, 0, 1) == false);
+    REQUIRE(parallel_for_input_test(0, 0, 1) == true);
     REQUIRE(parallel_for_input_test(0, -1, 1) == false);
     REQUIRE(parallel_for_input_test(2, 1, 1) == false);
     REQUIRE(parallel_for_input_test(1, 100, 0) == false);

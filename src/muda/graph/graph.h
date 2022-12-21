@@ -41,6 +41,7 @@ class graph
     sptr<hostNode> addHostNode(const sptr<hostNodeParms<T>>&       hostParms,
                                const std::vector<sptr<graphNode>>& deps = {})
     {
+        cached.push_back(hostParms);
         auto                         ret   = std::make_shared<hostNode>();
         std::vector<cudaGraphNode_t> nodes = mapDependencies(deps);
         checkCudaErrors(cudaGraphAddHostNode(
@@ -90,6 +91,9 @@ class graph
     static auto create() { return std::make_shared<graph>(); }
 
   private:
+    // keep the ref count > 0 for those whose data should be kept alive for the graph life.
+    std::list<sptr<nodeParms>> cached;
+	
     //
     static std::vector<cudaGraphNode_t> mapDependencies(
         const std::vector<std::shared_ptr<graphNode>>& deps)

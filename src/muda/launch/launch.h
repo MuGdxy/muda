@@ -46,7 +46,7 @@ class launch : public launch_base<launch>
     [[nodiscard]] auto asNodeParms(F&& f)
     {
         using CallableType = raw_type_t<F>;
-        static_assert(std::is_invocable_v<F>, "f:void (void)");
+        static_assert(std::is_invocable_v<CallableType>, "f:void (void)");
         auto parms =
             std::make_shared<kernelNodeParms<CallableType>>(std::forward<F>(f));
 
