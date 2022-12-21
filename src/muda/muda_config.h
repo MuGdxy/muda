@@ -1,9 +1,18 @@
 #pragma once
 namespace muda
 {
-constexpr bool debugContainers = true;
-constexpr bool debugViewers    = true;
-constexpr bool debugMemBuf     = true;
-constexpr bool debugTiccd      = true;
-constexpr bool trapOnError     = true;
+constexpr bool mudaNoCheck = false;
+namespace config
+{
+    constexpr bool on(bool cond = false)
+    {
+        return cond && !mudaNoCheck;
+    }
+}  // namespace config
+constexpr bool debugViewers          = config::on(true);
+constexpr bool debugTiccd            = config::on(true);
+constexpr bool debugThreadOnly = config::on(true);
+constexpr bool trapOnError     = config::on(true);
 }  // namespace muda
+
+#undef MUDA_NO_CHECKS

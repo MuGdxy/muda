@@ -1,22 +1,6 @@
 #pragma once
 #include <cublas.h>
 
-namespace muda
-{
-namespace dense
-{
-    namespace L1
-    {
-    }
-    namespace L2
-    {
-    }
-    namespace L3
-    {
-    }
-}  // namespace dense
-}  // namespace muda
-
 namespace muda::dense::L1
 {
 template <typename T>
