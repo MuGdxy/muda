@@ -32,122 +32,92 @@ namespace muda::thread_only
 {
 using thread_allocator = eastl::allocator;
 
-//template <typename T>
-//class global_allocator
-//{
-//    int mInitGid;
-//
-//  public:
-//    using value_type = T;
-//
-//	MUDA_THREAD_ONLY global_allocator(const char* n)
-//        : mInitGid(gtid())
-//    {
-//    }
-//
-//    MUDA_THREAD_ONLY global_allocator()
-//        : mInitGid(gtid())
-//    {
-//    }
-//
-//    MUDA_THREAD_ONLY global_allocator(const global_allocator& x)
-//    {
-//        check_thread_only(x);
-//        mInitGid = x.mInitGid;
-//    }
-//
-//    MUDA_THREAD_ONLY global_allocator& operator=(const global_allocator& x)
-//    {
-//        check_thread_only(*this, x);
-//        // there is no need to do any copy
-//        return *this;
-//    }
-//
-//    MUDA_THREAD_ONLY T* allocate(size_t n)
-//    {
-//        T* p;
-//        checkCudaErrors(cudaMalloc(&p, n * sizeof(T)));
-//        return p;
-//    };
-//	
-//    T* allocate(size_t n, size_t alignment, size_t offset) {
-//		
-//    }
-//	
-//    MUDA_THREAD_ONLY void deallocate(T* p, size_t n)
-//    {
-//        checkCudaErrors(cudaFree(p));
-//    }
-//
-//    MUDA_THREAD_ONLY char* name() { return "default allocator"; }
-//
-//    MUDA_THREAD_ONLY int init_gid() const { return mInitGid; }
-//
-//    friend MUDA_THREAD_ONLY bool operator==(const global_allocator& a,
-//                                            const global_allocator& b)
-//    {
-//        return a.init_gid() == b.init_gid();
-//    }
-//    friend MUDA_THREAD_ONLY bool operator!=(const global_allocator& a,
-//                                            const global_allocator& b)
-//    {
-//        return !operator==(a, b);
-//    }
-//
-//  private:
-//    MUDA_THREAD_ONLY static int bid()
-//    {
-//        return blockIdx.x + gridDim.x * blockIdx.y
-//               + gridDim.x * gridDim.y * blockIdx.z;
-//    }
-//
-//    MUDA_THREAD_ONLY static int tid()
-//    {
-//        return threadIdx.x + blockDim.x * threadIdx.y
-//               + blockDim.x * blockDim.y * threadIdx.z;
-//    }
-//
-//    MUDA_THREAD_ONLY static int gtid()
-//    {
-//        return bid() * blockDim.x * blockDim.y * blockDim.z + tid();
-//    }
-//
-//    MUDA_THREAD_ONLY static void check_thread_only(const global_allocator& l)
-//    {
-//        if constexpr(debugThreadOnly)
-//        {
-//            auto gid = gtid();
-//            if(l.mInitGid != gid)
-//            {
-//                muda_kernel_printf(
-//                    "init_gid(%d) != current_gid(%d)\n"
-//                    "thread only allocator should not be accessed by different threads\n",
-//                    l.mInitGid,
-//                    gid);
-//                if constexpr(trapOnError)
-//                    trap();
-//            }
-//        }
-//    }
-//
-//    MUDA_THREAD_ONLY static void check_thread_only(const global_allocator& l, const global_allocator& r)
-//    {
-//        if constexpr(checkThreadOnlyAccess)
-//        {
-//            auto gid  = gtid();
-//            auto prid = gid == l.mInitGid && gid == r.mInitGid;
-//            if(!prid)
-//            {
-//                muda_kernel_printf(
-//                    "allocator1.init_gid(%d) allocator2.init_gid(%d) current_gid(%d) not equal\n"
-//                    "thread only allocator should not be accessed by different threads\n",
-//                    l.mInitGid,
-//                    r.mInitGid,
-//                    gid);
-//                if constexpr(trapOnError)
-//                    trap();
-//            }
-//        }
-//    }
-//};
+/// <summary>
+/// a thread stack allocator.
+/// </summary>
+/// <typeparam name="T"></typeparam>
+/// <typeparam name="Size"></typeparam>
+template <typename T, int Size>
+class thread_stack_allocator
+{
+    char buf_[Size * sizeof(T)];
+    bool used_;
+
+  public:
+    MUDA_THREAD_ONLY thread_stack_allocator(const char*)
+        : used_(false)
+    {
+    }
+
+    MUDA_THREAD_ONLY static constexpr int size() { return Size; }
+
+    MUDA_THREAD_ONLY bool is_using() const { return used_; }
+
+
+    MUDA_THREAD_ONLY void* allocate(size_t n, int flags = 0)
+    {
+        if(n != 0)
+        {
+            muda_kernel_assert(!used_, "thread_static_allocator only allow allocating once, use container.reserve() for init!");
+            muda_kernel_assert(n <= sizeof(buf_),
+                               "allocation is too large (n=%d,buf=%d)",
+                               int(n),
+                               int(sizeof(buf_)));
+            used_ = true;
+            return buf_;
+        }
+    }
+    MUDA_THREAD_ONLY void* allocate(size_t n, size_t alignment, size_t offset, int flags = 0)
+    {
+        return allocate(n, flags);
+    }
+
+    MUDA_THREAD_ONLY void deallocate(void* p, size_t n)
+    {
+        muda_kernel_assert(used_ && (char*)p == (char*)buf_, "deallocate fatal error");
+        used_ = false;
+    }
+};
+
+class external_buffer_allocator
+{
+    void* buf_;
+    int   size_;
+    bool  used_;
+  public:
+    MUDA_THREAD_ONLY external_buffer_allocator(void* ext_buf, int bytesize)
+        : buf_(ext_buf)
+        , size_(bytesize)
+        , used_(false)
+    {
+
+    }
+
+    MUDA_THREAD_ONLY int size() { return size_; }
+
+    MUDA_THREAD_ONLY bool is_using() const { return used_; }
+
+    MUDA_THREAD_ONLY void* allocate(size_t n, int flags = 0)
+    {
+        if(n != 0)
+        {
+            muda_kernel_assert(!used_, "external_buffer_allocator only allow allocating once, use container.reserve() for init!");
+            muda_kernel_assert(n <= size_,
+                               "allocation is too large (n=%d,buf=%d)",
+                               int(n),
+                               int(sizeof(size_)));
+            used_ = true;
+            return buf_;
+        }
+    }
+    MUDA_THREAD_ONLY void* allocate(size_t n, size_t alignment, size_t offset, int flags = 0)
+    {
+        return allocate(n, flags);
+    }
+
+    MUDA_THREAD_ONLY void deallocate(void* p, size_t n)
+    {
+        muda_kernel_assert(used_ && (char*)p == (char*)buf_, "deallocate fatal error");
+    }
+};
 }  // namespace muda::thread_only

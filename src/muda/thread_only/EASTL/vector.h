@@ -509,7 +509,8 @@ inline T* VectorBase<T, Allocator>::DoAllocate(size_type n)
     {
         auto* p =
             (T*)allocate_memory(internalAllocator(), n * sizeof(T), EASTL_ALIGN_OF(T), 0);
-        EASTL_ASSERT_MSG(p != nullptr, "the behaviour of eastl::allocators that return nullptr is not defined.");
+        //EASTL_ASSERT_MSG(p != nullptr, "the behaviour of eastl::allocators that return nullptr is not defined.");
+        muda_kernel_assert(p != nullptr, "fails to allocate memory of %d byte(s)", (int)(n * sizeof(T)));
         return p;
     }
     else

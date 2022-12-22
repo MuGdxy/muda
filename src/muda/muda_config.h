@@ -15,4 +15,5 @@ constexpr bool debugThreadOnly = config::on(true);
 constexpr bool trapOnError     = config::on(true);
 }  // namespace muda
 
-#undef MUDA_NO_CHECKS
+#define EASTL_ASSERT_ENABLED 1
+#define EASTL_EMPTY_REFERENCE_ASSERT_ENABLED 1

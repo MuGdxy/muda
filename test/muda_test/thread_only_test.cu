@@ -134,11 +134,10 @@ void priority_queue_test(priority_queue_test_result& gt_result,
             [r = make_viewer(res)] __device__() mutable
             {
                 priority_queue_test_result& result = r;
-
+                
                 namespace to = muda::thread_only;
 
                 to::priority_queue<int> queue;
-
                 auto& container = queue.get_container();
 
                 container.reserve(16);

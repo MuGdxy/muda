@@ -4,7 +4,7 @@
 #include <numeric>
 #include <vector>
 #include <algorithm>
-#include <muda/PBA/collision/collide.h>
+#include <muda/PBA/collision/ticcd.h>
 #include <iostream>
 #include <fstream>
 
@@ -68,7 +68,7 @@ inline void read_ticcd_csv(const std::string&                  inputFileName,
             v[0]     = x;
             v[1]     = y;
             v[2]     = z;
-            
+
             if(vs.size() % 8 == 0)
                 res.push_back(record[6]);
             vs.push_back(v);
@@ -87,9 +87,15 @@ inline void read_ticcd_csv(const std::string&                  inputFileName,
     }
 }
 
+enum class Type
+{
+    UnlimitedQueueSize,
+    LimitedQueueSize
+};
+
+template <Type type = Type::UnlimitedQueueSize>
 struct TiccdTestKernel
 {
-
     MUDA_GENERIC TiccdTestKernel(idxer1D<Vector3> x, idxer1D<uint32_t> results, idxer1D<float> tois)
         : x(x)
         , results(results)
@@ -112,29 +118,54 @@ struct TiccdTestKernel
         Scalar       output_tolerance;
         const int    max_itr = 1e3;
 
+        if(type == Type::UnlimitedQueueSize)
+        {
+            res = to::ticcd<float>().edgeEdgeCCD(x(i * 8 + 0),
+                                                 x(i * 8 + 1),
+                                                 x(i * 8 + 2),
+                                                 x(i * 8 + 3),
+                                                 x(i * 8 + 4),
+                                                 x(i * 8 + 5),
+                                                 x(i * 8 + 6),
+                                                 x(i * 8 + 7),
+                                                 err,
+                                                 ms,
+                                                 toi,
+                                                 tolerance,
+                                                 t_max,
+                                                 max_itr,
+                                                 output_tolerance);
+        }
+        else if(type == Type::LimitedQueueSize)
+        {
+            const int maxQueueSize = 128;
+            using alloc =
+                to::thread_stack_allocator<to::ticcd_alloc_elem_type<float>, maxQueueSize>;
 
-        res = to::ticcd<float>::edgeEdgeCCD(x(i * 8 + 0),
-                                            x(i * 8 + 1),
-                                            x(i * 8 + 2),
-                                            x(i * 8 + 3),
-                                            x(i * 8 + 4),
-                                            x(i * 8 + 5),
-                                            x(i * 8 + 6),
-                                            x(i * 8 + 7),
-                                            err,
-                                            ms,
-                                            toi,
-                                            tolerance,
-                                            t_max,
-                                            max_itr,
-                                            output_tolerance);
+            res = to::ticcd<float, alloc>(maxQueueSize)
+                      .edgeEdgeCCD(x(i * 8 + 0),
+                                   x(i * 8 + 1),
+                                   x(i * 8 + 2),
+                                   x(i * 8 + 3),
+                                   x(i * 8 + 4),
+                                   x(i * 8 + 5),
+                                   x(i * 8 + 6),
+                                   x(i * 8 + 7),
+                                   err,
+                                   ms,
+                                   toi,
+                                   tolerance,
+                                   t_max,
+                                   max_itr,
+                                   output_tolerance);
+        }
 
         results(i) = res;
         tois(i)    = toi;
     }
 };
 
-
+template<Type type>
 void ticcd_test(host_vector<uint32_t>& gt,
                 host_vector<uint32_t>& h_results,
                 host_vector<uint32_t>& d_results)
@@ -142,16 +173,16 @@ void ticcd_test(host_vector<uint32_t>& gt,
     host_vector<Eigen::Vector3f> X;
     read_ticcd_csv(MUDA_TEST_DATA_DIR R"(\unit-tests\edge-edge\data_0_1.csv)", X, gt);
 
-    
 
     auto resultSize = X.size() / 8;
 
     h_results.resize(resultSize);
     host_vector<float> h_tois(resultSize);
 
-    host_for(host_type::host_cuda)
+    host_for(host_type::host_sync)
         .apply(resultSize,
-               TiccdTestKernel(make_viewer(X), make_viewer(h_results), make_viewer(h_tois)))
+               TiccdTestKernel<type>(
+                   make_viewer(X), make_viewer(h_results), make_viewer(h_tois)))
         .wait();
 
     device_vector<Eigen::Vector3f> x = X;
@@ -160,15 +191,30 @@ void ticcd_test(host_vector<uint32_t>& gt,
 
     parallel_for(32, 64)
         .apply(resultSize,
-               TiccdTestKernel(make_viewer(x), make_viewer(results), make_viewer(tois)))
+               TiccdTestKernel<type>(
+                   make_viewer(x), make_viewer(results), make_viewer(tois)))
         .wait();
-    d_results = results;
+
+    device_vector<uint32_t> lim_results(resultSize);
+    d_results     = results;
 }
 
 TEST_CASE("ticcd", "[collide]")
 {
-    host_vector<uint32_t> gt, h_results, d_results;
-    ticcd_test(gt, h_results, d_results);
-    REQUIRE(gt == h_results);
-    REQUIRE(gt == d_results);
+    SECTION("UnlimitedQueueSize") 
+    {
+        host_vector<uint32_t> gt, h_results, d_results;
+        ticcd_test<Type::UnlimitedQueueSize>(gt, h_results, d_results);
+        CHECK(gt == h_results);
+        CHECK(gt == d_results);
+    }
+
+    SECTION("limitedQueueSize")
+    {
+        host_vector<uint32_t> gt, h_results, d_results;
+        ticcd_test<Type::LimitedQueueSize>(gt, h_results, d_results);
+        CHECK(gt == h_results);
+        CHECK(gt == d_results);
+    }
+
 }

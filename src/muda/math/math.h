@@ -7,6 +7,8 @@
 #include <cinttypes>
 #include <Eigen/Core>
 #include "../muda_def.h"
+#undef max
+#undef min
 namespace muda
 {
 template <typename T>
