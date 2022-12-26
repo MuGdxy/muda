@@ -4,26 +4,28 @@
 
 namespace muda
 {
-template <typename T = float, int xshift = 20, int yshift = 10, int zshift = 0>
-class hash
+template <int xshift = 20, int yshift = 10, int zshift = 0>
+class shift_hash
 {
   public:
-    MUDA_GENERIC static unsigned int map(const Eigen::Vector3<T>& p, T cellsize)
+    MUDA_GENERIC static uint32_t map(const Eigen::Vector3<T>& p, T cellsize)
     {
-        return ((unsigned int)(p.x() / cellsize) << xshift)
-               | ((unsigned int)(p.y() / cellsize) << yshift)
-               | ((unsigned int)(p.z() / cellsize) << zshift);
+        return ((uint32_t)(p.x() / cellsize) << xshift)
+               | ((uint32_t)(p.y() / cellsize) << yshift)
+               | ((uint32_t)(p.z() / cellsize) << zshift);
     }
 
-    MUDA_GENERIC static unsigned int map(const Eigen::Vector3<unsigned int>& p)
+    MUDA_GENERIC static uint32_t map(const Eigen::Vector3<uint32_t>& p)
     {
         return (p.x() << xshift) | (p.y() << yshift) | (p.z() << zshift);
     }
 
-    MUDA_GENERIC static unsigned int map(const Eigen::Vector3i& p)
+    MUDA_GENERIC static uint32_t map(const Eigen::Vector3i& p)
     {
-        return ((unsigned int)p.x() << xshift) | ((unsigned int)p.y() << yshift)
-               | ((unsigned int)p.z() << zshift);
+        return ((uint32_t)p.x() << xshift) | ((uint32_t)p.y() << yshift)
+               | ((uint32_t)p.z() << zshift);
     }
+
+    uint32_t operator()()(const Eigen::Vector3<uint32_t>& p) const { return map(p); }
 };
 }  // namespace muda

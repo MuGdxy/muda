@@ -65,6 +65,18 @@ using host_var = details::var_base<T, Allocator>;
 
 namespace muda
 {
+//template <typename T>
+//inline const T* data(const T& v) noexcept
+//{
+//    return std::addressof(v);
+//}
+//
+//template <typename T>
+//inline T* data(T& v) noexcept
+//{
+//    return std::addressof(v);
+//}
+
 template <typename T, typename Allocator>
 inline const T* data(const details::var_base<T, Allocator>& v) noexcept
 {

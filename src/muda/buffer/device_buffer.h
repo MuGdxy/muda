@@ -4,6 +4,7 @@
 #include <cuda_runtime_api.h>
 #include <optional>
 #include "../container/vector.h"
+#include "../container/var.h"
 
 namespace muda
 {
@@ -133,11 +134,28 @@ class device_buffer
         checkCudaErrors(cudaMemsetAsync(data_, (int)setbyte, sizeof(value_type) * count, stream_));
     }
 
+    // copy to/from
+    void copy_to(value_type& var) const
+    {
+        if(size_ != 1)
+            throw std::logic_error("buffer size larger than 1, cannot copy to host_var");
+        init_ = true;
+        memory(stream_).copy(std::addressof(var), data_, size_ * sizeof(value_type), cudaMemcpyDeviceToHost);
+    }
+
     void copy_to(host_vector<value_type>& vec) const
     {
         init_ = true;
         vec.resize(size_);
         memory(stream_).copy(muda::data(vec), data_, size_ * sizeof(value_type), cudaMemcpyDeviceToHost);
+    }
+
+    void copy_to(device_var<value_type>& var) const
+    {
+        if(size_ != 1)
+            throw std::logic_error("buffer size larger than 1, cannot copy to device_var");
+        init_ = true;
+        memory(stream_).copy(muda::data(var), data_, size_ * sizeof(value_type), cudaMemcpyDeviceToDevice);
     }
 
     void copy_to(device_vector<value_type>& vec) const
@@ -147,11 +165,33 @@ class device_buffer
         memory(stream_).copy(muda::data(vec), data_, size_ * sizeof(value_type), cudaMemcpyDeviceToDevice);
     }
 
+
+    void copy_from(const host_var<value_type>& var)
+    {
+        init_ = true;
+        resize(1);
+        memory(stream_).copy(data_, muda::data(var), size_ * sizeof(value_type), cudaMemcpyHostToDevice);
+    }
+
+    void copy_from(const value_type& var)
+    {
+        init_ = true;
+        resize(1);
+        memory(stream_).copy(data_, muda::data(var), size_ * sizeof(value_type), cudaMemcpyHostToDevice);
+    }
+
     void copy_from(const host_vector<value_type>& vec)
     {
         init_ = true;
         resize(vec.size());
         memory(stream_).copy(data_, muda::data(vec), size_ * sizeof(value_type), cudaMemcpyHostToDevice);
+    }
+
+    void copy_from(const device_var<value_type>& var)
+    {
+        init_ = true;
+        resize(1);
+        memory(stream_).copy(data_, muda::data(var), size_ * sizeof(value_type), cudaMemcpyDeviceToDevice);
     }
 
     void copy_from(const device_vector<value_type>& vec)
@@ -194,10 +234,25 @@ namespace details
 
 namespace muda
 {
+
 template <typename T>
 inline __host__ auto make_idxer(device_buffer<T>& buf) noexcept
 {
     return idxer1D<T>(buf.data(), buf.size());
+}
+
+template <typename T>
+inline __host__ auto make_idxer2D(device_buffer<T>& buf, uint32_t dimx, uint32_t dimy) noexcept
+{
+    assert(dimx * dimy <= buf.size());
+    return idxer2D<T>(buf.data(), dimx, dimy);
+}
+
+template <typename T>
+inline __host__ auto make_idxer3D(device_buffer<T>& buf, uint32_t dimx, uint32_t dimy, uint32_t dimz) noexcept
+{
+    assert(dimx * dimy * dimz <= buf.size());
+    return idxer3D<T>(buf.data(), dimx, dimy, dimz);
 }
 
 template <typename T>

@@ -11,8 +11,7 @@ inline muda::DeviceScan& muda::DeviceScan::ExclusiveSum(
     size_t temp_storage_bytes = 0;
     cub::DeviceScan::ExclusiveSum(
         nullptr, temp_storage_bytes, d_in, d_out, num_items, stream_, false);
-    details::set_stream_check(external_buffer, stream_);
-    external_buffer.resize(temp_storage_bytes);
+    prepareBuffer(external_buffer, temp_storage_bytes);
     cub::DeviceScan::ExclusiveSum(
         external_buffer.data(), temp_storage_bytes, d_in, d_out, num_items, stream_, false);
     return *this;
@@ -25,8 +24,7 @@ inline muda::DeviceScan& muda::DeviceScan::InclusiveSum(
     size_t temp_storage_bytes = 0;
     cub::DeviceScan::InclusiveSum(
         nullptr, temp_storage_bytes, d_in, d_out, num_items, stream_, false);
-    details::set_stream_check(external_buffer, stream_);
-    external_buffer.resize(temp_storage_bytes);
+    prepareBuffer(external_buffer, temp_storage_bytes);
     cub::DeviceScan::InclusiveSum(
         external_buffer.data(), temp_storage_bytes, d_in, d_out, num_items, stream_, false);
     return *this;

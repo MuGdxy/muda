@@ -27,8 +27,21 @@ using host_vector = thrust::host_vector<T, Alloc>;
 
 namespace muda
 {
-// raw pointer
+template <typename T, typename DevAlloc = thrust::device_allocator<T>, typename HostAlloc = std::allocator<T>>
+device_vector<T, DevAlloc> to_device(const host_vector<T,HostAlloc>& host_vec)
+{
+    device_vector<T, DevAlloc> dev_vec = host_vec;
+    return dev_vec;
+}
 
+template <typename T, typename DevAlloc = thrust::device_allocator<T>, typename HostAlloc = std::allocator<T>>
+host_vector<T, HostAlloc> to_host(const device_vector<T, DevAlloc>& dev_vec)
+{
+    host_vector<T, HostAlloc> host_vec = dev_vec;
+    return host_vec;
+}
+
+// raw pointer
 template <typename T, typename Allocator>
 inline const T* data(const details::vector_base<T, Allocator>& v) noexcept
 {

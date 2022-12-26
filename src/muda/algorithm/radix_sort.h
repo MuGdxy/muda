@@ -1,21 +1,20 @@
 #pragma once
 
-#include "../launch/launch_base.h"
-#include "../buffer.h"
+#include "base.h"
 
 
 namespace muda
 {
-class RadixSort : public launch_base<RadixSort>
+class DeviceRadixSort : public AlgBase<DeviceRadixSort>
 {
   public:
-    RadixSort(cudaStream_t stream = nullptr)
-        : launch_base(stream)
+    DeviceRadixSort(cudaStream_t stream = nullptr)
+        : AlgBase(stream)
     {
     }
 
     template <typename KeyT, typename ValueT>
-    RadixSort& SortPairs(device_buffer<std::byte>& external_buffer,
+    DeviceRadixSort& SortPairs(device_buffer<std::byte>& external_buffer,
                          KeyT*                     d_keys_out,
                          KeyT*                     d_keys_in,
                          ValueT*                   d_values_out,
@@ -25,7 +24,7 @@ class RadixSort : public launch_base<RadixSort>
                          int                       end_bit = sizeof(KeyT) * 8);
 
     template <typename KeyT>
-    RadixSort& SortKeys(device_buffer<std::byte>& external_buffer,
+    DeviceRadixSort& SortKeys(device_buffer<std::byte>& external_buffer,
                         KeyT*                     d_keys_out,
                         KeyT*                     d_keys_in,
                         int                       num_items,

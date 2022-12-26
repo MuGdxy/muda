@@ -139,6 +139,9 @@ struct TiccdTestKernel
         else if(type == Type::LimitedQueueSize)
         {
             const int maxQueueSize = 128;
+
+			const auto elementSize = sizeof(to::ticcd_alloc_elem_type<float>);
+
             using alloc =
                 to::thread_stack_allocator<to::ticcd_alloc_elem_type<float>, maxQueueSize>;
 

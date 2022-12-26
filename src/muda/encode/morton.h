@@ -1,39 +1,32 @@
 #pragma once
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
-#include "../muda_config.h"
 #include <numeric>
+#include <Eigen/Core>
+#include "../muda_config.h"
+#include "../muda_def.h"
+
 
 namespace muda
 {
-template <typename T>
 class morton
 {
   public:
-    // Calculates a 30-bit Morton code for the
-    // given 3D point located within the unit cube [0,1].
-    MUDA_GENERIC static unsigned int map(T x, T y, T z)
+    MUDA_GENERIC static uint32_t map(uint32_t x, uint32_t y, uint32_t z)
     {
-        using namespace std;
-        x = min(max(x * 1024.0f, 0.0f), 1023.0f);
-        y = min(max(y * 1024.0f, 0.0f), 1023.0f);
-        z = min(max(z * 1024.0f, 0.0f), 1023.0f);
-        return map((unsigned int)x, (unsigned int)y, (unsigned int)z);
+        uint32_t xx = expand_bits((uint32_t)x);
+        uint32_t yy = expand_bits((uint32_t)y);
+        uint32_t zz = expand_bits((uint32_t)z);
+        return xx << 2 + yy << 1 + zz;
     }
 
-    MUDA_GENERIC static unsigned int map(unsigned int x, unsigned int y, unsigned int z)
+    MUDA_GENERIC uint32_t operator()(Eigen::Vector3<uint32_t> p) const
     {
-        unsigned int xx = expand_bits((unsigned int)x);
-        unsigned int yy = expand_bits((unsigned int)y);
-        unsigned int zz = expand_bits((unsigned int)z);
-        return xx << 2 + yy << 1 + zz;
+        return map(p.x(), p.y(), p.z());
     }
 
   private:
     // Expands a 10-bit integer into 30 bits
     // by inserting 2 zeros after each bit.
-    MUDA_GENERIC static unsigned int expand_bits(unsigned int v)
+    MUDA_GENERIC static uint32_t expand_bits(uint32_t v)
     {
         v = (v * 0x00010001u) & 0xFF0000FFu;
         v = (v * 0x00000101u) & 0x0F00F00Fu;

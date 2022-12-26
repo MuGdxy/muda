@@ -5,7 +5,7 @@
 #endif
 
 template <typename KeyT, typename ValueT>
-inline muda::RadixSort& muda::RadixSort::SortPairs(device_buffer<std::byte>& external_buffer,
+inline muda::DeviceRadixSort& muda::DeviceRadixSort::SortPairs(device_buffer<std::byte>& external_buffer,
                                                    KeyT*   d_keys_out,
                                                    KeyT*   d_keys_in,
                                                    ValueT* d_values_out,
@@ -28,8 +28,7 @@ inline muda::RadixSort& muda::RadixSort::SortPairs(device_buffer<std::byte>& ext
                                     stream_,
                                     false);
     // Allocate temporary storage
-    details::set_stream_check(external_buffer, stream_);
-    external_buffer.resize(temp_storage_bytes);
+    prepareBuffer(external_buffer, temp_storage_bytes);
     // Run sorting operation
     cub::DeviceRadixSort::SortPairs(external_buffer.data(),
                                     temp_storage_bytes,
@@ -46,7 +45,7 @@ inline muda::RadixSort& muda::RadixSort::SortPairs(device_buffer<std::byte>& ext
 }
 
 template <typename KeyT>
-inline muda::RadixSort& muda::RadixSort::SortKeys(device_buffer<std::byte>& external_buffer,
+inline muda::DeviceRadixSort& muda::DeviceRadixSort::SortKeys(device_buffer<std::byte>& external_buffer,
                                                   KeyT* d_keys_out,
                                                   KeyT* d_keys_in,
                                                   int   num_items,
@@ -58,8 +57,7 @@ inline muda::RadixSort& muda::RadixSort::SortKeys(device_buffer<std::byte>& exte
     cub::DeviceRadixSort::SortKeys(
         nullptr, temp_storage_bytes, d_keys_in, d_keys_out, num_items, begin_bit, end_bit, stream_, false);
     // Allocate temporary storage
-    details::set_stream_check(external_buffer, stream_);
-    external_buffer.resize(temp_storage_bytes);
+    prepareBuffer(external_buffer, temp_storage_bytes);
     // Run sorting operation
     cub::DeviceRadixSort::SortKeys(external_buffer.data(),
                                    temp_storage_bytes,
