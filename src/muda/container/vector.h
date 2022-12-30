@@ -28,7 +28,7 @@ using host_vector = thrust::host_vector<T, Alloc>;
 namespace muda
 {
 template <typename T, typename DevAlloc = thrust::device_allocator<T>, typename HostAlloc = std::allocator<T>>
-device_vector<T, DevAlloc> to_device(const host_vector<T,HostAlloc>& host_vec)
+device_vector<T, DevAlloc> to_device(const host_vector<T, HostAlloc>& host_vec)
 {
     device_vector<T, DevAlloc> dev_vec = host_vec;
     return dev_vec;
@@ -154,5 +154,43 @@ template <typename T>
 inline __host__ __device__ auto make_viewer(T* ptr, size_t count) noexcept
 {
     return make_idxer(ptr, count);
+}
+}  // namespace muda
+#include <string>
+#include <fstream>
+
+namespace muda
+{
+template <typename T,typename F>
+inline void csv(F&& header, const host_vector<T>& h, const std::string& filename = "data.csv", int ele_in_line = 1)
+{
+	
+    std::ofstream o;
+    o.open(filename);
+    header(o);
+    for(size_t i = 0; i < h.size(); ++i)
+    {
+        o << h[i];
+        if(i % ele_in_line == 0)
+            o << "\n";
+        else
+            o << ",";
+    }
+}
+
+template <typename T>
+inline void csv(const host_vector<T>& h, const std::string& filename = "data.csv", int ele_in_line = 1)
+{
+
+    std::ofstream o;
+    o.open(filename);
+    for(size_t i = 0; i < h.size(); ++i)
+    {
+        o << h[i];
+        if(i % ele_in_line == 0)
+            o << "\n";
+        else
+            o << ",";
+    }
 }
 }  // namespace muda

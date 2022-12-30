@@ -11,7 +11,7 @@ class sphere
     using vec3 = Eigen::Vector3f;
 
   public:
-    MUDA_GENERIC sphere(const Eigen::Vector3f& o, float r, uint32_t id = uint32_t(-1))
+    MUDA_GENERIC sphere(const Eigen::Vector3f& o, float r, int id = -1)
         : o(o)
         , r(r)
         , id(id)
@@ -23,9 +23,27 @@ class sphere
         , id(-1)
     {
     }
-    uint32_t        id = -1;
+    int             id = -1;
     Eigen::Vector3f o;
     float           r;
+    void csv_header(std::ostream& os) { os << "ox,oy,oz,r,id" << std::endl; }
+
+    auto& from_csv(std::istream& in)
+    {
+        char c;
+        in >> o(0);
+        if(!in)
+            return in;
+        in >> c >> o(1) >> c >> o(2) >> c >> r >> c >> id;
+        return in;
+    }
+
+    auto& to_csv(std::ostream& os)
+    {
+        char c = ',';
+        os << o(0) << c << o(1) << c << o(2) << c << r << c << id;
+        return os;
+    }
 };
 
 class AABB

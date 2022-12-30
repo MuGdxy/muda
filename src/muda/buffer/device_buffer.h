@@ -27,32 +27,38 @@ class device_buffer
         , init_(true)
     {
         memory(stream_).alloc(&data_, n * sizeof(value_type));
-        size_ = n;
+        size_    = n;
+        capacity_ = n;
     }
 
     device_buffer()
         : stream_(nullptr)
         , data_(nullptr)
         , size_(0)
+        , capacity_(0)
         , init_(false){};
 
     explicit device_buffer(cudaStream_t s)
         : stream_(s)
         , data_(nullptr)
         , size_(0)
+        , capacity_(0)
         , init_(true){};
 
     device_buffer(const device_buffer& other) = delete;
+
     device_buffer(device_buffer&& other) noexcept
         : stream_(other.stream_)
         , data_(other.data_)
         , size_(other.size_)
+        , capacity_(other.capacity_)
         , init_(other.init_)
     {
         other.data_ = nullptr;
         other.size_ = 0;
         other.init_ = false;
     }
+
     device_buffer& operator=(const device_buffer& other) = delete;
 
     void stream(cudaStream_t s)
@@ -62,15 +68,92 @@ class device_buffer
     }
     cudaStream_t stream() { return stream_; }
 
+    //void resize(size_t new_size, buf_op mem_op = buf_op::keep_set, char setbyte = 0)
+    //{
+    //    init_         = true;
+    //    auto old_size = size_;
+    //    auto mem      = memory(stream_);
+    //    if(new_size == 0)
+    //        throw std::logic_error("new_size = 0 is not allowed");
+
+    //    if(old_size < new_size)  // expand
+    //    {
+    //        T* ptr;
+    //        mem.alloc(&ptr, new_size * sizeof(value_type));
+    //        switch(mem_op)
+    //        {
+    //            case muda::buf_op::keep:
+    //                mem.copy(ptr, data_, old_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
+    //                break;
+    //            case muda::buf_op::set:
+    //                mem.set(ptr, (int)setbyte, new_size * sizeof(value_type));
+    //                break;
+    //            case muda::buf_op::keep_set:
+    //                if(data_)
+    //                    mem.copy(ptr, data_, old_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
+    //                mem.set(ptr + old_size,
+    //                        (int)setbyte,
+    //                        (new_size - old_size) * sizeof(value_type));
+    //                break;
+    //            default:
+    //                break;
+    //        }
+    //        if(data_)
+    //            mem.free(data_);
+    //        data_ = ptr;
+    //        size_ = new_size;
+    //    }
+    //    else if(old_size > new_size)  // shrink
+    //    {
+    //        T* ptr;
+    //        mem.alloc(&ptr, new_size * sizeof(value_type));
+    //        switch(mem_op)
+    //        {
+    //            case muda::buf_op::keep:
+    //                mem.copy(ptr, data_, new_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
+    //                break;
+    //            case muda::buf_op::set:
+    //                mem.set(ptr, (int)setbyte, sizeof(value_type) * new_size);
+    //                break;
+    //            default:
+    //                break;
+    //        }
+    //        if(data_)
+    //            mem.free(data_);
+    //        data_ = ptr;
+    //        size_ = new_size;
+    //    }
+    //    else  // keep
+    //    {
+    //        if(mem_op == buf_op::set)
+    //            mem.set(data_, (int)setbyte, sizeof(value_type) * new_size);
+    //    }
+    //}
+
     void resize(size_t new_size, buf_op mem_op = buf_op::keep_set, char setbyte = 0)
     {
-        init_         = true;
-        auto old_size = size_;
-        auto mem      = memory(stream_);
-        if(new_size == 0)
-            throw std::logic_error("new_size = 0 is not allowed");
-
-        if(old_size < new_size)  // expand
+        auto   mem      = memory(stream_);
+        size_t old_size = size_;
+        if(new_size <= size_)
+            return;
+        if(new_size < capacity_)
+        {
+            size_ = new_size;
+            switch(mem_op)
+            {
+                case muda::buf_op::set:
+                    mem.set(data_, (int)setbyte, new_size * sizeof(value_type));
+                    break;
+                case muda::buf_op::keep_set:
+                    mem.set(data_ + old_size,
+                            (int)setbyte,
+                            (new_size - old_size) * sizeof(value_type));
+                    break;
+                default:
+                    break;
+            }
+        }
+        else
         {
             T* ptr;
             mem.alloc(&ptr, new_size * sizeof(value_type));
@@ -94,33 +177,25 @@ class device_buffer
             }
             if(data_)
                 mem.free(data_);
-            data_ = ptr;
-            size_ = new_size;
+            data_     = ptr;
+            size_     = new_size;
+            capacity_ = new_size;
         }
-        else if(old_size > new_size)  // shrink
+    }
+
+    void shrink_to_fit()
+    {
+        auto mem = memory(stream_);
+
+        if(size_ < capacity_)
         {
             T* ptr;
-            mem.alloc(&ptr, new_size * sizeof(value_type));
-            switch(mem_op)
-            {
-                case muda::buf_op::keep:
-                    mem.copy(ptr, data_, new_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
-                    break;
-                case muda::buf_op::set:
-                    mem.set(ptr, (int)setbyte, sizeof(value_type) * new_size);
-                    break;
-                default:
-                    break;
-            }
+            mem.alloc(&ptr, size_ * sizeof(value_type));
+            mem.copy(ptr, data_, size_ * sizeof(value_type), cudaMemcpyDeviceToDevice);
             if(data_)
                 mem.free(data_);
-            data_ = ptr;
-            size_ = new_size;
-        }
-        else  // keep
-        {
-            if(mem_op == buf_op::set)
-                mem.set(data_, (int)setbyte, sizeof(value_type) * new_size);
+            data_     = ptr;
+            capacity_ = size_;
         }
     }
 
@@ -216,6 +291,7 @@ class device_buffer
     mutable bool init_;
     cudaStream_t stream_;
     size_t       size_;
+    size_t       capacity_;
     T*           data_;
 };
 

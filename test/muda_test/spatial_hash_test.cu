@@ -5,34 +5,122 @@
 
 using namespace muda;
 
-void spatial_hash_test()
-{
-    // generate 1000 spheres with random positions in (0,0,0),(10,10,10) and radii in (0.1,0.2)
-    host_vector<sphere> h_spheres(1000);
-    std::generate(h_spheres.begin(),
-                  h_spheres.end(),
-                  [id = uint32_t(0)]() mutable
-                  {
-                      return sphere(Eigen::Vector3f(rand() / (float)RAND_MAX * 10,
-                                                    rand() / (float)RAND_MAX * 10,
-                                                    rand() / (float)RAND_MAX * 10),
-                                    rand() / (float)RAND_MAX * 0.1 + 0.1,
-                                    id++);
-                  });
-    auto spheres = to_device(h_spheres);
-	
-    SpatialPartition().prepare(make_viewer(spheres));
+// if <input_file_name> is not empty, we take that as input.
+// input format:
+// ox, oy, oz, r, id
+std::string input_file_name = "input.csv";
+// if the result of the broad phase collision detection has incoherence with the ground truth
+// we output the difference to a file with name <output_file_name> for further visualization and checking
+std::string output_file_name = "diff.csv";
 
-	
+template <typename Hash>
+void spatial_hash_test(host_vector<CollisionPair>& res, host_vector<CollisionPair>& gt)
+{
+    host_vector<sphere> h_spheres;
+    if(!input_file_name.empty())  // read from input
+    {
+        std::ifstream ifs;
+        ifs.open(input_file_name);
+        int i = 0;
+        while(true)
+        {
+            sphere s;
+            s.from_csv(ifs);
+            i++;
+            if(!ifs)
+                break;
+            h_spheres.push_back(s);
+        }
+        std::cout << "we read " << h_spheres.size()
+                  << " spheres from: " << input_file_name << std::endl;
+        ifs.close();
+    }
+    else  // or generate random test set
+    {
+        h_spheres.resize(6400);
+        std::generate(h_spheres.begin(),
+                      h_spheres.end(),
+                      [id = uint32_t(0)]() mutable
+                      {
+                          return sphere(
+                              Eigen::Vector3f(0.2 + rand() / (float)RAND_MAX * 10,
+                                              0.2 + rand() / (float)RAND_MAX * 10,
+                                              0.2 + rand() / (float)RAND_MAX * 10),
+                              0.2,
+                              id++);
+                      });
+    }
+
+
+    stream s;
+    auto   spheres = to_device(h_spheres);
+    launch::wait_device();
+    auto spatialPartition = SpatialPartition<Hash>(s);
+
+    spatialPartition  // setup config
+        .setCellSize(1.0f)  // set cell size manually which will disable automatic cell size calculation
+        .configSpatialHash(Eigen::Vector3f(0, 0, 0));  // give the left-bottom corner of the domain
+
+    spatialPartition  // begin async calculation
+        .beginSetupSpatialDataStructure(make_viewer(spheres))
+        .beginCreateCollisionPairList()
+        .wait()
+        .getCollisionPairs()
+        .copy_to(res); // this copy is also async
+    launch::wait_stream(s); // wait for the copy to finish
+
     // detect collision in these 1000 spheres brutely
-    host_vector<CollisionPair> collision_pairs;
     for(int i = 0; i < h_spheres.size(); i++)
         for(int j = i + 1; j < h_spheres.size(); j++)
             if(collide::detect(h_spheres[i], h_spheres[j]))
-                collision_pairs.push_back({h_spheres[i].id, h_spheres[j].id});
+                gt.push_back(CollisionPair(h_spheres[i].id, h_spheres[j].id));
+
+    std::sort(gt.begin(), gt.end());
+    std::sort(res.begin(), res.end());
+    if(gt.size() != res.size())
+        std::cout << "incoherence: gt-size =" << gt.size()
+                  << " res-size =" << res.size() << std::endl;
+    std::vector<CollisionPair> difference;
+    std::set_difference(gt.begin(), gt.end(), res.begin(), res.end(), std::back_inserter(difference));
+
+    if(difference.size())
+    {
+        std::ofstream o;
+        o.open(output_file_name);
+        for(auto&& p : difference)
+        {
+            auto s0 = h_spheres[p.id[0]];
+            s0.to_csv(o) << std::endl;
+            auto s1 = h_spheres[p.id[1]];
+            s1.to_csv(o) << std::endl;
+            std::cout << "(" << p << ")" << std::endl;
+        }
+        o.close();
+    }
+
+    {
+        std::ofstream o;
+        o.open("input.csv");
+        for(auto&& c : h_spheres)
+        {
+            c.to_csv(o) << std::endl;
+        }
+        o.close();
+    }
 }
 
-TEST_CASE("spatial_hash", "[collide]") 
+TEST_CASE("spatial_hash", "[collide]")
 {
-    spatial_hash_test();
+    SECTION("shift_hash")
+    {
+        host_vector<CollisionPair> res, gt;
+        spatial_hash_test<shift_hash<20, 10, 0>>(res, gt);
+        REQUIRE(res == gt);
+    }
+    SECTION("morton")
+    {
+        host_vector<CollisionPair> res, gt;
+        spatial_hash_test<morton>(res, gt);
+        REQUIRE(res == gt);
+    }
 }

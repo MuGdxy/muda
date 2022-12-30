@@ -18,6 +18,12 @@ class DeviceReduce : public AlgBase<DeviceReduce>
                          int                       num_items,
                          Compare                   cmp,
                          T                         init);
+
+    template <typename T>
+    DeviceReduce& Max(device_buffer<std::byte>& external_buffer,
+                      T*                        d_out,
+                      T*                        d_in,
+                      int                       num_items);
 };
 
 struct CustomMin

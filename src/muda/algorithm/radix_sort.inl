@@ -6,13 +6,13 @@
 
 template <typename KeyT, typename ValueT>
 inline muda::DeviceRadixSort& muda::DeviceRadixSort::SortPairs(device_buffer<std::byte>& external_buffer,
-                                                   KeyT*   d_keys_out,
-                                                   KeyT*   d_keys_in,
-                                                   ValueT* d_values_out,
-                                                   ValueT* d_values_in,
-                                                   int     num_items,
-                                                   int     begin_bit,
-                                                   int     end_bit)
+                                                               KeyT* d_keys_out,
+                                                               ValueT* d_values_out,
+                                                               KeyT* d_keys_in,
+                                                               ValueT* d_values_in,
+                                                               int num_items,
+                                                               int begin_bit,
+                                                               int end_bit)
 {
     // Determine temporary device storage requirements
     size_t temp_storage_bytes = 0;
@@ -46,11 +46,11 @@ inline muda::DeviceRadixSort& muda::DeviceRadixSort::SortPairs(device_buffer<std
 
 template <typename KeyT>
 inline muda::DeviceRadixSort& muda::DeviceRadixSort::SortKeys(device_buffer<std::byte>& external_buffer,
-                                                  KeyT* d_keys_out,
-                                                  KeyT* d_keys_in,
-                                                  int   num_items,
-                                                  int   begin_bit,
-                                                  int   end_bit)
+                                                              KeyT* d_keys_out,
+                                                              KeyT* d_keys_in,
+                                                              int   num_items,
+                                                              int   begin_bit,
+                                                              int   end_bit)
 {
     // Determine temporary device storage requirements
     size_t temp_storage_bytes = 0;

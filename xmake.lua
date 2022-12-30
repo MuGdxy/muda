@@ -44,12 +44,12 @@ add_requires("cuda", {optional = false})
 
 target("muda")
     add_undefines("min","max")
-    set_kind("static")
+    set_kind("headeronly")
     add_headerfiles("src/muda/**.h","src/muda/**.inl")
     add_includedirs("src/", {public = true})
     add_includedirs("src/muda/thread_only", {public = true})
     add_includedirs("src/muda/thread_only/EABase/include/common", {public = true})
-    add_files("src/muda/PBA/**.cu","src/muda/PBA/**.cpp")
+    --add_files("src/muda/PBA/**.cu","src/muda/PBA/**.cpp")
 
     if(is_config("eigen_dir", "default")) then
         add_headerfiles("external/default/**")

@@ -8,12 +8,12 @@ template <int xshift = 20, int yshift = 10, int zshift = 0>
 class shift_hash
 {
   public:
-    MUDA_GENERIC static uint32_t map(const Eigen::Vector3<T>& p, T cellsize)
-    {
-        return ((uint32_t)(p.x() / cellsize) << xshift)
-               | ((uint32_t)(p.y() / cellsize) << yshift)
-               | ((uint32_t)(p.z() / cellsize) << zshift);
-    }
+    //MUDA_GENERIC static uint32_t map(const Eigen::Vector3<T>& p, T cellsize)
+    //{
+    //    return ((uint32_t)(p.x() / cellsize) << xshift)
+    //           | ((uint32_t)(p.y() / cellsize) << yshift)
+    //           | ((uint32_t)(p.z() / cellsize) << zshift);
+    //}
 
     MUDA_GENERIC static uint32_t map(const Eigen::Vector3<uint32_t>& p)
     {
@@ -26,6 +26,9 @@ class shift_hash
                | ((uint32_t)p.z() << zshift);
     }
 
-    uint32_t operator()()(const Eigen::Vector3<uint32_t>& p) const { return map(p); }
+    MUDA_GENERIC uint32_t operator()(const Eigen::Vector3<uint32_t>& p) const
+    {
+        return map(p);
+    }
 };
 }  // namespace muda
