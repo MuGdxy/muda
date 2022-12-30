@@ -1,5 +1,7 @@
 # muda
-muda is μ-Cuda, yet another painless cuda programming paradigm
+MUDA is **μ-CUDA**, yet another painless CUDA programming **paradigm**.
+
+> stop bothering yourself using raw CUDA, just stay elegant and clear-minded.
 
 ## overview
 
@@ -19,23 +21,86 @@ int main()
 }
 ```
 
-```cpp
-#include <muda/muda.h>
-using namespace muda;
-int main()
+muda vs cuda:
+
+```c++
+/* 
+* muda style
+*/
+void muda()
 {
-	stream s;
-    parallel_for(2/*gridDim*/, 32/*blockDim*/, 0/*sharedMem*/, s/*stream*/)
-        .apply(4/*count*/, 
-               [] __device__(int i) 
+    device_vector<int> dv(64, 1);
+    stream             s;
+    parallel_for(2, 16, 0, s) // parallel-semantic
+        .apply(64, //automatically cover the range using (gridim=2, blockdim=16)
+               [
+                   // mapping from the device_vector to a proper viewer
+                   // which can be trivially copy through device and host
+                   dv = make_viewer(dv) 
+               ] 
+               __device__(int i) mutable
                { 
-                   print("hello muda %d/4\n", i); 
+                   dv(i) *= 2; // safe, the viewer check the boundary automatically
                })
-        .wait();
+        .wait();// happy waiting, muda remember the stream.
+    	//.apply(...) //if you want to go forward with the same config, just call .apply() again.
+}
+
+
+/* 
+* cuda style
+*/
+
+// manually create kernel
+__global__ void times2(int* i, int N) // modifying parameters is horrible
+{
+    auto tid = threadIdx.x;
+    if(tid < N) // check corner case manaully
+    {
+        i[tid] *= 2;// unsafe: no boundary check at all
+    }
+}
+
+void muda_vs_cuda()
+{
+    // to be brief, we just use thrust to allocate memory
+    thrust::device_vector<int> dv(64, 1);
+    // cast to raw pointer
+    auto                       dvptr = thrust::raw_pointer_cast(dv.data());
+    // create stream and check error
+    cudaStream_t               s;
+    checkCudaErrors(cudaStreamCreate(&s));
+    // call the kernel (which always ruins the Intellisense, if you use VS.)
+    times2<<<1, 64, 0, s>>>(dvptr, dv.size());
+    // boring waiting and error checking
+    checkCudaErrors(cudaStreamSynchronize(s));
 }
 ```
 
-thread_only container
+## quick start
+
+run example:
+
+```shell
+$ xmake f --example=true
+$ xmake 
+$ xmake run muda_example hello_muda
+```
+to show all examples:
+
+```shell
+$ xmake run muda_example -l
+```
+play all examples:
+
+```shell
+$ xmake run muda_example
+```
+## features
+
+### thread_only container
+
+allow you to use STL-like containers and algorithms in one thread.
 
 ```cpp
 #include <muda/muda.h>
@@ -64,24 +129,65 @@ int main()
 }
 ```
 
-## quick start
+### graph support
 
-run example:
+a friendly way to create cuda graph.
 
-```shell
-$ xmake f --example=true
-$ xmake 
-$ xmake run muda_example hello_muda
-```
-to show all examples:
+```cpp
+void graph_example()
+{        
+    device_var<int> value = 1;
+    // create a graph
+    auto            graph = graph::create();
 
-```shell
-$ xmake run muda_example -l
-```
-play all examples:
+    // create kernel as graph node parameters(we switch from .apply to .asNodeParms)
+    auto pA = parallel_for(1).asNodeParms(1, 
+        [] __device__(int i) mutable 
+        { 
+            print("A\n"); 
+        });
 
-```shell
-$ xmake run muda_example
+    auto pB = parallel_for(1).asNodeParms(1, 
+        [] __device__(int i) mutable 
+        {
+            print("B\n");
+        });
+
+    auto phB = host_call().asNodeParms(
+        [] __host__() 
+        {
+            std::cout << "host" << std::endl; 
+        });
+
+    auto pC = parallel_for(1).asNodeParms(1,
+        [value = make_viewer(value)] __device__(int i) mutable
+        {
+            print("C, value=%d\n", value);
+            value = 2;
+        });
+
+    auto pD = launch(1, 1).asNodeParms(
+        [value = make_viewer(value)] __device__() mutable
+        { 
+            print("D, value=%d\n", value); 
+        });
+	
+    // create nodes and dependencies
+    auto kA = graph->addKernelNode(pA);
+    auto kB = graph->addKernelNode(pB);
+    // hB deps on kA and kB
+    auto hB = graph->addHostNode(phB, {kA, kB});
+    // kC deps on hB
+    auto kC = graph->addKernelNode(pC, {hB});
+    // kD deps on kC
+    auto kD = graph->addKernelNode(pD, {kC});
+    
+	// create instance (or say graphExec)
+    auto instance = graph->instantiate();
+    
+    //launch on the default stream
+    instance->launch();
+}
 ```
 
 ## More Info

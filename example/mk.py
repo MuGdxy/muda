@@ -11,7 +11,7 @@ void @NAME@()
     example_desc("give a description to @NAME@");
 }
 
-CASE("@NAME@", "[@TAG@]")
+TEST_CASE("@NAME@", "[@TAG@]")
 {
     @NAME@();
 }
