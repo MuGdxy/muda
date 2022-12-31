@@ -190,6 +190,10 @@ void graph_example()
 }
 ```
 
+## Contribute
+
+Go to [developer_zh.md](./doc/developer_zh.md) and [zhihu-ZH](https://zhuanlan.zhihu.com/p/592439225) for further info.
+
 ## More Info
 
 [zhihu-ZH](https://zhuanlan.zhihu.com/p/592439225) :  description of muda.
