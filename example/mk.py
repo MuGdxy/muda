@@ -1,4 +1,5 @@
 import sys
+import os
 
 content = '''
 #include <catch2/catch.hpp>
@@ -25,6 +26,10 @@ if(len(sys.argv) > 2):
 content = content.replace("@NAME@", name)
 content = content.replace("@TAG@", tag)
 
-f = open(name + ".cu", "w")
-f.write(content)
-f.close()
+filename = name + ".cu"
+if not os.path.exists(filename):
+    f = open(filename, "w")
+    f.write(content)
+    f.close()
+else:
+    print(f"{filename} already exists!")

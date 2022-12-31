@@ -11,8 +11,7 @@ class AlgBase : public launch_base<Derive>
     void prepareBuffer(device_buffer<std::byte>& buf, size_t reqSize) 
     {
         details::set_stream_check(buf, stream_);
-        if(buf.size() < reqSize)
-            buf.resize(reqSize);
+        buf.resize(reqSize);
     }
   public:
     AlgBase(cudaStream_t stream = nullptr)

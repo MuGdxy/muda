@@ -79,6 +79,15 @@ class launch_base
         return n;
     }
 
+    template <typename Next, typename ...Args>
+    Next next(Args&& ... args)
+    {
+        static_assert(std::is_base_of_v<launch_base<Next>, Next>, "not supported");
+        Next n(std::forward<Args>(args)...);
+        n.stream_ = stream_;
+        return n;
+    }
+
   private:
     Derived& derived() { return *(Derived*)(this); }
 };

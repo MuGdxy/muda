@@ -1,0 +1,9 @@
+#pragma once
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
+#include <Eigen/Core>
+#include "../muda_def.h"
+#include "../tools/debug_log.h"
+#include "../muda_config.h"
+#include "../assert.h"

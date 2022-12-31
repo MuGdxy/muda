@@ -1,7 +1,7 @@
 #pragma once
 #include <cub/device/device_scan.cuh>
 #ifdef __INTELLISENSE__
-#include "prefix_sum.h"
+#include "device_scan.h"
 #endif
 
 template <typename T>

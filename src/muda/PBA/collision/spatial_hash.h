@@ -11,10 +11,10 @@
 
 #include "bounding_volume.h"
 #include "collide.h"
-#include "../../algorithm/reduce.h"
-#include "../../algorithm/radix_sort.h"
+#include "../../algorithm/device_reduce.h"
+#include "../../algorithm/device_radix_sort.h"
 #include "../../algorithm/device_run_length_encode.h"
-#include "../../algorithm/prefix_sum.h"
+#include "../../algorithm/device_scan.h"
 #include "../../encode/hash.h"
 namespace muda
 {

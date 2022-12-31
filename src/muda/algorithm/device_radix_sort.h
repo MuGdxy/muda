@@ -34,5 +34,5 @@ class DeviceRadixSort : public AlgBase<DeviceRadixSort>
 }  // namespace muda
 
 #ifndef __INTELLISENSE__
-#include "radix_sort.inl"
+#include "device_radix_sort.inl"
 #endif

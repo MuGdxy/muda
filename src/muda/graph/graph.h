@@ -20,7 +20,6 @@ class graph
 
     [[nodiscard]] sptr<graphExec> instantiate()
     {
-        cudaGraphExec_t exec;
         auto            ret = std::make_shared<graphExec>();
         checkCudaErrors(cudaGraphInstantiate(&ret->handle, handle, nullptr, nullptr, 0));
         return ret;

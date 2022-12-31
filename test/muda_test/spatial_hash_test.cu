@@ -8,7 +8,7 @@ using namespace muda;
 // if <input_file_name> is not empty, we take that as input.
 // input format:
 // ox, oy, oz, r, id
-std::string input_file_name = "input.csv";
+std::string input_file_name = "";
 // if the result of the broad phase collision detection has incoherence with the ground truth
 // we output the difference to a file with name <output_file_name> for further visualization and checking
 std::string output_file_name = "diff.csv";

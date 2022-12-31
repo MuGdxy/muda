@@ -10,12 +10,11 @@ void buffer_resize_test(int count, int new_count, buf_op op, host_vector<int>& r
     int*               data;
     device_buffer<int> buf(s, count);
     //set value
-    parallel_for(32, 32)
-        .apply(buf.size(),
-               [idx = make_viewer(buf)] __device__(int i) mutable { idx(i) = 1; })
-        .wait();
+    on(s).next<parallel_for>(32, 32).apply(buf.size(),
+                                           [idx = make_viewer(buf)] __device__(int i) mutable
+                                           { idx(i) = 1; });
     buf.resize(new_count, op);
-    buf.copy_to(result);
+    buf.copy_to(result).wait();
 }
 
 TEST_CASE("buffer_realloc_test", "[buffer]")
@@ -56,7 +55,7 @@ TEST_CASE("buffer_realloc_test", "[buffer]")
         REQUIRE(gt == res);
     }
 
-    SECTION("try_shrink_set")
+    SECTION("shrink_set")
     {
         auto count     = 20;
         auto new_count = count / 2;
@@ -66,7 +65,7 @@ TEST_CASE("buffer_realloc_test", "[buffer]")
         REQUIRE(gt == res);
     }
 
-    SECTION("try_shrink_keep")
+    SECTION("shrink_keep")
     {
         auto count     = 20;
         auto new_count = count / 2;
@@ -75,20 +74,15 @@ TEST_CASE("buffer_realloc_test", "[buffer]")
         buffer_resize_test(count, new_count, buf_op::keep, res);
         REQUIRE(gt == res);
     }
-
-    SECTION("try shrink keep set")
-    {
-        try
-        {
-            auto count     = 20;
-            auto new_count = count / 2;
-            gt.resize(new_count, 1);
-            host_vector<int> res;
-            buffer_resize_test(count, new_count, buf_op::keep, res);
-        }
-        catch(std::logic_error e)
-        {
-            REQUIRE(e.what() == std::string("keep_set is meaningless for schrink"));
-        }
-    }
 }
+
+//TEST_CASE("set_test") 
+//{
+//    device_vector<int> a(100,1);
+//    auto               h = to_host(a);
+//    std::cout << h[0];
+//    stream             s;
+//    memory(s).set(data(a), 100 * sizeof(int), 0).wait();
+//    h = to_host(a);
+//    std::cout << h[0];
+//}

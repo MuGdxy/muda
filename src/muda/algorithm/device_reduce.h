@@ -38,5 +38,5 @@ struct CustomMin
 }  // namespace muda
 
 #ifndef __INTELLISENSE__
-#include "reduce.inl"
+#include "device_reduce.inl"
 #endif

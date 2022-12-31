@@ -1,7 +1,7 @@
 #pragma once
 #include <cub/device/device_reduce.cuh>
 #ifdef __INTELLISENSE__
-#include "reduce.h"
+#include "device_reduce.h"
 #endif
 
 template <typename T, typename Compare>

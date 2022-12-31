@@ -1,7 +1,7 @@
 #pragma once
 #include <cub/device/device_radix_sort.cuh>
 #ifdef __INTELLISENSE__
-#include "radix_sort.h"
+#include "device_radix_sort.h"
 #endif
 
 template <typename KeyT, typename ValueT>

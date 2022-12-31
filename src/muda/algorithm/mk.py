@@ -31,6 +31,7 @@ namespace muda
 '''
 
 import sys
+import os
 
 args = sys.argv[1:]
 
@@ -48,15 +49,25 @@ for arg in args:
     # to lower case
     file_name = file_name.lower()
     print(f'file name: {file_name}')
-    print(f'class name: {arg}')
     class_name = arg
+    print(f'class name: {class_name}')
     # substitute the '$FILE_NAME$' and '$CLASS_NAME$' by file_name and class_name
     header = header.replace('$FILE_NAME$', file_name)
     header = header.replace('$CLASS_NAME$', class_name)
     incl = incl.replace('$FILE_NAME$', file_name)
-    f = open(f'{file_name}.h', 'w')
-    f.write(header)
-    f.close()
-    f = open(f'{file_name}.inl', 'w')
-    f.write(incl)
-    f.close()
+    
+    filename = file_name + ".h"
+    if not os.path.exists(file_name):
+        f = open(f'{file_name}.h', 'w')
+        f.write(header)
+        f.close()
+    else:
+        print(f"{filename} already exists!")
+    
+    filename = file_name + ".inl"
+    if not os.path.exists(file_name):
+        f = open(f'{file_name}.inl', 'w')
+        f.write(incl)
+        f.close()
+    else:
+        print(f"{filename} already exists!")
