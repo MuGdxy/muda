@@ -9,12 +9,15 @@ namespace config
         return cond && !mudaNoCheck;
     }
 }  // namespace config
-constexpr bool debugViewers    = config::on(true);
-constexpr bool debugTiccd      = config::on(true);
-constexpr bool debugThreadOnly = config::on(true);
-constexpr bool debugContainer  = config::on(true);
-constexpr bool debugComposite  = config::on(true);
-constexpr bool trapOnError     = config::on(true);
+constexpr bool debugViewers           = config::on(true);
+constexpr bool debugTiccd             = config::on(true);
+constexpr bool debugThreadOnly        = config::on(true);
+constexpr bool debugContainer         = config::on(true);
+constexpr bool debugComposite         = config::on(true);
+constexpr bool trapOnError            = config::on(true);
+constexpr int  lightWorkloadBlockSize = 256;
+constexpr int  midWorkloadBlockSize   = 128;
+constexpr int  heavyWorkloadBlockSize = 64;
 }  // namespace muda
 
 #define EASTL_ASSERT_ENABLED 1

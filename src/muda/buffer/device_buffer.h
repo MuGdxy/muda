@@ -68,69 +68,7 @@ class device_buffer
     }
     cudaStream_t stream() { return stream_; }
 
-    //void resize(size_t new_size, buf_op mem_op = buf_op::keep_set, char setbyte = 0)
-    //{
-    //    init_         = true;
-    //    auto old_size = size_;
-    //    auto mem      = memory(stream_);
-    //    if(new_size == 0)
-    //        throw std::logic_error("new_size = 0 is not allowed");
-
-    //    if(old_size < new_size)  // expand
-    //    {
-    //        T* ptr;
-    //        mem.alloc(&ptr, new_size * sizeof(value_type));
-    //        switch(mem_op)
-    //        {
-    //            case muda::buf_op::keep:
-    //                mem.copy(ptr, data_, old_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
-    //                break;
-    //            case muda::buf_op::set:
-    //                mem.set(ptr, (int)setbyte, new_size * sizeof(value_type));
-    //                break;
-    //            case muda::buf_op::keep_set:
-    //                if(data_)
-    //                    mem.copy(ptr, data_, old_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
-    //                mem.set(ptr + old_size,
-    //                        (int)setbyte,
-    //                        (new_size - old_size) * sizeof(value_type));
-    //                break;
-    //            default:
-    //                break;
-    //        }
-    //        if(data_)
-    //            mem.free(data_);
-    //        data_ = ptr;
-    //        size_ = new_size;
-    //    }
-    //    else if(old_size > new_size)  // shrink
-    //    {
-    //        T* ptr;
-    //        mem.alloc(&ptr, new_size * sizeof(value_type));
-    //        switch(mem_op)
-    //        {
-    //            case muda::buf_op::keep:
-    //                mem.copy(ptr, data_, new_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
-    //                break;
-    //            case muda::buf_op::set:
-    //                mem.set(ptr, (int)setbyte, sizeof(value_type) * new_size);
-    //                break;
-    //            default:
-    //                break;
-    //        }
-    //        if(data_)
-    //            mem.free(data_);
-    //        data_ = ptr;
-    //        size_ = new_size;
-    //    }
-    //    else  // keep
-    //    {
-    //        if(mem_op == buf_op::set)
-    //            mem.set(data_, (int)setbyte, sizeof(value_type) * new_size);
-    //    }
-    //}
-
-    empty resize(size_t new_size, buf_op mem_op = buf_op::keep_set, char setbyte = 0)
+    empty resize(size_t new_size, buf_op mem_op, char setbyte = 0)
     {
         auto   mem      = memory(stream_);
         size_t old_size = size_;
@@ -194,6 +132,67 @@ class device_buffer
             size_     = new_size;
             capacity_ = new_size;
         }
+
+        return empty(stream_);
+    }
+
+    empty resize(size_t new_size)
+    {
+        auto   mem      = memory(stream_);
+        size_t old_size = size_;
+
+        if(new_size <= size_)
+        {
+            size_ = new_size;
+            return empty(stream_);
+        }
+
+        if(new_size <= capacity_)
+        {
+            mem.set(data_ + old_size, (new_size - old_size) * sizeof(value_type), 0);
+            size_ = new_size;
+        }
+        else
+        {
+            T* ptr;
+            mem.alloc(&ptr, new_size * sizeof(value_type));
+            if(data_)
+                mem.copy(ptr, data_, old_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
+            mem.set(ptr + old_size, (new_size - old_size) * sizeof(value_type), 0);
+            if(data_)
+                mem.free(data_);
+            data_     = ptr;
+            size_     = new_size;
+            capacity_ = new_size;
+        }
+
+        return empty(stream_);
+    }
+
+    empty resize(size_t new_size, const T& value)
+    {
+        auto   mem      = memory(stream_);
+        size_t old_size = size_;
+
+        if(new_size <= capacity_)
+        {
+            size_ = new_size;
+        }
+        else
+        {
+            T* ptr;
+            mem.alloc(&ptr, new_size * sizeof(value_type));
+            if(data_)
+                mem.free(data_);
+            data_     = ptr;
+            size_     = new_size;
+            capacity_ = new_size;
+        }
+
+        parallel_for(lightWorkloadBlockSize, 0, stream_)
+            .apply(new_size,
+                   [=, d = make_viewer(*this)] __device__(int i) mutable
+                   { d(i) = value; });
 
         return empty(stream_);
     }
@@ -262,6 +261,13 @@ class device_buffer
         return empty(stream_);
     }
 
+    empty copy_to(device_buffer<value_type>& vec) const
+    {
+        init_ = true;
+        vec.resize(size_);
+        memory(stream_).copy(vec.data(), data_, size_ * sizeof(value_type), cudaMemcpyDeviceToDevice);
+        return empty(stream_);
+    }
 
     empty copy_from(const host_var<value_type>& var)
     {
@@ -275,7 +281,7 @@ class device_buffer
     {
         init_ = true;
         resize(1);
-        memory(stream_).copy(data_, muda::data(var), size_ * sizeof(value_type), cudaMemcpyHostToDevice);
+        memory(stream_).copy(data_, std::addressof(var), size_ * sizeof(value_type), cudaMemcpyHostToDevice);
         return empty(stream_);
     }
 
@@ -300,6 +306,14 @@ class device_buffer
         init_ = true;
         resize(vec.size());
         memory().copy(data_, muda::data(vec), size_ * sizeof(value_type), cudaMemcpyDeviceToDevice);
+        return empty(stream_);
+    }
+
+    empty copy_from(const device_buffer<value_type>& vec)
+    {
+        init_ = true;
+        resize(vec.size());
+        memory().copy(data_, vec.data(), size_ * sizeof(value_type), cudaMemcpyDeviceToDevice);
         return empty(stream_);
     }
 

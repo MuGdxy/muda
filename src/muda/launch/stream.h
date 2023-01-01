@@ -13,12 +13,14 @@ class stream
     cudaStream_t handle;
 
   public:
-    [[nodiscard]] stream(flag f = flag::nonblock)
+    [[nodiscard]] stream(flag f = flag::block)
     {
         checkCudaErrors(cudaStreamCreateWithFlags(&handle, (int)f));
     }
+
     ~stream() { checkCudaErrors(cudaStreamDestroy(handle)); }
-    static sptr<stream> create(flag f = flag::nonblock)
+
+    [[nodiscard]] static sptr<stream> create(flag f = flag::block)
     {
         return std::make_shared<stream>(f);
     }
