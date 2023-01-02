@@ -5,6 +5,7 @@
 #include <optional>
 #include "../container/vector.h"
 #include "../container/var.h"
+#include "../launch/launch_base.h"
 
 namespace muda
 {

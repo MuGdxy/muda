@@ -110,7 +110,7 @@ Viewer的实现注意事项有：
 
 
 
-例1. idxer2D 是dense 2D array的viewer，`offset = x * dim_x + y`，虽然没有使用`dim_x`来计算`offset`，但边界信息包含`dim_x`，所以idxer2D的构造函数中必须出现`dim_x`（或者`Eigen::Vector2i`表示的`(dim_x, dim_y)`）
+例1. idxer2D 是dense 2D array的viewer，`offset = x * dim_y + y`，虽然没有使用`dim_x`来计算`offset`，但边界信息包含`dim_x`，所以idxer2D的构造函数中必须出现`dim_x`（或者`Eigen::Vector2i`表示的`(dim_x, dim_y)`）
 
 例2. idxer1D是dense 1D array的viewer，我们为`universal/host/device_vector/device_buffer`实现`make_idxer1D` , `make_idxer`,`make_viewer`用于生成idxer1D。
 

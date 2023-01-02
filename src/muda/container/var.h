@@ -88,7 +88,11 @@ inline T* data(details::var_base<T, Allocator>& v) noexcept
 {
     return thrust::raw_pointer_cast(v.data());
 }
+}  // namespace muda
 
+#include "../viewer/idxer.h"
+namespace muda
+{
 template <typename T, typename Allocator>
 inline __host__ auto make_idxer(details::var_base<T, Allocator>& v) noexcept
 {
@@ -100,11 +104,7 @@ inline __host__ auto make_viewer(details::var_base<T, Allocator>& v) noexcept
 {
     return make_idxer(v);
 }
-}  // namespace muda
 
-#include "../viewer/idxer.h"
-namespace muda
-{
 //print convert
 template <typename T>
 inline __host__ __device__ const T& printConvert(const idxer<T>& idx)
