@@ -1,5 +1,6 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
+#include <muda/container.h>
 #include <muda/misc/intellisense.h>
 #include <cooperative_groups.h>
 #include <cooperative_groups/memcpy_async.h>

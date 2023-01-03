@@ -1,5 +1,7 @@
 # 开发者
 
+[TOC]
+
 ## 开始开发
 
 开启test option，以便进行功能测试。
@@ -8,7 +10,7 @@
 $ xmake f --test=true
 ```
 
-## 测试
+### 测试
 
 测试框架`catch2`
 
@@ -44,7 +46,7 @@ $ py mk.py test_name test_tag
 
 来生成对应的测试模板
 
-## 提供例子
+### 提供例子
 
 ```shell
 $ xmake f --example=true
@@ -79,7 +81,7 @@ TEST_CASE("example_name", "[example_tag]")
 }
 ```
 
-## 启用全部选项
+### 启用全部选项
 
 ```shell
 $ xmake f --dev=true
@@ -90,6 +92,28 @@ $ xmake f --dev=true
 ```shell
 $ xmake f --example=true --test=true --playground=true
 ```
+## 模块
+
+### 定义
+
+`muda-style kernel launch`：以lambda表达式和callable object为kernel实参的kernel调用方式。
+
+### 模块划分
+
+muda
+
+- core
+  - launch: launch/parallel_for等`muda-style` kernel 调用
+  - viewer
+  - 
+- extension
+  - PBA: physically based animation相关，例如碰撞检测等。
+  - gui: debug gui tool 基本可视化工具, TODO。 
+
+## 设计思想与资料
+
+- launch/parallel_for: [小彭老师：CUDA在现代C++中如何运用(1:10:08处)](https://www.bilibili.com/video/BV16b4y1E74f/?spm_id_from=333.999.0.0&vd_source=4b0953be0f61d253c6c2f7ab9c4fa59f)
+- template: [C++ Templates - The Complete Guide, 2nd Edition](http://tmplbook.com/)
 
 ## 各模块注意事项
 

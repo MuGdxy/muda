@@ -3,6 +3,7 @@ import os
 content = '''
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
+#include <muda/container.h>
 
 using namespace muda;
 

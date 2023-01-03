@@ -1,5 +1,6 @@
-#include <muda/muda.h>
 #include <catch2/catch.hpp>
+#include <muda/muda.h>
+#include <muda/container.h>
 #include "../example_common.h"
 using namespace muda;
 

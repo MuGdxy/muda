@@ -1,5 +1,6 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
+#include <muda/container.h>
 #include <muda/misc/intellisense.h>  // to enable intellisense for cooperative_groups
 #include <cooperative_groups.h>
 #include "../example_common.h"

@@ -1,6 +1,6 @@
-
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
+#include <muda/container.h>
 #include <numeric>
 #include <algorithm>
 #include "../example_common.h"

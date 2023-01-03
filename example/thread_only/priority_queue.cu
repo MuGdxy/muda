@@ -1,7 +1,8 @@
-#include "../example_common.h"
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
+#include <muda/container.h>
 #include <muda/thread_only/priority_queue.h>
+#include "../example_common.h"
 
 using namespace muda;
 void priority_queue_example() 

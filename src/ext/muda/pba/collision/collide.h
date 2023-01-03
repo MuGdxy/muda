@@ -1,7 +1,7 @@
 #pragma once
 #include <Eigen/Core>
 #include "bounding_volume.h"
-#include "../../muda_def.h"
+#include <muda/muda_def.h>
 
 namespace muda
 {
