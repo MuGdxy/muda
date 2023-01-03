@@ -1,9 +1,9 @@
 #pragma once
 #include <cublas.h>
 #include "data_type_map.h"
-#include "../check/checkCublas.h"
-#include "../viewer/idxer.h"
-#include "../buffer/device_buffer.h"
+#include <muda/check/checkCublas.h>
+#include <muda/viewer/idxer.h>
+#include <muda/buffer/device_buffer.h>
 
 namespace muda
 {

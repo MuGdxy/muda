@@ -1,6 +1,6 @@
 #pragma once
-#include "../buffer.h"
-#include "../launch/launch_base.h"
+#include <muda/buffer.h>
+#include <muda/launch/launch_base.h>
 
 namespace muda
 {

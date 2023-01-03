@@ -1,11 +1,14 @@
 #include <catch2/catch.hpp>
 #include <algorithm>
 #include <muda/muda.h>
-#include <muda/PBA/collision/spatial_hash.h>
+#include <muda/container.h>
+#include <muda/buffer.h>
+#include <muda/pba/collision/spatial_hash.h>
 
 using namespace muda;
 
-// if <input_file_name> is not empty, we take that as input.
+// if <input_file_name> is empty, we generate a random input
+// otherwise, we read the input from the file
 // input format:
 // ox, oy, oz, r, id
 std::string input_file_name = "";
@@ -17,7 +20,22 @@ template <typename Hash>
 void spatial_hash_test(host_vector<CollisionPair>& res, host_vector<CollisionPair>& gt)
 {
     host_vector<sphere> h_spheres;
-    if(!input_file_name.empty())  // read from input
+    if(input_file_name.empty())  // or generate random test set
+    {
+        h_spheres.resize(6400);
+        std::generate(h_spheres.begin(),
+                      h_spheres.end(),
+                      [id = uint32_t(0)]() mutable
+                      {
+                          return sphere(
+                              Eigen::Vector3f(0.2 + rand() / (float)RAND_MAX * 10,
+                                              0.2 + rand() / (float)RAND_MAX * 10,
+                                              0.2 + rand() / (float)RAND_MAX * 10),
+                              0.2,
+                              id++);
+                      });
+    }
+    else  // read from input file
     {
         std::ifstream ifs;
         ifs.open(input_file_name);
@@ -34,21 +52,6 @@ void spatial_hash_test(host_vector<CollisionPair>& res, host_vector<CollisionPai
         std::cout << "we read " << h_spheres.size()
                   << " spheres from: " << input_file_name << std::endl;
         ifs.close();
-    }
-    else  // or generate random test set
-    {
-        h_spheres.resize(6400);
-        std::generate(h_spheres.begin(),
-                      h_spheres.end(),
-                      [id = uint32_t(0)]() mutable
-                      {
-                          return sphere(
-                              Eigen::Vector3f(0.2 + rand() / (float)RAND_MAX * 10,
-                                              0.2 + rand() / (float)RAND_MAX * 10,
-                                              0.2 + rand() / (float)RAND_MAX * 10),
-                              0.2,
-                              id++);
-                      });
     }
 
 

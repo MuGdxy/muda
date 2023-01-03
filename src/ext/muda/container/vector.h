@@ -5,7 +5,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <vector>
-#include "../viewer.h"
+#include <muda/viewer.h>
 
 namespace muda
 {

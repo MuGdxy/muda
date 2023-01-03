@@ -5,3 +5,5 @@
 #include "print.h"
 #include "profiler.h"
 #include "assert.h"
+#include "graph.h"
+

@@ -1,5 +1,6 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
+#include <muda/container.h>
 
 using namespace muda;
 
@@ -119,18 +120,18 @@ void alloc_cpy_free(int half, host_vector<int>& host_data, host_vector<int>& gro
 TEST_CASE("graph_memop_node", "[graph]")
 {
     host_vector<int> v;
-    host_vector<int> gt;
+    host_vector<int> ground_thruth;
     for(int i = 50; i <= 1000; i += 50)
     {
         SECTION(std::to_string(i).c_str())
         {
-            alloc_cpy_free(i, v, gt);
-            REQUIRE(v == gt);
+            alloc_cpy_free(i, v, ground_thruth);
+            REQUIRE(v == ground_thruth);
         }
     }
 }
 
-void host_call_graph(int& gt, int& res)
+void host_call_graph(int& ground_thruth, int& res)
 {
     universal_var<int> v = 0;
 
@@ -144,14 +145,14 @@ void host_call_graph(int& gt, int& res)
         instance->launch();
     launch::wait_device();
 
-    gt = 0;
+    ground_thruth = 0;
     for(size_t i = 0; i < 50; i++)
-        gt++;
+        ground_thruth++;
     res = v;
 }
 TEST_CASE("host_call_node", "[graph]") 
 {
-    int gt, res;
-    host_call_graph(gt, res);
-    REQUIRE(gt == res);
+    int ground_thruth, res;
+    host_call_graph(ground_thruth, res);
+    REQUIRE(ground_thruth == res);
 }

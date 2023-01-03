@@ -15,7 +15,7 @@ void quick_overview()
     stream s;
     on(s)
         .next(parallel_for(2, 32))
-        .apply(4, [] __device__(int i) { print("hello muda %d/4\n", i); })
+        .apply(4, [] __device__(int i) { print("hello muda for %d/4 rounds\n", i + 1); })
         .wait();
 }
 

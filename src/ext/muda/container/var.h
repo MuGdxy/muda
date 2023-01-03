@@ -90,7 +90,7 @@ inline T* data(details::var_base<T, Allocator>& v) noexcept
 }
 }  // namespace muda
 
-#include "../viewer/idxer.h"
+#include <muda/viewer/idxer.h>
 namespace muda
 {
 template <typename T, typename Allocator>

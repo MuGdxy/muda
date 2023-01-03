@@ -3,11 +3,11 @@
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 
-#include "../muda_def.h"
-#include "../muda_config.h"
-#include "../tools/debug_log.h"
-#include "../assert.h"
-#include "../check/checkCudaErrors.h"
+#include <muda/muda_def.h>
+#include <muda/muda_config.h>
+#include <muda/tools/debug_log.h>
+#include <muda/assert.h>
+#include <muda/check/checkCudaErrors.h>
 #include "EASTL/allocator.h"
 
 MUDA_THREAD_ONLY inline void* operator new[](

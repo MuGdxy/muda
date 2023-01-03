@@ -1,8 +1,8 @@
 ﻿#include <Eigen/Core>
-#include "../../muda_def.h"
-#include "../../tools/debug_log.h"
-#include "../../math/math.h"
-#include "../../thread_only/priority_queue.h"
+#include <muda/muda_def.h>
+#include <muda/tools/debug_log.h>
+#include <muda/math/math.h>
+#include <muda/thread_only/priority_queue.h>
 
 #define TIGHT_INCLUSION_SCOPED_TIMER(x)
 #define CCD_MAX_TIME_TOL INFINITY

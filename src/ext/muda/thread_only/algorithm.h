@@ -3,5 +3,5 @@
 
 namespace muda::thread_only
 {
-	using namespace eastl;
+using namespace eastl;
 }

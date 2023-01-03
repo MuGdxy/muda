@@ -5,9 +5,9 @@
 #include "sparse.h"
 #include "dense_wrapper.h"
 
-#include "../launch/launch_base.h"
-#include "../check/checkCusparse.h"
-#include "../check/checkCublas.h"
+#include <muda/launch/launch_base.h>
+#include <muda/check/checkCusparse.h>
+#include <muda/check/checkCublas.h>
 
 namespace muda
 {

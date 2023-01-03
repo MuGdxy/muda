@@ -94,37 +94,152 @@ $ xmake f --example=true --test=true --playground=true
 ```
 ## 模块
 
-### 定义
+### 一些定义
 
-`muda-style kernel launch`：以lambda表达式和callable object为kernel实参的kernel调用方式。
+- [muda-style kernel launch](#launch)
+
+- [capture&mapping](#buffer)
 
 ### 模块划分
 
 muda
 
 - core
-  - launch: launch/parallel_for等`muda-style` kernel 调用
-  - viewer
-  - 
-- extension
-  - PBA: physically based animation相关，例如碰撞检测等。
-  - gui: debug gui tool 基本可视化工具, TODO。 
+  - launch: launch/parallel_for等muda-style kernel调用与graphNodeParms支持 [details](#core-launch)
+  - viewer: 带边界检查的各种数据读取方式的总和 [details](#core-viewer)
+  - graph: cuda graph支持 [details](#core-graph)
+- ext
+  - buffer: 内存申请/管理工具 [details](#ext-buffer)
+  - algo: cuda CUB 的 wrapper [details](#ext-algo)
+  - blas: cublas cusparse cusolver的wrapper [details](#ext-blas)
+  - thread_only: stl-like thread only 容器库，[details](ext-thread only)
+  - pba: physically based animation相关，例如碰撞检测等。[details](#ext-pba)
+  - gui: debug gui tool 基本可视化工具, TODO [details](#ext-gui)
 
-## 设计思想与资料
+#### core-launch
 
-- launch/parallel_for: [小彭老师：CUDA在现代C++中如何运用(1:10:08处)](https://www.bilibili.com/video/BV16b4y1E74f/?spm_id_from=333.999.0.0&vd_source=4b0953be0f61d253c6c2f7ab9c4fa59f)
-- template: [C++ Templates - The Complete Guide, 2nd Edition](http://tmplbook.com/)
+##### 设计思想
 
-## 各模块注意事项
+muda-style launch是以lambda表达式和callable object为kernel实参的kernel调用方式，例如：
 
-1. 请为自己实现的内容添加对应的test与example
-2. 提交前请保证所有test/example均通过
-3. 请在[implement.md](./implement.md)中填写对应的实现内容
-4. 避免使用64位类型和无符号类型，例如`int64_t/uint64_t`（无符号类型将可能触发GPU上的无符号数溢出检查）
+```cpp
+//lambda
+launch(1,1).apply(
+    []__device()
+    {
+        print("hello muda!");
+    });
 
-### Viewer
+//callable object
+struct MyFunc
+{
+    __device__ void operator () () 
+    {
+        print("hello muda!");
+    }
+}
 
-Viewer的实现注意事项有：
+launch(1,1).apply(MyFunc());
+```
+
+核心实现方式为：
+
+```cpp
+template<typename F>
+__global__ void genericKernel(F callable)
+{
+    callable();
+}
+
+template<typename F>
+void apply(F callable)
+{
+    genericKernel<<<gridDim,blockDim,sharedMem,stream>>>(callable);
+}
+```
+
+我们将callable object作为`genericKernel`的实参进行传入，以此实现muda-style的kernel调用。
+
+对于开发者而言，可以设计的部分有：
+
+```cpp
+template<typename F>
+__global__ void genericKernel(F callable, /*任何额外的参数，由apply调用时确定，并从这里传入*/)
+{
+    /*返回值可以被利用，但一般不需要*/ callable(/*可以要求用户定义符合传入参数的callable object*/);
+    
+    /*例如，可以要求用户传入的callable object符合签名：void (int i), i由genericKernel来传入*/
+    /*这个部分可以参考parallel_for的实现，或者设计思想与资料1 */
+}
+```
+
+参考[设计思想与资料1](#设计思想与资料)
+
+#### core-viewer
+
+##### 设计思想
+
+viewer是对内存的访问方式，他具有如下特点：
+
+1. 不具有内存的所有权
+2. trivial copyable
+
+2 的含义为，viewer的拷贝均为浅拷贝，这个拷贝能够在host/device之间自由的进行，没有任何的副作用
+
+对于原生的cuda kernel而言，以下的情况非常常见：
+
+```cpp
+__global__ void RawKernel(T* data, int size)
+{
+    data[threadIdx.x] = 1;
+}
+```
+
+进一步，将`T* data, int size`转化为`class indexer1D`，下面的实例代码忽略了构造函数：
+
+```cpp
+class indexer1D
+{
+private:
+    T* data; 
+    int size;
+public:
+    T& operator (int i /*logic index*/)() {return data[i/*exact data offset*/]; }
+}
+__global__ void RawKernel(indexer1D viewer)
+{
+    viewer(threadIdx.x) = 1;
+}
+```
+
+这就是最简单的viewer的雏形。
+
+对于更复杂的访问方式，我们需要实现更加复杂的viewer，例如CSR(稀疏矩阵 compressed sparse row format)等等。
+
+为了解决访问越界问题，我们需要在viewer中实现对输入的全面检查。
+
+```cpp
+class indexer1D
+{
+private:
+    T* data; 
+    int size;
+public:
+    T& operator (int i /*logic index*/)() 
+    {
+        assert(i>=0 && i<size);
+        return data[i/*exact data offset*/]; 
+    }
+}
+```
+
+一些类比：
+
+常见的图形API中，Sampler/Memory View/Image View等概念和muda viewer的概念非常接近，可参考[设计思想与资料3](#设计思想与资料)
+
+##### 实现注意事项
+
+viewer的实现注意事项有：
 
 1. 所有的输入必须有边界检查，若产生了错误操作，需要能够提供足够具体且明确的错误原因。
 2. 构造函数只可包含裸data指针与边界信息（边界信息必须完整，哪怕他不参与计算offset）（例1）
@@ -150,7 +265,56 @@ if constexpr(debugViewers)
 
 `muda_kernel_error`宏函数会自动填写thread/block/grid信息，并在`trapOnError==true`时trap掉当前kernel。
 
-### Algorithm
+#### core-graph
+
+[TODO]
+
+#### ext-buffer
+
+##### 内容
+
+buffer模块中目前主要有三个部分：
+
+1. device_buffer: 基于cudaXXXAsync实现的内存管理
+
+2. container: device_var/host_var, device_vector/host_vector
+
+3. composite: buffer的组合，用于实现特定的viewer对应的数据结构
+
+其中，
+
+1 为muda基于cuda C API cudaXXXAsync实现的，device端容器
+
+2 中device_var/host_var为muda仿照thrust实现的，单变量容器，device_vector与host_vector为thrust原生容器。
+
+除了容器的实现，1，2中还添加了方便生成viewer的函数`make_viewer/make_idexer`等等，为`capture&mapping`提供方便。
+
+`capture&mapping`指的是：
+
+```cpp
+device_vector<int> vec;
+launch(1,1)
+    .apply(
+    [
+        // lambda的捕获列表中的下述行为被称为
+        // capture&mapping
+        vec_viewer = make_viewer(vec)
+    ]
+    __device__()
+    {
+
+    });
+```
+
+3 中将组合buffer中的一些容器，以构成一些常用的数据结构，并为之实现方便的`make_viewer`函数，以便`capture&mapping`
+
+#### ext-algo
+
+##### 内容
+
+[TODO]
+
+##### 实现注意实现
 
 此模块主要内容为CUB Wrapper，例如你要对CUB DeviceScan算法进行封装，请在`algorithm/`文件夹下调用：
 
@@ -160,7 +324,21 @@ py mk.py DeviceScan
 
 `mk.py`将会生成对应的文件，以便开发。
 
-### Thread Only Container
+#### ext-blas
+
+[TODO]
+
+##### 实现注意事项
+
+除了Wrapper以外，还需要设计Vector/Matrix的Viewer，用于处理Vector/Matrix切片，转置，共轭等操作，暂未开始实现。
+
+#### ext-thread only
+
+##### 内容
+
+[TODO]
+
+##### 实现注意事项
 
 所有的容器与算法修改自EASTL，如需实现特定的容器，仅需将EASTL对应的函数前添加宏前缀`MUDA_THREAD_ONLY`即可（最内层的工具函数现已基本添加完毕，一般来说只要对最外层函数进行添加即可）。
 
@@ -178,6 +356,28 @@ thread only容器目前有三个allocator可使用：
 
 若还有其他需求，可以根据`thread_allocator.h`进行添加。
 
-### BLAS
+#### ext-pba
 
-除了Wrapper以外，还需要设计Vector/Matrix的Viewer，用于处理Vector/Matrix切片，转置，共轭等操作，暂未开始实现。
+[TODO]
+
+#### ext-gui
+
+[TODO]
+
+### 实现注意事项
+
+1. 请为自己实现的内容添加对应的test与example
+2. 提交前请保证所有test/example均通过
+3. 请在[implement.md](./implement.md)中填写对应的实现内容
+4. 避免使用64位类型和无符号类型，例如`int64_t/uint64_t`（无符号类型将可能触发GPU上的无符号数溢出检查）
+
+## 设计思想与资料
+
+1. launch/parallel_for: [小彭老师：CUDA在现代C++中如何运用(1:10:08处)](https://www.bilibili.com/video/BV16b4y1E74f/?spm_id_from=333.999.0.0&vd_source=4b0953be0f61d253c6c2f7ab9c4fa59f)
+
+2. template: [C++ Templates - The Complete Guide, 2nd Edition](http://tmplbook.com/)
+3. viewer：[Vulkan Buffer View/Image View](https://registry.khronos.org/vulkan/specs/1.3/html/chap12.html#resources-buffer-views)
+
+4. muda 链式编程风格：[UniRx](https://github.com/neuecc/UniRx)
+5. muda kernel launch风格：[CUB](https://nvlabs.github.io/cub/)
+6. muda container: [thrust](https://docs.nvidia.com/cuda/thrust/index.html)

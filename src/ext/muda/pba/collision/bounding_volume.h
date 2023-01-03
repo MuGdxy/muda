@@ -1,8 +1,8 @@
 ﻿#pragma once
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include "../../muda_def.h"
-#include "../../math/math.h"
+#include <muda/muda_def.h>
+#include <muda/math/math.h>
 
 namespace muda
 {

@@ -1,21 +1,23 @@
 #pragma once
-#include "../../muda_def.h"
-#include "../../launch/launch_base.h"
-#include "../../encode/morton.h"
-#include "../../viewer/idxer.h"
+#include <muda/muda_def.h>
+#include <muda/launch/launch_base.h>
+#include <muda/encode/morton.h>
+#include <muda/viewer/idxer.h>
 
-#include "../../launch/parallel_for.h"
-#include "../../launch/launch.h"
-#include "../../buffer/device_buffer.h"
-#include "../../container.h"
+#include <muda/launch/parallel_for.h>
+#include <muda/launch/launch.h>
+#include <muda/buffer/device_buffer.h>
+#include <muda/container.h>
+
+#include <muda/algorithm/device_reduce.h>
+#include <muda/algorithm/device_radix_sort.h>
+#include <muda/algorithm/device_run_length_encode.h>
+#include <muda/algorithm/device_scan.h>
+#include <muda/encode/hash.h>
 
 #include "bounding_volume.h"
 #include "collide.h"
-#include "../../algorithm/device_reduce.h"
-#include "../../algorithm/device_radix_sort.h"
-#include "../../algorithm/device_run_length_encode.h"
-#include "../../algorithm/device_scan.h"
-#include "../../encode/hash.h"
+
 namespace muda
 {
 struct SpatialPartitionLaunchInfo

@@ -1,7 +1,8 @@
 #pragma once
-#include "../viewer/cse.h"
-#include "../container/vector.h"
-#include "../buffer/device_buffer.h"
+#include <muda/viewer/cse.h>
+#include <muda/container/vector.h>
+#include <muda/buffer/device_buffer.h>
+
 namespace muda
 {
 template <typename DataContainer, typename BeginContainer, typename CountContainer>

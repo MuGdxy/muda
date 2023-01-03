@@ -3,9 +3,10 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 #include <optional>
-#include "../container/vector.h"
-#include "../container/var.h"
-#include "../launch/launch_base.h"
+
+#include <muda/container/vector.h>
+#include <muda/container/var.h>
+#include <muda/launch/launch_base.h>
 
 namespace muda
 {

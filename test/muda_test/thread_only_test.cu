@@ -1,14 +1,16 @@
-#include <muda/muda.h>
 #include <catch2/catch.hpp>
 #include <type_traits>
 #include <numeric>
 #include <vector>
 #include <algorithm>
 
+#include <muda/muda.h>
+#include <muda/container.h>
+#include <muda/buffer.h>
+
 #include <muda/thread_only/vector.h>
 #include <muda/thread_only/algorithm.h>
 #include <muda/thread_only/numeric.h>
-
 using namespace muda;
 
 
@@ -22,11 +24,11 @@ struct vector_test_result
     int sum_of_adjacent_difference;
 };
 
-void vector_test(vector_test_result& gt_result, vector_test_result& result)
+void vector_test(vector_test_result& ground_thruth_result, vector_test_result& result)
 {
     host_call()
         .apply(
-            [&result = gt_result] __host__()
+            [&result = ground_thruth_result] __host__()
             {
                 namespace to = std;
                 to::vector<int> v(10);
@@ -78,14 +80,14 @@ void vector_test(vector_test_result& gt_result, vector_test_result& result)
 
 TEST_CASE("vector", "[thread_only]")
 {
-    vector_test_result gt_result, result;
-    vector_test(gt_result, result);
-    CHECK(gt_result.acc == result.acc);
-    CHECK(gt_result.min_diff == result.min_diff);
-    CHECK(gt_result.max_diff == result.max_diff);
-    CHECK(gt_result.inner_product == result.inner_product);
-    CHECK(gt_result.sum_of_partial_sum == result.sum_of_partial_sum);
-    CHECK(gt_result.sum_of_partial_sum == result.sum_of_partial_sum);
+    vector_test_result ground_thruth, result;
+    vector_test(ground_thruth, result);
+    CHECK(ground_thruth.acc == result.acc);
+    CHECK(ground_thruth.min_diff == result.min_diff);
+    CHECK(ground_thruth.max_diff == result.max_diff);
+    CHECK(ground_thruth.inner_product == result.inner_product);
+    CHECK(ground_thruth.sum_of_partial_sum == result.sum_of_partial_sum);
+    CHECK(ground_thruth.sum_of_partial_sum == result.sum_of_partial_sum);
 }
 
 #include <queue>
@@ -96,12 +98,12 @@ struct priority_queue_test_result
     int sum_of_adjacent_difference;
 };
 
-void priority_queue_test(priority_queue_test_result& gt_result,
+void priority_queue_test(priority_queue_test_result& ground_thruth_result,
                          priority_queue_test_result& result)
 {
     host_call()
         .apply(
-            [&result = gt_result] __host__()
+            [&result = ground_thruth_result] __host__()
             {
                 namespace to = std;
                 to::priority_queue<int> queue;
@@ -158,7 +160,7 @@ void priority_queue_test(priority_queue_test_result& gt_result,
 
 TEST_CASE("priority_queue", "[thread_only]")
 {
-    priority_queue_test_result gt_result, result;
-    priority_queue_test(gt_result, result);
-    CHECK(gt_result.sum_of_adjacent_difference == result.sum_of_adjacent_difference);
+    priority_queue_test_result ground_thruth, result;
+    priority_queue_test(ground_thruth, result);
+    CHECK(ground_thruth.sum_of_adjacent_difference == result.sum_of_adjacent_difference);
 }

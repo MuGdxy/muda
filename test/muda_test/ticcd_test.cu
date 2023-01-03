@@ -1,10 +1,12 @@
-#include <muda/muda.h>
 #include <catch2/catch.hpp>
 #include <type_traits>
 #include <numeric>
 #include <vector>
 #include <algorithm>
-#include <muda/PBA/collision/ticcd.h>
+#include <muda/muda.h>
+#include <muda/container.h>
+#include <muda/buffer.h>
+#include <muda/pba/collision/ticcd.h>
 #include <iostream>
 #include <fstream>
 
@@ -15,10 +17,10 @@ using Scalar  = float;
 using Vector3 = Eigen::Vector3<Scalar>;
 using Array3  = Eigen::Array3<Scalar>;
 
-
-inline void read_ticcd_csv(const std::string&                  inputFileName,
-                           muda::host_vector<Eigen::Vector3f>& X,
-                           muda::host_vector<uint32_t>&        res)
+// read test data from csv file
+inline void read_ticcd_csv(const std::string&            inputFileName,
+                           host_vector<Eigen::Vector3f>& X,
+                           host_vector<uint32_t>&        res)
 {
     // be careful, there are n lines which means there are n/8 queries, but has
     // n results, which means results are duplicated
@@ -89,8 +91,8 @@ inline void read_ticcd_csv(const std::string&                  inputFileName,
 
 enum class Type
 {
-    UnlimitedQueueSize,
-    LimitedQueueSize
+    UnlimitedQueueSize,  // to use a property_queue with unlimited size
+    LimitedQueueSize     // to use a property_queue with limited size
 };
 
 template <Type type = Type::UnlimitedQueueSize>
@@ -140,7 +142,7 @@ struct TiccdTestKernel
         {
             const int maxQueueSize = 128;
 
-			const auto elementSize = sizeof(to::ticcd_alloc_elem_type<float>);
+            const auto elementSize = sizeof(to::ticcd_alloc_elem_type<float>);
 
             using alloc =
                 to::thread_stack_allocator<to::ticcd_alloc_elem_type<float>, maxQueueSize>;
@@ -168,13 +170,13 @@ struct TiccdTestKernel
     }
 };
 
-template<Type type>
-void ticcd_test(host_vector<uint32_t>& gt,
+template <Type type>
+void ticcd_test(host_vector<uint32_t>& ground_thruth,
                 host_vector<uint32_t>& h_results,
                 host_vector<uint32_t>& d_results)
 {
     host_vector<Eigen::Vector3f> X;
-    read_ticcd_csv(MUDA_TEST_DATA_DIR R"(\unit-tests\edge-edge\data_0_1.csv)", X, gt);
+    read_ticcd_csv(MUDA_TEST_DATA_DIR R"(\unit-tests\edge-edge\data_0_1.csv)", X, ground_thruth);
 
 
     auto resultSize = X.size() / 8;
@@ -184,8 +186,7 @@ void ticcd_test(host_vector<uint32_t>& gt,
 
     host_for(host_type::host_sync)
         .apply(resultSize,
-               TiccdTestKernel<type>(
-                   make_viewer(X), make_viewer(h_results), make_viewer(h_tois)))
+               TiccdTestKernel<type>(make_viewer(X), make_viewer(h_results), make_viewer(h_tois)))
         .wait();
 
     device_vector<Eigen::Vector3f> x = X;
@@ -194,30 +195,28 @@ void ticcd_test(host_vector<uint32_t>& gt,
 
     parallel_for(32, 64)
         .apply(resultSize,
-               TiccdTestKernel<type>(
-                   make_viewer(x), make_viewer(results), make_viewer(tois)))
+               TiccdTestKernel<type>(make_viewer(x), make_viewer(results), make_viewer(tois)))
         .wait();
 
     device_vector<uint32_t> lim_results(resultSize);
-    d_results     = results;
+    d_results = results;
 }
 
 TEST_CASE("ticcd", "[collide]")
 {
-    SECTION("UnlimitedQueueSize") 
+    SECTION("UnlimitedQueueSize")
     {
-        host_vector<uint32_t> gt, h_results, d_results;
-        ticcd_test<Type::UnlimitedQueueSize>(gt, h_results, d_results);
-        CHECK(gt == h_results);
-        CHECK(gt == d_results);
+        host_vector<uint32_t> ground_thruth, h_results, d_results;
+        ticcd_test<Type::UnlimitedQueueSize>(ground_thruth, h_results, d_results);
+        CHECK(ground_thruth == h_results);
+        CHECK(ground_thruth == d_results);
     }
 
     SECTION("limitedQueueSize")
     {
-        host_vector<uint32_t> gt, h_results, d_results;
-        ticcd_test<Type::LimitedQueueSize>(gt, h_results, d_results);
-        CHECK(gt == h_results);
-        CHECK(gt == d_results);
+        host_vector<uint32_t> ground_thruth, h_results, d_results;
+        ticcd_test<Type::LimitedQueueSize>(ground_thruth, h_results, d_results);
+        CHECK(ground_thruth == h_results);
+        CHECK(ground_thruth == d_results);
     }
-
 }

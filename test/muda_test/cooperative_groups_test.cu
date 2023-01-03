@@ -1,12 +1,14 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
+#include <muda/container.h>
+#include <muda/buffer.h>
 #include <muda/misc/intellisense.h>
 #include <cooperative_groups.h>
 #include <cooperative_groups/memcpy_async.h>
 
 using namespace muda;
 namespace cg = cooperative_groups;
-void async_transfer(host_vector<int>& res, host_vector<int>& gt)
+void async_transfer(host_vector<int>& res, host_vector<int>& ground_thruth)
 {
     device_vector<int> data(128, 1);
     launch(2, 64)
@@ -31,15 +33,15 @@ void async_transfer(host_vector<int>& res, host_vector<int>& gt)
                 cg::wait(block);
             })
         .wait();
-    gt.resize(128, 1);
+    ground_thruth.resize(128, 1);
     for(size_t i = 0; i < 128; i++)
-        gt[i] = i;
+        ground_thruth[i] = i;
     res = data;
 }
 
 TEST_CASE("async_transfer", "[cooperative_groups]")
 {
-    host_vector<int> res, gt;
-    async_transfer(res, gt);
-    REQUIRE(res == gt);
+    host_vector<int> res, ground_thruth;
+    async_transfer(res, ground_thruth);
+    REQUIRE(res == ground_thruth);
 };

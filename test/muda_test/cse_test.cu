@@ -1,10 +1,13 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
+#include <muda/container.h>
+#include <muda/buffer.h>
 #include <muda/composite/cse.h>
 #include <muda/algorithm/device_scan.h>
+
 using namespace muda;
 
-void cse_test(host_vector<float>& res, host_vector<float>& gt)
+void cse_test(host_vector<float>& res, host_vector<float>& ground_thruth)
 {
     stream s;
 
@@ -34,14 +37,14 @@ void cse_test(host_vector<float>& res, host_vector<float>& gt)
         .wait();
     dbcse.data.copy_to(res);
     for(size_t i = 0; i < 2; i++)
-        gt.push_back(i);
+        ground_thruth.push_back(i);
     for(size_t i = 0; i < 8; i++)
-        gt.push_back(i);
+        ground_thruth.push_back(i);
 }
 
 TEST_CASE("cse_test", "[cse]")
 {
-    host_vector<float> res, gt;
-    cse_test(res, gt);
-    REQUIRE(res == gt);
+    host_vector<float> res, ground_thruth;
+    cse_test(res, ground_thruth);
+    REQUIRE(res == ground_thruth);
 }

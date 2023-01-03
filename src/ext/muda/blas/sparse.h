@@ -2,9 +2,9 @@
 #include <cublas.h>
 #include <cusparse.h>
 #pragma once
-#include "../container/vector.h"
-#include "../check/checkCusparse.h"
-#include "../viewer.h"
+#include <muda/container/vector.h>
+#include <muda/check/checkCusparse.h>
+#include <muda/viewer.h>
 #include "data_type_map.h"
 
 namespace muda

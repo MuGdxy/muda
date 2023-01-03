@@ -1,7 +1,10 @@
 #include <catch2/catch.hpp>
-#include <muda/muda.h>
 #include <numeric>
 #include <algorithm>
+
+#include <muda/muda.h>
+#include <muda/container.h>
+#include <muda/buffer.h>
 using namespace muda;
 
 #include <muda/algorithm/device_scan.h>
@@ -32,15 +35,15 @@ TEST_CASE("prefix_sum", "[algorithm]")
 {
     int              count = 99;
     host_vector<int> input(count, 1);
-    host_vector<int> gt_ex(count, 0);
-    host_vector<int> gt_in(count, 0);
-    thrust::exclusive_scan(input.begin(), input.end(), gt_ex.begin());
-    thrust::inclusive_scan(input.begin(), input.end(), gt_in.begin());
+    host_vector<int> ground_thruth_ex(count, 0);
+    host_vector<int> ground_thruth_in(count, 0);
+    thrust::exclusive_scan(input.begin(), input.end(), ground_thruth_ex.begin());
+    thrust::inclusive_scan(input.begin(), input.end(), ground_thruth_in.begin());
     host_vector<int> ex(count, 1);
     host_vector<int> in(count, 1);
     prefix_sum(input, ex, in);
-    REQUIRE(ex == gt_ex);
-    REQUIRE(in == gt_in);
+    REQUIRE(ex == ground_thruth_ex);
+    REQUIRE(in == ground_thruth_in);
 }
 
 #include <muda/algorithm/device_radix_sort.h>
@@ -48,10 +51,10 @@ TEST_CASE("prefix_sum", "[algorithm]")
 //radix sort
 void radix_sort(const host_vector<int>& key_in,
                 host_vector<int>&       key_out,
-                host_vector<int>&       gt_key_out,
+                host_vector<int>&       ground_thruth_key_out,
                 const host_vector<int>& value_in,
                 host_vector<int>&       value_out,
-                host_vector<int>&       gt_value_out)
+                host_vector<int>&       ground_thruth_value_out)
 {
     size_t count = key_in.size();
     //copy key_in/value_in to d_key_in,d_value_in
@@ -69,9 +72,9 @@ void radix_sort(const host_vector<int>& key_in,
     key_out   = d_key_out;
     value_out = d_value_out;
 
-    gt_key_out   = key_in;
-    gt_value_out = value_in;
-    thrust::sort_by_key(gt_key_out.begin(), gt_key_out.end(), gt_value_out.begin());
+    ground_thruth_key_out   = key_in;
+    ground_thruth_value_out = value_in;
+    thrust::sort_by_key(ground_thruth_key_out.begin(), ground_thruth_key_out.end(), ground_thruth_value_out.begin());
 }
 
 TEST_CASE("radix_sort", "[algorithm]")
@@ -86,18 +89,18 @@ TEST_CASE("radix_sort", "[algorithm]")
     std::generate(value_in.begin(), value_in.end(), std::rand);
 
     host_vector<int> key_out;
-    host_vector<int> gt_key_out;
+    host_vector<int> ground_thruth_key_out;
     host_vector<int> value_out;
-    host_vector<int> gt_value_out;
+    host_vector<int> ground_thruth_value_out;
 
-    radix_sort(key_in, key_out, gt_key_out, value_in, value_out, gt_value_out);
-    REQUIRE(key_out == gt_key_out);
-    REQUIRE(value_out == gt_value_out);
+    radix_sort(key_in, key_out, ground_thruth_key_out, value_in, value_out, ground_thruth_value_out);
+    REQUIRE(key_out == ground_thruth_key_out);
+    REQUIRE(value_out == ground_thruth_value_out);
 }
 
 #include <muda/algorithm/device_reduce.h>
 #undef max
-void reduce(host_vector<int> in, int& out, int& gt_out)
+void reduce(host_vector<int> in, int& out, int& ground_thruth_out)
 {
     device_buffer   buf;
     auto            d_in = to_device(in);
@@ -111,9 +114,9 @@ void reduce(host_vector<int> in, int& out, int& gt_out)
             [] __device__(int a, int b) { return a > b ? a : b; },
             INT_MIN)
         .wait();
-    out = gt_out;
+    out = ground_thruth_out;
 
-    gt_out = *std::max(in.begin(), in.end());
+    ground_thruth_out = *std::max(in.begin(), in.end());
 }
 
 TEST_CASE("reduce", "[algorithm]")
@@ -123,6 +126,6 @@ TEST_CASE("reduce", "[algorithm]")
     host_vector<int> in(count);
     std::generate(in.begin(), in.end(), std::rand);
     int out;
-    int gt_out;
-    reduce(in, out, gt_out);
+    int ground_thruth_out;
+    reduce(in, out, ground_thruth_out);
 }
