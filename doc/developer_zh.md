@@ -96,9 +96,9 @@ $ xmake f --example=true --test=true --playground=true
 
 ### 一些定义
 
-- [muda-style kernel launch](#launch)
+- [muda-style kernel launch](#core-launch)
 
-- [capture&mapping](#buffer)
+- [capture&mapping](#ext-buffer)
 
 ### 模块划分
 
