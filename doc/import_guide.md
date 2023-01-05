@@ -17,8 +17,8 @@ And configure xmake.lua as the following:
 
 ```lua
 
-includes("D:/repos/cent/external/muda") -- CHANGE CONTENT HERE WITH THE_PATH_TO_MUDA_REPO
-set_languages("cxx17") -- RECOMMAND TO USE C++17 FEATURES
+includes(THE_PATH_TO_MUDA_REPO) -- WHERE YOUR SAVE YOUR MUDA 
+set_languages("cxx17") -- REQUIRE C++17 FEATURES
 add_rules("mode.debug", "mode.release")
 
 target("hellocuda")
