@@ -6,7 +6,7 @@
 $ xmake create --language=cuda hellomuda
 ```
 
-Your `hellomuda` directory may looks like this
+Your `hellomuda` directory may look like:
 ```shell
 - hellomuda
     - src
@@ -56,7 +56,7 @@ Then we can compile your own project
 $ xmake
 ```
 
-Your are supposed to output a "hello muda!" string to console
+It is supposed to output a "hello muda!" string to console
 
 ```shell
 $ xmake run hellomuda

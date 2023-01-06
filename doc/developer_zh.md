@@ -382,3 +382,6 @@ thread only容器目前有三个allocator可使用：
 4. muda 链式编程风格：[UniRx](https://github.com/neuecc/UniRx)
 5. muda kernel launch风格：[CUB](https://nvlabs.github.io/cub/)
 6. muda container: [thrust](https://docs.nvidia.com/cuda/thrust/index.html)
+
+## 分支
+- dev分支主要用来开发和提交pull-request
