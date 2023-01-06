@@ -1,6 +1,11 @@
 set_project("muda")
 
+
+-- **********************************
+-- 
 -- all options
+-- 
+-- **********************************
 option("eigen_dir")
 set_default("default")
 set_showmenu(true)
@@ -8,7 +13,7 @@ set_description("user defined eigen directory. if you want to use your own eigen
 option_end()
 
 option("example")
-set_default(false)
+set_default(true)
 set_showmenu(true)
 set_description("build muda examples. if you want to see how to use muda, you could enable this option.")
 option_end()
@@ -37,6 +42,12 @@ set_showmenu(true)
 set_description("only include the core functionality of muda.")
 option_end()
 
+option("gui")
+set_default(true)
+set_showmenu(true)
+set_description("include gui support in cuda.")
+option_end()
+
 -- definitions for EASTL
 add_defines("_CHAR16T")
 add_defines("_CRT_SECURE_NO_WARNINGS")
@@ -44,12 +55,24 @@ add_defines("_SCL_SECURE_NO_WARNINGS")
 add_defines("EASTL_OPENSOURCE=1")
 
 
+-- **********************************
+-- 
+-- packages requirement
+-- 
+-- **********************************
+
+add_requires("glfw", {optional = true})
+add_requires("cuda", {optional = false})
 
 
+-- **********************************
+-- 
 -- targets
+-- 
+-- **********************************
 set_languages("cxx17")
 add_rules("mode.debug", "mode.release")
-add_requires("cuda", {optional = false})
+
 
 target("muda")
     add_undefines("min","max")
@@ -121,9 +144,32 @@ if(not has_config("core-only")) then
         add_h_and_inl("src/ext/muda/pba/")
     target_end()  
 
+    -- this target includes GUI
+    target("muda-gui")
+        add_packages("glfw", {public = true})
+        set_kind("static")
+        -- add imgui src
+        add_headerfiles("external/imgui/**.h")
+        add_files("external/imgui/**.cpp")
+        add_includedirs("external/",{public=true})
+        -- add muda gui src
+        add_files(
+            "src/ext/muda/gui/**.cpp",
+            "src/ext/muda/gui/**.cu")
+        add_headerfiles("src/ext/muda/gui/**.h")
+    target_end() 
+
     -- this is a phony target to collect all muda functionalities which is convenient for quick-starts, examples and tests.
     target("muda-full")
-        add_deps("muda-ext","muda-buffer", "muda-thread-only", "muda-blas", "muda-algo", "muda-pba")
+        add_deps(
+            "muda-ext",
+            "muda-buffer", 
+            "muda-thread-only", 
+            "muda-blas", 
+            "muda-algo", 
+            "muda-pba",
+            "muda-gui"
+        )
         set_kind("headeronly")
     target_end()
 end
@@ -155,13 +201,11 @@ if has_config("example") or has_config("dev") then
     target("muda_example")
         muda_app_base()
         add_files("example/**.cu","example/**.cpp")
-
 end
 
 if has_config("playground") or has_config("dev") then
     target("muda_pg")
         muda_app_base()
         add_files("test/playground/**.cu","test/playground/**.cpp")
-        add_headerfiles()
 end
 
