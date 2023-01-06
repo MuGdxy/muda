@@ -1,7 +1,6 @@
 import sys
 import os
-content = '''
-#include <catch2/catch.hpp>
+content = '''#include <catch2/catch.hpp>
 #include <muda/muda.h>
 #include <muda/container.h>
 
