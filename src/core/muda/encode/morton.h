@@ -12,13 +12,18 @@ class morton
   public:
     MUDA_GENERIC static uint32_t map(uint32_t x, uint32_t y, uint32_t z)
     {
-        uint32_t xx = expand_bits((uint32_t)x);
-        uint32_t yy = expand_bits((uint32_t)y);
-        uint32_t zz = expand_bits((uint32_t)z);
-        return xx << 2 + yy << 1 + zz;
+        x = expand_bits(x);
+        y = expand_bits(y);
+        z = expand_bits(z);
+        return x | y << 1 | z << 2;
     }
 
     MUDA_GENERIC uint32_t operator()(Eigen::Vector3<uint32_t> p) const
+    {
+        return map(p.x(), p.y(), p.z());
+    }
+
+    MUDA_GENERIC uint32_t operator()(Eigen::Vector3i p) const
     {
         return map(p.x(), p.y(), p.z());
     }
