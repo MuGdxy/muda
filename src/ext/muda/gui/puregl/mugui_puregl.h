@@ -1,6 +1,17 @@
+#pragma once
+
+/**
+ * @file: ext/muda/gui/puregl/mugui_puregl.h
+ * @author: sailing-innocent
+ * @create: 2023-01-09
+ * @desp: this is an pure opengl gui interface
+*/
+
 #include "../glad/gl.h"
 #include "GLFW/glfw3.h"
 #include "../mugui_base.h"
+#include <string>
+#include "../utils/gl_shader.h"
 
 namespace muda
 {
@@ -9,20 +20,27 @@ class MuGuiPureGL : public MuGuiBase
   public:
     MuGuiPureGL() = default;
     ~MuGuiPureGL();
-    explicit MuGuiPureGL(IMuGuiMode mode)
+    MuGuiPureGL(IMuGuiMode mode,
+                std::string _vert_shader_path = "../../../../test/data/gui_assets/basic_shaders/shader.vert",
+                std::string _frag_shader_path = "../../../../test/data/gui_assets/basic_shaders/shader.frag")
         : MuGuiBase(mode)
+        , m_vert_shader_path{_vert_shader_path}
+        , m_frag_shader_path{_frag_shader_path}
     {
     }
-    void init() override;
-    void init_window(int resw, int resh) override;
-    void destroy_window() override;
+    void init(int resw = 800, int resh = 600) override;
     bool frame() override;
 
   protected:
-    bool begin_frame();
-    void draw_gui();
+    void         init_window(int resw, int resh) override;
+    void         destroy_window() override;
+    virtual void init_buffers(){};
+    virtual void destroy_buffers(){};
 
   protected:
+    std::string m_vert_shader_path = "../../../../test/data/gui_assets/basic_shaders/shader.vert";
+    std::string m_frag_shader_path = "../../../../test/data/gui_assets/basic_shaders/shader.frag";
     GLFWwindow* m_window = nullptr;
+    GLShader    m_shader;
 };
 }  // namespace muda

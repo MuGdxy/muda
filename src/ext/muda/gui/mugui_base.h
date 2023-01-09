@@ -11,6 +11,7 @@ namespace muda
 {
 enum IMuGuiMode
 {
+    RasterTriangleMesh,
     RaytraceMesh
 };
 
@@ -23,10 +24,10 @@ class MuGuiBase
     {
     }
     virtual ~MuGuiBase() {}
-    virtual void init()                          = 0;
-    virtual void init_window(int resw, int resh) = 0;
-    virtual void destroy_window()                = 0;
-    virtual bool frame()                         = 0;
+    virtual void init(int resw = 800, int resh = 600) = 0;
+    virtual void init_window(int resw, int resh)      = 0;
+    virtual void destroy_window()                     = 0;
+    virtual bool frame()                              = 0;
 
   protected:
     IMuGuiMode m_gui_mode;

@@ -3,10 +3,10 @@
 
 #include <stdio.h>
 
-int PUREGLRun(void)
+int CUDAGLRun(void)
 {
     muda::IMuGuiMode  mode{muda::RaytraceMesh};
-    muda::MuGuiPureGL gui{mode};
+    muda::MuGuiCudaGL gui{mode};
     gui.init();
     while(!gui.frame())
     {
@@ -14,7 +14,7 @@ int PUREGLRun(void)
     return EXIT_SUCCESS;
 }
 
-TEST_CASE("pure_gl", "[gui]")
+TEST_CASE("cuda_gl", "[gui]")
 {
-    REQUIRE(PUREGLRun() == 0);
+    REQUIRE(CUDAGLRun() == 0);
 }

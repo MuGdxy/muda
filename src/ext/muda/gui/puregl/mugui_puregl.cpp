@@ -15,17 +15,18 @@ namespace muda
 {
 MuGuiPureGL::~MuGuiPureGL()
 {
+    destroy_buffers();
     destroy_window();
 }
-void MuGuiPureGL::init()
+void MuGuiPureGL::init(int resw, int resh)
 {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 
-    // init window
-    // init buffers
+    init_window(resw, resh);
+    init_buffers();
 }
 
 void MuGuiPureGL::init_window(int resw, int resh)

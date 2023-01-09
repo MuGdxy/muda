@@ -7,3 +7,4 @@
 */
 
 #include "puregl/mugui_puregl.h"
+#include "cudagl/mugui_cudagl.h"
