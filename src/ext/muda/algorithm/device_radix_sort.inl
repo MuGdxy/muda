@@ -25,7 +25,7 @@ inline muda::DeviceRadixSort& muda::DeviceRadixSort::SortPairs(device_buffer<std
                                     num_items,
                                     begin_bit,
                                     end_bit,
-                                    stream_,
+                                    m_stream,
                                     false);
     // Allocate temporary storage
     prepareBuffer(external_buffer, temp_storage_bytes);
@@ -39,7 +39,7 @@ inline muda::DeviceRadixSort& muda::DeviceRadixSort::SortPairs(device_buffer<std
                                     num_items,
                                     begin_bit,
                                     end_bit,
-                                    stream_,
+                                    m_stream,
                                     false);
     return *this;
 }
@@ -55,7 +55,7 @@ inline muda::DeviceRadixSort& muda::DeviceRadixSort::SortKeys(device_buffer<std:
     // Determine temporary device storage requirements
     size_t temp_storage_bytes = 0;
     cub::DeviceRadixSort::SortKeys(
-        nullptr, temp_storage_bytes, d_keys_in, d_keys_out, num_items, begin_bit, end_bit, stream_, false);
+        nullptr, temp_storage_bytes, d_keys_in, d_keys_out, num_items, begin_bit, end_bit, m_stream, false);
     // Allocate temporary storage
     prepareBuffer(external_buffer, temp_storage_bytes);
     // Run sorting operation
@@ -66,7 +66,7 @@ inline muda::DeviceRadixSort& muda::DeviceRadixSort::SortKeys(device_buffer<std:
                                    num_items,
                                    begin_bit,
                                    end_bit,
-                                   stream_,
+                                   m_stream,
                                    false);
     return *this;
 }

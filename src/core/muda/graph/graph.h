@@ -10,10 +10,10 @@ namespace muda
 {
 class graph
 {
-    cudaGraph_t handle;
+    cudaGraph_t m_handle;
 
   public:
-    graph() { checkCudaErrors(cudaGraphCreate(&handle, 0)); }
+    graph() { checkCudaErrors(cudaGraphCreate(&m_handle, 0)); }
 
     friend class graphExec;
     friend class std::shared_ptr<graph>;
@@ -21,7 +21,7 @@ class graph
     [[nodiscard]] sptr<graphExec> instantiate()
     {
         auto            ret = std::make_shared<graphExec>();
-        checkCudaErrors(cudaGraphInstantiate(&ret->handle, handle, nullptr, nullptr, 0));
+        checkCudaErrors(cudaGraphInstantiate(&ret->m_handle, m_handle, nullptr, nullptr, 0));
         return ret;
     }
 
@@ -32,7 +32,7 @@ class graph
         auto                         ret   = std::make_shared<kernelNode>();
         std::vector<cudaGraphNode_t> nodes = mapDependencies(deps);
         checkCudaErrors(cudaGraphAddKernelNode(
-            &ret->handle, handle, nodes.data(), nodes.size(), kernelParms->getRaw()));
+            &ret->m_handle, m_handle, nodes.data(), nodes.size(), kernelParms->getRaw()));
         return ret;
     }
 
@@ -44,7 +44,7 @@ class graph
         auto                         ret   = std::make_shared<hostNode>();
         std::vector<cudaGraphNode_t> nodes = mapDependencies(deps);
         checkCudaErrors(cudaGraphAddHostNode(
-            &ret->handle, handle, nodes.data(), nodes.size(), hostParms->getRaw()));
+            &ret->m_handle, m_handle, nodes.data(), nodes.size(), hostParms->getRaw()));
         return ret;
     }
 
@@ -55,9 +55,9 @@ class graph
         auto                         node  = std::make_shared<memAllocNode>();
         std::vector<cudaGraphNode_t> nodes = mapDependencies(deps);
         checkCudaErrors(cudaGraphAddMemAllocNode(
-            &node->handle, handle, nodes.data(), nodes.size(), memAllocParms->getRaw()));
+            &node->m_handle, m_handle, nodes.data(), nodes.size(), memAllocParms->getRaw()));
         auto ptr   = reinterpret_cast<T*>(memAllocParms->getRaw()->dptr);
-        node->dptr = ptr;
+        node->m_dptr = ptr;
         return std::make_tuple(node, ptr);
     }
 
@@ -71,7 +71,7 @@ class graph
         auto                         ret   = std::make_shared<memcpyNode>();
         std::vector<cudaGraphNode_t> nodes = mapDependencies(deps);
         checkCudaErrors(cudaGraphAddMemcpyNode1D(
-            &ret->handle, handle, nodes.data(), nodes.size(), dst, src, sizeof(T) * count, kind));
+            &ret->m_handle, m_handle, nodes.data(), nodes.size(), dst, src, sizeof(T) * count, kind));
         return ret;
     }
 
@@ -81,11 +81,11 @@ class graph
         auto                         ret   = std::make_shared<memFreeNode>();
         std::vector<cudaGraphNode_t> nodes = mapDependencies(deps);
         checkCudaErrors(cudaGraphAddMemFreeNode(
-            &ret->handle, handle, nodes.data(), nodes.size(), allocNode->dptr));
+            &ret->m_handle, m_handle, nodes.data(), nodes.size(), allocNode->m_dptr));
         return ret;
     }
 
-    ~graph() { checkCudaErrors(cudaGraphDestroy(handle)); }
+    ~graph() { checkCudaErrors(cudaGraphDestroy(m_handle)); }
 
     static auto create() { return std::make_shared<graph>(); }
 
@@ -100,7 +100,7 @@ class graph
         std::vector<cudaGraphNode_t> nodes;
         nodes.reserve(deps.size());
         for(auto d : deps)
-            nodes.push_back(d->handle);
+            nodes.push_back(d->m_handle);
         return nodes;
     }
 };

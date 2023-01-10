@@ -22,7 +22,7 @@
                   __VA_ARGS__)
 
 #define muda_debug_trap()                                                      \
-    if constexpr(::muda::trapOnError)                                          \
+    if constexpr(::muda::TRAP_ON_ERROR)                                          \
         ::muda::trap();
 
 #define muda_kernel_assert(res, fmt, ...)                                      \

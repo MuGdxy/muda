@@ -44,9 +44,9 @@ namespace details
 /// </summary>
 class parallel_for : public launch_base<parallel_for>
 {
-    int    gridDim;
-    int    blockDim;
-    size_t sharedMemSize;
+    int    m_gridDim;
+    int    m_blockDim;
+    size_t m_sharedMemSize;
 
   public:
     template <typename F>
@@ -75,9 +75,9 @@ class parallel_for : public launch_base<parallel_for>
     /// <param name="stream"></param>
     parallel_for(int blockDim, size_t sharedMemSize = 0, cudaStream_t stream = nullptr)
         : launch_base(stream)
-        , gridDim(0)
-        , blockDim(blockDim)
-        , sharedMemSize(sharedMemSize)
+        , m_gridDim(0)
+        , m_blockDim(blockDim)
+        , m_sharedMemSize(sharedMemSize)
     {
     }
 
@@ -90,9 +90,9 @@ class parallel_for : public launch_base<parallel_for>
     /// <param name="stream"></param>
     parallel_for(int gridDim, int blockDim, size_t sharedMemSize = 0, cudaStream_t stream = nullptr)
         : launch_base(stream)
-        , gridDim(gridDim)
-        , blockDim(blockDim)
-        , sharedMemSize(sharedMemSize)
+        , m_gridDim(gridDim)
+        , m_blockDim(blockDim)
+        , m_sharedMemSize(sharedMemSize)
     {
     }
 
@@ -114,19 +114,19 @@ class parallel_for : public launch_base<parallel_for>
 
         checkInput(begin, end, step);
 
-        if(gridDim <= 0)  // parallel_for
+        if(m_gridDim <= 0)  // parallel_for
         {
             if(begin != end)
             {
                 // calculate the blocks we need
                 auto nBlocks = calculateGridDim(begin, end, step);
-                details::parallelForKernel<<<nBlocks, blockDim, sharedMemSize, stream_>>>(
+                details::parallelForKernel<<<nBlocks, m_blockDim, m_sharedMemSize, m_stream>>>(
                     f, begin, end, step);
             }
         }
         else  // grid stride loop
         {
-            details::gridStrideLoopKernel<<<gridDim, blockDim, sharedMemSize, stream_>>>(
+            details::gridStrideLoopKernel<<<m_gridDim, m_blockDim, m_sharedMemSize, m_stream>>>(
                 f, begin, end, step);
         }
         return *this;
@@ -180,7 +180,7 @@ class parallel_for : public launch_base<parallel_for>
 
         auto parms = std::make_shared<kernelNodeParms<kernelData<CallableType>>>(
             begin, step, end, std::forward<F>(f));
-        if(gridDim <= 0)
+        if(m_gridDim <= 0)
         {
             auto nBlocks = calculateGridDim(begin, end, step);
             parms->func((void*)details::parallelForKernel<CallableType>);
@@ -189,11 +189,11 @@ class parallel_for : public launch_base<parallel_for>
         else
         {
             parms->func((void*)details::gridStrideLoopKernel<CallableType>);
-            parms->gridDim(gridDim);
+            parms->gridDim(m_gridDim);
         }
 
-        parms->blockDim(blockDim);
-        parms->sharedMemBytes(sharedMemSize);
+        parms->blockDim(m_blockDim);
+        parms->sharedMemBytes(m_sharedMemSize);
         parms->parse(
             [](kernelData<CallableType>& p) -> std::vector<void*> {
                 return {&p.callable, &p.begin, &p.end, &p.step};
@@ -229,7 +229,8 @@ class parallel_for : public launch_base<parallel_for>
     {
         auto stride     = end - begin;
         auto nMinthread = stride / step + ((stride % step) != 0 ? 1 : 0);
-        auto nMinblocks = nMinthread / blockDim + ((nMinthread % blockDim) > 0 ? 1 : 0);
+        auto nMinblocks =
+            nMinthread / m_blockDim + ((nMinthread % m_blockDim) > 0 ? 1 : 0);
         return nMinblocks;
     }
 

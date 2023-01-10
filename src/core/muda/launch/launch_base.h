@@ -33,11 +33,11 @@ template <typename Derived>
 class launch_base
 {
   protected:
-    cudaStream_t stream_;
+    cudaStream_t m_stream;
 
   public:
     launch_base(cudaStream_t stream)
-        : stream_(stream)
+        : m_stream(stream)
     {
     }
     void push_range(const std::string& name)
@@ -58,7 +58,7 @@ class launch_base
     friend class launch_base;
     Derived& wait()
     {
-        checkCudaErrors(cudaStreamSynchronize(stream_));
+        checkCudaErrors(cudaStreamSynchronize(m_stream));
 
         return derived();
     }
@@ -67,7 +67,7 @@ class launch_base
     {
         auto userdata = new std::function<void(cudaStream_t, cudaError)>(callback);
         checkCudaErrors(
-            cudaStreamAddCallback(stream_, details::streamErrorCallback, userdata, 0));
+            cudaStreamAddCallback(m_stream, details::streamErrorCallback, userdata, 0));
         return derived();
     }
 
@@ -75,7 +75,7 @@ class launch_base
     Next next(Next n)
     {
         static_assert(std::is_base_of_v<launch_base<Next>, Next>, "not supported");
-        n.stream_ = stream_;
+        n.m_stream = m_stream;
         return n;
     }
 
@@ -84,7 +84,7 @@ class launch_base
     {
         static_assert(std::is_base_of_v<launch_base<Next>, Next>, "not supported");
         Next n(std::forward<Args>(args)...);
-        n.stream_ = stream_;
+        n.m_stream = m_stream;
         return n;
     }
 

@@ -23,7 +23,7 @@ DeviceRunLengthEncode& DeviceRunLengthEncode::Encode(device_buffer<std::byte>& e
                                        d_counts_out,
                                        d_num_runs_out,
                                        num_items,
-                                       stream_,
+                                       m_stream,
                                        false);
     prepareBuffer(external_buffer, temp_storage_bytes);
     cub::DeviceRunLengthEncode::Encode(external_buffer.data(),
@@ -33,7 +33,7 @@ DeviceRunLengthEncode& DeviceRunLengthEncode::Encode(device_buffer<std::byte>& e
                                        d_counts_out,
                                        d_num_runs_out,
                                        num_items,
-                                       stream_,
+                                       m_stream,
                                        false);
     return *this;
 }

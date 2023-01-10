@@ -20,6 +20,7 @@ class MuGuiCudaGL : public MuGuiPureGL
     }
     ~MuGuiCudaGL();
     bool frame();
+    void muda_gen_vertices(float* positions, float time, unsigned int width, unsigned int height);
 
   protected:
     void init_buffers() override;
@@ -29,10 +30,10 @@ class MuGuiCudaGL : public MuGuiPureGL
     virtual void gen_vertices();  // the entry draw function
 
   protected:
-    unsigned int                 m_cuda_device = 0;
-    unsigned int                 m_positions_VBO;
-    unsigned int                 m_VAO;
-    struct cudaGraphicsResource* m_positionsVBO_CUDA;
+    unsigned int           m_cuda_device = 0;
+    unsigned int           m_positions_VBO;
+    unsigned int           m_VAO;
+    cudaGraphicsResource_t m_positionsVBO_CUDA;
 };
 
 }  // namespace muda

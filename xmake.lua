@@ -145,6 +145,7 @@ if(not has_config("core-only")) then
 
     -- this target includes GUI
     target("muda-gui")
+        add_deps("muda")
         add_packages("glfw", {public = true})
         set_kind("static")
         -- add imgui src

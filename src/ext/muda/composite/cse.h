@@ -28,12 +28,32 @@ class compressed_sparse_elements
     }
     int dim_i() const noexcept
     {
-        if constexpr(debugComposite)
+        if constexpr(DEBUG_COMPOSITE)
         {
             if(begin.size() != count.size())
                 throw std::logic_error("begin and count must have the same size");
         }
         return begin.size();
+    }
+    
+    compressed_sparse_elements& operator=(compressed_sparse_elements rhs) {
+        if(this == &rhs)
+            return *this;
+        data  = rhs.data;
+        begin = rhs.begin;
+        count = rhs.count;
+        return *this;
+    }
+    
+    template <typename OtherDataContainer, typename OtherBeginContainer, typename OtherCountContainer>
+    compressed_sparse_elements& operator=(compressed_sparse_elements<OtherDataContainer, OtherBeginContainer, OtherCountContainer>& other)
+    {
+        if(this == &rhs)
+            return *this;
+        data  = rhs.data;
+        begin = rhs.begin;
+        count = rhs.count;
+        return *this;
     }
 };
 
@@ -71,11 +91,11 @@ class device_buffer_cse
 
     cudaStream_t stream() const noexcept
     {
-        if constexpr(debugComposite)
+        if constexpr(DEBUG_COMPOSITE)
         {
             if(!(this->data.stream() == this->begin.stream()
                  && this->begin.stream() == this->count.stream()))
-                throw std::logic_error("begin and count must have the same size");
+                throw std::logic_error("data/begin/count should has the same stream");
         }
         return this->data.stream();
     }
@@ -88,7 +108,7 @@ template <typename DataContainer, typename BeginContainer, typename CountContain
 inline __host__ auto make_cse(
     compressed_sparse_elements<DataContainer, BeginContainer, CountContainer>& cse) noexcept
 {
-    if constexpr(debugComposite)
+    if constexpr(DEBUG_COMPOSITE)
     {
         if(cse.begin.size() != cse.count.size())
             throw std::logic_error("begin and count must have the same size");

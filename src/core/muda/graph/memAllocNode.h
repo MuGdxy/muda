@@ -5,7 +5,7 @@ namespace muda
 {
 class memAllocNode : public graphNode
 {
-    void* dptr;
+    void* m_dptr;
 
   public:
     using this_type = memAllocNode;
@@ -15,7 +15,7 @@ class memAllocNode : public graphNode
 template <typename T>
 class memAllocNodeParms : public nodeParms
 {
-    cudaMemAllocNodeParams parms;
+    cudaMemAllocNodeParams m_parms;
 
   public:
     using this_type = memAllocNodeParms;
@@ -25,15 +25,15 @@ class memAllocNodeParms : public nodeParms
     friend class std::weak_ptr<this_type>;
 
     memAllocNodeParms(size_t size)
-        : parms({})
+        : m_parms({})
     {
-        parms.poolProps.allocType = cudaMemAllocationTypePinned;
-        cudaGetDevice(&parms.poolProps.location.id);
-        parms.poolProps.location.type = cudaMemLocationTypeDevice;
-        parms.bytesize                = size * sizeof(T);
+        m_parms.poolProps.allocType = cudaMemAllocationTypePinned;
+        cudaGetDevice(&m_parms.poolProps.location.id);
+        m_parms.poolProps.location.type = cudaMemLocationTypeDevice;
+        m_parms.bytesize                = size * sizeof(T);
     }
 
-    cudaMemAllocNodeParams*       getRaw() { return &parms; }
-    const cudaMemAllocNodeParams* getRaw() const { return &parms; }
+    cudaMemAllocNodeParams*       getRaw() { return &m_parms; }
+    const cudaMemAllocNodeParams* getRaw() const { return &m_parms; }
 };
 }  // namespace muda

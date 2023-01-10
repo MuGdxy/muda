@@ -55,8 +55,8 @@ unsigned long long int atomicXor(unsigned long long int* address, unsigned long 
 template <typename T, int N>
 inline __device__ Eigen::Vector<T, N> atomicAdd(Eigen::Vector<T, N>& v, const Eigen::Vector<T, N>& val) noexcept
 {
-#pragma unroll
     Eigen::Vector<T, N> ret;
+#pragma unroll
     for(int i = 0; i < N; ++i)
         ret(i) = atomicAdd(&v(i), val(i));
     return ret;

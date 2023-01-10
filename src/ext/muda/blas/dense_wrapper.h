@@ -1,7 +1,7 @@
 #pragma once
 #include <cublas.h>
 
-namespace muda::dense::L1
+namespace muda::cublas::L1
 {
 template <typename T>
 struct nrm2_result
@@ -291,9 +291,9 @@ inline auto cublasRotg(cublasHandle_t   handle,
     return cublasZrotg_v2(handle, a, b, c, s);
 }
 
-}  // namespace muda::dense::L1
+}  // namespace muda::cublas::L1
 
-namespace muda::dense::L2
+namespace muda::cublas::L2
 {
 // wrap cublas gemv for float/double/cuComplex/cuDoubleComplex
 inline auto cublasGemv(cublasHandle_t    handle,
@@ -311,4 +311,4 @@ inline auto cublasGemv(cublasHandle_t    handle,
 {
     return cublasSgemv_v2(handle, trans, m, n, alpha, A, lda, x, incx, beta, y, incy);
 }
-}  // namespace muda::dense::L2
+}  // namespace muda::cublas::L2

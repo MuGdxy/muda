@@ -40,31 +40,31 @@ using thread_allocator = eastl::allocator;
 template <typename T, int Size>
 class thread_stack_allocator
 {
-    char buf_[Size * sizeof(T)];
-    bool used_;
+    char m_buf[Size * sizeof(T)];
+    bool m_used;
 
   public:
     MUDA_THREAD_ONLY thread_stack_allocator(const char*)
-        : used_(false)
+        : m_used(false)
     {
     }
 
     MUDA_THREAD_ONLY static constexpr int size() { return Size; }
 
-    MUDA_THREAD_ONLY bool is_using() const { return used_; }
+    MUDA_THREAD_ONLY bool is_using() const { return m_used; }
 
 
     MUDA_THREAD_ONLY void* allocate(size_t n, int flags = 0)
     {
         if(n != 0)
         {
-            muda_kernel_assert(!used_, "thread_static_allocator only allow allocating once, use container.reserve() for init!");
-            muda_kernel_assert(n <= sizeof(buf_),
+            muda_kernel_assert(!m_used, "thread_static_allocator only allow allocating once, use container.reserve() for init!");
+            muda_kernel_assert(n <= sizeof(m_buf),
                                "allocation is too large (n=%d,buf=%d)",
                                int(n),
-                               int(sizeof(buf_)));
-            used_ = true;
-            return buf_;
+                               int(sizeof(m_buf)));
+            m_used = true;
+            return m_buf;
         }
     }
     MUDA_THREAD_ONLY void* allocate(size_t n, size_t alignment, size_t offset, int flags = 0)
@@ -74,40 +74,40 @@ class thread_stack_allocator
 
     MUDA_THREAD_ONLY void deallocate(void* p, size_t n)
     {
-        muda_kernel_assert(used_ && (char*)p == (char*)buf_, "deallocate fatal error");
-        used_ = false;
+        muda_kernel_assert(m_used && (char*)p == (char*)m_buf, "deallocate fatal error");
+        m_used = false;
     }
 };
 
 class external_buffer_allocator
 {
-    void* buf_;
-    int   size_;
-    bool  used_;
+    void* m_buf;
+    int   m_size;
+    bool  m_used;
   public:
     MUDA_THREAD_ONLY external_buffer_allocator(void* ext_buf, int bytesize)
-        : buf_(ext_buf)
-        , size_(bytesize)
-        , used_(false)
+        : m_buf(ext_buf)
+        , m_size(bytesize)
+        , m_used(false)
     {
 
     }
 
-    MUDA_THREAD_ONLY int size() { return size_; }
+    MUDA_THREAD_ONLY int size() { return m_size; }
 
-    MUDA_THREAD_ONLY bool is_using() const { return used_; }
+    MUDA_THREAD_ONLY bool is_using() const { return m_used; }
 
     MUDA_THREAD_ONLY void* allocate(size_t n, int flags = 0)
     {
         if(n != 0)
         {
-            muda_kernel_assert(!used_, "external_buffer_allocator only allow allocating once, use container.reserve() for init!");
-            muda_kernel_assert(n <= size_,
+            muda_kernel_assert(!m_used, "external_buffer_allocator only allow allocating once, use container.reserve() for init!");
+            muda_kernel_assert(n <= m_size,
                                "allocation is too large (n=%d,buf=%d)",
                                int(n),
-                               int(sizeof(size_)));
-            used_ = true;
-            return buf_;
+                               int(sizeof(m_size)));
+            m_used = true;
+            return m_buf;
         }
     }
     MUDA_THREAD_ONLY void* allocate(size_t n, size_t alignment, size_t offset, int flags = 0)
@@ -117,7 +117,7 @@ class external_buffer_allocator
 
     MUDA_THREAD_ONLY void deallocate(void* p, size_t n)
     {
-        muda_kernel_assert(used_ && (char*)p == (char*)buf_, "deallocate fatal error");
+        muda_kernel_assert(m_used && (char*)p == (char*)m_buf, "deallocate fatal error");
     }
 };
 }  // namespace muda::thread_only

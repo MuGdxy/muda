@@ -19,6 +19,7 @@
 #include <cuda_gl_interop.h>
 #include "../utils/gl_utils.h"
 #include <iostream>
+#include <muda/muda.h>
 
 namespace muda
 {
@@ -80,12 +81,16 @@ void MuGuiCudaGL::gen_vertices()
     cudaGraphicsMapResources(1, &m_positionsVBO_CUDA, 0);
     size_t num_bytes;
     cudaGraphicsResourceGetMappedPointer((void**)&positions, &num_bytes, m_positionsVBO_CUDA);
-    //TODO: Change to Muda
-    dim3 dimBlock(16, 16, 1);
-    dim3 dimGrid(m_window_res[0] / dimBlock.x, m_window_res[1] / dimBlock.y);
+    // TODO: Change to Muda
+    // dim3 dimBlock(16, 16, 1);
+    // dim3 dimGrid(m_window_res[0] / dimBlock.x, m_window_res[1] / dimBlock.y);
     // createVertices<<<dimGrid, dimBlock>>>(
     //    positions, time_value, m_window_res[0], m_window_res[1]);
-    sin1D<<<dimGrid, dimBlock>>>(positions, time_value, m_window_res[0], m_window_res[1]);
+    // sin1D<<<dimGrid, dimBlock>>>(positions, time_value, m_window_res[0], m_window_res[1]);
+
+    // muda style
+    muda_gen_vertices(positions, time_value, m_window_res[0], m_window_res[1]);
+
     // END TODO
     cudaGraphicsUnmapResources(1, &m_positionsVBO_CUDA);
 }
@@ -162,6 +167,32 @@ bool MuGuiCudaGL::frame()
     glfwPollEvents();
 
     return glfwWindowShouldClose(m_window);
+}
+
+// muda_gen_vertices must be public, because:
+// The enclosing parent function for an extended __device__ lambda 
+// cannot have private or protected access within its class
+void MuGuiCudaGL::muda_gen_vertices(float* positions, float time, unsigned int width, unsigned int height)
+{
+    // set blockDim as 256 while let parallel_for calculate the gridDim
+    parallel_for(256).apply(width,
+                            [time  = time,
+                             width = width,
+                             positions = make_dense2D(positions, width, 8)] __device__(int ix) mutable
+                            {
+                                float u = ix / (float)width;
+                                float x = lr_corner_T_viewport_center(u);
+                                float y = sinf(2.0f * x - time * 6.0f);
+                                positions(ix, 0) = x;
+                                positions(ix, 1) = y;
+                                positions(ix, 2) = 0.0f;
+                                positions(ix, 3) = 1.0f;
+                                // generate color
+                                positions(ix, 4) = 0.5f;
+                                positions(ix, 5) = 0.3f;
+                                positions(ix, 6) = 0.8f;
+                                positions(ix, 7) = 1.0f;
+                            });
 }
 
 void MuGuiCudaGL::destroy_buffers()

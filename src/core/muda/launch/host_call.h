@@ -74,9 +74,9 @@ class host_call : public launch_base<host_call>
         if(ht == host_type::host_cuda)
         {
             checkCudaErrors(cudaLaunchHostFunc(
-                stream_, details::genericHostCall<CallableType>, userdata));
+                m_stream, details::genericHostCall<CallableType>, userdata));
             checkCudaErrors(cudaLaunchHostFunc(
-                stream_, details::deleteFunctionObject<CallableType>, userdata));
+                m_stream, details::deleteFunctionObject<CallableType>, userdata));
         }
         else
         {
@@ -120,9 +120,9 @@ class host_for : public launch_base<host_for>
         if(ht == host_type::host_cuda)
         {
             checkCudaErrors(
-                cudaLaunchHostFunc(stream_, details::genericHostFor<CallableType>, sf));
+                cudaLaunchHostFunc(m_stream, details::genericHostFor<CallableType>, sf));
             checkCudaErrors(cudaLaunchHostFunc(
-                stream_, details::deleteFunctionObject<comp_type>, sf));
+                m_stream, details::deleteFunctionObject<comp_type>, sf));
         }
         else
         {

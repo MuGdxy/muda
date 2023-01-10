@@ -4545,7 +4545,7 @@ static void ShowDemoWindowTables()
             ImGui::EndTable();
         }
 
-        HelpMarker("Using TableSetupColumn() to setup explicit width.\n\nUnless _NoKeepColumnsVisible is set, fixed columns with set width may still be shrunk down if there's not enough space in the host.");
+        HelpMarker("Using TableSetupColumn() to setup explicit width.\n\nUnless _NoKeepColumnsVisible is set, fixed columns with set width may still be shrunk down if there's not enough space in the HostData().");
 
         static ImGuiTableFlags flags2 = ImGuiTableFlags_None;
         PushStyleCompact();

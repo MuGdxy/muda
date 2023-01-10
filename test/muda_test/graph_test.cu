@@ -6,15 +6,15 @@ using namespace muda;
 
 struct kernelA
 {
-    kernelA(const muda::idxer1D<int>& s, const idxer<int>& var)
+    kernelA(const muda::dense1D<int>& s, const dense<int>& var)
         : s(s)
         , var(var)
     {
     }
 
   public:
-    idxer1D<int>    s;
-    idxer<int>      var;
+    dense1D<int>    s;
+    dense<int>      var;
     __device__ void operator()(int i) { var = s.total_size(); }
 };
 
@@ -84,33 +84,32 @@ void alloc_cpy_free(int half, host_vector<int>& host_data, host_vector<int>& gro
 
     cudaStream_t stream;
     cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
-    auto hostIdxer = make_viewer(host_data);
+    auto hostDense = make_viewer(host_data);
 
     auto  allocParm = memory::asAllocNodeParms<int>(count);
     graph g;
     auto [allocNode, ptr] = g.addMemAllocNode(allocParm);
 
-    auto idxer = make_viewer(ptr, count);
+    auto dense = make_viewer(ptr, count);
 
     auto writeKernelParm = parallel_for(2, 8).asNodeParms(
-        count, [idxer = idxer] __device__(int i) mutable { idxer(i) = i; });
+        count, [dense = dense] __device__(int i) mutable { dense(i) = i; });
     auto writeKernelNode = g.addKernelNode(writeKernelParm, {allocNode});
     auto readKernelParm  = launch(1, 1).asNodeParms(
-        [idxer = idxer] __device__() mutable
+        [dense = dense] __device__() mutable
         {
-            for(int i = 0; i < idxer.total_size(); ++i)
+            for(int i = 0; i < dense.total_size(); ++i)
                 ;
-            //printf("%d\n", idxer(i));
         });
     auto readKernelNode = g.addKernelNode(readKernelParm, {writeKernelNode});
     auto cpyNode        = g.addMemcpyNode(
-        hostIdxer.data(), idxer.data(), half, cudaMemcpyDeviceToHost, {readKernelNode});
+        hostDense.data(), dense.data(), half, cudaMemcpyDeviceToHost, {readKernelNode});
     auto freeNode = g.addMemFreeNode(allocNode, {cpyNode});
     auto instance = g.instantiate();
     instance->launch(stream);
     launch::wait_stream(stream);
-    auto hostIdxerHalf = idxer1D<int>(hostIdxer.data() + half, half);
-    instance->setMemcpyNodeParms(cpyNode, hostIdxerHalf.data(), idxer.data(), half, cudaMemcpyDeviceToHost);
+    auto hostDenseHalf = dense1D<int>(hostDense.data() + half, half);
+    instance->setMemcpyNodeParms(cpyNode, hostDenseHalf.data(), dense.data(), half, cudaMemcpyDeviceToHost);
     instance->launch(stream);
     launch::wait_stream(stream);
 

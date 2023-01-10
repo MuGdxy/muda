@@ -2,7 +2,7 @@
 #include <muda/muda_def.h>
 #include <muda/launch/launch_base.h>
 #include <muda/encode/morton.h>
-#include <muda/viewer/idxer.h>
+#include <muda/viewer/dense.h>
 
 #include <muda/launch/parallel_for.h>
 #include <muda/launch/launch.h>
@@ -244,7 +244,7 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
     using hash_type = Hash;
 
     SpatialPartitionLaunchInfo launchInfo;
-    idxer1D<sphere>            spheres;
+    dense1D<sphere>            spheres;
 
 
     //float           cellSize_;
@@ -304,7 +304,7 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
         return *this;
     }
 
-    SpatialPartition& beginSetupSpatialDataStructure(idxer1D<sphere> boundingSphereList)
+    SpatialPartition& beginSetupSpatialDataStructure(dense1D<sphere> boundingSphereList)
     {
         spheres = boundingSphereList;
 
@@ -325,12 +325,12 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
         auto count = spheres.total_size();
         allRadius.resize(count);
         launch::wait_device();
-        parallel_for(launchInfo.lightKernelBlockDim, 0, stream_)
+        parallel_for(launchInfo.lightKernelBlockDim, 0, m_stream)
             .apply(count,
                    [spheres = this->spheres, allRadius = make_viewer(allRadius)] __device__(
                        int i) mutable { allRadius(i) = spheres(i).r; })
 
-            .next(DeviceReduce(stream_))
+            .next(DeviceReduce(m_stream))
             .Max(cellSizeBuf, data(maxRadius), allRadius.data(), count)
             .wait();
 
@@ -373,12 +373,12 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
             collisionPairPrefixSum.resize(count, buf_op::ignore);
         }
 
-        parallel_for(launchInfo.lightKernelBlockDim, 0, stream_)
+        parallel_for(launchInfo.lightKernelBlockDim, 0, m_stream)
             .apply(spheres.total_size(),
                    [spheres        = this->spheres,
                     sh             = this->spatialHashConfig,
-                    cellArrayValue = make_idxer2D(cellArrayValue, size, 8),
-                    cellArrayKey = make_idxer2D(cellArrayKey, size, 8)] __device__(int i) mutable
+                    cellArrayValue = make_dense2D(cellArrayValue, size, 8),
+                    cellArrayKey = make_dense2D(cellArrayKey, size, 8)] __device__(int i) mutable
                    {
                        using ivec3 = Eigen::Vector3i;
                        using vec3  = Eigen::Vector3f;
@@ -468,7 +468,7 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
     device_buffer<std::byte> cellArraySortBuf;
     SpatialPartition&        beginSortHashCells()
     {
-        DeviceRadixSort(stream_).SortPairs(cellArraySortBuf,
+        DeviceRadixSort(m_stream).SortPairs(cellArraySortBuf,
                                            (uint32_t*)cellArrayKeySorted.data(),  //out
                                            cellArrayValueSorted.data(),  //out
                                            (uint32_t*)cellArrayKey.data(),  //in
@@ -486,7 +486,7 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
     SpatialPartition&        beginCountCollisionPerCell()
     {
         auto count = spheres.total_size() * 8;
-        DeviceRunLengthEncode(stream_)
+        DeviceRunLengthEncode(m_stream)
             .Encode(encodeBuf,
                     uniqueKey.data(),           // out
                     objCountInCell.data(),      // out
@@ -513,7 +513,7 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
         // we still prefix sum the uniqueKeyCount cell-object-pair
         // because we need to know the total number of collision pairs
         // which is at the last element of the prefix sum array
-        DeviceScan(stream_).ExclusiveSum(cellArraySortBuf,
+        DeviceScan(m_stream).ExclusiveSum(cellArraySortBuf,
                                          objCountInCellPrefixSum.data(),
                                          objCountInCell.data(),
                                          h_uniqueKeyCount);
@@ -529,7 +529,7 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
         int  count;
         auto lastOffset = uniqueKeyCount - 1;
 
-        parallel_for(launchInfo.lightKernelBlockDim, 0, stream_)
+        parallel_for(launchInfo.lightKernelBlockDim, 0, m_stream)
             .apply(validCellCount,
                    [spheres        = this->spheres,
                     objCountInCell = make_viewer(objCountInCell),
@@ -561,13 +561,13 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
                        collisionPairCount(cell) = pairCount;
                    })
 
-            .next(DeviceScan(stream_))
+            .next(DeviceScan(m_stream))
             .ExclusiveSum(collisionScanBuf,
                           collisionPairPrefixSum.data(),
                           collisionPairCount.data(),
                           uniqueKeyCount)
 
-            .next(memory(stream_))
+            .next(memory(m_stream))
             .copy(&sum, collisionPairPrefixSum.data() + lastOffset, sizeof(int), cudaMemcpyDeviceToHost)
             .wait();  // wait for sum
 
@@ -581,10 +581,10 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
         //csv(hCollisionPairPrefixSum, "hCollisionPairPrefixSum.csv");
 
         int totalCollisionPairCount = sum;
-        collisionPairs.stream(stream_);
+        collisionPairs.stream(m_stream);
         collisionPairs.resize(totalCollisionPairCount);
 
-        parallel_for(launchInfo.lightKernelBlockDim, 0, stream_)
+        parallel_for(launchInfo.lightKernelBlockDim, 0, m_stream)
             .apply(validCellCount,
                    [spheres        = this->spheres,
                     objCountInCell = make_viewer(objCountInCell),
@@ -624,7 +624,7 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
 
     device_buffer<CollisionPair>& waitToGetCollisionPairs()
     {
-        launch::wait_stream(stream_);
+        launch::wait_stream(m_stream);
         return collisionPairs;
     };
     device_buffer<CollisionPair>& getCollisionPairs() { return collisionPairs; }
@@ -633,7 +633,7 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
     {
         using CallableType = raw_type_t<F>;
         static_assert(std::is_invocable_v<CallableType, int, int>, "f:void(int i, int j)");
-        parallel_for(launchInfo.lightKernelBlockDim, 0, stream_)
+        parallel_for(launchInfo.lightKernelBlockDim, 0, m_stream)
             .apply(nonemptyCellCount,
                    [func           = func,
                     objCountInCell = make_viewer(objCountInCell),
