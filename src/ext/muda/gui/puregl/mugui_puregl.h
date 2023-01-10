@@ -20,9 +20,7 @@ class MuGuiPureGL : public MuGuiBase
   public:
     MuGuiPureGL() = default;
     ~MuGuiPureGL();
-    MuGuiPureGL(IMuGuiMode mode,
-                std::string _vert_shader_path = "../../../../test/data/gui_assets/basic_shaders/shader.vert",
-                std::string _frag_shader_path = "../../../../test/data/gui_assets/basic_shaders/shader.frag")
+    MuGuiPureGL(IMuGuiMode mode, std::string _vert_shader_path = "", std::string _frag_shader_path = "")
         : MuGuiBase(mode)
         , m_vert_shader_path{_vert_shader_path}
         , m_frag_shader_path{_frag_shader_path}
@@ -38,9 +36,9 @@ class MuGuiPureGL : public MuGuiBase
     virtual void destroy_buffers(){};
 
   protected:
-    std::string m_vert_shader_path = "../../../../test/data/gui_assets/basic_shaders/shader.vert";
-    std::string m_frag_shader_path = "../../../../test/data/gui_assets/basic_shaders/shader.frag";
-    GLFWwindow* m_window = nullptr;
+    std::string m_vert_shader_path = "";
+    std::string m_frag_shader_path = "";
+    GLFWwindow* m_window           = nullptr;
     GLShader    m_shader;
 };
 }  // namespace muda

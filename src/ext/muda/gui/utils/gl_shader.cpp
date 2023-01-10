@@ -38,12 +38,15 @@ GLShader::GLShader(const char* vertex_path, const char* fragment_path)
     {
         std::cout << "ERROR::SHADER::FILE NOT SUCCESSFULLY_READ: " << e.what() << std::endl;
     }
+    compile(vertex_code, fragment_code);
+}
 
+void GLShader::compile(const std::string& vertex_code, const std::string& fragment_code)
+{
     const char* v_shader_code = vertex_code.c_str();
     const char* f_shader_code = fragment_code.c_str();
 
     unsigned int vertex, fragment;
-
     // compile vertex shader
     int  success;
     char infolog[512];
@@ -59,6 +62,7 @@ GLShader::GLShader(const char* vertex_path, const char* fragment_path)
         std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n"
                   << infolog << std::endl;
     }
+
 
     // compile fragment shader
     fragment = glCreateShader(GL_FRAGMENT_SHADER);

@@ -55,7 +55,36 @@ __global__ void createVertices(float* positions, float time, unsigned int width,
 
 void MuGuiCudaGL::init_buffers()
 {
-    m_shader = GLShader(m_vert_shader_path, m_frag_shader_path);
+    if(m_vert_shader_path.length() > 0 && m_frag_shader_path.length() > 0)
+    {
+        m_shader = GLShader(m_vert_shader_path, m_frag_shader_path);
+    }
+    else
+    {
+        std::string default_vert_shader =
+            "#version 450\n\
+            layout(location = 0) in vec4 aPos;\n\
+            layout(location = 1) in vec4     aColor;\n\
+            out vec4 pColor;\n\
+            void main()\n\
+            {\n\
+                gl_Position = aPos;\n\
+                pColor      = aColor;\n\
+            }";
+
+        std::string default_frag_shader =
+            "#version 450\n\
+            in vec4  pColor;\n\
+            out vec4 fragColor;\n\
+            void main()\n\
+            {\n\
+                fragColor = pColor;\n\
+            }";
+        m_shader = GLShader();
+        m_shader.compile(default_vert_shader, default_frag_shader);
+    }
+
+
     // generate vertices array
     glGenVertexArrays(1, &m_VAO);
     glBindVertexArray(m_VAO);
