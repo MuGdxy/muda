@@ -30,5 +30,10 @@ class shift_hash
     {
         return map(p);
     }
+
+    MUDA_GENERIC uint32_t operator()(const Eigen::Vector3i& p) const
+    {
+        return map(p);
+    }
 };
 }  // namespace muda
