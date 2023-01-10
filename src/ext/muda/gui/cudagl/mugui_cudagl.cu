@@ -53,6 +53,44 @@ __global__ void createVertices(float* positions, float time, unsigned int width,
     positions[8 * (iy * width + ix) + 7] = 1.0f;
 }
 
+__global__ void sin1D(float* positions, float time, unsigned int width, unsigned int height)
+{
+    unsigned int ix = threadIdx.x + blockIdx.x * blockDim.x;
+    if(ix < width)
+    {
+        float u                 = ix / (float)width;
+        float x                 = lr_corner_T_viewport_center(u);
+        float y                 = sinf(2.0f * x - time * 6.0f);
+        positions[8 * (ix) + 0] = x;
+        positions[8 * (ix) + 1] = y;
+        positions[8 * (ix) + 2] = 0.0f;
+        positions[8 * (ix) + 3] = 1.0f;
+        // generate color
+        positions[8 * (ix) + 4] = 0.5f;
+        positions[8 * (ix) + 5] = 0.3f;
+        positions[8 * (ix) + 6] = 0.8f;
+        positions[8 * (ix) + 7] = 1.0f;
+    }
+}
+
+void MuGuiCudaGL::gen_vertices()
+{
+    float  time_value = static_cast<float>(glfwGetTime());
+    float* positions;
+    cudaGraphicsMapResources(1, &m_positionsVBO_CUDA, 0);
+    size_t num_bytes;
+    cudaGraphicsResourceGetMappedPointer((void**)&positions, &num_bytes, m_positionsVBO_CUDA);
+    //TODO: Change to Muda
+    dim3 dimBlock(16, 16, 1);
+    dim3 dimGrid(m_window_res[0] / dimBlock.x, m_window_res[1] / dimBlock.y);
+    // createVertices<<<dimGrid, dimBlock>>>(
+    //    positions, time_value, m_window_res[0], m_window_res[1]);
+    sin1D<<<dimGrid, dimBlock>>>(positions, time_value, m_window_res[0], m_window_res[1]);
+    // END TODO
+    cudaGraphicsUnmapResources(1, &m_positionsVBO_CUDA);
+}
+
+
 void MuGuiCudaGL::init_buffers()
 {
     if(m_vert_shader_path.length() > 0 && m_frag_shader_path.length() > 0)
@@ -107,19 +145,6 @@ void MuGuiCudaGL::init_buffers()
     cudaGraphicsGLRegisterBuffer(&m_positionsVBO_CUDA, m_positions_VBO, cudaGraphicsMapFlagsWriteDiscard);
 }
 
-void MuGuiCudaGL::gen_vertices()
-{
-    float  time_value = static_cast<float>(glfwGetTime());
-    float* positions;
-    cudaGraphicsMapResources(1, &m_positionsVBO_CUDA, 0);
-    size_t num_bytes;
-    cudaGraphicsResourceGetMappedPointer((void**)&positions, &num_bytes, m_positionsVBO_CUDA);
-    dim3 dimBlock(16, 16, 1);
-    dim3 dimGrid(m_window_res[0] / dimBlock.x, m_window_res[1] / dimBlock.y);
-    createVertices<<<dimGrid, dimBlock>>>(
-        positions, time_value, m_window_res[0], m_window_res[1]);
-    cudaGraphicsUnmapResources(1, &m_positionsVBO_CUDA);
-}
 
 bool MuGuiCudaGL::frame()
 {
