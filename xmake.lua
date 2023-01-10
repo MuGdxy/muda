@@ -64,7 +64,6 @@ add_defines("EASTL_OPENSOURCE=1")
 add_requires("glfw", {optional = true})
 add_requires("cuda", {optional = false})
 
-
 -- **********************************
 -- 
 -- targets

@@ -2,6 +2,15 @@
 
 [TOC]
 
+## 源码目录
+
+你可以在![](https://github.com/MuGdxy/muda) 获取muda的源码。使用git进行版本管理，main分支为发行分支，dev分支为开发分支。
+
+根目录下有如下目录树：
+- test: 测试目录，可以在下载后跑一遍
+- test/playground: 开发测试目录，不会合并到main分支中
+- 
+
 ## 开始开发
 
 开启test option，以便进行功能测试。
@@ -9,6 +18,7 @@
 ```shell
 $ xmake f --test=true
 ```
+
 
 ### 测试
 
