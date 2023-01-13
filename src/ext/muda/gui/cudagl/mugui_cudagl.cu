@@ -20,6 +20,7 @@
 #include "../utils/gl_utils.h"
 #include <iostream>
 #include <muda/muda.h>
+#include <muda/buffer.h>
 
 namespace muda
 {
@@ -59,9 +60,10 @@ __global__ void sin1D(float* positions, float time, unsigned int width, unsigned
     unsigned int ix = threadIdx.x + blockIdx.x * blockDim.x;
     if(ix < width)
     {
-        float u                 = ix / (float)width;
-        float x                 = lr_corner_T_viewport_center(u);
-        float y                 = sinf(2.0f * x - time * 6.0f);
+        float u = ix / (float)width;
+        float x = lr_corner_T_viewport_center(u);
+        float y = sinf(2.0f * x - time * 6.0f);
+
         positions[8 * (ix) + 0] = x;
         positions[8 * (ix) + 1] = y;
         positions[8 * (ix) + 2] = 0.0f;
@@ -169,30 +171,41 @@ bool MuGuiCudaGL::frame()
     return glfwWindowShouldClose(m_window);
 }
 
-// muda_gen_vertices must be public, because:
-// The enclosing parent function for an extended __device__ lambda 
-// cannot have private or protected access within its class
 void MuGuiCudaGL::muda_gen_vertices(float* positions, float time, unsigned int width, unsigned int height)
 {
+    // calculate the (x,y) position of a 1D sin curve
+    // create a device_vector to contain the 1D sin curve
+    device_vector<Eigen::Vector2f> curve(width);
     // set blockDim as 256 while let parallel_for calculate the gridDim
-    parallel_for(256).apply(width,
-                            [time  = time,
-                             width = width,
-                             positions = make_dense2D(positions, width, 8)] __device__(int ix) mutable
-                            {
-                                float u = ix / (float)width;
-                                float x = lr_corner_T_viewport_center(u);
-                                float y = sinf(2.0f * x - time * 6.0f);
-                                positions(ix, 0) = x;
-                                positions(ix, 1) = y;
-                                positions(ix, 2) = 0.0f;
-                                positions(ix, 3) = 1.0f;
-                                // generate color
-                                positions(ix, 4) = 0.5f;
-                                positions(ix, 5) = 0.3f;
-                                positions(ix, 6) = 0.8f;
-                                positions(ix, 7) = 1.0f;
-                            });
+    parallel_for(256)
+        .apply(width,
+               [time = time, width = width, curve = make_viewer(curve)] __device__(int i) mutable
+               {
+                   float u = i / (float)width;
+                   float x = lr_corner_T_viewport_center(u);
+                   float y = sinf(2.0f * x - time * 6.0f);
+                   // set the curve data with (x,y)
+                   curve(i) = Eigen::Vector2f(x, y);
+               })
+        // use the same launch parameters
+        // visualize the curve
+        .apply(width,
+               [time  = time,
+                width = width,
+                curve = make_viewer(curve),
+                positions = make_dense3D(positions, height, width, 8)] __device__(int i) mutable
+               {
+                   // read the curve by index i, then set to the position array (VBO)
+                   positions(0, i, 0) = curve(i).x();
+                   positions(0, i, 1) = curve(i).y();
+                   positions(0, i, 2) = 0.0f;
+                   positions(0, i, 3) = 1.0f;
+                   // generate color
+                   positions(0, i, 4) = 0.5f;
+                   positions(0, i, 5) = 0.3f;
+                   positions(0, i, 6) = 0.8f;
+                   positions(0, i, 7) = 1.0f;
+               });
 }
 
 void MuGuiCudaGL::destroy_buffers()

@@ -3,6 +3,7 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
+#include <device_atomic_functions.h>
 
 #ifdef __INTELLISENSE__
 void         __syncthreads();

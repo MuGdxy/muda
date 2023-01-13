@@ -46,10 +46,9 @@ class compressed_sparse_elements
     }
     
     template <typename OtherDataContainer, typename OtherBeginContainer, typename OtherCountContainer>
-    compressed_sparse_elements& operator=(compressed_sparse_elements<OtherDataContainer, OtherBeginContainer, OtherCountContainer>& other)
+    compressed_sparse_elements& operator=(
+        compressed_sparse_elements<OtherDataContainer, OtherBeginContainer, OtherCountContainer>& rhs)
     {
-        if(this == &rhs)
-            return *this;
         data  = rhs.data;
         begin = rhs.begin;
         count = rhs.count;

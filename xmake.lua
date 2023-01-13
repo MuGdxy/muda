@@ -76,11 +76,11 @@ add_rules("mode.debug", "mode.release")
 target("muda")
     add_undefines("min","max")
     set_kind("headeronly")
-    add_headerfiles("src/core/muda/**.h","src/core/muda/**.inl")
+    add_headerfiles("src/core/muda/**.h","src/core/muda/**.inl",{public = true})
     add_includedirs("src/core/", {public = true})
 
     if(is_config("eigen_dir", "default")) then
-        add_headerfiles("external/default/**")
+        add_headerfiles("external/default/**",{public = true})
         add_includedirs("external/default/", {public = true})
     else
         add_includedirs(get_config("eigen_dir"), {public = true})
@@ -138,14 +138,14 @@ if(not has_config("core-only")) then
 
     -- this target includes Physically-Based-Animation algorithms
     target("muda-pba")
-        add_deps("muda-buffer", "muda-thread-only", "muda-blas", "muda-algo") -- almost all deps
+        add_deps("muda-buffer", "muda-thread-only", "muda-blas", "muda-algo", {public=true}) -- almost all deps
         set_kind("headeronly")
         add_h_and_inl("src/ext/muda/pba/")
     target_end()  
 
     -- this target includes GUI
     target("muda-gui")
-        add_deps("muda")
+        add_deps("muda","muda-buffer")
         add_packages("glfw", {public = true})
         set_kind("static")
         -- add imgui src
