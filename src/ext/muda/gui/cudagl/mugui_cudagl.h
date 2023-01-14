@@ -10,6 +10,7 @@
 
 namespace muda
 {
+
 class MuGuiCudaGL : public MuGuiPureGL
 {
   public:
@@ -23,7 +24,7 @@ class MuGuiCudaGL : public MuGuiPureGL
     // muda_gen_vertices must be public, because nvcc requires:
     // The enclosing parent function for an extended __device__ lambda
     // cannot have private or protected access within its class
-    void muda_gen_vertices(float* positions, float time, unsigned int width, unsigned int height);
+    virtual void muda_gen_vertices(float* positions, float time, unsigned int width, unsigned int height);
 
   protected:
     void init_buffers() override;
