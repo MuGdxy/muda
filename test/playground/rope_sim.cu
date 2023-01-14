@@ -21,29 +21,30 @@ class RopeSim : public muda::MuGuiCudaGL
         float left_ctr_x  = -0.4;
         float right_ctr_x = 0.4;
         float ctr_y_0     = 0.3;
-        float rope_len  = sqrtf(right_ctr_x * right_ctr_x + ctr_y_0 * ctr_y_0);
-        int   rope_segs = 100;
-        float dx        = (right_ctr_x - left_ctr_x) / rope_segs;
+        float rope_len = sqrtf(right_ctr_x * right_ctr_x + ctr_y_0 * ctr_y_0);
+        unsigned int rope_segs = 100;
+        float        dx = (right_ctr_x - left_ctr_x) / ((float)rope_segs);
 
         muda::device_vector<Eigen::Vector2f> rope(rope_segs);
 
         // update stage
-        muda::parallel_for(rope_segs).apply(rope_segs,
-                                            [time   = sim_time,
-                                             dx     = dx,
-                                             init_x = left_ctr_x,
-                                             segs   = rope_segs,
-                                             rope = muda::make_viewer(rope)] __device__(int i) mutable
-                                            {
-                                                float x = init_x + i * dx;
-                                                float y = sinf(2.0f * x - time * 6.0f);
-                                                // set the rope data with (x,y)
-
-                                                // generate the current rope
-                                                rope(i) = Eigen::Vector2f(x, y);
-                                            });
+        muda::parallel_for(rope_segs).apply(
+            rope_segs,
+            [time   = sim_time,
+             dx     = dx,
+             init_x = left_ctr_x,
+             segs   = rope_segs,
+             rope   = muda::make_viewer(rope)] __device__(int i) mutable
+            {
+                // float u = i / (float)segs;
+                float x = init_x + i * dx;
+                float y = 0.2 * sinf(4.0f * x - time * 1.0f);
+                // generate the current rope
+                rope(i) = Eigen::Vector2f(x, y);
+            });
 
         // visualize stage
+        // std::cout << rope << std::endl;
 
         muda::parallel_for(rope_segs).apply(
             rope_segs,
@@ -52,7 +53,8 @@ class RopeSim : public muda::MuGuiCudaGL
              positions = muda::make_dense3D(positions, height, width, 8)] __device__(int i) mutable
             {
                 // read the rope by index i, then set to the position array (VBO)
-                int ix              = (rope(i).x() + 1) / 2 * width;
+                // int ix              = (rope(i).x() + 1) / 2 * width;
+                int ix = (int)((rope(i).x() + 1.0f) / 2 * (float)width);
                 positions(0, ix, 0) = rope(i).x();
                 positions(0, ix, 1) = rope(i).y();
                 positions(0, ix, 2) = 0.0f;
