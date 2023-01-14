@@ -30,6 +30,7 @@ __device__ float lr_corner_T_viewport_center(float u)
     return u * 2.0f - 1.0f;
 }
 
+
 __global__ void createVertices(float* positions, float time, unsigned int width, unsigned int height)
 {
     unsigned int ix = blockIdx.x * blockDim.x + threadIdx.x;
