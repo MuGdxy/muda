@@ -10,7 +10,7 @@ class AlgBase : public launch_base<Derive>
   protected:
     void prepareBuffer(device_buffer<std::byte>& buf, size_t reqSize) 
     {
-        details::set_stream_check(buf, stream_);
+        details::set_stream_check(buf, m_stream);
         buf.resize(reqSize);
     }
   public:

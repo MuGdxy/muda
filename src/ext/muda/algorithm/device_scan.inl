@@ -10,10 +10,10 @@ inline muda::DeviceScan& muda::DeviceScan::ExclusiveSum(
 {
     size_t temp_storage_bytes = 0;
     cub::DeviceScan::ExclusiveSum(
-        nullptr, temp_storage_bytes, d_in, d_out, num_items, stream_, false);
+        nullptr, temp_storage_bytes, d_in, d_out, num_items, m_stream, false);
     prepareBuffer(external_buffer, temp_storage_bytes);
     cub::DeviceScan::ExclusiveSum(
-        external_buffer.data(), temp_storage_bytes, d_in, d_out, num_items, stream_, false);
+        external_buffer.data(), temp_storage_bytes, d_in, d_out, num_items, m_stream, false);
     return *this;
 }
 
@@ -23,9 +23,9 @@ inline muda::DeviceScan& muda::DeviceScan::InclusiveSum(
 {
     size_t temp_storage_bytes = 0;
     cub::DeviceScan::InclusiveSum(
-        nullptr, temp_storage_bytes, d_in, d_out, num_items, stream_, false);
+        nullptr, temp_storage_bytes, d_in, d_out, num_items, m_stream, false);
     prepareBuffer(external_buffer, temp_storage_bytes);
     cub::DeviceScan::InclusiveSum(
-        external_buffer.data(), temp_storage_bytes, d_in, d_out, num_items, stream_, false);
+        external_buffer.data(), temp_storage_bytes, d_in, d_out, num_items, m_stream, false);
     return *this;
 }

@@ -2,6 +2,15 @@
 
 [TOC]
 
+## 源码目录
+
+你可以在![](https://github.com/MuGdxy/muda) 获取muda的源码。使用git进行版本管理，main分支为发行分支，dev分支为开发分支。
+
+根目录下有如下目录树：
+- test: 测试目录，可以在下载后跑一遍
+- test/playground: 开发测试目录，不会合并到main分支中
+- 
+
 ## 开始开发
 
 开启test option，以便进行功能测试。
@@ -9,6 +18,7 @@
 ```shell
 $ xmake f --test=true
 ```
+
 
 ### 测试
 
@@ -364,12 +374,13 @@ thread only容器目前有三个allocator可使用：
 
 [TODO]
 
-### 实现注意事项
+### 其他实现注意事项
 
 1. 请为自己实现的内容添加对应的test与example
 2. 提交前请保证所有test/example均通过
 3. 请在[implement.md](./implement.md)中填写对应的实现内容
-4. 避免使用64位类型和无符号类型，例如`int64_t/uint64_t`（无符号类型将可能触发GPU上的无符号数溢出检查）
+4. 需要用户输入的测试请不要放入test中（以保证所有test可以一键启动并且执行到结束），可暂时放到playground中。
+5. 避免使用64位类型和无符号类型，例如`int64_t/uint64_t`（无符号类型将可能触发GPU上的无符号数溢出检查）
 
 ## 设计思想与资料
 
@@ -381,3 +392,6 @@ thread only容器目前有三个allocator可使用：
 4. muda 链式编程风格：[UniRx](https://github.com/neuecc/UniRx)
 5. muda kernel launch风格：[CUB](https://nvlabs.github.io/cub/)
 6. muda container: [thrust](https://docs.nvidia.com/cuda/thrust/index.html)
+
+## 分支
+- dev分支主要用来开发和提交pull-request

@@ -14,31 +14,31 @@ namespace details
 
 class launch : public launch_base<launch>
 {
-    dim3   gridDim;
-    dim3   blockDim;
-    size_t sharedMemSize;
+    dim3   m_gridDim;
+    dim3   m_blockDim;
+    size_t m_sharedMemSize;
 
   public:
     launch(dim3 gridDim, dim3 blockDim, size_t sharedMemSize = 0, cudaStream_t stream = nullptr)
         : launch_base(stream)
-        , gridDim(gridDim)
-        , blockDim(blockDim)
-        , sharedMemSize(sharedMemSize)
+        , m_gridDim(gridDim)
+        , m_blockDim(blockDim)
+        , m_sharedMemSize(sharedMemSize)
     {
     }
 
     launch(int gridDim = 1, int blockDim = 1, size_t sharedMemSize = 0, cudaStream_t stream = nullptr)
         : launch_base(stream)
-        , gridDim(gridDim)
-        , blockDim(blockDim)
-        , sharedMemSize(sharedMemSize)
+        , m_gridDim(gridDim)
+        , m_blockDim(blockDim)
+        , m_sharedMemSize(sharedMemSize)
     {
     }
 
     template <typename F>
     launch& apply(F&& f)
     {
-        details::genericKernel<<<gridDim, blockDim, sharedMemSize, stream_>>>(f);
+        details::genericKernel<<<m_gridDim, m_blockDim, m_sharedMemSize, m_stream>>>(f);
         return *this;
     }
 
@@ -51,9 +51,9 @@ class launch : public launch_base<launch>
             std::make_shared<kernelNodeParms<CallableType>>(std::forward<F>(f));
 
         parms->func((void*)details::genericKernel<CallableType>);
-        parms->gridDim(gridDim);
-        parms->blockDim(blockDim);
-        parms->sharedMemBytes(sharedMemSize);
+        parms->gridDim(m_gridDim);
+        parms->blockDim(m_blockDim);
+        parms->sharedMemBytes(m_sharedMemSize);
         parms->parse([](CallableType& p) -> std::vector<void*> { return {&p}; });
         return parms;
     }

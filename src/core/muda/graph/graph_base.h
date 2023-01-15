@@ -31,12 +31,12 @@ class nodeParms
 class graphNode
 {
   protected:
-    cudaGraphNode_t handle;
+    cudaGraphNode_t m_handle;
 
   public:
     friend class graphExec;
     graphNode()
-        : handle(nullptr)
+        : m_handle(nullptr)
     {
     }
     using this_type = graphNode;

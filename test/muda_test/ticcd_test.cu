@@ -98,16 +98,16 @@ enum class Type
 template <Type type = Type::UnlimitedQueueSize>
 struct TiccdTestKernel
 {
-    MUDA_GENERIC TiccdTestKernel(idxer1D<Vector3> x, idxer1D<uint32_t> results, idxer1D<float> tois)
+    MUDA_GENERIC TiccdTestKernel(dense1D<Vector3> x, dense1D<uint32_t> results, dense1D<float> tois)
         : x(x)
         , results(results)
         , tois(tois)
     {
     }
 
-    idxer1D<Vector3>  x;
-    idxer1D<uint32_t> results;
-    idxer1D<float>    tois;
+    dense1D<Vector3>  x;
+    dense1D<uint32_t> results;
+    dense1D<float>    tois;
 
     MUDA_GENERIC void operator()(int i)
     {

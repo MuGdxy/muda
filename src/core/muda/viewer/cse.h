@@ -1,5 +1,6 @@
 #pragma once
 #include "base.h"
+#include "dense.h"
 
 namespace muda
 {
@@ -15,95 +16,101 @@ namespace muda
 template <typename T>
 class cse
 {
-    T* data_;
+    T* m_data;
 
-    int* begin_;
-    int* count_;
+    int* m_begin;
+    int* m_count;
 
-    int ndata_;
-    int dim_i_;
+    int m_ndata;
+    int m_dim_i;
 
   public:
     MUDA_GENERIC cse() noexcept
-        : data_(nullptr)
-        , begin_(nullptr)
-        , count_(nullptr)
-        , ndata_(0)
-        , dim_i_(0)
+        : m_data(nullptr)
+        , m_begin(nullptr)
+        , m_count(nullptr)
+        , m_ndata(0)
+        , m_dim_i(0)
     {
     }
 
     MUDA_GENERIC cse(T* data, int ndata, int* begin, int* count, int dim_i) noexcept
-        : data_(data)
-        , begin_(begin)
-        , count_(count)
-        , ndata_(ndata)
-        , dim_i_(dim_i)
+        : m_data(data)
+        , m_begin(begin)
+        , m_count(count)
+        , m_ndata(ndata)
+        , m_dim_i(dim_i)
     {
     }
 
     MUDA_GENERIC const T& operator()(int i, int j) const noexcept
     {
-        return data_[cal_global_offset(i, j)];
+        return m_data[cal_global_offset(i, j)];
     }
 
     MUDA_GENERIC T& operator()(int i, int j) noexcept
     {
-        return data_[cal_global_offset(i, j)];
+        return m_data[cal_global_offset(i, j)];
     }
 
-    MUDA_GENERIC int dim_i() const noexcept { return dim_i_; }
+    MUDA_GENERIC int dim_i() const noexcept { return m_dim_i; }
 
     MUDA_GENERIC int dim_j(int i) const noexcept
     {
         check_dimi(i);
-        return count_[i];
+        return m_count[i];
     }
 
-    MUDA_GENERIC int ndata(int i) const noexcept { return ndata_; }
-
+    MUDA_GENERIC int ndata(int i) const noexcept { return m_ndata; }
+    
+    // get the i-th row of the sparse 2d data structure
+    MUDA_GENERIC dense1D<T> operator() (int i) noexcept
+    {
+        check_dimi(i);
+        return dense1D<T>(m_data + m_begin[i], m_count[i]);
+    }
   private:
     MUDA_GENERIC __forceinline__ void check_data() const noexcept
     {
-        if constexpr(debugViewers)
+        if constexpr(DEBUG_VIEWER)
         {
-            muda_kernel_assert(data_ != nullptr, "cse: data is nullptr\n");
+            muda_kernel_assert(m_data != nullptr, "cse: data is nullptr\n");
         }
     }
 
     MUDA_GENERIC __forceinline__ void check_dimi(int i) const noexcept
     {
-        if constexpr(debugViewers)
-            if(i < 0 || i >= dim_i_)
-                muda_kernel_error("cse: out of range, i=(%d), dim_i=(%d)\n", i, dim_i_);
+        if constexpr(DEBUG_VIEWER)
+            if(i < 0 || i >= m_dim_i)
+                muda_kernel_error("cse: out of range, i=(%d), dim_i=(%d)\n", i, m_dim_i);
     }
 
     MUDA_GENERIC __forceinline__ void check_dimj(int i, int j, int dimj) const noexcept
     {
-        if constexpr(debugViewers)
+        if constexpr(DEBUG_VIEWER)
             if(dimj < 0 || j < 0 || j >= dimj)
-                muda_kernel_error("cse: out of range, ij=(%d,%d), dim=(%d,%d)\n", i, j, dim_i_, dimj);
+                muda_kernel_error("cse: out of range, ij=(%d,%d), dim=(%d,%d)\n", i, j, m_dim_i, dimj);
     }
 
     MUDA_GENERIC __forceinline__ void check_global_offset(int i, int j, int dimj, int global_offset) const noexcept
     {
-        if constexpr(debugViewers)
-            if(global_offset < 0 || global_offset >= ndata_)
+        if constexpr(DEBUG_VIEWER)
+            if(global_offset < 0 || global_offset >= m_ndata)
                 muda_kernel_error("cse: global_offset out of range, ij=(%d,%d), dim=(%d,%d), offset=(%d), ndata=(%d)\n",
                                   i,
                                   j,
-                                  dim_i_,
+                                  m_dim_i,
                                   dimj,
                                   global_offset,
-                                  ndata_);
+                                  m_ndata);
     }
 
     MUDA_GENERIC __forceinline__ int cal_global_offset(int i, int j) const noexcept
     {
         check_dimi(i);
-        auto dimj = count_[i];
+        auto dimj = m_count[i];
         check_dimj(i, j, dimj);
-        int global_offset = begin_[i] + j;
+        int global_offset = m_begin[i] + j;
         check_global_offset(i, j, dimj, global_offset);
         return global_offset;
     }

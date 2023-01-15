@@ -83,14 +83,14 @@ using vec3 = Eigen::Vector3f;
 void buffer_resize_test(host_vector<vec3>& ground_thruth, host_vector<vec3>& res)
 {
     stream s;
-    
+
     device_buffer<vec3> buf(s);
     buf.resize(32, vec3::Ones());
     ground_thruth.resize(32, vec3::Ones());
     buf.copy_to(res).wait();
 }
 
-TEST_CASE("buffer_resize_test", "[buffer]") 
+TEST_CASE("buffer_resize_test", "[buffer]")
 {
     host_vector<vec3> ground_thruth, res;
     buffer_resize_test(ground_thruth, res);

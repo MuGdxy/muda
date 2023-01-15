@@ -15,10 +15,10 @@ muda::DeviceReduce& muda::DeviceReduce::Reduce(device_buffer<std::byte>& externa
     void*  d_temp_storage     = NULL;
     size_t temp_storage_bytes = 0;
     cub::DeviceReduce::Reduce(
-        nullptr, temp_storage_bytes, d_in, d_out, num_items, cmp, init, stream_, false);
+        nullptr, temp_storage_bytes, d_in, d_out, num_items, cmp, init, m_stream, false);
     prepareBuffer(external_buffer, temp_storage_bytes);
     cub::DeviceReduce::Reduce(
-        d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, cmp, init, stream_, false);
+        d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, cmp, init, m_stream, false);
     return *this;
 }
 
@@ -31,6 +31,6 @@ inline muda::DeviceReduce& muda::DeviceReduce::Max(
     // Allocate temporary storage
     prepareBuffer(external_buffer, temp_storage_bytes);
     // Run max-reduction
-    cub::DeviceReduce::Max(external_buffer.data(), temp_storage_bytes, d_in, d_out, num_items, stream_, false);
+    cub::DeviceReduce::Max(external_buffer.data(), temp_storage_bytes, d_in, d_out, num_items, m_stream, false);
     return *this;
 }

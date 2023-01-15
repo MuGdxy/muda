@@ -31,7 +31,7 @@ __host__ __device__ inline void check(T                 result,
                static_cast<unsigned int>(result),
                _cudaGetErrorEnum(result),
                func);
-        if constexpr(trapOnError)
+        if constexpr(TRAP_ON_ERROR)
             trap();
     }
 #else

@@ -967,7 +967,7 @@ class ticcd
 
             if(MAX_QUEUE_SIZE > 0 && istack.size() >= MAX_QUEUE_SIZE)
             {
-                //muda_kernel_debug_info(debugTiccd, "ticcd istack full so just return");
+                //muda_kernel_debug_info(DEBUG_TICCD, "ticcd istack full so just return");
                 return true;
             }
 

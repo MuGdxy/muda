@@ -1,143 +1,144 @@
 #pragma once
 #include <cublas.h>
 #include <cusparse.h>
-#include "dense.h"
-#include "sparse.h"
-#include "dense_wrapper.h"
 
 #include <muda/launch/launch_base.h>
 #include <muda/check/checkCusparse.h>
 #include <muda/check/checkCublas.h>
 
+#include "mat_view.h"
+#include "dense.h"
+#include "sparse.h"
+#include "dense_wrapper.h"
+
 namespace muda
 {
 class blasContext
 {
-    cusparseHandle_t csh_;
-    cublasHandle_t   cbh_;
-    cudaStream_t     stream_;
+    cusparseHandle_t m_csh;
+    cublasHandle_t   m_cbh;
+    cudaStream_t     m_stream;
 
   public:
     blasContext(cudaStream_t stream = nullptr)
-        : stream_(stream)
+        : m_stream(stream)
     {
-        checkCudaErrors(cusparseCreate(&csh_));
-        checkCudaErrors(cublasCreate_v2(&cbh_));
-        checkCudaErrors(cusparseSetStream(csh_, stream));
-        checkCudaErrors(cublasSetStream_v2(cbh_, stream));
+        checkCudaErrors(cusparseCreate(&m_csh));
+        checkCudaErrors(cublasCreate_v2(&m_cbh));
+        checkCudaErrors(cusparseSetStream(m_csh, stream));
+        checkCudaErrors(cublasSetStream_v2(m_cbh, stream));
     }
     ~blasContext()
     {
-        checkCudaErrors(cusparseDestroy(csh_));
-        checkCudaErrors(cublasDestroy_v2(cbh_));
+        checkCudaErrors(cusparseDestroy(m_csh));
+        checkCudaErrors(cublasDestroy_v2(m_cbh));
     }
 
-    operator cusparseHandle_t() { return csh_; }
-    operator cublasHandle_t() { return cbh_; }
-    operator cudaStream_t() { return stream_; }
+    operator cusparseHandle_t() { return m_csh; }
+    operator cublasHandle_t() { return m_cbh; }
+    operator cudaStream_t() { return m_stream; }
 
-    cusparseHandle_t spHandle() { return csh_; };
-    cublasHandle_t   dnHandle() { return cbh_; };
-    cudaStream_t     streamHandle() { return stream_; };
+    cusparseHandle_t spHandle() { return m_csh; };
+    cublasHandle_t   dnHandle() { return m_cbh; };
+    cudaStream_t     stream() { return m_stream; };
 };
 
 template <typename T>
-class pointerOrValue
+class ptr_or_val
 {
-    T v;
+    T m_v;
 
   public:
-    pointerOrValue(T v)
-        : v(v)
+    ptr_or_val(T v)
+        : m_v(v)
     {
     }
     auto data()
     {
         if constexpr(std::is_pointer_v<T>)
-            return v;
+            return m_v;
         else
-            return &v;
+            return &m_v;
     }
 };
 
 class blas : public launch_base<blas>
 {
-    blasContext& ctx;
+    blasContext& m_ctx;
 
   public:
     blas(blasContext& ctx)
-        : launch_base(ctx.streamHandle())
-        , ctx(ctx)
+        : launch_base(ctx.stream())
+        , m_ctx(ctx)
     {
     }
 
-    template <typename T, typename _ScalarValueOrPointer>
-    blas& scal(_ScalarValueOrPointer alpha, dense::vec<T>& x_inout, int incx = 1)
+    template <typename T, typename ScalarValueOrPointer>
+    blas& scal(ScalarValueOrPointer alpha, dense_vec<T>& x_inout, int incx = 1)
     {
-        auto a = pointerOrValue<T>(alpha);
-        checkCudaErrors(
-            dense::L1::cublasScal(ctx, x_inout.size(), a.data(), x_inout.data(), incx));
+        auto a = ptr_or_val<T>(alpha);
+        checkCudaErrors(cublas::L1::cublasScal(
+            m_ctx, x_inout.size(), a.data(), x_inout.data(), incx));
         return *this;
     }
 
-    template <typename T, typename _ScalarValueOrPointer>
-    blas& axpy(_ScalarValueOrPointer alpha,
-               const dense::vec<T>&  x_in,
-               dense::vec<T>&        y_inout,
-               int                   incx = 1,
-               int                   incy = 1)
+    template <typename T, typename ScalarValueOrPointer>
+    blas& axpy(ScalarValueOrPointer alpha,
+               const dense_vec<T>&  x_in,
+               dense_vec<T>&        y_inout,
+               int                  incx = 1,
+               int                  incy = 1)
     {
         if(x_in.size() != y_inout.size())
             throw std::runtime_error("vectors have different size");
-        auto a = pointerOrValue<T>(alpha);
-        checkCudaErrors(dense::L1::cublasAxpy(
-            ctx, y_inout.size(), a.data(), x_in.data(), incx, y_inout.data(), incy));
+        auto a = ptr_or_val<T>(alpha);
+        checkCudaErrors(cublas::L1::cublasAxpy(
+            m_ctx, y_inout.size(), a.data(), x_in.data(), incx, y_inout.data(), incy));
         return *this;
     }
 
     template <typename T>
-    blas& copy(const dense::vec<T>& x_in, dense::vec<T>& y_inout, int incx = 1, int incy = 1)
+    blas& copy(const dense_vec<T>& x_in, dense_vec<T>& y_inout, int incx = 1, int incy = 1)
     {
         if(x_in.size() != y_inout.size())
             throw std::runtime_error("vectors have different size");
-        checkCudaErrors(dense::L1::cublasCopy(
-            ctx, y_inout.size(), x_in.data(), incx, y_inout.data(), incy));
+        checkCudaErrors(cublas::L1::cublasCopy(
+            m_ctx, y_inout.size(), x_in.data(), incx, y_inout.data(), incy));
         return *this;
     }
 
     template <typename T>
-    blas& nrm2(dense::vec<T>& x_in, dense::L1::nrm2_result_t<T>& result, int incx = 1)
+    blas& nrm2(dense_vec<T>& x_in, cublas::L1::nrm2_result_t<T>& result, int incx = 1)
     {
-        checkCudaErrors(dense::L1::cublasNrm2(ctx, x_in.size(), x_in.data(), incx, &result));
+        checkCudaErrors(cublas::L1::cublasNrm2(m_ctx, x_in.size(), x_in.data(), incx, &result));
         return *this;
     }
 
     /// <summary>
     /// y = a * A * x + b * y
     /// </summary>
-    /// <typeparam name="_Ty"></typeparam>
-    /// <param name="alpha"></param>
-    /// <param name="matA"></param>
-    /// <param name="x_in"></param>
-    /// <param name="beta"></param>
-    /// <param name="y_inout"></param>
-    /// <returns></returns>
-    template <typename _Mat, typename _ScalarValueOrPointer>
-    blas& spmv(_ScalarValueOrPointer                  alpha,
-               sparse::TransposeView<_Mat>            matA,
-               dense::vec<typename _Mat::value_type>& x_in,
-               _ScalarValueOrPointer                  beta,
-               dense::vec<typename _Mat::value_type>& y_inout,
-               device_buffer<std::byte>&              external_buffer)
+    template <typename MatView, typename ScalarValueOrPointer>
+    blas& spmv(ScalarValueOrPointer                                 alpha,
+               MatView&&                                            matA,
+               dense_vec<typename raw_type_t<MatView>::value_type>& x_in,
+               ScalarValueOrPointer                                 beta,
+               dense_vec<typename raw_type_t<MatView>::value_type>& y_inout,
+               device_buffer<std::byte>& external_buffer)
     {
-        using value_type = typename _Mat::value_type;
-        auto   a         = pointerOrValue<value_type>(alpha);
-        auto   b         = pointerOrValue<value_type>(beta);
+
+
+        using value_type = typename raw_type_t<MatView>::value_type;
+
+        auto m = mat_view(std::forward<MatView>(matA));
+        auto a = ptr_or_val<value_type>(alpha);
+        auto b = ptr_or_val<value_type>(beta);
+
         size_t bufferSize;
-        checkCudaErrors(cusparseSpMV_bufferSize(ctx,
-                                                matA.trans_,
+
+        checkCudaErrors(cusparseSpMV_bufferSize(m_ctx,
+                                                m.m_trans,
                                                 a.data(),
-                                                matA.mat_,
+                                                m.m_mat,
                                                 x_in,
                                                 b.data(),
                                                 y_inout,
@@ -145,13 +146,13 @@ class blas : public launch_base<blas>
                                                 cusparseSpMVAlg_t::CUSPARSE_SPMV_ALG_DEFAULT,
                                                 &bufferSize));
 
-        details::set_stream_check(external_buffer, ctx);
+        details::set_stream_check(external_buffer, m_ctx);
         external_buffer.resize(bufferSize);
 
-        checkCudaErrors(cusparseSpMV(ctx,
-                                     matA.trans_,
+        checkCudaErrors(cusparseSpMV(m_ctx,
+                                     m.m_trans,
                                      a.data(),
-                                     matA.mat_,
+                                     m.m_mat,
                                      x_in,
                                      b.data(),
                                      y_inout,
@@ -161,37 +162,37 @@ class blas : public launch_base<blas>
         return *this;
     }
 
-    template <typename _Mat, typename _ScalarValueOrPointer>
-    blas& spmv(_ScalarValueOrPointer                  alpha,
-               _Mat&                                  matA,
-               dense::vec<typename _Mat::value_type>& x_in,
-               _ScalarValueOrPointer                  beta,
-               dense::vec<typename _Mat::value_type>& y_inout,
-               device_buffer<std::byte>&              external_buffer)
-    {
-        auto m = sparse::TransposeView<_Mat>(matA);
-        return spmv(alpha, m, x_in, beta, y_inout, external_buffer);
-    }
+    //template <typename Mat, typename ScalarValueOrPointer>
+    //blas& spmv(ScalarValueOrPointer                 alpha,
+    //           Mat&                                 matA,
+    //           dense_vec<typename Mat::value_type>& x_in,
+    //           ScalarValueOrPointer                 beta,
+    //           dense_vec<typename Mat::value_type>& y_inout,
+    //           device_buffer<std::byte>&            external_buffer)
+    //{
+    //    auto m = mat_view<Mat>(matA);
+    //    return spmv(alpha, m, x_in, beta, y_inout, external_buffer);
+    //}
 
-    template <typename _Mat>
-    blas& spmv(sparse::TransposeView<_Mat>            matA,
-               dense::vec<typename _Mat::value_type>& x_in,
-               dense::vec<typename _Mat::value_type>& y_inout,
-               device_buffer<std::byte>&              external_buffer)
-    {
-        using value_type = typename _Mat::value_type;
-        spmv(value_type(1), matA, x_in, value_type(0), y_inout, external_buffer);
-        return *this;
-    }
+    //template <typename Mat>
+    //blas& spmv(mat_view<Mat>                        matA,
+    //           dense_vec<typename Mat::value_type>& x_in,
+    //           dense_vec<typename Mat::value_type>& y_inout,
+    //           device_buffer<std::byte>&            external_buffer)
+    //{
+    //    using value_type = typename Mat::value_type;
+    //    spmv(value_type(1), matA, x_in, value_type(0), y_inout, external_buffer);
+    //    return *this;
+    //}
 
-    template <typename _Mat>
-    blas& spmv(_Mat&                                  matA,
-               dense::vec<typename _Mat::value_type>& x_in,
-               dense::vec<typename _Mat::value_type>& y_inout,
-               device_buffer<std::byte>&              external_buffer)
+    template <typename MatView>
+    blas& spmv(MatView&&                                            matA,
+               dense_vec<typename raw_type_t<MatView>::value_type>& x_in,
+               dense_vec<typename raw_type_t<MatView>::value_type>& y_inout,
+               device_buffer<std::byte>& external_buffer)
     {
-        using value_type = typename _Mat::value_type;
-        spmv(value_type(1), matA, x_in, value_type(0), y_inout, external_buffer);
+        using value_type = typename raw_type_t<MatView>::value_type;
+        spmv(value_type(1), std::forward<MatView>(matA), x_in, value_type(0), y_inout, external_buffer);
         return *this;
     }
 };

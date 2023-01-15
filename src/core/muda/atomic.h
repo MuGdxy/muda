@@ -3,6 +3,7 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
+#include <device_atomic_functions.h>
 
 #ifdef __INTELLISENSE__
 void         __syncthreads();
@@ -55,8 +56,8 @@ unsigned long long int atomicXor(unsigned long long int* address, unsigned long 
 template <typename T, int N>
 inline __device__ Eigen::Vector<T, N> atomicAdd(Eigen::Vector<T, N>& v, const Eigen::Vector<T, N>& val) noexcept
 {
-#pragma unroll
     Eigen::Vector<T, N> ret;
+#pragma unroll
     for(int i = 0; i < N; ++i)
         ret(i) = atomicAdd(&v(i), val(i));
     return ret;

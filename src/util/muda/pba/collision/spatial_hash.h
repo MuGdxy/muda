@@ -2,18 +2,20 @@
 #include <muda/muda_def.h>
 #include <muda/launch/launch_base.h>
 #include <muda/encode/morton.h>
-#include <muda/viewer/idxer.h>
+#include <muda/viewer/dense.h>
 
 #include <muda/launch/parallel_for.h>
 #include <muda/launch/launch.h>
 #include <muda/buffer/device_buffer.h>
 #include <muda/container.h>
+#include <muda/composite/cse.h>
 
 #include <muda/algorithm/device_reduce.h>
 #include <muda/algorithm/device_radix_sort.h>
 #include <muda/algorithm/device_run_length_encode.h>
 #include <muda/algorithm/device_scan.h>
 #include <muda/encode/hash.h>
+#include <muda/encode/morton.h>
 
 #include "bounding_volume.h"
 #include "collide.h"
@@ -26,12 +28,27 @@ struct SpatialPartitionLaunchInfo
     int heavyKernelBlockDim = 64;
 };
 
-
+/// <summary>
+/// To represent a cell-object pair in the spatial hash 3D grid
+/// e.g. (cell_id,object_id) = (1024, 32) for the meaning: the 32th object overlap with the 1024th cell
+/// </summary>
 class SpatialPartitionCell
 {
   public:
     using ivec3 = Eigen::Vector3<int>;
     using u32   = uint32_t;
+
+    struct
+    {
+        u32 pass : 3;
+        u32 home : 3;
+        u32 overlap : 8;
+    } ctlbit; // controll bit
+
+    u32   cid;  // cell id
+    u32   oid;  // object id (edge id)
+    ivec3 ijk;  // debug only
+
     MUDA_GENERIC SpatialPartitionCell()
         : cid(-1)
         , oid(-1)
@@ -40,6 +57,7 @@ class SpatialPartitionCell
         ctlbit.overlap = 0;
         ijk            = ivec3(-1, -1, -1);
     }
+
     MUDA_GENERIC SpatialPartitionCell(u32 cid, u32 oid)
         : cid(cid)
         , oid(oid)
@@ -58,6 +76,7 @@ class SpatialPartitionCell
         ctlbit.pass = passType(cell_ijk);
         ctlbit.home = passType(home_ijk);
     }
+
     MUDA_GENERIC void setAsHome(const ivec3& ijk)
     {
         //bit		2			1			0
@@ -66,6 +85,7 @@ class SpatialPartitionCell
         ctlbit.pass = ctlbit.home;
         ctlbit.overlap |= (1 << ctlbit.home);
     }
+
     MUDA_GENERIC void setOverlap(const ivec3& ijk)
     {
         ctlbit.overlap |= (1 << passType(ijk));
@@ -76,17 +96,6 @@ class SpatialPartitionCell
         return (((u32)ijk(0) % 2) << 2) | (((u32)ijk(1) % 2) << 1)
                | (((u32)ijk(2) % 2) << 0);
     }
-    struct
-    {
-        u32 pass : 3;
-        u32 home : 3;
-        u32 overlap : 8;
-    } ctlbit;
-
-    u32   cid;  // cell id
-    u32   oid;  // object id (edge id)
-    ivec3 ijk;  // debug only
-    bool  home;
 
     MUDA_GENERIC static bool allowIgnore(const SpatialPartitionCell& l,
                                          const SpatialPartitionCell& r)
@@ -131,6 +140,7 @@ class SpatialPartitionCell
     }
 };
 
+/**/
 template <typename Hash = muda::shift_hash<20, 10, 0>>
 class SpatialHashConfig
 {
@@ -152,8 +162,7 @@ class SpatialHashConfig
 
     MUDA_GENERIC u32 hashCell(const ivec3& ijk) const
     {
-        return muda::shift_hash<20, 10, 0>::map(ijk) % 0x40000000;
-        //return hash(uvec3(ijk.x(), ijk.y(), ijk.z())) % 0x40000000;
+        return hash_func()(ijk) % 0x40000000;
     }
 
     MUDA_GENERIC ivec3 cell(const vec3& xyz) const
@@ -211,7 +220,6 @@ class CollisionPair
 };
 
 
-
 /// <summary>
 /// Using Spatial Partition to do broad phase collision detection
 /// usage:
@@ -226,17 +234,17 @@ class CollisionPair
 template <typename Hash = morton>
 class SpatialPartition : public launch_base<SpatialPartition<Hash>>
 {
-	// algorithm comes from:
+    // algorithm comes from:
     // https://developer.nvidia.com/gpugems/gpugems3/part-v-physics-simulation/chapter-32-broad-phase-collision-detection-cuda
   public:
     template <typename T>
     using dvec = device_buffer<T>;
 
-    using Cell = SpatialPartitionCell;
-	using hash_type = Hash;
+    using Cell      = SpatialPartitionCell;
+    using hash_type = Hash;
 
     SpatialPartitionLaunchInfo launchInfo;
-    idxer1D<sphere>            spheres;
+    dense1D<sphere>            spheres;
 
 
     //float           cellSize_;
@@ -296,7 +304,7 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
         return *this;
     }
 
-    SpatialPartition& beginSetupSpatialDataStructure(idxer1D<sphere> boundingSphereList)
+    SpatialPartition& beginSetupSpatialDataStructure(dense1D<sphere> boundingSphereList)
     {
         spheres = boundingSphereList;
 
@@ -317,19 +325,19 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
         auto count = spheres.total_size();
         allRadius.resize(count);
         launch::wait_device();
-        parallel_for(launchInfo.lightKernelBlockDim, 0, stream_)
+        parallel_for(launchInfo.lightKernelBlockDim, 0, m_stream)
             .apply(count,
                    [spheres = this->spheres, allRadius = make_viewer(allRadius)] __device__(
                        int i) mutable { allRadius(i) = spheres(i).r; })
 
-            .next(DeviceReduce(stream_))
+            .next(DeviceReduce(m_stream))
             .Max(cellSizeBuf, data(maxRadius), allRadius.data(), count)
-            .wait();  
+            .wait();
 
         // wait for maxRadius
 
         float r = maxRadius;
-		
+
         // Scaling the bounding sphere of each object by sqrt(2) [we will use proxy spheres]
         // and ensuring that the grid cell is at least 1.5 times
         // as large as the scaled bounding sphere of the largest object.
@@ -365,12 +373,12 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
             collisionPairPrefixSum.resize(count, buf_op::ignore);
         }
 
-        parallel_for(launchInfo.lightKernelBlockDim, 0, stream_)
+        parallel_for(launchInfo.lightKernelBlockDim, 0, m_stream)
             .apply(spheres.total_size(),
                    [spheres        = this->spheres,
                     sh             = this->spatialHashConfig,
-                    cellArrayValue = make_idxer2D(cellArrayValue, size, 8),
-                    cellArrayKey = make_idxer2D(cellArrayKey, size, 8)] __device__(int i) mutable
+                    cellArrayValue = make_dense2D(cellArrayValue, size, 8),
+                    cellArrayKey = make_dense2D(cellArrayKey, size, 8)] __device__(int i) mutable
                    {
                        using ivec3 = Eigen::Vector3i;
                        using vec3  = Eigen::Vector3f;
@@ -460,7 +468,7 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
     device_buffer<std::byte> cellArraySortBuf;
     SpatialPartition&        beginSortHashCells()
     {
-        DeviceRadixSort(stream_).SortPairs(cellArraySortBuf,
+        DeviceRadixSort(m_stream).SortPairs(cellArraySortBuf,
                                            (uint32_t*)cellArrayKeySorted.data(),  //out
                                            cellArrayValueSorted.data(),  //out
                                            (uint32_t*)cellArrayKey.data(),  //in
@@ -478,15 +486,15 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
     SpatialPartition&        beginCountCollisionPerCell()
     {
         auto count = spheres.total_size() * 8;
-        DeviceRunLengthEncode(stream_)
+        DeviceRunLengthEncode(m_stream)
             .Encode(encodeBuf,
                     uniqueKey.data(),           // out
                     objCountInCell.data(),      // out
                     data(uniqueKeyCount),       // out
                     cellArrayKeySorted.data(),  // in
                     count)
-            .wait();  
-        
+            .wait();
+
         // wait for uniqueKeyCount
         // we need use uniqueKeyCount to resize arrays
 
@@ -498,14 +506,14 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
         collisionPairCount.resize(h_uniqueKeyCount);
         collisionPairPrefixSum.resize(h_uniqueKeyCount);
 
-        // validCellCount is always 1 less than the uniqueKeyCount, 
+        // validCellCount is always 1 less than the uniqueKeyCount,
         // the last one is typically the cell-object-pair {cid = -1, oid = -1}
         validCellCount = h_uniqueKeyCount - 1;
 
         // we still prefix sum the uniqueKeyCount cell-object-pair
         // because we need to know the total number of collision pairs
         // which is at the last element of the prefix sum array
-        DeviceScan(stream_).ExclusiveSum(cellArraySortBuf,
+        DeviceScan(m_stream).ExclusiveSum(cellArraySortBuf,
                                          objCountInCellPrefixSum.data(),
                                          objCountInCell.data(),
                                          h_uniqueKeyCount);
@@ -521,7 +529,7 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
         int  count;
         auto lastOffset = uniqueKeyCount - 1;
 
-        parallel_for(launchInfo.lightKernelBlockDim, 0, stream_)
+        parallel_for(launchInfo.lightKernelBlockDim, 0, m_stream)
             .apply(validCellCount,
                    [spheres        = this->spheres,
                     objCountInCell = make_viewer(objCountInCell),
@@ -553,13 +561,13 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
                        collisionPairCount(cell) = pairCount;
                    })
 
-            .next(DeviceScan(stream_))
+            .next(DeviceScan(m_stream))
             .ExclusiveSum(collisionScanBuf,
                           collisionPairPrefixSum.data(),
                           collisionPairCount.data(),
                           uniqueKeyCount)
 
-            .next(memory(stream_))
+            .next(memory(m_stream))
             .copy(&sum, collisionPairPrefixSum.data() + lastOffset, sizeof(int), cudaMemcpyDeviceToHost)
             .wait();  // wait for sum
 
@@ -573,10 +581,10 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
         //csv(hCollisionPairPrefixSum, "hCollisionPairPrefixSum.csv");
 
         int totalCollisionPairCount = sum;
-        collisionPairs.stream(stream_);
+        collisionPairs.stream(m_stream);
         collisionPairs.resize(totalCollisionPairCount);
 
-        parallel_for(launchInfo.lightKernelBlockDim, 0, stream_)
+        parallel_for(launchInfo.lightKernelBlockDim, 0, m_stream)
             .apply(validCellCount,
                    [spheres        = this->spheres,
                     objCountInCell = make_viewer(objCountInCell),
@@ -616,7 +624,7 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
 
     device_buffer<CollisionPair>& waitToGetCollisionPairs()
     {
-        launch::wait_stream(stream_);
+        launch::wait_stream(m_stream);
         return collisionPairs;
     };
     device_buffer<CollisionPair>& getCollisionPairs() { return collisionPairs; }
@@ -625,7 +633,7 @@ class SpatialPartition : public launch_base<SpatialPartition<Hash>>
     {
         using CallableType = raw_type_t<F>;
         static_assert(std::is_invocable_v<CallableType, int, int>, "f:void(int i, int j)");
-        parallel_for(launchInfo.lightKernelBlockDim, 0, stream_)
+        parallel_for(launchInfo.lightKernelBlockDim, 0, m_stream)
             .apply(nonemptyCellCount,
                    [func           = func,
                     objCountInCell = make_viewer(objCountInCell),

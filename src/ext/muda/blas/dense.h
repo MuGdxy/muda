@@ -2,58 +2,53 @@
 #include <cublas.h>
 #include "data_type_map.h"
 #include <muda/check/checkCublas.h>
-#include <muda/viewer/idxer.h>
+#include <muda/viewer/dense.h>
 #include <muda/buffer/device_buffer.h>
 
 namespace muda
 {
-namespace dense
+template <typename T>
+class dense_vec
 {
-    template <typename T>
-    class vec
+  public:
+    using value_type = T;
+    dense_vec(value_type* data, size_t n)
+        : m_data(data)
+        , m_size(n)
     {
-      public:
-        using value_type = T;
-        vec(value_type* data, size_t n)
-            : data_(data)
-            , size_(n)
-        {
-            checkCudaErrors(
-                cusparseCreateDnVec(&dnVec_, n, data, details::cudaDataTypeMap_v<T>));
-        }
-        ~vec() { checkCudaErrors(cusparseDestroyDnVec(dnVec_)); }
-        value_type*       data() { return data_; }
-        const value_type* data() const { return data_; }
-        size_t            size() const { return size_; }
-                          operator cusparseDnVecDescr_t() { return dnVec_; }
+        checkCudaErrors(cusparseCreateDnVec(&m_dnvec, n, data, details::cudaDataTypeMap_v<T>));
+    }
+    ~dense_vec() { checkCudaErrors(cusparseDestroyDnVec(m_dnvec)); }
+    value_type*       data() { return m_data; }
+    const value_type* data() const { return m_data; }
+    size_t            size() const { return m_size; }
+                      operator cusparseDnVecDescr_t() { return m_dnvec; }
 
-      private:
-        cusparseDnVecDescr_t dnVec_;
-        value_type*          data_;
-        size_t               size_;
-    };
-
-}  // namespace dense
+  private:
+    cusparseDnVecDescr_t m_dnvec;
+    value_type*          m_data;
+    size_t               m_size;
+};
 }  // namespace muda
 
 
 namespace muda
 {
 template <typename T>
-inline __host__ auto make_idxer(dense::vec<T>& v)
+inline __host__ auto make_dense(dense_vec<T>& v)
 {
-    return idxer1D<T>(v.data(), v.size());
+    return dense1D<T>(v.data(), v.size());
 }
 
 template <typename T>
-inline __host__ auto make_viewer(dense::vec<T>& v)
+inline __host__ auto make_viewer(dense_vec<T>& v)
 {
-    return make_idxer(v);
+    return make_dense(v);
 }
 
 template <typename T>
-inline __host__ auto make_vec(device_buffer<T>& buf)
+inline __host__ auto make_dense_vec(device_buffer<T>& buf)
 {
-    return dense::vec<T>(buf.data(), buf.size());
+    return dense_vec<T>(buf.data(), buf.size());
 }
 }  // namespace muda

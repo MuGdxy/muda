@@ -24,7 +24,7 @@ class mapper<1>
     }
     MUDA_GENERIC int map(int x) const noexcept
     {
-        if constexpr(debugViewers)
+        if constexpr(DEBUG_VIEWER)
             if(!(x >= 0 && x < dim_[0]))
                 muda_kernel_error("mapper: out of range, index=(%d) dim_=(%d)\n", x, dim_[0]);
         return x;
@@ -51,7 +51,7 @@ class mapper<2>
     }
     MUDA_GENERIC int map(int x, int y) const noexcept
     {
-        if constexpr(debugViewers)
+        if constexpr(DEBUG_VIEWER)
             if(!(x >= 0 && x < dim_[0] && y >= 0 && y < dim_[1]))
             {
                 muda_kernel_error("mapper: out of range, index=(%d,%d) dim_=(%d,%d)\n",
@@ -94,7 +94,7 @@ class mapper<3>
 
     MUDA_GENERIC int map(int x, int y, int z) const noexcept
     {
-        if constexpr(debugViewers)
+        if constexpr(DEBUG_VIEWER)
             if(!(x >= 0 && x < dim_[0] && y >= 0 && y < dim_[1] && z >= 0 && z < dim_[2]))
                 muda_kernel_error("mapper: out of range, index=(%d,%d,%d) dim_=(%d,%d,%d)\n",
                                    x,

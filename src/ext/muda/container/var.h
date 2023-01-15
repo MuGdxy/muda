@@ -2,6 +2,8 @@
 #include <thrust/device_allocator.h>
 #include <thrust/universal_allocator.h>
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/fill.h>
+#include <thrust/copy.h>
 #include <vector>
 
 namespace muda
@@ -18,20 +20,20 @@ namespace details
         using const_pointer = typename Allocator::const_pointer;
 
         __host__ var_base() noexcept
-            : ptr(Allocator().allocate(1))
+            : m_data(Allocator().allocate(1))
         {
         }
 
         __host__ var_base(const T& value) noexcept
-            : ptr(Allocator().allocate(1))
+            : m_data(Allocator().allocate(1))
         {
             this->operator=(value);
         }
 
-        __host__ ~var_base() noexcept { Allocator().deallocate(ptr, 1); }
+        __host__ ~var_base() noexcept { Allocator().deallocate(m_data, 1); }
 
-        pointer       data() { return ptr; }
-        const_pointer data() const { return ptr; }
+        pointer       data() { return m_data; }
+        const_pointer data() const { return m_data; }
 
         // copy value from host to device
         __host__ var_base& operator=(const T& rhs)
@@ -49,7 +51,7 @@ namespace details
         }
 
       private:
-        pointer ptr;
+        pointer m_data;
     };
 }  // namespace details
 
@@ -90,24 +92,24 @@ inline T* data(details::var_base<T, Allocator>& v) noexcept
 }
 }  // namespace muda
 
-#include <muda/viewer/idxer.h>
+#include <muda/viewer/dense.h>
 namespace muda
 {
 template <typename T, typename Allocator>
-inline __host__ auto make_idxer(details::var_base<T, Allocator>& v) noexcept
+inline __host__ auto make_dense(details::var_base<T, Allocator>& v) noexcept
 {
-    return idxer<T>(data(v));
+    return dense<T>(data(v));
 }
 
 template <typename T, typename Allocator>
 inline __host__ auto make_viewer(details::var_base<T, Allocator>& v) noexcept
 {
-    return make_idxer(v);
+    return make_dense(v);
 }
 
 //print convert
 template <typename T>
-inline __host__ __device__ const T& printConvert(const idxer<T>& idx)
+inline __host__ __device__ const T& printConvert(const dense<T>& idx)
 {
     return idx.operator const T&();
 }

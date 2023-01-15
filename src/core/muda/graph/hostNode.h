@@ -13,7 +13,7 @@ class hostNode : public graphNode
 template <typename T>
 class hostNodeParms : public nodeParms
 {
-    cudaHostNodeParams parms;
+    cudaHostNodeParams m_parms;
 
   public:
     T hostData;
@@ -25,15 +25,15 @@ class hostNodeParms : public nodeParms
 
     hostNodeParms(const T& f)
         : hostData(f)
-        , parms({})
+        , m_parms({})
     {
-        parms.userData = &hostData;
+        m_parms.userData = &hostData;
     }
-    auto fn() const { return parms.fn; }
-    void fn(cudaHostFn_t fn) { parms.fn = fn; }
-    auto userdata() const { return parms.userData; }
-    void userdata(void* userdata) { parms.userData = userdata; }
-    const cudaHostNodeParams* getRaw() const { return &parms; }
-    cudaHostNodeParams*       getRaw() { return &parms; }
+    auto fn() const { return m_parms.fn; }
+    void fn(cudaHostFn_t fn) { m_parms.fn = fn; }
+    auto userdata() const { return m_parms.userData; }
+    void userdata(void* userdata) { m_parms.userData = userdata; }
+    const cudaHostNodeParams* getRaw() const { return &m_parms; }
+    cudaHostNodeParams*       getRaw() { return &m_parms; }
 };
 }  // namespace muda

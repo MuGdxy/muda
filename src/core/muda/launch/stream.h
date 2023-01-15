@@ -3,6 +3,9 @@
 
 namespace muda
 {
+/// <summary>
+/// RAII wrapper for cudaStream
+/// </summary>
 class stream
 {
     enum class flag
@@ -10,20 +13,21 @@ class stream
         block    = cudaStreamDefault,
         nonblock = cudaStreamNonBlocking
     };
-    cudaStream_t handle;
+    cudaStream_t m_handle;
 
   public:
     [[nodiscard]] stream(flag f = flag::block)
     {
-        checkCudaErrors(cudaStreamCreateWithFlags(&handle, (int)f));
+        checkCudaErrors(cudaStreamCreateWithFlags(&m_handle, (int)f));
     }
 
-    ~stream() { checkCudaErrors(cudaStreamDestroy(handle)); }
+    ~stream() { checkCudaErrors(cudaStreamDestroy(m_handle)); }
 
     [[nodiscard]] static sptr<stream> create(flag f = flag::block)
     {
         return std::make_shared<stream>(f);
     }
-    operator cudaStream_t() { return handle; }
+    
+    operator cudaStream_t() { return m_handle; }
 };
 }  // namespace muda
