@@ -7,6 +7,8 @@
 #include <muda/container/vector.h>
 #include <muda/container/var.h>
 #include <muda/launch/launch_base.h>
+#include <muda/launch/memory.h>
+#include <muda/launch/parallel_for.h>
 
 namespace muda
 {

@@ -2,6 +2,8 @@
 #include <thrust/device_allocator.h>
 #include <thrust/universal_allocator.h>
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/fill.h>
+#include <thrust/copy.h>
 #include <vector>
 
 namespace muda
