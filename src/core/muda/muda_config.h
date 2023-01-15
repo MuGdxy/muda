@@ -1,7 +1,10 @@
 #pragma once
+#ifndef MUDA_NDEBUG
+#define MUDA_NDEBUG 0
+#endif
 namespace muda
 {
-constexpr bool NO_CHECK = false;
+constexpr bool NO_CHECK = MUDA_NDEBUG;
 namespace config
 {
     constexpr bool on(bool cond = false)
@@ -28,6 +31,7 @@ constexpr int MIDDLE_WORKLOAD_BLOCK_SIZE = 128;
 // heavy workload block size
 constexpr int HEAVY_WORKLOAD_BLOCK_SIZE = 64;
 }  // namespace muda
+
 
 #define EASTL_ASSERT_ENABLED 1
 #define EASTL_EMPTY_REFERENCE_ASSERT_ENABLED 1
