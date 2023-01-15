@@ -25,7 +25,7 @@ add_rules("mode.debug", "mode.release")
 target("muda")
     add_undefines("min","max")
     set_kind("headeronly")
-    add_headerfiles("src/core/muda/**.h","src/core/muda/**.inl",{public = true})
+    add_headerfiles("src/core/(muda/**.h)","src/core/(muda/**.inl)",{public = true})
     add_includedirs("src/core/", {public = true})
     if(has_config("ndebug")) then
         add_defines("MUDA_NDEBUG=1", {public = true})
