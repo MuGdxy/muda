@@ -36,7 +36,7 @@ struct ConstData
 
     // interaction
     // const int MAX_PARTICLES   = 2500;
-    const int DAM_PARTICLES   = 50;
+    const int DAM_PARTICLES   = 1000;
     //const int BLOCK_PARTICLES = 250;
 
     // rendering projection parameters
