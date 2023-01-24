@@ -83,3 +83,16 @@ struct example
         //std::cout << "\033[0m";
     }
 };
+
+inline __device__ void some_work(size_t clock_cycles = 1e9)
+{
+    clock_t start = clock();
+    clock_t now;
+    while(true)
+    {
+        now            = clock();
+        clock_t cycles = now > start ? now - start : now + (0xffffffff - start);
+        if(cycles >= clock_cycles)
+            break;
+    }
+}

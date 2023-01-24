@@ -22,13 +22,13 @@
                   __VA_ARGS__)
 
 #define muda_debug_trap()                                                      \
-    if constexpr(::muda::TRAP_ON_ERROR)                                          \
+    if constexpr(::muda::TRAP_ON_ERROR)                                        \
         ::muda::trap();
 
 #define muda_kernel_assert(res, fmt, ...)                                      \
     if(!(res))                                                                 \
     {                                                                          \
-        muda_kernel_printf("<assert> " #res " failed." fmt "\n", __VA_ARGS__); \
+        muda_kernel_printf("<assert> " #res " failed." fmt, __VA_ARGS__);      \
         muda_debug_trap();                                                     \
     }
 
@@ -36,12 +36,12 @@
 #define muda_kernel_check(res, fmt, ...)                                       \
     if(!(res))                                                                 \
     {                                                                          \
-        muda_kernel_printf("<check> " #res " failed." fmt "\n", __VA_ARGS__);  \
+        muda_kernel_printf("<check> " #res " failed." fmt, __VA_ARGS__);       \
     }
 
 #define muda_kernel_error(fmt, ...)                                            \
     {                                                                          \
-        muda_kernel_printf("<error> " fmt "\n", __VA_ARGS__);                  \
+        muda_kernel_printf("<error> " fmt, __VA_ARGS__);                       \
         muda_debug_trap();                                                     \
     }
 

@@ -7,7 +7,7 @@ namespace muda
 {
 namespace details
 {
-    template <typename F>
+    template <typename F, typename UserTag>
     __global__ void parallelForKernel(F f, int begin, int end, int step)
     {
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -19,7 +19,7 @@ namespace details
     /// <summary>
     ///
     /// </summary>
-    template <typename F>
+    template <typename F, typename UserTag>
     __global__ void gridStrideLoopKernel(F f, int begin, int end, int step)
     {
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -106,8 +106,8 @@ class parallel_for : public launch_base<parallel_for>
     /// <param name="f"></param>
     /// <param name="wait"></param>
     /// <returns></returns>
-    template <typename F>
-    parallel_for& apply(int begin, int end, int step, F&& f)
+    template <typename F, typename UserTag = DefaultTag>
+    parallel_for& apply(int begin, int end, int step, F&& f, UserTag tag = {})
     {
         using CallableType = raw_type_t<F>;
         static_assert(std::is_invocable_v<CallableType, int>, "f:void (int i)");
@@ -120,14 +120,14 @@ class parallel_for : public launch_base<parallel_for>
             {
                 // calculate the blocks we need
                 auto nBlocks = calculateGridDim(begin, end, step);
-                details::parallelForKernel<<<nBlocks, m_blockDim, m_sharedMemSize, m_stream>>>(
-                    f, begin, end, step);
+                details::parallelForKernel<CallableType, UserTag>
+                    <<<nBlocks, m_blockDim, m_sharedMemSize, m_stream>>>(f, begin, end, step);
             }
         }
         else  // grid stride loop
         {
-            details::gridStrideLoopKernel<<<m_gridDim, m_blockDim, m_sharedMemSize, m_stream>>>(
-                f, begin, end, step);
+            details::gridStrideLoopKernel<CallableType, UserTag>
+                <<<m_gridDim, m_blockDim, m_sharedMemSize, m_stream>>>(f, begin, end, step);
         }
         return *this;
     }
@@ -141,10 +141,10 @@ class parallel_for : public launch_base<parallel_for>
     /// <param name="f"></param>
     /// <param name="wait"></param>
     /// <returns></returns>
-    template <typename F>
-    parallel_for& apply(int begin, int count, F&& f)
+    template <typename F, typename UserTag = DefaultTag>
+    parallel_for& apply(int begin, int count, F&& f, UserTag tag = {})
     {
-        return apply(begin, begin + count, 1, std::forward<F>(f));
+        return apply(begin, begin + count, 1, std::forward<F>(f), tag);
     }
 
     /// <summary>
@@ -155,10 +155,10 @@ class parallel_for : public launch_base<parallel_for>
     /// <param name="f"></param>
     /// <param name="wait"></param>
     /// <returns></returns>
-    template <typename F>
-    parallel_for& apply(int count, F&& f)
+    template <typename F, typename UserTag = DefaultTag>
+    parallel_for& apply(int count, F&& f, UserTag tag = {})
     {
-        return apply(0, count, 1, std::forward<F>(f));
+        return apply(0, count, 1, std::forward<F>(f), tag);
     }
 
     /// <summary>
@@ -170,8 +170,8 @@ class parallel_for : public launch_base<parallel_for>
     /// <param name="end"></param>
     /// <param name="f"></param>
     /// <returns></returns>
-    template <typename F>
-    [[nodiscard]] auto asNodeParms(int begin, int end, int step, F&& f)
+    template <typename F, typename UserTag = DefaultTag>
+    [[nodiscard]] auto asNodeParms(int begin, int end, int step, F&& f, UserTag tag = {})
     {
         using CallableType = raw_type_t<F>;
         static_assert(std::is_invocable_v<CallableType, int>, "f:void (int i)");
@@ -183,12 +183,12 @@ class parallel_for : public launch_base<parallel_for>
         if(m_gridDim <= 0)
         {
             auto nBlocks = calculateGridDim(begin, end, step);
-            parms->func((void*)details::parallelForKernel<CallableType>);
+            parms->func((void*)details::parallelForKernel<CallableType, UserTag>);
             parms->gridDim(nBlocks);
         }
         else
         {
-            parms->func((void*)details::gridStrideLoopKernel<CallableType>);
+            parms->func((void*)details::gridStrideLoopKernel<CallableType, UserTag>);
             parms->gridDim(m_gridDim);
         }
 
@@ -207,10 +207,10 @@ class parallel_for : public launch_base<parallel_for>
     /// <param name="begin"></param>
     /// <param name="count"></param>
     /// <returns></returns>
-    template <typename F>
-    [[nodiscard]] auto asNodeParms(int begin, int count, F&& f)
+    template <typename F, typename UserTag = DefaultTag>
+    [[nodiscard]] auto asNodeParms(int begin, int count, F&& f, UserTag tag = {})
     {
-        return asNodeParms(begin, begin + count, 1, std::forward<F>(f));
+        return asNodeParms(begin, begin + count, 1, std::forward<F>(f), tag);
     }
 
 
@@ -218,10 +218,10 @@ class parallel_for : public launch_base<parallel_for>
     /// create parallel for: [0, count] by step 1, as graph kernel node parameters
     /// </summary>
     /// <param name="count"></param>
-    template <typename F>
-    [[nodiscard]] auto asNodeParms(int count, F&& f)
+    template <typename F, typename UserTag = DefaultTag>
+    [[nodiscard]] auto asNodeParms(int count, F&& f, UserTag tag = {})
     {
-        return asNodeParms(0, count, 1, std::forward<F>(f));
+        return asNodeParms(0, count, 1, std::forward<F>(f), tag);
     }
 
   private:

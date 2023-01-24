@@ -20,10 +20,10 @@ class DeviceReduce : public AlgBase<DeviceReduce>
                          T                         init);
 
     template <typename T>
-    DeviceReduce& Max(device_buffer<std::byte>& external_buffer,
-                      T*                        d_out,
-                      T*                        d_in,
-                      int                       num_items);
+    DeviceReduce& Max(device_buffer<std::byte>& external_buffer, T* d_out, T* d_in, int num_items);
+    
+    template <typename T>
+    DeviceReduce& Min(device_buffer<std::byte>& external_buffer, T* d_out, T* d_in, int num_items);
 };
 
 struct CustomMin

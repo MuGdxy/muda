@@ -332,6 +332,7 @@ class ticcd
     ///                    earlier and the precision will be user-defined precision -- tolerance.
     /// @param[out] output_tolerance The precision under max_itr ( > 0). if max_itr < 0, output_tolerance = tolerance;
     /// @param[in] no_zero_toi Refine further if a zero toi is produced (assumes not initially in contact).
+    /// @return is_impacting
     MUDA_GENERIC bool edgeEdgeCCD(const Vector3& a0_start,
                                   const Vector3& a1_start,
                                   const Vector3& b0_start,
