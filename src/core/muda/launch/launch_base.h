@@ -36,18 +36,23 @@ namespace details
     }
 }  // namespace details
 
+
 template <typename Derived>
 class launch_base
 {
+	template<typename Others>
+    friend class launch_base;
+	
   protected:
     cudaStream_t m_stream;
-
   public:
     launch_base(cudaStream_t stream)
         : m_stream(stream)
     {
     }
 
+    virtual void init_stream(cudaStream_t s) { m_stream = s; }
+	
     // create a named scope for better recognization (if you are using some profile tools)
     // usage:
     //  on(stream)
@@ -136,7 +141,7 @@ class launch_base
     Next next(Next n)
     {
         static_assert(std::is_base_of_v<launch_base<Next>, Next>, "not supported");
-        n.m_stream = m_stream;
+        n.init_stream(m_stream);
         return n;
     }
 
@@ -145,7 +150,7 @@ class launch_base
     {
         static_assert(std::is_base_of_v<launch_base<Next>, Next>, "not supported");
         Next n(std::forward<Args>(args)...);
-        n.m_stream = m_stream;
+        n.init_stream(m_stream);
         return n;
     }
 

@@ -30,6 +30,8 @@ constexpr int LIGHT_WORKLOAD_BLOCK_SIZE = 256;
 constexpr int MIDDLE_WORKLOAD_BLOCK_SIZE = 128;
 // heavy workload block size
 constexpr int HEAVY_WORKLOAD_BLOCK_SIZE = 64;
+// view name max length
+constexpr int VIEWER_NAME_MAX = MUDA_NDEBUG ? 0 : 16;
 }  // namespace muda
 
 

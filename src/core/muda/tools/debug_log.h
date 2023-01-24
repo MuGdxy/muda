@@ -45,6 +45,11 @@
         muda_debug_trap();                                                     \
     }
 
+#define muda_kernel_warn(fmt, ...)                                            \
+    {                                                                          \
+        muda_kernel_printf("<warn> " fmt, __VA_ARGS__);                       \
+    }
+
 #define muda_kernel_debug_info(debugOption, fmt, ...)                          \
     if constexpr((debugOption))                                                \
     {                                                                          \

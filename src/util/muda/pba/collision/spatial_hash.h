@@ -210,7 +210,6 @@ class SpatialPartitionLauncher;
 
 namespace details
 {
-
     template <typename Hash = morton>
     class SpatialPartitionField
     {
@@ -232,6 +231,9 @@ namespace details
         device_var<int>   pairCount;
         device_var<float> maxRadius;
 
+        device_var<SpatialHashConfig<hash_type>> spatialHashConfig;
+        SpatialHashConfig<hash_type>             h_spatialHashConfig;
+
         dvec<SpatialPartitionCell> cellArrayValue;
         dvec<SpatialPartitionCell> cellArrayValueSorted;
         dvec<int>                  cellArrayKey;
@@ -240,6 +242,7 @@ namespace details
         dvec<int>       uniqueKey;
         device_var<int> uniqueKeyCount;
         int             validCellCount;
+        int             sum;
 
         dvec<int> objCountInCell;
         dvec<int> objCountInCellPrefixSum;
@@ -247,7 +250,6 @@ namespace details
         dvec<int> collisionPairCount;
         dvec<int> collisionPairPrefixSum;
 
-        SpatialHashConfig<hash_type> spatialHashConfig;
         //using hash_type = Hash;
         SpatialPartitionField() = default;
 
@@ -257,32 +259,43 @@ namespace details
             this->heavyKernelBlockDim = heavyKernelBlockDim;
         }
 
-        void configSpatialHash(const Eigen::Vector3f& coordMin)
+        void configSpatialHash(const Eigen::Vector3f& coordMin, float cellSize = -1.0f)
         {
-            spatialHashConfig.coordMin = coordMin;
+            h_spatialHashConfig.coordMin = coordMin;
+            h_spatialHashConfig.cellSize = cellSize;
+            spatialHashConfig            = h_spatialHashConfig;
         }
 
-        void beginSetupSpatialDataStructure(dense1D<sphere> boundingSphereList)
+        template <typename Pred>
+        void beginCreateCollisionPairs(dense1D<sphere> boundingSphereList,
+                                       device_buffer<CollisionPair>& collisionPairs,
+                                       Pred&& pred)
         {
             spheres = boundingSphereList;
 
-            if(spatialHashConfig.cellSize <= 0.0f)  // to calculate the bounding sphere
+            if(h_spatialHashConfig.cellSize <= 0.0f)  // to calculate the bounding sphere
                 beginCalculateCellSize();
 
-            beginFillHashCells();
-            beginSortHashCells();
-            beginCountCollisionPerCell();
+            beginSetupHashTable();
+            waitAndCreateTempData();
+
+            beginCountCollisionPairs(std::forward<Pred>(pred));
+            waitAndAllocCollisionPairList(collisionPairs);
+
+            beginSetupCollisionPairList(collisionPairs, std::forward<Pred>(pred));
         }
 
         device_buffer<float>     allRadius;
         device_buffer<std::byte> cellSizeBuf;
 
-        void beginCalculateCellSize();
-
-        void setCellSize(float cellSize)
+        void beginSetupHashTable()
         {
-            spatialHashConfig.cellSize = cellSize;
+            beginFillHashCells();
+            beginSortHashCells();
+            beginCountCollisionPerCell();
         }
+
+        void beginCalculateCellSize();
 
         void beginFillHashCells();
 
@@ -294,9 +307,18 @@ namespace details
 
         void beginCountCollisionPerCell();
 
+        void waitAndCreateTempData();
+
+        template <typename Pred>
+        void beginCountCollisionPairs(Pred&& pred);
+
         device_buffer<std::byte> collisionScanBuf;
 
-        void beginCreateCollisionPairList(device_buffer<CollisionPair>& collisionPairs);
+        void waitAndAllocCollisionPairList(device_buffer<CollisionPair>& collisionPairs);
+
+        template <typename Pred>
+        void beginSetupCollisionPairList(device_buffer<CollisionPair>& collisionPairs,
+                                         Pred&& pred);
 
         void stream(cudaStream_t stream)
         {
@@ -333,17 +355,34 @@ class SpatialPartitionField
 
 
 //usage:
-//    SpatialPartitionField field;
-//    device_buffer<CollisionPair> res;
-//    device_buffer<sphere> spheres;
+//  stream s;
+//  SpatialPartitionField field;
+//  device_buffer<CollisionPair> res;
+//  device_buffer<sphere> spheres;
 //
-//    on(s)
-//        .next<SpatialPartitionLauncher>(field)  // setup config
-//        .setCellSize(1.0f)  // set cell size manually which will disable automatic cell size calculation
-//        .configSpatialHash(Eigen::Vector3f(0, 0, 0))  // give the left-bottom corner of the domain
-//        .beginSetupSpatialDataStructure(make_viewer(spheres)) // build up acceleration data structure
-//        .beginCreateCollisionPairList(res) // create collision pairs
-//        .wait(); //wait to get collision pairs
+//  // one-step API
+//  on(s)
+//      .next<SpatialPartitionLauncher>(field)
+//      .applyCreateCollisionPairs(spheres, res,
+//          []__device__(int i, int j) // optional
+//          {
+//              print("we find (%f,%f)!", i, j);
+//              return true;
+//          })
+//      .wait(); // wait to get collision pairs, or do something on the same stream (this time implicit sync happens)
+//
+//  // advanced API
+//  on(s)
+//      .next<SpatialPartitionLauncher>(field)
+//      .applyCalculateCellSize()
+//      .applySetupHashTable()
+//      .waitAndCreateTempData()
+//      .applyCountCollisionPairs()
+//      .waitAndAllocCollisionPairList(res)
+//      .applySetupCollisionPairList(res)
+//      .wait();
+//
+// about <Predicate> : bool (int id_left, int id_right)
 template <typename Hash = morton>
 class SpatialPartitionLauncher : public launch_base<SpatialPartitionLauncher<Hash>>
 {
@@ -358,10 +397,16 @@ class SpatialPartitionLauncher : public launch_base<SpatialPartitionLauncher<Has
     int        heavyKernelBlockDim;
 
   public:
+    class DefaultPred
+    {
+      public:
+        __device__ bool operator()(int i, int j) { return true; }
+    };
+
     SpatialPartitionLauncher(Field&       field,
-                             cudaStream_t stream              = nullptr,
                              int          lightKernelBlockDim = 256,
-                             int          heavyKernelBlockDim = 64)
+                             int          heavyKernelBlockDim = 64,
+                             cudaStream_t stream              = nullptr)
         : launch_base<SpatialPartitionLauncher<Hash>>(stream)
         , m_field(field.m_impl)
     {
@@ -369,35 +414,68 @@ class SpatialPartitionLauncher : public launch_base<SpatialPartitionLauncher<Has
         m_field.configLaunch(lightKernelBlockDim, heavyKernelBlockDim);
     }
 
-    SpatialPartitionLauncher& configSpatialHash(const Eigen::Vector3f& coordMin)
+    virtual void init_stream(cudaStream_t s) override { m_field.stream(s); }
+
+    SpatialPartitionLauncher& configSpatialHash(const Eigen::Vector3f& coordMin,
+                                                float cellSize = -1.0f)
     {
-        m_field.configSpatialHash(coordMin);
+        m_field.configSpatialHash(coordMin, cellSize);
         return *this;
     }
 
-    SpatialPartitionLauncher& setCellSize(float cellSize)
+    /// <summary>
+    /// one-step API, create collision pairs from bounding spheres, some host waits exist.
+    /// </summary>
+    /// <param name="boundingSphereList"></param>
+    /// <param name="collisionPairs"></param>
+    /// <returns></returns>
+
+    template <typename Pred = DefaultPred>
+    SpatialPartitionLauncher& applyCreateCollisionPairs(dense1D<sphere> boundingSphereList,
+                                                        device_buffer<CollisionPair>& collisionPairs,
+                                                        Pred&& pred = {})
     {
-        m_field.setCellSize(cellSize);
+        m_field.beginCreateCollisionPairs(
+            boundingSphereList, collisionPairs, std::forward<Pred>(pred));
         return *this;
     }
 
-    SpatialPartitionLauncher& beginSetupSpatialDataStructure(dense1D<sphere> boundingSphereList)
+    SpatialPartitionLauncher& applyCalculateCellSize()
     {
-        m_field.beginSetupSpatialDataStructure(boundingSphereList);
+        m_field.beginCalculateCellSize();
         return *this;
     }
 
-    SpatialPartitionLauncher& beginCreateCollisionPairList(device_buffer<CollisionPair>& collisionPairs)
+    SpatialPartitionLauncher& applySetupHashTable()
     {
-        details::set_stream_check(collisionPairs, m_stream);
-        m_field.beginCreateCollisionPairList(collisionPairs);
+        m_field.beginSetupHashTable();
         return *this;
-    };
+    }
 
-    template <typename F>
-    SpatialPartitionLauncher& beginApplyOnEachCollisionPair(int nonemptyCellCount, F&& func)
+    SpatialPartitionLauncher& waitAndCreateTempData()
     {
-        m_field.beginApplyOnEachCollisionPair(nonemptyCellCount, std::forward<F>(func));
+        m_field.waitAndCreateTempData();
+        return *this;
+    }
+
+    template <typename Pred = DefaultPred>
+    SpatialPartitionLauncher& applyCountCollisionPairs(Pred&& pred = {})
+    {
+        m_field.beginCountCollisionPairs(std::forward<Pred>(pred));
+        return *this;
+    }
+
+    SpatialPartitionLauncher& waitAndAllocCollisionPairList(device_buffer<CollisionPair>& collisionPairs)
+    {
+        m_field.waitAndAllocCollisionPairList(collisionPairs);
+        return *this;
+    }
+
+    template <typename Pred = DefaultPred>
+    SpatialPartitionLauncher& applySetupCollisionPairList(device_buffer<CollisionPair>& collisionPairs,
+                                                          Pred&& pred = {})
+    {
+        m_field.beginSetupCollisionPairList(collisionPairs, std::forward<Pred>(pred));
         return *this;
     }
 };
@@ -416,19 +494,19 @@ namespace details
                    [spheres = this->spheres, allRadius = make_viewer(allRadius)] __device__(
                        int i) mutable { allRadius(i) = spheres(i).r; });
 
-        DeviceReduce(m_stream)
-            .Max(cellSizeBuf, data(maxRadius), allRadius.data(), count)
-            .wait();
+        DeviceReduce(m_stream).Max(cellSizeBuf, data(maxRadius), allRadius.data(), count);
 
-        // wait for maxRadius
-
-        float r = maxRadius;
-
-        // Scaling the bounding sphere of each object by sqrt(2) [we will use proxy spheres]
-        // and ensuring that the grid cell is at least 1.5 times
-        // as large as the scaled bounding sphere of the largest object.
-        //https://developer.nvidia.com/gpugems/gpugems3/part-v-physics-simulation/chapter-32-broad-phase-collision-detection-cuda
-        spatialHashConfig.cellSize = r * 1.5f * 1.5f;
+        launch(1, 1, 0, m_stream)
+            .apply(
+                [spatialHashConfig = make_viewer(spatialHashConfig),
+                 maxRadius = make_viewer(maxRadius)] __device__() mutable
+                {
+                    // Scaling the bounding sphere of each object by sqrt(2) [we will use proxy spheres]
+                    // and ensuring that the grid cell is at least 1.5 times
+                    // as large as the scaled bounding sphere of the largest object.
+                    //https://developer.nvidia.com/gpugems/gpugems3/part-v-physics-simulation/chapter-32-broad-phase-collision-detection-cuda
+                    spatialHashConfig->cellSize = maxRadius * 2.25f;
+                });
     }
 
     template <typename Hash>
@@ -455,17 +533,19 @@ namespace details
 
         parallel_for(lightKernelBlockDim, 0, m_stream)
             .apply(spheres.total_size(),
-                   [spheres        = this->spheres,
-                    sh             = this->spatialHashConfig,
-                    cellArrayValue = make_dense2D(cellArrayValue, size, 8),
+                   [spheres           = spheres,
+                    spatialHashConfig = make_viewer(spatialHashConfig),
+                    cellArrayValue    = make_dense2D(cellArrayValue, size, 8),
                     cellArrayKey = make_dense2D(cellArrayKey, size, 8)] __device__(int i) mutable
                    {
                        using ivec3 = Eigen::Vector3i;
                        using vec3  = Eigen::Vector3f;
                        using u32   = uint32_t;
 
-                       sphere s           = spheres(i);
-                       auto   proxySphere = s;
+                       sphere s  = spheres(i);
+                       auto&  sh = *spatialHashConfig;
+
+                       auto proxySphere = s;
                        //https://developer.nvidia.com/gpugems/gpugems3/part-v-physics-simulation/chapter-32-broad-phase-collision-detection-cuda
                        // Scaling the bounding sphere of each object by sqrt(2), here we take 1.5(>1.414)
                        proxySphere.r *= 1.5;
@@ -558,14 +638,19 @@ namespace details
     void SpatialPartitionField<Hash>::beginCountCollisionPerCell()
     {
         auto count = spheres.total_size() * 8;
-        DeviceRunLengthEncode(m_stream)
-            .Encode(encodeBuf,
-                    uniqueKey.data(),           // out
-                    objCountInCell.data(),      // out
-                    data(uniqueKeyCount),       // out
-                    cellArrayKeySorted.data(),  // in
-                    count)
-            .wait();
+        DeviceRunLengthEncode(m_stream).Encode(encodeBuf,
+                                               uniqueKey.data(),       // out
+                                               objCountInCell.data(),  // out
+                                               data(uniqueKeyCount),   // out
+                                               cellArrayKeySorted.data(),  // in
+                                               count);
+    }
+
+
+    template <typename Hash>
+    void SpatialPartitionField<Hash>::waitAndCreateTempData()
+    {
+        on(m_stream).wait();
 
         // wait for uniqueKeyCount
         // we need use uniqueKeyCount to resize arrays
@@ -581,23 +666,20 @@ namespace details
         // validCellCount is always 1 less than the uniqueKeyCount,
         // the last one is typically the cell-object-pair {cid = -1, oid = -1}
         validCellCount = h_uniqueKeyCount - 1;
+    }
 
+    template <typename Hash>
+    template <typename Pred>
+    void SpatialPartitionField<Hash>::beginCountCollisionPairs(Pred&& pred)
+    {
+        using CallableType = raw_type_t<Pred>;
         // we still prefix sum the uniqueKeyCount cell-object-pair
         // because we need to know the total number of collision pairs
         // which is at the last element of the prefix sum array
         DeviceScan(m_stream).ExclusiveSum(cellArraySortBuf,
                                           objCountInCellPrefixSum.data(),
                                           objCountInCell.data(),
-                                          h_uniqueKeyCount);
-    }
-
-    template <typename Hash>
-    void SpatialPartitionField<Hash>::beginCreateCollisionPairList(device_buffer<CollisionPair>& collisionPairs)
-    {
-        int sum;
-        // the last one is {cid = uint32_t(-1), oid = uint32_t(-1)}
-        int  count;
-        auto lastOffset = uniqueKeyCount - 1;
+                                          validCellCount + 1);
 
         parallel_for(lightKernelBlockDim, 0, m_stream)
             .apply(validCellCount,
@@ -605,7 +687,8 @@ namespace details
                     objCountInCell = make_viewer(objCountInCell),
                     objCountInCellPrefixSum = make_viewer(objCountInCellPrefixSum),
                     cellArrayValueSorted = make_viewer(cellArrayValueSorted),
-                    collisionPairCount = make_viewer(collisionPairCount)] __device__(int cell) mutable
+                    collisionPairCount   = make_viewer(collisionPairCount),
+                    pred = std::forward<Pred>(pred)] __device__(int cell) mutable
                    {
                        int size      = objCountInCell(cell);
                        int offset    = objCountInCellPrefixSum(cell);
@@ -615,13 +698,16 @@ namespace details
                        {
                            auto cell0 = cellArrayValueSorted(offset + i);
                            auto oid0  = cell0.oid;
+                           auto s0    = spheres(oid0);
                            for(int j = i + 1; j < size; ++j)
                            {
                                auto cell1 = cellArrayValueSorted(offset + j);
                                auto oid1  = cell1.oid;
+                               auto s1    = spheres(oid1);
                                //print("test => %d,%d\n", oid0, oid1);
                                if(!Cell::allowIgnore(cell0, cell1)  // cell0, cell1 are created by test the proxy sphere
-                                  && collide::detect(spheres(oid0), spheres(oid1)))  // test the bounding spheres to get exact collision result
+                                  && collide::detect(s0, s1)  // test the bounding spheres to get exact collision result
+                                  && pred(s0.id, s1.id))  // user predicate
                                {
                                    //print("pair");
                                    ++pairCount;
@@ -636,23 +722,28 @@ namespace details
                                           collisionPairCount.data(),
                                           uniqueKeyCount);
 
-        memory(m_stream)
-            .copy(&sum, collisionPairPrefixSum.data() + lastOffset, sizeof(int), cudaMemcpyDeviceToHost)
-            .wait();  // wait for sum
+        auto lastOffset = validCellCount;
+        memory(m_stream).copy(&sum,
+                              collisionPairPrefixSum.data() + lastOffset,
+                              sizeof(int),
+                              cudaMemcpyDeviceToHost);
+    }
 
-        //debug output
-        //host_vector<int> hCollisionPairCount, hCollisionPairPrefixSum;
-        //collisionPairCount.copy_to(hCollisionPairCount);
-        //collisionPairPrefixSum.copy_to(hCollisionPairPrefixSum);
-
-        //launch::wait_device();
-        //csv(hCollisionPairCount, "hCollisionPairCount.csv");
-        //csv(hCollisionPairPrefixSum, "hCollisionPairPrefixSum.csv");
+    template <typename Hash>
+    void SpatialPartitionField<Hash>::waitAndAllocCollisionPairList(device_buffer<CollisionPair>& collisionPairs)
+    {
+        on(m_stream).wait();
 
         int totalCollisionPairCount = sum;
         collisionPairs.stream(m_stream);
         collisionPairs.resize(totalCollisionPairCount);
+    }
 
+    template <typename Hash>
+    template <typename Pred>
+    void SpatialPartitionField<Hash>::beginSetupCollisionPairList(
+        device_buffer<CollisionPair>& collisionPairs, Pred&& pred)
+    {
         parallel_for(lightKernelBlockDim, 0, m_stream)
             .apply(validCellCount,
                    [spheres        = this->spheres,
@@ -661,7 +752,8 @@ namespace details
                     cellArrayValueSorted = make_viewer(cellArrayValueSorted),
                     collisionPairCount   = make_viewer(collisionPairCount),
                     collisionPairPrefixSum = make_viewer(collisionPairPrefixSum),
-                    collisionPairs = make_viewer(collisionPairs)] __device__(int cell) mutable
+                    collisionPairs = make_viewer(collisionPairs),
+                    pred = std::forward<Pred>(pred)] __device__(int cell) mutable
                    {
                        int size       = objCountInCell(cell);
                        int offset     = objCountInCellPrefixSum(cell);
@@ -671,12 +763,16 @@ namespace details
                        {
                            auto cell0 = cellArrayValueSorted(offset + i);
                            auto oid0  = cell0.oid;
+                           auto s0    = spheres(oid0);
                            for(int j = i + 1; j < size; ++j)
                            {
                                auto cell1 = cellArrayValueSorted(offset + j);
                                auto oid1  = cell1.oid;
-                               if(!Cell::allowIgnore(cell0, cell1)
-                                  && collide::detect(spheres(oid0), spheres(oid1)))
+                               auto s1    = spheres(oid1);
+                               //print("test => %d,%d\n", oid0, oid1);
+                               if(!Cell::allowIgnore(cell0, cell1)  // cell0, cell1 are created by test the proxy sphere
+                                  && collide::detect(s0, s1)  // test the bounding spheres to get exact collision result
+                                  && pred(s0.id, s1.id))  // user predicate
                                {
                                    CollisionPair p;
                                    p.id[0]                            = oid0;

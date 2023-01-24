@@ -60,14 +60,12 @@ void spatial_hash_test(host_vector<CollisionPair>& res, host_vector<CollisionPai
     launch::wait_device();
     SpatialPartitionField<Hash>  field;
     device_buffer<CollisionPair> d_res;
-    
+
     on(s)
         .next<SpatialPartitionLauncher<Hash>>(field)  // setup config
-        .setCellSize(1.0f)  // set cell size manually which will disable automatic cell size calculation
-        .configSpatialHash(Eigen::Vector3f(0, 0, 0))  // give the left-bottom corner of the domain
-
-        .beginSetupSpatialDataStructure(make_viewer(spheres))
-        .beginCreateCollisionPairList(d_res);
+        .configSpatialHash(Eigen::Vector3f(0, 0, 0),  // give the left-bottom corner of the domain
+                           1.0f)  // set cell size manually which will disable automatic cell size calculation
+        .applyCreateCollisionPairs(make_viewer(spheres), d_res);
 
     d_res.copy_to(res);      // this copy is also async
     launch::wait_stream(s);  // wait for the copy to finish
