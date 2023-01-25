@@ -16,6 +16,14 @@
 | cse                 | compressed sparse elements | sparse 2d array: cse(i,j) -> data[begin[i] + j] |
 | csr                 | compressed sparse row      | sparse matrix  CSR format                       |
 
+## graph
+
+| graph        | details                                                      |
+| ------------ | ------------------------------------------------------------ |
+| graph        | basic wrapper of cuda graph, get node parms from `<launch>.asNodeParms()` |
+| graphManager | a way to automatically setup dependencies between nodes by checking the resource usage of kernels, core api `<launch>.addNode`. |
+|              |                                                              |
+
 ## buffer
 
 | buffer        | details                         |

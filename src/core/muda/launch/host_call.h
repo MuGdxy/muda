@@ -43,8 +43,7 @@ class host_call : public launch_base<host_call>
     }
 
     /// <summary>
-    /// the host function has the same lifetime as the the nodeParms
-    /// for the host function to be called safely, the nodeParms must be kept alive
+    /// 
     /// </summary>
     /// <typeparam name="F"></typeparam>
     /// <typeparam name="UserTag"></typeparam>

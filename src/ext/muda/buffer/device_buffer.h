@@ -29,7 +29,7 @@ class device_buffer
     size_t       m_size;
     size_t       m_capacity;
     T*           m_data;
-    
+
   public:
     using value_type = T;
 
@@ -77,256 +77,41 @@ class device_buffer
         m_init   = true;
         m_stream = s;
     }
+
     cudaStream_t stream() { return m_stream; }
 
-    empty resize(size_t new_size, buf_op mem_op, char setbyte = 0)
-    {
-        auto   mem      = memory(m_stream);
-        size_t old_size = m_size;
+    empty resize(size_t new_size, buf_op mem_op, char setbyte = 0);
 
-        if(new_size <= m_size)
-        {
-            switch(mem_op)
-            {
-                case muda::buf_op::set:
-                    mem.set(m_data, new_size * sizeof(value_type), (int)setbyte);
-                    break;
-                default:
-                    break;
-            }
-            m_size = new_size;
-            return empty(m_stream);
-        }
+    empty resize(size_t new_size);
 
-        if(new_size <= m_capacity)
-        {
-            switch(mem_op)
-            {
-                case muda::buf_op::set:
-                    mem.set(m_data, new_size * sizeof(value_type), (int)setbyte);
-                    break;
-                case muda::buf_op::keep_set:
-                    mem.set(m_data + old_size,
-                            (new_size - old_size) * sizeof(value_type),
-                            (int)setbyte);
-                    break;
-                default:
-                    break;
-            }
-            m_size = new_size;
-        }
-        else
-        {
-            T* ptr;
-            mem.alloc(&ptr, new_size * sizeof(value_type));
-            switch(mem_op)
-            {
-                case muda::buf_op::keep:
-                    mem.copy(ptr, m_data, old_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
-                    break;
-                case muda::buf_op::set:
-                    mem.set(ptr, new_size * sizeof(value_type), (int)setbyte);
-                    break;
-                case muda::buf_op::keep_set:
-                    if(m_data)
-                        mem.copy(ptr, m_data, old_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
-                    mem.set(ptr + old_size,
-                            (new_size - old_size) * sizeof(value_type),
-                            (int)setbyte);
-                    break;
-                default:
-                    break;
-            }
-            if(m_data)
-                mem.free(m_data);
-            m_data     = ptr;
-            m_size     = new_size;
-            m_capacity = new_size;
-        }
+    empty resize(size_t new_size, const value_type& value, int blockDim = LIGHT_WORKLOAD_BLOCK_SIZE);
 
-        return empty(m_stream);
-    }
+    empty shrink_to_fit();
 
-    empty resize(size_t new_size)
-    {
-        auto   mem      = memory(m_stream);
-        size_t old_size = m_size;
-
-        if(new_size <= m_size)
-        {
-            m_size = new_size;
-            return empty(m_stream);
-        }
-
-        if(new_size <= m_capacity)
-        {
-            mem.set(m_data + old_size, (new_size - old_size) * sizeof(value_type), 0);
-            m_size = new_size;
-        }
-        else
-        {
-            T* ptr;
-            mem.alloc(&ptr, new_size * sizeof(value_type));
-            if(m_data)
-                mem.copy(ptr, m_data, old_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
-            mem.set(ptr + old_size, (new_size - old_size) * sizeof(value_type), 0);
-            if(m_data)
-                mem.free(m_data);
-            m_data     = ptr;
-            m_size     = new_size;
-            m_capacity = new_size;
-        }
-
-        return empty(m_stream);
-    }
-
-    empty resize(size_t new_size, const T& value)
-    {
-        auto   mem      = memory(m_stream);
-        size_t old_size = m_size;
-
-        if(new_size <= m_capacity)
-        {
-            m_size = new_size;
-        }
-        else
-        {
-            T* ptr;
-            mem.alloc(&ptr, new_size * sizeof(value_type));
-            if(m_data)
-                mem.free(m_data);
-            m_data     = ptr;
-            m_size     = new_size;
-            m_capacity = new_size;
-        }
-
-        parallel_for(LIGHT_WORKLOAD_BLOCK_SIZE, 0, m_stream)
-            .apply(new_size,
-                   [=, d = make_viewer(*this)] __device__(int i) mutable
-                   { d(i) = value; });
-
-        return empty(m_stream);
-    }
-
-    empty shrink_to_fit()
-    {
-        auto mem = memory(m_stream);
-
-        if(m_size < m_capacity)
-        {
-            T* ptr;
-            mem.alloc(&ptr, m_size * sizeof(value_type));
-            mem.copy(ptr, m_data, m_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
-            if(m_data)
-                mem.free(m_data);
-            m_data     = ptr;
-            m_capacity = m_size;
-        }
-
-        return empty(m_stream);
-    }
-
-    empty set(char setbyte = 0, size_t count = size_t(-1))
-    {
-        m_init = true;
-        if(count == size_t(-1))
-            count = m_size;
-        if(count > m_size)
-            throw std::out_of_range("device_buffer::set out of range");
-        memory(m_stream).set(m_data, count * sizeof(T), setbyte);
-        return empty(m_stream);
-    }
+    empty set(char setbyte = 0, size_t count = size_t(-1));
 
     // copy to/from
-    empty copy_to(value_type& var) const
-    {
-        if(m_size != 1)
-            throw std::logic_error("buffer size larger than 1, cannot copy to host_var");
-        m_init = true;
-        memory(m_stream).copy(std::addressof(var), m_data, m_size * sizeof(value_type), cudaMemcpyDeviceToHost);
-        return empty(m_stream);
-    }
+    empty copy_to(value_type& var) const;
 
-    empty copy_to(host_vector<value_type>& vec) const
-    {
-        m_init = true;
-        vec.resize(m_size);
-        memory(m_stream).copy(muda::data(vec), m_data, m_size * sizeof(value_type), cudaMemcpyDeviceToHost);
-        return empty(m_stream);
-    }
+    empty copy_to(host_vector<value_type>& vec) const;
 
-    empty copy_to(device_var<value_type>& var) const
-    {
-        if(m_size != 1)
-            throw std::logic_error("buffer size larger than 1, cannot copy to device_var");
-        m_init = true;
-        memory(m_stream).copy(muda::data(var), m_data, m_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
-        return empty(m_stream);
-    }
+    empty copy_to(device_var<value_type>& var) const;
 
-    empty copy_to(device_vector<value_type>& vec) const
-    {
-        m_init = true;
-        vec.resize(m_size);
-        memory(m_stream).copy(muda::data(vec), m_data, m_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
-        return empty(m_stream);
-    }
+    empty copy_to(device_vector<value_type>& vec) const;
 
-    empty copy_to(device_buffer<value_type>& vec) const
-    {
-        m_init = true;
-        vec.resize(m_size);
-        memory(m_stream).copy(vec.data(), m_data, m_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
-        return empty(m_stream);
-    }
+    empty copy_to(device_buffer<value_type>& vec) const;
 
-    empty copy_from(const host_var<value_type>& var)
-    {
-        m_init = true;
-        resize(1);
-        memory(m_stream).copy(m_data, muda::data(var), m_size * sizeof(value_type), cudaMemcpyHostToDevice);
-        return empty(m_stream);
-    }
+    empty copy_from(const host_var<value_type>& var);
 
-    empty copy_from(const value_type& var)
-    {
-        m_init = true;
-        resize(1);
-        memory(m_stream).copy(m_data, std::addressof(var), m_size * sizeof(value_type), cudaMemcpyHostToDevice);
-        return empty(m_stream);
-    }
+    empty copy_from(const value_type& var);
 
-    empty copy_from(const host_vector<value_type>& vec)
-    {
-        m_init = true;
-        resize(vec.size());
-        memory(m_stream).copy(m_data, muda::data(vec), m_size * sizeof(value_type), cudaMemcpyHostToDevice);
-        return empty(m_stream);
-    }
+    empty copy_from(const host_vector<value_type>& vec);
 
-    empty copy_from(const device_var<value_type>& var)
-    {
-        m_init = true;
-        resize(1);
-        memory(m_stream).copy(m_data, muda::data(var), m_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
-        return empty(m_stream);
-    }
+    empty copy_from(const device_var<value_type>& var);
 
-    empty copy_from(const device_vector<value_type>& vec)
-    {
-        m_init = true;
-        resize(vec.size());
-        memory().copy(m_data, muda::data(vec), m_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
-        return empty(m_stream);
-    }
+    empty copy_from(const device_vector<value_type>& vec);
 
-    empty copy_from(const device_buffer<value_type>& vec)
-    {
-        m_init = true;
-        resize(vec.size());
-        memory().copy(m_data, vec.data(), m_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
-        return empty(m_stream);
-    }
+    empty copy_from(const device_buffer<value_type>& vec);
 
     ~device_buffer()
     {
@@ -350,6 +135,140 @@ namespace details
         buf.stream(s);  // buffer isn't initialized yet, allows any setting.
     }
 }  // namespace details
+
+
+class buffer_launch : public launch_base<buffer_launch>
+{
+    int m_blockDim;
+
+  public:
+    buffer_launch(int blockDim = LIGHT_WORKLOAD_BLOCK_SIZE, cudaStream_t stream = nullptr)
+        : launch_base(stream)
+        , m_blockDim(blockDim)
+    {
+    }
+
+    template <typename T>
+    buffer_launch& resize(device_buffer<T>& buf, size_t size)
+    {
+        details::set_stream_check(buf, m_stream);
+        buf.resize(size);
+        return *this;
+    }
+
+    template <typename T>
+    buffer_launch& resize(device_buffer<T>& buf, size_t size, const T& value)
+    {
+        details::set_stream_check(buf, m_stream);
+        buf.resize(size, value, m_blockDim);
+        return *this;
+    }
+
+    template <typename T>
+    buffer_launch& resize(device_buffer<T>& buf, size_t size, buf_op mem_op, char setbyte = 0)
+    {
+        details::set_stream_check(buf, m_stream);
+        buf.resize(size, mem_op, setbyte);
+        return *this;
+    }
+
+    template <typename T>
+    buffer_launch& shrink_to_fit(device_buffer<T>& buf)
+    {
+        details::set_stream_check(buf, m_stream);
+        buf.shrink_to_fit();
+        return *this;
+    }
+
+    template <typename T>
+    buffer_launch& set(device_buffer<T>& buf, char setbyte = 0, size_t count = size_t(-1))
+    {
+        details::set_stream_check(buf, m_stream);
+        buf.set(setbyte, count);
+        return *this;
+    }
+
+    template <typename T>
+    buffer_launch& copy_to(device_buffer<T>& buf, T& val)
+    {
+        details::set_stream_check(buf, m_stream);
+        buf.copy_to(val);
+        return *this;
+    }
+
+    template <typename T>
+    buffer_launch& copy_to(device_buffer<T>& buf, host_vector<T>& vec)
+    {
+        details::set_stream_check(buf, m_stream);
+        buf.copy_to(vec);
+        return *this;
+    }
+
+    template <typename T>
+    buffer_launch& copy_to(device_buffer<T>& buf, device_var<T>& var)
+    {
+        details::set_stream_check(buf, m_stream);
+        buf.copy_to(var);
+        return *this;
+    }
+
+    template <typename T>
+    buffer_launch& copy_to(device_buffer<T>& buf, device_vector<T>& vec)
+    {
+        details::set_stream_check(buf, m_stream);
+        buf.copy_to(vec);
+        return *this;
+    }
+
+    template <typename T>
+    buffer_launch& copy_to(device_buffer<T>& buf, device_buffer<T>& dst)
+    {
+        details::set_stream_check(buf, m_stream);
+        buf.copy_to(dst);
+        return *this;
+    }
+
+
+    template <typename T>
+    buffer_launch& copy_from(device_buffer<T>& buf, const T& val)
+    {
+        details::set_stream_check(buf, m_stream);
+        buf.copy_from(val);
+        return *this;
+    }
+
+    template <typename T>
+    buffer_launch& copy_from(device_buffer<T>& buf, const host_vector<T>& vec)
+    {
+        details::set_stream_check(buf, m_stream);
+        buf.copy_from(vec);
+        return *this;
+    }
+
+    template <typename T>
+    buffer_launch& copy_from(device_buffer<T>& buf, device_var<T>& var)
+    {
+        details::set_stream_check(buf, m_stream);
+        buf.copy_from(var);
+        return *this;
+    }
+
+    template <typename T>
+    buffer_launch& copy_from(device_buffer<T>& buf, const device_vector<T>& vec)
+    {
+        details::set_stream_check(buf, m_stream);
+        buf.copy_from(vec);
+        return *this;
+    }
+
+    template <typename T>
+    buffer_launch& copy_from(device_buffer<T>& buf, const device_buffer<T>& vec)
+    {
+        details::set_stream_check(buf, m_stream);
+        buf.copy_from(vec);
+        return *this;
+    }
+};
 }  // namespace muda
 
 namespace muda
@@ -386,3 +305,5 @@ inline __host__ auto make_viewer(device_buffer<T>& buf) noexcept
     return make_dense(buf);
 }
 }  // namespace muda
+
+#include "device_buffer.inl"

@@ -224,6 +224,24 @@ class parallel_for : public launch_base<parallel_for>
         return asNodeParms(0, count, 1, std::forward<F>(f), tag);
     }
 
+    template <typename F, typename UserTag = DefaultTag>
+    auto addNode(graphManager& gm, const res& resid, int begin, int end, int step, F&& f, UserTag tag = {})
+    {
+        return gm.addKernelNode(asNodeParms(begin, end, step, std::forward<F>(f), tag), resid);
+    }
+
+    template <typename F, typename UserTag = DefaultTag>
+    auto addNode(graphManager& gm, const res& resid, int begin, int count, F&& f, UserTag tag = {})
+    {
+        return gm.addKernelNode(asNodeParms(begin, count, std::forward<F>(f), tag), resid);
+    }
+
+    template <typename F, typename UserTag = DefaultTag>
+    auto addNode(graphManager& gm, const res& resid, int count, F&& f, UserTag tag = {})
+    {
+        return gm.addKernelNode(asNodeParms(count, std::forward<F>(f), tag), resid);
+    }
+
   private:
     int calculateGridDim(int begin, int end, int step)
     {

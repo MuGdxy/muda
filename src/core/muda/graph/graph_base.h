@@ -41,5 +41,6 @@ class graphNode
     }
     using this_type = graphNode;
     friend class graph;
+    cudaGraphNode_t getRaw() const { return m_handle; }
 };
 }  // namespace muda

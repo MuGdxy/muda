@@ -61,6 +61,12 @@ class launch : public launch_base<launch>
         return parms;
     }
 
+    template <typename F, typename UserTag = DefaultTag>
+    auto addNode(graphManager& gm, const res& resid, F&& f, UserTag tag = {})
+    {
+        return gm.addKernelNode(asNodeParms(std::forward<F>(f), tag), resid);
+    }
+
     static void wait_event(cudaEvent_t event)
     {
         checkCudaErrors(cudaEventSynchronize(event));
