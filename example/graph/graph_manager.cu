@@ -45,8 +45,11 @@ in which, (R) is root, A B C D E F are kernels.
     res_vec.resize(2);
 
     launch(1, 1).addNode(
-        gm,            // add node to graph manager
-        res{res_var},  // has resource (default type = read-write): res_var
+        gm,       // add node to graph manager
+        res       //res section
+        {res::w,  // indicate that this kernel will write to res_var
+         // any kernel that reads res_var latter will depend on this kernel
+         res_var},
         [var = make_viewer(res_var)] __device__() mutable
         {
             var = 1;
@@ -57,8 +60,8 @@ in which, (R) is root, A B C D E F are kernels.
 
     parallel_for(res_vec.size())
         .addNode(
-            gm,            // add node to graph manager
-            res{res_vec},  // has resource (default type = read-write): res_vec
+            gm,
+            res{res_vec},  // indicate that this kernel will write to res_vec (default)
             res_vec.size(),  // parallel_for count
             [vec = make_viewer(res_vec)] __device__(int i) mutable
             {
@@ -69,8 +72,8 @@ in which, (R) is root, A B C D E F are kernels.
             KernelBTag{});
 
     launch(1, 1).addNode(
-        gm,            // add node to graph manager
-        res{res_var},  // has resource (default type = read-write): res_var
+        gm,
+        res{res_var},  // indicate that this kernel will write to res_vec (default)
         [var = make_viewer(res_var)] __device__() mutable
         {
             some_work(1e4);
@@ -81,12 +84,11 @@ in which, (R) is root, A B C D E F are kernels.
         KernelCTag{});
 
     launch(1, 1).addNode(
-        gm,  // add node to graph manager
-        res  // res section
-        {
-            res::r,  // indicate the followers are read resources
-            res_vec  // so any kernel that reads this resource won't depend directly on this kernel
-        },
+        gm,
+        res{res::r,  // indicate that this kernel just read res_var (without modification)
+            // any kernel that reads this resource won't depend on this kernel
+            // the dependency will move upon the chain to the latest writer
+            res_vec},
         [vec = make_viewer(res_vec)] __device__()
         {
             some_work(1e4);
@@ -95,13 +97,16 @@ in which, (R) is root, A B C D E F are kernels.
         KernelDTag{});
 
     launch(1, 1).addNode(
-        gm,  // add node to graph manager
-        res  // res section
-        {
-            res::r,  // indicate the followers are read resources
-            res_var,  // this kernel will depend on C, becuase C has written the res_var before
-            res_vec  // and this kernel won't depend on kernel D although kernel D, but on kernel B
-        },
+        gm,       // add node to graph manager
+        res       // res section
+        {res::r,  // indicate that this kernel just read res_var and res_vec (without modification)
+         // in this case, this kernel will depend on C, becuase C is the latest writer of res_var
+         res_var,
+         // in this case, this kernel won't depend on kernel D
+         // because they just read the same resource without modification
+         // but this kernel will depend on kernel B
+         // because B is the latest writer of res_vec
+         res_vec},
         [var = make_viewer(res_var), vec = make_viewer(res_vec)] __device__()
         {
             some_work(1e4);
@@ -111,11 +116,8 @@ in which, (R) is root, A B C D E F are kernels.
 
     launch(1, 1).addNode(
         gm,  // add node to graph manager
-        {}, // no res at all
-        [] __device__()
-        {
-            print("[F] do nothing\n");
-        },
+        {},  // no res at all
+        [] __device__() { print("[F] do nothing\n"); },
         KernelFTag{});
 
     auto instance = gm.instantiate();
