@@ -19,7 +19,7 @@ class event
     // cudaEventBlockingSync    /**< Event uses blocking synchronization */
     // cudaEventDisableTiming   /**< Event will not record timing data */
     // cudaEventInterprocess    /**< Event is suitable for interprocess use. cudaEventDisableTiming must be set */
-    [[nodiscard]] event(int flag = cudaEventDefault)
+    [[nodiscard]] event(int flag = cudaEventDisableTiming)
     {
         checkCudaErrors(cudaEventCreateWithFlags(&m_handle, flag));
     }

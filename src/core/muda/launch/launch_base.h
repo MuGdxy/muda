@@ -26,7 +26,7 @@ struct DefaultTag
 {
 };
 namespace details
-{	
+{
     inline void streamErrorCallback(cudaStream_t stream, cudaError error, void* userdata)
     {
         auto callback =
@@ -40,11 +40,12 @@ namespace details
 template <typename Derived>
 class launch_base
 {
-	template<typename Others>
+    template <typename Others>
     friend class launch_base;
-	
+
   protected:
     cudaStream_t m_stream;
+
   public:
     launch_base(cudaStream_t stream)
         : m_stream(stream)
@@ -52,7 +53,7 @@ class launch_base
     }
 
     virtual void init_stream(cudaStream_t s) { m_stream = s; }
-	
+
     // create a named scope for better recognization (if you are using some profile tools)
     // usage:
     //  on(stream)
@@ -87,11 +88,17 @@ class launch_base
     // flags:
     //  cudaEventRecordDefault : Default event creation flag.
     //  cudaEventRecordExternal : Event is captured in the graph as an external
+    //  event node when performing stream capture.
     Derived& record(cudaEvent_t e, int flag = cudaEventRecordDefault)
     {
         checkCudaErrors(cudaEventRecordWithFlags(e, m_stream, flag));
 
         return derived();
+    }
+
+    auto addRecordNode(graphManager& gm, const res& r, cudaEvent_t e)
+    {
+        return gm.addEventRecordNode(e, r);
     }
 
     // let the following kernels wait until the event is triggered
@@ -104,11 +111,18 @@ class launch_base
     // flags:
     //  cudaEventRecordDefault : Default event creation flag.
     //  cudaEventRecordExternal : Event is captured in the graph as an external
+	//  event node when performing stream capture.
     Derived& when(cudaEvent_t e, int flag = cudaEventRecordDefault)
     {
         checkCudaErrors(cudaStreamWaitEvent(m_stream, e, flag));
 
         return derived();
+    }
+
+
+    auto addWhenNode(graphManager& gm, const res& r, cudaEvent_t e)
+    {
+        return gm.addEventWaitNode(e, r);
     }
 
     // let the host wait for the event
@@ -161,7 +175,7 @@ class launch_base
 class empty : public launch_base<empty>
 {
   public:
-    empty(cudaStream_t stream)
+    empty(cudaStream_t stream = nullptr)
         : launch_base(stream)
     {
     }

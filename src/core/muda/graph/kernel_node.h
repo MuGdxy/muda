@@ -1,5 +1,5 @@
 #pragma once
-#include "graph_base.h"
+#include "base.h"
 
 namespace muda
 {

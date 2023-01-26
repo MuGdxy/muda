@@ -1,7 +1,7 @@
 #pragma once
-#include "graph_base.h"
-#include "kernelNode.h"
-#include "memCpyNode.h"
+#include "base.h"
+#include "kernel_node.h"
+#include "memory_node.h"
 
 namespace muda
 {
@@ -42,5 +42,8 @@ class graphExec
             checkCudaErrors(cudaGraphExecDestroy(m_handle));
     }
     //cudaGraphExec_t getRaw() const { return handle; }
+  private:
+    // keep the ref count > 0 for those whose data should be kept alive for the graph life.
+    std::list<sptr<nodeParms>> cached;
 };
 }  // namespace muda

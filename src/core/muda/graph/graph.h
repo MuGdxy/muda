@@ -2,13 +2,14 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "graph_base.h"
-#include "kernelNode.h"
-#include "memAllocNode.h"
-#include "memCpyNode.h"
-#include "memFreeNode.h"
-#include "hostNode.h"
-#include "graphExec.h"
+#include "base.h"
+
+#include "kernel_node.h"
+#include "memory_node.h"
+#include "host_node.h"
+#include "graph_exec.h"
+#include "event_node.h"
+
 namespace muda
 {
 class graph
@@ -88,6 +89,33 @@ class graph
         return ret;
     }
 
+    auto addMemFreeNode(void* ptr, const std::vector<sptr<graphNode>>& deps = {})
+    {
+        auto                         ret   = std::make_shared<memFreeNode>();
+        std::vector<cudaGraphNode_t> nodes = mapDependencies(deps);
+        checkCudaErrors(cudaGraphAddMemFreeNode(
+            &ret->m_handle, m_handle, nodes.data(), nodes.size(), ptr));
+        return ret;
+    }
+
+    auto addEventRecordNode(cudaEvent_t e, const std::vector<sptr<graphNode>>& deps = {})
+    {
+        auto                         ret = std::make_shared<eventRecordNode>();
+        std::vector<cudaGraphNode_t> nodes = mapDependencies(deps);
+        checkCudaErrors(cudaGraphAddEventRecordNode(
+            &ret->m_handle, m_handle, nodes.data(), nodes.size(), e));
+        return ret;
+    }
+
+    auto addEventWaitNode(cudaEvent_t e, const std::vector<sptr<graphNode>>& deps = {})
+    {
+        auto                         ret   = std::make_shared<eventWaitNode>();
+        std::vector<cudaGraphNode_t> nodes = mapDependencies(deps);
+        checkCudaErrors(cudaGraphAddEventWaitNode(
+            &ret->m_handle, m_handle, nodes.data(), nodes.size(), e));
+        return ret;
+    }
+
     auto addDependency(sptr<graphNode> from, sptr<graphNode> to)
     {
         checkCudaErrors(
@@ -102,7 +130,6 @@ class graph
     // keep the ref count > 0 for those whose data should be kept alive for the graph life.
     std::list<sptr<nodeParms>> cached;
 
-    //
     static std::vector<cudaGraphNode_t> mapDependencies(const std::vector<sptr<graphNode>>& deps)
     {
         std::vector<cudaGraphNode_t> nodes;
@@ -171,9 +198,23 @@ class graphManager
 
   public:
     template <typename T>
-    sptr<kernelNode> addKernelNode(const sptr<kernelNodeParms<T>>& kernelParms, const res& res)
+    auto addKernelNode(const sptr<kernelNodeParms<T>>& kernelParms, const res& res)
     {
         auto node = m_graph.addKernelNode(kernelParms);
+        addNode(node, res);
+        return node;
+    }
+
+    auto addEventRecordNode(cudaEvent_t event, const res& res)
+    {
+        auto node = m_graph.addEventRecordNode(event);
+        addNode(node, res);
+        return node;
+    }
+
+    auto addEventWaitNode(cudaEvent_t event, const res& res)
+    {
+        auto node = m_graph.addEventWaitNode(event);
         addNode(node, res);
         return node;
     }

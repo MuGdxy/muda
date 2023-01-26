@@ -1,5 +1,5 @@
 #pragma once
-#include "graph_base.h"
+#include "base.h"
 
 namespace muda
 {
@@ -35,5 +35,19 @@ class memAllocNodeParms : public nodeParms
 
     cudaMemAllocNodeParams*       getRaw() { return &m_parms; }
     const cudaMemAllocNodeParams* getRaw() const { return &m_parms; }
+};
+
+class memFreeNode : public graphNode
+{
+  public:
+    using this_type = memFreeNode;
+    friend class graph;
+};
+
+class memcpyNode : public graphNode
+{
+  public:
+    using this_type = memcpyNode;
+    friend class graph;
 };
 }  // namespace muda

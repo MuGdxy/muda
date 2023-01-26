@@ -84,6 +84,8 @@ struct example
     }
 };
 
+// a dummy function, just let the kernel wait some clock cycles
+// to make the kernel execution time long enough.
 inline __device__ void some_work(size_t clock_cycles = 1e9)
 {
     clock_t start = clock();
