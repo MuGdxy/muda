@@ -10,29 +10,36 @@
 
 namespace muda
 {
+template <typename T = cudaError_t>
 class cuda_error : public std::exception
 {
-    cudaError_t m_error;
+    T           m_error;
     std::string m_error_string;
     std::string m_file;
 
     size_t      m_line;
     std::string m_func;
+    std::string m_what;
 
   public:
-    cuda_error(cudaError_t        error,
-               std::string        error_string,
-               const std::string& file,
-               size_t             line,
-               const std::string& func)
+    cuda_error(T error, std::string error_string, const std::string& file, size_t line, const std::string& func)
         : m_error(error)
         , m_error_string(error_string)
         , m_file(file)
         , m_line(line)
         , m_func(func)
-        , exception(("CUDA error at " + file + ":" + std::to_string(line) + " code="
-                     + std::to_string((int)m_error) + "(" + m_error_string + ")" + m_func)
-                        .c_str()){};
+    {
+        m_what = "CUDA error at " + file + ":" + std::to_string(line) + " code="
+                 + std::to_string((int)m_error) + "(" + m_error_string + ")" + m_func;
+    }
+
+    virtual char const* what() const { return m_what.c_str(); }
+
+    T                  error() const { return m_error; }
+    const std::string& error_string() const { return m_error_string; }
+    const std::string& file() const { return m_file; }
+    size_t             line() const { return m_line; }
+    const std::string& func() const { return m_func; }
 };
 
 __host__ __device__ inline const char* _cudaGetErrorEnum(cudaError_t error)
@@ -72,7 +79,7 @@ __host__ __device__ inline void check(T                 result,
                      static_cast<unsigned int>(result),
                      _cudaGetErrorEnum(result),
                      func);
-        throw cuda_error(result, _cudaGetErrorEnum(result), file, line, func);
+        throw cuda_error<T>(result, _cudaGetErrorEnum(result), file, line, func);
     }
 #endif
 }

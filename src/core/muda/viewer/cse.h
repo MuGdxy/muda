@@ -14,7 +14,7 @@ namespace muda
 /// </summary>
 /// <typeparam name="T"></typeparam>
 template <typename T>
-class cse : public viewer_base
+class cse : public viewer_base<cse<T>>
 {
     T* m_data;
 

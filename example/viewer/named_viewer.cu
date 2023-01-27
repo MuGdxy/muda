@@ -14,8 +14,10 @@ the invalid access, you can navigate the source viewer.)");
         on(nullptr)
             .next<launch>()
             .apply(
-                [v = make_viewer((int*)nullptr, 1)] __device__() mutable
+                [v = make_viewer((int*)nullptr, 1).name("host_set_name")] __device__() mutable
                 {
+                    // test long name
+                    print("v.name()=%s\n", v.name());
                     v.name("a_very_looooooooooong_name");
                     v.name("my_viewer");
                     print("v.name()=%s, v.dim()=%d.\n", v.name(), v.dim());
@@ -24,7 +26,7 @@ the invalid access, you can navigate the source viewer.)");
                 })
             .wait();
     }
-    catch(std::exception e)
+    catch(const std::exception& e)
     {
         std::cerr << "exception: " << e.what() << std::endl;
         cudaDeviceReset();

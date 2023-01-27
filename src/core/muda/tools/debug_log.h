@@ -1,10 +1,12 @@
 #pragma once
 #include <cassert>
+#include <thread>
+
 #include "fuzzy.h"
 #include "../assert.h"
 #include "../print.h"
 #include "../muda_config.h"
-
+#ifdef __CUDA_ARCH__
 #define muda_kernel_printf(fmt, ...)                                           \
     ::muda::print("(%d|%d,%d|%d,%d|%d)-(%d|%d,%d|%d,%d|%d):" fmt,              \
                   muda::block_idx().x,                                         \
@@ -20,6 +22,10 @@
                   muda::thread_idx().z,                                        \
                   muda::block_dim().z,                                         \
                   __VA_ARGS__)
+#else
+#define muda_kernel_printf(fmt, ...)                                           \
+    ::muda::print("(host):" fmt, __VA_ARGS__)
+#endif
 
 #define muda_debug_trap()                                                      \
     if constexpr(::muda::TRAP_ON_ERROR)                                        \

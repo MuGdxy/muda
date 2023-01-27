@@ -10,6 +10,7 @@
 
 namespace muda
 {
+template <typename Derived>
 class viewer_base
 {
     char m_name[VIEWER_NAME_MAX];
@@ -20,13 +21,13 @@ class viewer_base
         if constexpr(VIEWER_NAME_MAX > 0)
             return m_name;
         else
-            return "unamed";
+            return "unnamed";
     }
-    MUDA_GENERIC void name(const char* n) noexcept
+    MUDA_GENERIC Derived& name(const char* n) noexcept
     {
         if constexpr(VIEWER_NAME_MAX > 0)
         {
-            int i = 0;
+            int  i      = 0;
             bool finish = false;
             for(; i < VIEWER_NAME_MAX; ++i)
             {
@@ -45,6 +46,10 @@ class viewer_base
                 muda_kernel_warn("viewer name [%s] is too long, truncated to [%s]\n", n, name());
             }
         }
+        return derived();
     }
+
+  private:
+    MUDA_GENERIC Derived& derived() { return (Derived&)(*this); }
 };
 }  // namespace muda
