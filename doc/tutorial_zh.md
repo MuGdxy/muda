@@ -152,7 +152,7 @@ int main()
 > 2. viewer将逻辑索引（logical index）转化为内存的偏移（memory offset）
 > 3. viewer会处理逻辑索引输入并进行边界检查，避免一切越界行为与空指针访问等内存问题
 
-目前阶段，我们要清楚，如果想要在muda-style kernel中使用预先申请的内存，就必须通过viewer作为媒介。
+目前阶段，我们要清楚，如果想要在muda-style kernel中使用预先申请的内存，就必须以viewer为媒介。
 
 
 
