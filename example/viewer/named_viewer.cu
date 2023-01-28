@@ -8,7 +8,9 @@ void named_viewer()
 {
     example_desc(R"(An example of naming a viewer.
 Viewer name helps you navigate the error, if the viewer checker detects
-the invalid access, you can navigate the source viewer.)");
+the invalid access, you can navigate the source viewer.
+ALERT: this example will ruin the cuda context and it's impossible 
+to recover from the error!)");
     try
     {
         on(nullptr)
@@ -29,7 +31,6 @@ the invalid access, you can navigate the source viewer.)");
     catch(const std::exception& e)
     {
         std::cerr << "exception: " << e.what() << std::endl;
-        cudaDeviceReset();
     }
 }
 
