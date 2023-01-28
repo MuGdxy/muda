@@ -5,7 +5,7 @@ namespace muda
 {
 namespace details
 {
-    template <typename F>
+    template <typename F, typename UserTag>
     __global__ void genericKernel(F f)
     {
         f();
@@ -35,22 +35,25 @@ class launch : public launch_base<launch>
     {
     }
 
-    template <typename F>
-    launch& apply(F&& f)
+    template <typename F, typename UserTag = DefaultTag>
+    launch& apply(F&& f, UserTag tag = {})
     {
-        details::genericKernel<<<m_gridDim, m_blockDim, m_sharedMemSize, m_stream>>>(f);
+        using CallableType = raw_type_t<F>;
+        static_assert(std::is_invocable_v<CallableType>, "f:void (void)");
+        details::genericKernel<CallableType, UserTag>
+            <<<m_gridDim, m_blockDim, m_sharedMemSize, m_stream>>>(f);
         return *this;
     }
 
-    template <typename F>
-    [[nodiscard]] auto asNodeParms(F&& f)
+    template <typename F, typename UserTag = DefaultTag>
+    [[nodiscard]] auto asNodeParms(F&& f, UserTag tag = {})
     {
         using CallableType = raw_type_t<F>;
         static_assert(std::is_invocable_v<CallableType>, "f:void (void)");
         auto parms =
             std::make_shared<kernelNodeParms<CallableType>>(std::forward<F>(f));
 
-        parms->func((void*)details::genericKernel<CallableType>);
+        parms->func((void*)details::genericKernel<CallableType, UserTag>);
         parms->gridDim(m_gridDim);
         parms->blockDim(m_blockDim);
         parms->sharedMemBytes(m_sharedMemSize);
@@ -58,10 +61,22 @@ class launch : public launch_base<launch>
         return parms;
     }
 
+    template <typename F, typename UserTag = DefaultTag>
+    auto addNode(graphManager& gm, const res& resid, F&& f, UserTag tag = {})
+    {
+        return gm.addKernelNode(asNodeParms(std::forward<F>(f), tag), resid);
+    }
+
+    static void wait_event(cudaEvent_t event)
+    {
+        checkCudaErrors(cudaEventSynchronize(event));
+    }
+
     static void wait_stream(cudaStream_t stream)
     {
         checkCudaErrors(cudaStreamSynchronize(stream));
     }
+
     static void wait_device() { checkCudaErrors(cudaDeviceSynchronize()); }
 };
 }  // namespace muda

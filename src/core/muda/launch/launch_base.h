@@ -15,9 +15,16 @@
 #include "../check/checkCudaErrors.h"
 #include "../type_traits/type_mod.h"
 #include "../graph.h"
+#include "event.h"
 
 namespace muda
 {
+/// <summary>
+/// a default tag for kernel (which can be shown in profile tools such as Nsight System)
+/// </summary>
+struct DefaultTag
+{
+};
 namespace details
 {
     inline void streamErrorCallback(cudaStream_t stream, cudaError error, void* userdata)
@@ -29,9 +36,13 @@ namespace details
     }
 }  // namespace details
 
+
 template <typename Derived>
 class launch_base
 {
+    template <typename Others>
+    friend class launch_base;
+
   protected:
     cudaStream_t m_stream;
 
@@ -40,7 +51,17 @@ class launch_base
         : m_stream(stream)
     {
     }
-    void push_range(const std::string& name)
+
+    virtual void init_stream(cudaStream_t s) { m_stream = s; }
+
+    // create a named scope for better recognization (if you are using some profile tools)
+    // usage:
+    //  on(stream)
+    //      .push_range("part1")
+    //      .next<launch>(1,1).apply(...)
+    //      .pop_range()
+    //      .wait();
+    Derived& push_range(const std::string& name)
     {
         nvtxEventAttributes_t eventAttrib = {0};
         eventAttrib.version               = NVTX_VERSION;
@@ -50,12 +71,69 @@ class launch_base
         eventAttrib.messageType           = NVTX_MESSAGE_TYPE_ASCII;
         eventAttrib.message.ascii         = name.c_str();
         nvtxRangePushEx(&eventAttrib);
+        return derived();
     }
 
-    void pop_range() { nvtxRangePop(); }
+    Derived& pop_range()
+    {
+        nvtxRangePop();
+        return derived();
+    }
 
     template <typename T>
     friend class launch_base;
+
+    // record an event on this point with current stream, you could use .when() to
+    // capture this event for synchronization
+    // flags:
+    //  cudaEventRecordDefault : Default event creation flag.
+    //  cudaEventRecordExternal : Event is captured in the graph as an external
+    //  event node when performing stream capture.
+    Derived& record(cudaEvent_t e, int flag = cudaEventRecordDefault)
+    {
+        checkCudaErrors(cudaEventRecordWithFlags(e, m_stream, flag));
+
+        return derived();
+    }
+
+    auto addRecordNode(graphManager& gm, const res& r, cudaEvent_t e)
+    {
+        return gm.addEventRecordNode(e, r);
+    }
+
+    // let the following kernels wait until the event is triggered
+    // (asynchronize with the host)
+    // usage:
+    //  on(stream)
+    //      .when(event)
+    //      .next<launch>(1,1).apply(...)
+    //      .wait();
+    // flags:
+    //  cudaEventRecordDefault : Default event creation flag.
+    //  cudaEventRecordExternal : Event is captured in the graph as an external
+	//  event node when performing stream capture.
+    Derived& when(cudaEvent_t e, int flag = cudaEventRecordDefault)
+    {
+        checkCudaErrors(cudaStreamWaitEvent(m_stream, e, flag));
+
+        return derived();
+    }
+
+
+    auto addWhenNode(graphManager& gm, const res& r, cudaEvent_t e)
+    {
+        return gm.addEventWaitNode(e, r);
+    }
+
+    // let the host wait for the event
+    Derived& wait(cudaEvent_t e)
+    {
+        checkCudaErrors(cudaEventSynchronize(e));
+
+        return derived();
+    }
+
+    // let the host wait for the current stream
     Derived& wait()
     {
         checkCudaErrors(cudaStreamSynchronize(m_stream));
@@ -63,6 +141,8 @@ class launch_base
         return derived();
     }
 
+    // register a host callback function, which will be called when all the jobs before
+    // this point are done.
     Derived& callback(const std::function<void(cudaStream_t, cudaError)>& callback)
     {
         auto userdata = new std::function<void(cudaStream_t, cudaError)>(callback);
@@ -75,16 +155,16 @@ class launch_base
     Next next(Next n)
     {
         static_assert(std::is_base_of_v<launch_base<Next>, Next>, "not supported");
-        n.m_stream = m_stream;
+        n.init_stream(m_stream);
         return n;
     }
 
-    template <typename Next, typename ...Args>
-    Next next(Args&& ... args)
+    template <typename Next, typename... Args>
+    Next next(Args&&... args)
     {
         static_assert(std::is_base_of_v<launch_base<Next>, Next>, "not supported");
         Next n(std::forward<Args>(args)...);
-        n.m_stream = m_stream;
+        n.init_stream(m_stream);
         return n;
     }
 
@@ -95,7 +175,7 @@ class launch_base
 class empty : public launch_base<empty>
 {
   public:
-    empty(cudaStream_t stream)
+    empty(cudaStream_t stream = nullptr)
         : launch_base(stream)
     {
     }

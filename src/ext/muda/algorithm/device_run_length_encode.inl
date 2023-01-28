@@ -16,7 +16,7 @@ DeviceRunLengthEncode& DeviceRunLengthEncode::Encode(device_buffer<std::byte>& e
                                                      int  num_items)
 {
     size_t temp_storage_bytes = 0;
-    cub::DeviceRunLengthEncode::Encode(external_buffer.data(),
+    checkCudaErrors(cub::DeviceRunLengthEncode::Encode(nullptr,
                                        temp_storage_bytes,
                                        d_in,
                                        d_unique_out,
@@ -24,9 +24,9 @@ DeviceRunLengthEncode& DeviceRunLengthEncode::Encode(device_buffer<std::byte>& e
                                        d_num_runs_out,
                                        num_items,
                                        m_stream,
-                                       false);
+                                       false));
     prepareBuffer(external_buffer, temp_storage_bytes);
-    cub::DeviceRunLengthEncode::Encode(external_buffer.data(),
+    checkCudaErrors(cub::DeviceRunLengthEncode::Encode(external_buffer.data(),
                                        temp_storage_bytes,
                                        d_in,
                                        d_unique_out,
@@ -34,7 +34,7 @@ DeviceRunLengthEncode& DeviceRunLengthEncode::Encode(device_buffer<std::byte>& e
                                        d_num_runs_out,
                                        num_items,
                                        m_stream,
-                                       false);
+                                       false));
     return *this;
 }
 

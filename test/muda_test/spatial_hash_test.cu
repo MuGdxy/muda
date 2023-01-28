@@ -58,19 +58,17 @@ void spatial_hash_test(host_vector<CollisionPair>& res, host_vector<CollisionPai
     stream s;
     auto   spheres = to_device(h_spheres);
     launch::wait_device();
-    auto spatialPartition = SpatialPartition<Hash>(s);
+    SpatialPartitionField<Hash>  field;
+    device_buffer<CollisionPair> d_res;
 
-    spatialPartition  // setup config
-        .setCellSize(1.0f)  // set cell size manually which will disable automatic cell size calculation
-        .configSpatialHash(Eigen::Vector3f(0, 0, 0));  // give the left-bottom corner of the domain
+    on(s)
+        .next<SpatialPartitionLauncher<Hash>>(field)  // setup config
+        .configSpatialHash(Eigen::Vector3f(0, 0, 0),  // give the left-bottom corner of the domain
+                           1.0f)  // set cell size manually which will disable automatic cell size calculation
+        .applyCreateCollisionPairs(make_viewer(spheres), d_res);
 
-    spatialPartition  // begin async calculation
-        .beginSetupSpatialDataStructure(make_viewer(spheres))
-        .beginCreateCollisionPairList()
-        .wait()
-        .getCollisionPairs()
-        .copy_to(res); // this copy is also async
-    launch::wait_stream(s); // wait for the copy to finish
+    d_res.copy_to(res);      // this copy is also async
+    launch::wait_stream(s);  // wait for the copy to finish
 
     // detect collision in these 1000 spheres brutely
     for(int i = 0; i < h_spheres.size(); i++)

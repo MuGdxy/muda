@@ -1,10 +1,12 @@
 #pragma once
 #include <cassert>
+#include <thread>
+
 #include "fuzzy.h"
 #include "../assert.h"
 #include "../print.h"
 #include "../muda_config.h"
-
+#ifdef __CUDA_ARCH__
 #define muda_kernel_printf(fmt, ...)                                           \
     ::muda::print("(%d|%d,%d|%d,%d|%d)-(%d|%d,%d|%d,%d|%d):" fmt,              \
                   muda::block_idx().x,                                         \
@@ -20,15 +22,19 @@
                   muda::thread_idx().z,                                        \
                   muda::block_dim().z,                                         \
                   __VA_ARGS__)
+#else
+#define muda_kernel_printf(fmt, ...)                                           \
+    ::muda::print("(host):" fmt, __VA_ARGS__)
+#endif
 
 #define muda_debug_trap()                                                      \
-    if constexpr(::muda::TRAP_ON_ERROR)                                          \
+    if constexpr(::muda::TRAP_ON_ERROR)                                        \
         ::muda::trap();
 
 #define muda_kernel_assert(res, fmt, ...)                                      \
     if(!(res))                                                                 \
     {                                                                          \
-        muda_kernel_printf("<assert> " #res " failed." fmt "\n", __VA_ARGS__); \
+        muda_kernel_printf("<assert> " #res " failed." fmt, __VA_ARGS__);      \
         muda_debug_trap();                                                     \
     }
 
@@ -36,13 +42,18 @@
 #define muda_kernel_check(res, fmt, ...)                                       \
     if(!(res))                                                                 \
     {                                                                          \
-        muda_kernel_printf("<check> " #res " failed." fmt "\n", __VA_ARGS__);  \
+        muda_kernel_printf("<check> " #res " failed." fmt, __VA_ARGS__);       \
     }
 
 #define muda_kernel_error(fmt, ...)                                            \
     {                                                                          \
-        muda_kernel_printf("<error> " fmt "\n", __VA_ARGS__);                  \
+        muda_kernel_printf("<error> " fmt, __VA_ARGS__);                       \
         muda_debug_trap();                                                     \
+    }
+
+#define muda_kernel_warn(fmt, ...)                                            \
+    {                                                                          \
+        muda_kernel_printf("<warn> " fmt, __VA_ARGS__);                       \
     }
 
 #define muda_kernel_debug_info(debugOption, fmt, ...)                          \

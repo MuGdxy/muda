@@ -134,8 +134,8 @@ void host_call_graph(int& ground_thruth, int& res)
 {
     universal_var<int> v = 0;
 
-    auto hp = host_for().asNodeParms(
-        5, [v = make_viewer(v)] __host__ (int i) mutable { v++; });
+    auto hp = host_call().asNodeParms([v = make_viewer(v)] __host__() mutable
+                                      { for(int i = 0; i < 5; ++i) v++; });
 
     auto g = graph::create();
     g->addHostNode(hp);
@@ -149,7 +149,7 @@ void host_call_graph(int& ground_thruth, int& res)
         ground_thruth++;
     res = v;
 }
-TEST_CASE("host_call_node", "[graph]") 
+TEST_CASE("host_call_node", "[graph]")
 {
     int ground_thruth, res;
     host_call_graph(ground_thruth, res);

@@ -184,10 +184,12 @@ void ticcd_test(host_vector<uint32_t>& ground_thruth,
     h_results.resize(resultSize);
     host_vector<float> h_tois(resultSize);
 
-    host_for(host_type::host_sync)
-        .apply(resultSize,
-               TiccdTestKernel<type>(make_viewer(X), make_viewer(h_results), make_viewer(h_tois)))
-        .wait();
+    auto ticcdKernel =
+        TiccdTestKernel<type>(make_viewer(X), make_viewer(h_results), make_viewer(h_tois));
+    for(int i = 0; i < resultSize; i++)
+    {
+        ticcdKernel(i);
+    }
 
     device_vector<Eigen::Vector3f> x = X;
     device_vector<uint32_t>        results(resultSize);

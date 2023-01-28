@@ -96,6 +96,10 @@ play all examples:
 ```shell
 $ xmake run muda_example
 ```
+## tutorial
+
+- [tutorial_zh](./doc/tutorial_zh.md)
+
 ## features
 
 ### thread_only container

@@ -4,12 +4,18 @@
 
 ## 源码目录
 
-你可以在![](https://github.com/MuGdxy/muda) 获取muda的源码。使用git进行版本管理，main分支为发行分支，dev分支为开发分支。
+你可以在 [https://github.com/MuGdxy/muda](https://github.com/MuGdxy/muda) 获取muda的源码。使用git进行版本管理，main分支为发行分支，dev分支为开发分支。
 
-根目录下有如下目录树：
-- test: 测试目录，可以在下载后跑一遍
-- test/playground: 开发测试目录，不会合并到main分支中
-- 
+根目录下有如下目录值得注意：
+
+- src: muda源码
+  - core: muda核心代码，主要包括viewer/launch/graph
+  - ext: muda扩展内容代码，主要为其他常用cuda工具库提供便捷的交互
+  - util: muda额外工具代码，例如图形界面（GUI）与基于物理的动画（PBA）等常用工具。
+
+- test/muda_test: 测试目录，所有的非交互式的测试代码均放在此目录中
+- test/playground: 开发测试目录，含有交互的测试代码（例如GUI测试代码）目前放在此目录中
+- example: muda使用示例代码，主要提供给使用muda api的用户。
 
 ## 开始开发
 
@@ -67,7 +73,7 @@ $ xmake f --example=true
 可以在`example/`文件夹下调用：
 
 ```shell
-py mk.py example_name example_tag
+py ../mk.py example_name example_tag
 ```
 
 来生成对应的例子模板。
@@ -122,9 +128,10 @@ muda
   - buffer: 内存申请/管理工具 [details](#ext-buffer)
   - algo: cuda CUB 的 wrapper [details](#ext-algo)
   - blas: cublas cusparse cusolver的wrapper [details](#ext-blas)
-  - thread_only: stl-like thread only 容器库，[details](ext-thread only)
-  - pba: physically based animation相关，例如碰撞检测等。[details](#ext-pba)
-  - gui: debug gui tool 基本可视化工具, TODO [details](#ext-gui)
+  - thread_only: stl-like thread only 容器库，[details](#ext-thread only)
+- util
+  - pba: physically based animation相关，例如碰撞检测等。[details](#util-pba)
+  - gui: debug gui tool 基本可视化工具, TODO [details](#util-gui)
 
 #### core-launch
 
@@ -270,14 +277,18 @@ viewer的实现注意事项有：
 ```c++
 if constexpr(debugViewers)
     if(!(x >= 0 && x < dim_x))
-        muda_kernel_error("mapper: out of range, index=(%d) dim_=(%d)\n", x, dim_x);
+        muda_kernel_error("viewer[%s]: out of range, index=(%d) dim_=(%d)\n", name(), x, dim_x);
 ```
 
 `muda_kernel_error`宏函数会自动填写thread/block/grid信息，并在`trapOnError==true`时trap掉当前kernel。
 
+目前所有viewer都最终继承自，viewer_base，debug 模式下 viewer_base中有一个硬编码的(默认为`char[16]`)的viewer name，可以由用户在host或者device端通过`.name("myViewer")`进行设置，进行报错时，应当带上`name()`以提供更准确的报错信息。
+
 #### core-graph
 
-[TODO]
+basic graph部分：以 `graph` `launch.asNodeParms()` `parallel_for.asNodeParms()`等核心API为代表的，显示构造cuda graph的工具。此部分主要作用是完成从muda style launch到`cudaGraphNodeParms`的生成。即，做好muda的cudaGraph wrapper。
+
+advanced graph部分：目前实现了`graphManager`，可以通过检查用户读写的资源与Node创建的顺序来自动构建Node之间依赖，以便更加智能的完成graph的建立工作。核心API为`launch.addNode()``parallel_for.addNode()`等。
 
 #### ext-buffer
 
@@ -354,7 +365,11 @@ py mk.py DeviceScan
 
 部分可能不适合thread_only的内容可能需要酌情删除或修改。
 
-#### allocator
+:exclamation:string部分，目前涉及到的format问题，暂时无法从cpu版本迁移到gpu thread only版本。（例1）
+
+例1. `to_string(5)`中使用了仅cpu端存在的指令，内部的功能需要手动实现例如float/int的格式化输出等，可能可以参照https://github.com/eyalroz/cuda-kat中的format实现。
+
+##### allocator
 
 thread only容器目前有三个allocator可使用：
 
@@ -376,11 +391,97 @@ thread only容器目前有三个allocator可使用：
 
 ### 其他实现注意事项
 
+#### 关于提交
+
 1. 请为自己实现的内容添加对应的test与example
 2. 提交前请保证所有test/example均通过
 3. 请在[implement.md](./implement.md)中填写对应的实现内容
 4. 需要用户输入的测试请不要放入test中（以保证所有test可以一键启动并且执行到结束），可暂时放到playground中。
-5. 避免使用64位类型和无符号类型，例如`int64_t/uint64_t`（无符号类型将可能触发GPU上的无符号数溢出检查）
+
+#### 关于代码内容
+
+1. 避免使用64位类型和无符号类型，例如`int64_t/uint64_t`（无符号类型将可能触发GPU上的无符号数溢出检查）
+
+#### 关于API风格
+
+1. 应当遵循链式编程的风格
+2. 受制于CUDA Kernel的种种限制，下面例1中的格式会更有助于实现与接口的分离。
+
+例1.
+
+```c++
+namespace muda
+{
+    namespace details
+    {
+        class my_impl
+        {
+            // CUDA requires the parent function of __device__ lambda to be public
+            public:
+            device_buffer<int> data;
+            void myFunc(cudaStream_t s)
+            {
+                launch(gridDim, blockDim, sharedMem, s)
+                    .apply([] __device__ () 
+                    {
+                       // your code
+                    });
+            }
+            
+            auto myNodeParms()
+            {
+                 return launch(gridDim, blockDim, sharedMem, s)
+                    .asNodeParms([] __device__ () 
+                    {
+                       // your code
+                    });
+            }
+        }
+    }
+    
+	// a handle to isolate the all public class details::my_impl
+    class my_field
+    {
+        friend class my_launch;
+        details::myImpl impl;   
+    }
+	
+    // a launcher to keep muda style
+    class my_launch : public launch_base<my_launch>
+    {
+        public:
+        my_launch& applyFunc(my_field& field)
+        {
+            field.impl.myFunc(m_stream);
+            return *this;
+        }
+
+        auto asNodeParms(my_field& field)
+        {
+            field.impl.myNodeParms(m_stream);
+            return *this;
+        }
+    }
+    
+    //usage
+}
+
+void main()
+{
+    using namespace muda;
+    my_field field;
+    
+    my_launch()
+        .applyFunc(field)
+        .wait();
+    // or
+    graph g;
+    auto parms = my_launch().asNodeParms();
+    g.addKernelNode(parms, {});
+    auto instance = g.instantiate();
+    instance.launch();
+}
+```
 
 ## 设计思想与资料
 

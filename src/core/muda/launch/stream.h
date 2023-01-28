@@ -1,5 +1,9 @@
 #pragma once
-#include "launch_base.h"
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
+#include <device_launch_parameters.h>
+#include "../check/checkCudaErrors.h"
 
 namespace muda
 {
@@ -22,11 +26,6 @@ class stream
     }
 
     ~stream() { checkCudaErrors(cudaStreamDestroy(m_handle)); }
-
-    [[nodiscard]] static sptr<stream> create(flag f = flag::block)
-    {
-        return std::make_shared<stream>(f);
-    }
     
     operator cudaStream_t() { return m_handle; }
 };
