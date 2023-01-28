@@ -54,13 +54,13 @@ $ xmake project -k vsxmake2022
 using namespace muda;
 int main()
 {
-	launch(1, 1)
-    	.apply(
-        	[] __device__() 
+    launch(1, 1)
+        .apply(
+            [] __device__() 
             {
                 print("hello muda!\n"); 
             })
-    	.wait();
+        .wait();
 }
 ```
 
@@ -90,13 +90,14 @@ Cuda VectorAdd例子在device端计算了两个随机向量的和。
 
 ```c++
 #include <muda/muda.h>
+#include <muda/container.h>
 using namespace muda;
 int main()
 {
-	constexpr int N = 50000;
+    constexpr int numElements = 50000;
     // alloc host and device data
-    host_vector<float>   hA(N), hB(N), hC(N);
-    device_vector<float> dA(N), dB(N), dC(N);
+    host_vector<float>   hA(numElements), hB(numElements), hC(numElements);
+    device_vector<float> dA(numElements), dB(numElements), dC(numElements);
 
     // initialize A and B using random numbers
     auto rand = [] { return std::rand() / (float)RAND_MAX; };
@@ -106,25 +107,25 @@ int main()
     // copy A and B to device
     dA = hA;
     dB = hB;
-	
-    int threadsPerBlock = 256;
-  	int blocksPerGrid = (numElements + threadsPerBlock - 1) / threadsPerBlock;
 
-    launch(blockPerGrid, threadsPerBlock)
+    int threadsPerBlock = 256;
+    int blocksPerGrid   = (numElements + threadsPerBlock - 1) / threadsPerBlock;
+
+    launch(blocksPerGrid, threadsPerBlock)
         .apply(
-        [
-            // this is a capture list
-            // here, we do the mapping from device_vector to a viewer
-            // which can be used in kernel (much safer than raw pointer)
-            dC = make_viewer(dC),  
-            dA = make_viewer(dA),  
-            dB = make_viewer(dB),
-            N = N
-        ]__device__() mutable  // place "mutable" to make dC modifiable
-        {
-            int i = blockDim.x * blockIdx.x + threadIdx.x;
-            if (i < numElements) dC(i) = dA(i) + dB(i);
-        })
+            [
+                // this is a capture list
+                // here, we do the mapping from device_vector to a viewer
+                // which can be used in kernel (much safer than raw pointer)
+                dC = make_viewer(dC),
+                dA = make_viewer(dA),
+                dB = make_viewer(dB),
+                numElements = numElements] __device__() mutable  // place "mutable" to make dC modifiable
+            {
+                int i = blockDim.x * blockIdx.x + threadIdx.x;
+                if(i < numElements)
+                    dC(i) = dA(i) + dB(i);
+            })
         .wait();  // wait the kernel to finish
 
     // copy C back to host
@@ -164,11 +165,10 @@ int main()
 
 ```c++
 parallel_for(256)
-    .apply(N, // parallel for count
-           [dC = make_viewer(dC),
-            dA = make_viewer(dA),
-            dB = make_viewer(dB)] 
-           __device__(int i) mutable
+    .apply(numElements,  // parallel for count
+           [dC = make_viewer(dC), 
+            dA = make_viewer(dA), 
+            dB = make_viewer(dB)] __device__(int i) mutable
            {
                // safe parallel_for will cover the rang [0, N)
                // i just goes from 0 to N-1
@@ -182,12 +182,11 @@ parallel_for(256)
 诶？那如果我们想用固定的gridDim和blockDim来实现遍历怎么办呢？parallel_for当然考虑到了这一点，我们只需要指定gridDim和blockDim的大小，parall_for就可以以[grid stride loop](https://developer.nvidia.com/blog/cuda-pro-tip-write-flexible-kernels-grid-stride-loops/)的方式进行遍历。我们的核心代码并不需要做任何修改。
 
 ```cpp
-parallel_for(32 /*gridDim*/,64/*blockDim*/)
-    .apply(N, // parallel for count
-           [dC = make_viewer(dC),
-            dA = make_viewer(dA),
-            dB = make_viewer(dB)] 
-           __device__(int i) mutable
+parallel_for(32 /*gridDim*/, 64 /*blockDim*/)
+    .apply(numElements,  // parallel for count
+           [dC = make_viewer(dC), 
+            dA = make_viewer(dA), 
+            dB = make_viewer(dB)] __device__(int i) mutable
            {
                // safe parallel_for will cover the rang [0, N)
                // i just goes from 0 to N-1
@@ -230,12 +229,11 @@ parallel_for(32 /*gridDim*/,64/*blockDim*/)
 现在我们将代码改成如下形式：
 
 ```c++
-parallel_for(32 /*gridDim*/,64/*blockDim*/)
-    .apply(N, // parallel for count
-           [dC = make_viewer(dC),
-            dA = make_viewer(dA),
-            dB = make_viewer(dB)] 
-           __device__(int i) mutable
+parallel_for(32 /*gridDim*/, 64 /*blockDim*/)
+    .apply(numElements,  // parallel for count
+           [dC = make_viewer(dC), 
+            dA = make_viewer(dA), 
+            dB = make_viewer(dB)] __device__(int i) mutable
            {
                // safe parallel_for will cover the rang [0, N)
                // i just goes from 0 to N-1
@@ -246,15 +244,13 @@ parallel_for(32 /*gridDim*/,64/*blockDim*/)
 
 重新运行，你会得到一个准确的报错信息。
 
-
-
-[TODO] : 需要在这个位置粘贴报错的结果
-
-
+```shell
+(13|32,0|1,0|1)-(15|64,0|1,0|1):<error> dense1D[unnamed]: out of range, index=(50000) m_dim=(50000)
+```
 
 报错信息中，
 
-`()-()`括号内的为，`(blockId|gridDim) - (threadId|blockDim)`
+`()-()`括号内的为，`(blockId|gridDim) - (threadId|blockDim)`。报错信息表明，在13号grid中的15号block中发生了dense1D的越界，因为这个dense1D只有50000个元素，而我们访问了一个index=50000的不存在的元素。
 
 `viewer[unnamed]`中的unnamed是因为我们没有对正在使用的viewer进行命名。我们可以通过下面的方式来对viewer进行命名。
 
@@ -273,23 +269,39 @@ parallel_for(32 /*gridDim*/,64/*blockDim*/)
     .wait();  // wait the kernel to finish
 ```
 
-命名可以发生在任何区域，host端/device端/capture&mapping区，上面的代码中，我们的命名就发生在capture&mapping区，这也是最方便，最具可读性的方式。
+拥有名字后，我们的报错信息变为了：
+
+```shell
+(13|32,0|1,0|1)-(15|64,0|1,0|1):<error> dense1D[dA]: out of range, index=(50000) m_dim=(50000)
+```
+
+我们可以发现，确实`dA`是第一个访问越界的viewer。并且我们看到，一旦发生了越界，muda就让kernel直接停下，不再继续运行，便于我们定位第一个越界的位置。
+
+关于命名：
+
+上面的代码中，我们的命名发生在capture&mapping区，这也是最方便，最具可读性的方式。
+
+*定义：capture&mapping区是muda-style launch中的lambda表达式捕获列表区域，此区域一般用于make_viewer与复制值类型数据到device*
+
+而实际上命名可以发生在任何区域（host端/device端/capture&mapping区），如下面的代码所示。
 
 ```c++
 int main()
 {
     device_vector<int> v;
-    viewer = make_viewer(v).name("host");
-    launch(1,1).apply([viewer = make_viewer(v).name("capture_mapping")]__device__()
-                      {
-                          viewer.name("device");
-                      });
+    auto               viewer = make_viewer(v).name("host");
+    launch(1, 1)
+        .apply(
+            [viewer = make_viewer(v).name("capture_mapping")] __device__() mutable
+            {
+                viewer.name("device");
+            })
 }
 ```
 
-*定义：capture&mapping区是muda-style launch中的lambda表达式捕获列表区域，此区域一般用于make_viewer与复制值类型数据到device*
+在debug模式下的muda会接收用户设置的viewer name，并用于错误输出，非debug模式下，muda将会无视命名函数。
 
-实际上，在debug模式下的muda允许用户设置viewer的名称，并用于错误输出，非debug模式下，muda将会无视命名函数。
+> 注：非debug模式需要用户手动设置"MUDA_NDEBUG=1"或者在xmake config中设置"--ndebug=true"，muda默认开始debug模式。
 
 ### synchronization
 
