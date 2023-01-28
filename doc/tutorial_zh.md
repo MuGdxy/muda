@@ -20,7 +20,9 @@ MUDA核心模块主要有：
 第二种方式给予用户更完整的控制权。
 
 在第一种方式的链接中，我们准备了一个muda的开始程序，你可以从这个程序开始你的muda使用之旅。
-如果你不太熟悉xmake的使用方式，可以查阅xmake官方文档 https://xmake.io/。不必担心，使用xmake时，我们会对每一个语句进行解释，以便读者理解。
+如果你不太熟悉xmake的使用方式，可以查阅xmake官方文档 https://xmake.io/
+
+不必担心，使用xmake时，我们会对每一个语句进行解释，以便读者理解。
 
 ### IDE 支持
 
@@ -82,7 +84,7 @@ apply后，我们使用一个`wait()`函数对当前的cuda stream(default strea
 
 OK！我们来做一个简单的事情，记得CUDA的[VectorAdd](https://github.com/NVIDIA/cuda-samples/blob/master/Samples/0_Introduction/vectorAdd/vectorAdd.cu)的例子吗？
 
-Cuda VectorAdd例子计算了两个向量的和，并且把他们相加得到和向量。
+Cuda VectorAdd例子在device端计算了两个随机向量的和。
 
 接下来，我们使用muda来实现相同的功能。
 
