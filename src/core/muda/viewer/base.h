@@ -18,17 +18,31 @@ class viewer_base
     char m_name[VIEWER_NAME_MAX];
 #endif
   public:
+    viewer_base()
+    {
+#if !MUDA_NDEBUG
+        m_name[0] = '\0';
+#endif
+    }
+    
     MUDA_GENERIC const char* name() const noexcept
     {
 #if !MUDA_NDEBUG
-        return m_name;
-#else
-        return "unnamed";
+        if(m_name[0] != '\0')
+            return m_name;
 #endif
+        return "unnamed";
     }
+
     MUDA_GENERIC Derived& name(const char* n) noexcept
     {
 #if !MUDA_NDEBUG
+        if(n == nullptr)
+        {
+            m_name[0] = '\0';
+            return derived();
+        }
+
         int  i      = 0;
         bool finish = false;
         for(; i < VIEWER_NAME_MAX; ++i)
