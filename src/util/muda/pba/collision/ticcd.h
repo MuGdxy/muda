@@ -22,7 +22,7 @@ namespace details
     MUDA_GENERIC inline uint64_t power(const uint64_t a, const uint8_t b)
     {
         // The fast bit shifting power trick only works if b is not too larger.
-        muda_kernel_check(b < MAX_DENOM_POWER);
+        muda_kernel_check(b < MAX_DENOM_POWER, "");
         // WARNING: Technically this can still fail with `b < MAX_DENOM_POWER` if `a > 1`.
         return a << b;
     }
@@ -128,7 +128,7 @@ class ticcd
         MUDA_GENERIC NumCCD(Scalar x)
         {
             // Use bisection to find an upper bound of x.
-            muda_kernel_check(x >= 0 && x <= 1);
+            muda_kernel_check(x >= 0 && x <= 1, "");
             NumCCD low(0, 0), high(1, 0), mid;
 
             // Hard code these cases for better accuracy.
@@ -157,7 +157,7 @@ class ticcd
                     break;
             } while(mid.denom_power < MAX_DENOM_POWER);
             *this = high;
-            muda_kernel_check(x <= value());
+            muda_kernel_check(x <= value(), "");
         }
 
         MUDA_GENERIC ~NumCCD() {}
@@ -186,13 +186,13 @@ class ticcd
             else if(n2 > n1)
             {
                 result.numerator = k1 * details::pow2(n2 - n1) + k2;
-                muda_kernel_check(result.numerator % 2 == 1);
+                muda_kernel_check(result.numerator % 2 == 1, "");
                 result.denom_power = n2;
             }
             else
             {  // n2 < n1
                 result.numerator = k1 + k2 * details::pow2(n1 - n2);
-                muda_kernel_check(result.numerator % 2 == 1);
+                muda_kernel_check(result.numerator % 2 == 1, "");
                 result.denom_power = n1;
             }
             return result;
@@ -218,7 +218,7 @@ class ticcd
                 tmp_k1 = details::pow2(n2 - n1) * k1;
             else if(n1 > n2)
                 tmp_k2 = details::pow2(n1 - n2) * k2;
-            muda_kernel_check((value() < other.value()) == (tmp_k1 < tmp_k2));
+            muda_kernel_check((value() < other.value()) == (tmp_k1 < tmp_k2),"");
             return tmp_k1 < tmp_k2;
         }
 
@@ -290,7 +290,7 @@ class ticcd
             // interval is [k1/pow2(n1), k2/pow2(n2)]
             NumCCD mid = upper + lower;
             mid.denom_power++;  // ÷ 2
-            muda_kernel_check(mid.value() > lower.value() && mid.value() < upper.value());
+            muda_kernel_check(mid.value() > lower.value() && mid.value() < upper.value(), "");
             return Interval2(Interval(lower, mid), Interval(mid, upper));
         }
 
@@ -383,7 +383,7 @@ class ticcd
 
         do
         {
-            muda_kernel_check(t_max >= 0 && t_max <= 1);
+            muda_kernel_check(t_max >= 0 && t_max <= 1, "");
             tmp_is_impacting = edge_edge_interval_root_finder_BFS(a0_start,
                                                                   a1_start,
                                                                   b0_start,
@@ -401,7 +401,7 @@ class ticcd
                                                                   toi,
                                                                   output_tolerance);
             // printf("edge_edge_interval_root_finder_BFS\n");
-            muda_kernel_check(!tmp_is_impacting || toi >= 0);
+            muda_kernel_check(!tmp_is_impacting || toi >= 0, "");
 
             if(t_max == t_max_in)
             {
@@ -444,7 +444,7 @@ class ticcd
         } while(no_zero_toi && ++no_zero_toi_iter < MAX_NO_ZERO_TOI_ITER
                 && tmp_is_impacting && toi == 0);
 
-        muda_kernel_check(!no_zero_toi || !is_impacting || toi != 0);
+        muda_kernel_check(!no_zero_toi || !is_impacting || toi != 0, "");
 
         return is_impacting;
     }
@@ -581,7 +581,7 @@ class ticcd
         }
         else
         {
-            muda_kernel_check(check_vf && split_i != 0);
+            muda_kernel_check(check_vf && split_i != 0, "");
             // u + v ≤ 1
             if(split_i == 1)
             {
@@ -1151,7 +1151,7 @@ class ticcd
         }
         else
         {
-            muda_kernel_check(check_vf && split_i != 0);
+            muda_kernel_check(check_vf && split_i != 0, "");
             // u + v ≤ 1
             if(split_i == 1)
             {

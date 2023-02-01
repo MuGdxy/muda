@@ -2,6 +2,7 @@
 #include "base.h"
 #include "kernel_node.h"
 #include "memory_node.h"
+#include <list>
 
 namespace muda
 {

@@ -98,6 +98,13 @@ end
 function muda_app_base()
     add_deps("muda-full")
     add_undefines("min","max")
+    -- definitions for EASTL
+    add_defines("_CHAR16T")
+    add_defines("_CRT_SECURE_NO_WARNINGS")
+    add_defines("_SCL_SECURE_NO_WARNINGS")
+    add_defines("EASTL_OPENSOURCE=1")
+    add_includedirs("src/ext/muda/thread_only", {public = true}) -- EASTL requirement
+    add_includedirs("src/ext/muda/thread_only/EABase/include/Common", {public = true}) -- EASTL requirement
     
     set_kind("binary")
     add_includedirs("test/", {public = false})

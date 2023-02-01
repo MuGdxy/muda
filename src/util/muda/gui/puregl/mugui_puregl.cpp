@@ -7,7 +7,7 @@
 
 #include "mugui_puregl.h"
 #include <iostream>
-#include "../glad/gl.h"
+#include "../GL/gl.h"
 #include <GLFW/glfw3.h>
 #include "../utils/gl_utils.h"
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "../glad/gl.h"
+#include "../GL/gl.h"
 #include <GLFW/glfw3.h>
 
 namespace muda

@@ -6,14 +6,14 @@ namespace muda
 namespace details
 {
     template <typename F, typename UserTag>
-    __host__ void __stdcall genericHostCall(void* userdata)
+    __host__ void /*__stdcall*/ genericHostCall(void* userdata)
     {
         auto f = reinterpret_cast<F*>(userdata);
         (*f)();
     }
 
     template <typename F, typename UserTag>
-    __host__ void __stdcall deleteFunctionObject(void* userdata)
+    __host__ void /*__stdcall*/ deleteFunctionObject(void* userdata)
     {
         auto f = reinterpret_cast<F*>(userdata);
         delete f;

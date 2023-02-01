@@ -7,7 +7,7 @@
  * @desp: this is an pure opengl gui interface
 */
 
-#include "../glad/gl.h"
+#include "../GL/gl.h"
 #include "GLFW/glfw3.h"
 #include "../mugui_base.h"
 #include <string>
