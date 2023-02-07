@@ -90,6 +90,8 @@ class device_buffer
 
     empty set(char setbyte = 0, size_t count = size_t(-1));
 
+    empty fill(const T& v, size_t count = size_t(-1), int blockDim = LIGHT_WORKLOAD_BLOCK_SIZE);
+
     // copy to/from
     empty copy_to(value_type& var) const;
 

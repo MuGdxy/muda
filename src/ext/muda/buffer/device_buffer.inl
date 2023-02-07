@@ -166,6 +166,21 @@ empty device_buffer<T>::set(char setbyte, size_t count)
 }
 
 template <typename T>
+empty device_buffer<T>::fill(const T& value, size_t count, int blockDim)
+{
+    m_init = true;
+    if(count == size_t(-1))
+        count = m_size;
+    if(count > m_size)
+        throw std::out_of_range("device_buffer::set out of range");
+    auto   mem      = memory(m_stream);
+    parallel_for(blockDim, 0, m_stream)
+        .apply(m_size,
+               [=, d = make_viewer(*this)] __device__(int i) mutable
+               { d(i) = value; });
+    return empty(m_stream);
+}
+template <typename T>
 empty device_buffer<T>::copy_to(value_type& var) const
 {
     if(m_size != 1)

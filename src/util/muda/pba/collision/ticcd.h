@@ -544,76 +544,76 @@ class ticcd
         return max_index;
     }
 
-    MUDA_GENERIC static bool split_and_push(const Interval3& tuv,
-                                            int              split_i,
-                                            std::function<void(const Interval3&)> push,
-                                            bool   check_vf,
-                                            Scalar t_upper_bound = 1)
-    {
-        auto halves = tuv[split_i].bisect();
-        if(halves[0].lower >= halves[0].upper || halves[1].lower >= halves[1].upper)
-        {
-            muda_kernel_printf("OVERFLOW HAPPENS WHEN SPLITTING INTERVALS\n");
-            return true;
-        }
+    //MUDA_GENERIC static bool split_and_push(const Interval3& tuv,
+    //                                        int              split_i,
+    //                                        std::function<void(const Interval3&)> push,
+    //                                        bool   check_vf,
+    //                                        Scalar t_upper_bound = 1)
+    //{
+    //    auto halves = tuv[split_i].bisect();
+    //    if(halves[0].lower >= halves[0].upper || halves[1].lower >= halves[1].upper)
+    //    {
+    //        muda_kernel_printf("OVERFLOW HAPPENS WHEN SPLITTING INTERVALS\n");
+    //        return true;
+    //    }
 
-        Interval3 tmp = tuv;
+    //    Interval3 tmp = tuv;
 
-        if(split_i == 0)
-        {
-            if(t_upper_bound == 1 || halves[1].overlaps(0, t_upper_bound))
-            {
-                tmp[split_i] = halves[1];
-                push({tmp});
-            }
-            if(t_upper_bound == 1 || halves[0].overlaps(0, t_upper_bound))
-            {
-                tmp[split_i] = halves[0];
-                push({tmp});
-            }
-        }
-        else if(!check_vf)
-        {  // edge uv
-            tmp[split_i] = halves[1];
-            push({tmp});
-            tmp[split_i] = halves[0];
-            push({tmp});
-        }
-        else
-        {
-            muda_kernel_check(check_vf && split_i != 0);
-            // u + v ≤ 1
-            if(split_i == 1)
-            {
-                const Interval& v = tuv[2];
-                if(NumCCD::is_sum_leq_1(halves[1].lower, v.lower))
-                {
-                    tmp[split_i] = halves[1];
-                    push({tmp});
-                }
-                if(NumCCD::is_sum_leq_1(halves[0].lower, v.lower))
-                {
-                    tmp[split_i] = halves[0];
-                    push({tmp});
-                }
-            }
-            else if(split_i == 2)
-            {
-                const Interval& u = tuv[1];
-                if(NumCCD::is_sum_leq_1(u.lower, halves[1].lower))
-                {
-                    tmp[split_i] = halves[1];
-                    push({tmp});
-                }
-                if(NumCCD::is_sum_leq_1(u.lower, halves[0].lower))
-                {
-                    tmp[split_i] = halves[0];
-                    push({tmp});
-                }
-            }
-        }
-        return false;  // no overflow
-    }
+    //    if(split_i == 0)
+    //    {
+    //        if(t_upper_bound == 1 || halves[1].overlaps(0, t_upper_bound))
+    //        {
+    //            tmp[split_i] = halves[1];
+    //            push({tmp});
+    //        }
+    //        if(t_upper_bound == 1 || halves[0].overlaps(0, t_upper_bound))
+    //        {
+    //            tmp[split_i] = halves[0];
+    //            push({tmp});
+    //        }
+    //    }
+    //    else if(!check_vf)
+    //    {  // edge uv
+    //        tmp[split_i] = halves[1];
+    //        push({tmp});
+    //        tmp[split_i] = halves[0];
+    //        push({tmp});
+    //    }
+    //    else
+    //    {
+    //        muda_kernel_check(check_vf && split_i != 0);
+    //        // u + v ≤ 1
+    //        if(split_i == 1)
+    //        {
+    //            const Interval& v = tuv[2];
+    //            if(NumCCD::is_sum_leq_1(halves[1].lower, v.lower))
+    //            {
+    //                tmp[split_i] = halves[1];
+    //                push({tmp});
+    //            }
+    //            if(NumCCD::is_sum_leq_1(halves[0].lower, v.lower))
+    //            {
+    //                tmp[split_i] = halves[0];
+    //                push({tmp});
+    //            }
+    //        }
+    //        else if(split_i == 2)
+    //        {
+    //            const Interval& u = tuv[1];
+    //            if(NumCCD::is_sum_leq_1(u.lower, halves[1].lower))
+    //            {
+    //                tmp[split_i] = halves[1];
+    //                push({tmp});
+    //            }
+    //            if(NumCCD::is_sum_leq_1(u.lower, halves[0].lower))
+    //            {
+    //                tmp[split_i] = halves[0];
+    //                push({tmp});
+    //            }
+    //        }
+    //    }
+    //    return false;  // no overflow
+    //}
 
     MUDA_GENERIC static void convert_tuv_to_array(const Interval3& itv,
                                                   Eigen::Array<Scalar, 8, 1>& t_up,
