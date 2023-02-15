@@ -90,7 +90,7 @@ void alloc_cpy_free(int half, host_vector<int>& host_data, host_vector<int>& gro
     graph g;
     auto [allocNode, ptr] = g.addMemAllocNode(allocParm);
 
-    auto dense = make_viewer(ptr, count);
+    auto dense = make_dense(ptr, count);
 
     auto writeKernelParm = parallel_for(2, 8).asNodeParms(
         count, [dense = dense] __device__(int i) mutable { dense(i) = i; });

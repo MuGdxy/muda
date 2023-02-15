@@ -20,7 +20,8 @@ inline __host__ __device__ void break_point()
 #ifdef __CUDA_ARCH__
     __brkpt();
 #else
-    __debugbreak();
+    // TODO:
+    // __debugbreak();
 #endif
 }
 }  // namespace muda

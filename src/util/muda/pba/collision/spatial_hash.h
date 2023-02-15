@@ -94,6 +94,21 @@ class SpatialPartitionCell
     {
         if(l.isPhantom() && r.isPhantom())
         {
+            //muda_kernel_printf("phantom, cid(%d,%d) home=(%d,%d) pass(%d,%d) eid(%d,%d) ijk{(%d,%d,%d), (%d,%d,%d)}\n",
+            //                   l.cid,
+            //                   r.cid,
+            //                   l.ctlbit.home,
+            //                   r.ctlbit.home,
+            //                   l.ctlbit.pass,
+            //                   r.ctlbit.pass,
+            //                   l.oid,
+            //                   r.oid,
+            //                   l.ijk(0),
+            //                   l.ijk(1),
+            //                   l.ijk(2),
+            //                   r.ijk(0),
+            //                   r.ijk(1),
+            //                   r.ijk(2));
             return true;
         }
 
@@ -107,9 +122,39 @@ class SpatialPartitionCell
             u32 encode_home = (1 << arr[i]->ctlbit.home);
             if(arr[i]->ctlbit.home < pass && (common_overlap & encode_home))
             {
+                //muda_kernel_printf("already, cid(%d,%d) home=(%d,%d) pass(%d,%d) eid(%d,%d) ijk{(%d,%d,%d), (%d,%d,%d)}\n",
+                //                   l.cid,
+                //                   r.cid,
+                //                   l.ctlbit.home,
+                //                   r.ctlbit.home,
+                //                   l.ctlbit.pass,
+                //                   r.ctlbit.pass,
+                //                   l.oid,
+                //                   r.oid,
+                //                   l.ijk(0),
+                //                   l.ijk(1),
+                //                   l.ijk(2),
+                //                   r.ijk(0),
+                //                   r.ijk(1),
+                //                   r.ijk(2));
                 return true;
             }
         }
+        //muda_kernel_printf("valid, cid(%d,%d) home=(%d,%d) pass(%d,%d) eid(%d,%d) ijk{(%d,%d,%d), (%d,%d,%d)}\n",
+        //                   l.cid,
+        //                   r.cid,
+        //                   l.ctlbit.home,
+        //                   r.ctlbit.home,
+        //                   l.ctlbit.pass,
+        //                   r.ctlbit.pass,
+        //                   l.oid,
+        //                   r.oid,
+        //                   l.ijk(0),
+        //                   l.ijk(1),
+        //                   l.ijk(2),
+        //                   r.ijk(0),
+        //                   r.ijk(1),
+        //                   r.ijk(2));
         return false;
     }
 
@@ -122,7 +167,7 @@ class SpatialPartitionCell
     {
         os << std::hex << cell.cid << "," << std::dec << cell.oid << "," << std::hex
            << cell.ctlbit.pass << "," << cell.ctlbit.home << "," << cell.ctlbit.overlap
-           << "," << cell.ijk(0) << "," << cell.ijk(1) << "," << cell.ijk(2);
+           << "," << std::dec << cell.ijk(0) << "," << cell.ijk(1) << "," << cell.ijk(2);
         return os;
     }
 };

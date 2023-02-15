@@ -6,13 +6,13 @@
 namespace muda
 {
 template <typename InType, typename OutType = InType>
-inline __host__ __device__ OutType printConvert(const InType& v)
+inline MUDA_GENERIC OutType printConvert(const InType& v)
 {
     return v;
 }
 
 template <typename T>
-inline __host__ __device__ const T& printCheck(const T& t)
+inline MUDA_GENERIC const T& printCheck(const T& t)
 {
     static_assert(std::is_arithmetic_v<T> || std::is_pointer_v<T>
                       || std::is_same_v<T, std::nullptr_t>
@@ -23,8 +23,8 @@ inline __host__ __device__ const T& printCheck(const T& t)
 }
 
 template <typename... Args>
-inline __host__ __device__ void print(const char* const fmt, Args... arg)
+inline MUDA_GENERIC void print(const char* const fmt, Args... arg)
 {
-    printf(fmt, printCheck(printConvert(arg))...);
+    ::printf(fmt, printCheck(printConvert(arg))...);
 }
 }  // namespace muda

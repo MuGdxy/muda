@@ -3,7 +3,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 
-#ifndef EASTL_INTERNAL_CONFIG_H
+#ifndef EASTL_INTERNAL_CONFIG_HEASTL_ASSERT_MSG
 #define EASTL_INTERNAL_CONFIG_H
 #include <muda/muda_config.h>
 #include <muda/tools/debug_log.h>
@@ -12,7 +12,7 @@
 #define EASTL_ASSERT(x)                                                        \
     do                                                                         \
     {                                                                          \
-        muda_kernel_assert(x, "");                                           \
+        muda_kernel_assert(x, "");                                             \
     } while(0)
 #endif
 
@@ -20,7 +20,7 @@
 #define EASTL_ASSERT_MSG(x, msg)                                               \
     do                                                                         \
     {                                                                          \
-        muda_kernel_assert(x, msg);                                            \
+        muda_kernel_assert(x, msg "\n");                                       \
     } while(0)
 #endif
 
@@ -28,7 +28,7 @@
 #define EASTL_FAIL_MSG(msg)                                                    \
     do                                                                         \
     {                                                                          \
-        muda_kernel_error(msg);                                                \
+        muda_kernel_error(msg "\n");                                           \
     } while(0)
 #endif
 ///////////////////////////////////////////////////////////////////////////////

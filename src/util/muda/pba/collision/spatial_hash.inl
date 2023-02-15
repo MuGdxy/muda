@@ -27,6 +27,7 @@ void SpatialPartitionField<Hash>::beginCalculateCellSize()
                 // as large as the scaled bounding sphere of the largest object.
                 //https://developer.nvidia.com/gpugems/gpugems3/part-v-physics-simulation/chapter-32-broad-phase-collision-detection-cuda
                 spatialHashConfig->cellSize = maxRadius * 2.25f;
+                // print("spatialHashConfig->cellSize=%f\n", spatialHashConfig->cellSize);
             });
 }
 
@@ -34,23 +35,21 @@ template <typename Hash>
 void SpatialPartitionField<Hash>::beginFillHashCells()
 {
     int size  = spheres.total_size();
-    int count = 8 * size;
-    if(cellArrayValue.size() < count)
-    {
-        cellArrayValue.resize(count, buf_op::ignore);
+    int count = 8 * size + 1;  //
 
-        cellArrayKey.resize(count, buf_op::ignore);
-        cellArrayValueSorted.resize(count, buf_op::ignore);
-        cellArrayKeySorted.resize(count, buf_op::ignore);
+    cellArrayValue.resize(count, buf_op::ignore);
 
-        uniqueKey.resize(count, buf_op::ignore);
+    cellArrayKey.resize(count, buf_op::ignore);
+    cellArrayValueSorted.resize(count, buf_op::ignore);
+    cellArrayKeySorted.resize(count, buf_op::ignore);
 
-        objCountInCell.resize(count, buf_op::ignore);
-        objCountInCellPrefixSum.resize(count, buf_op::ignore);
+    uniqueKey.resize(count, buf_op::ignore);
 
-        collisionPairCount.resize(count, buf_op::ignore);
-        collisionPairPrefixSum.resize(count, buf_op::ignore);
-    }
+    objCountInCell.resize(count, buf_op::ignore);
+    objCountInCellPrefixSum.resize(count, buf_op::ignore);
+
+    collisionPairCount.resize(count, buf_op::ignore);
+    collisionPairPrefixSum.resize(count, buf_op::ignore);
 
     parallel_for(lightKernelBlockDim, 0, m_stream)
         .apply(spheres.total_size(),
@@ -75,7 +74,7 @@ void SpatialPartitionField<Hash>::beginFillHashCells()
                    ivec3 ijk      = sh.cell(o);
                    auto  hash     = sh.hashCell(ijk);
                    auto  cellSize = sh.cellSize;
-
+                   // print("beginFillHashCells cellSize=%f\n", cellSize);
                    auto objectId = i;
 
 
@@ -141,6 +140,15 @@ void SpatialPartitionField<Hash>::beginFillHashCells()
                    for(int i = 0; i < 8; ++i)
                        cellArrayKey(objectId, i) = cellArrayValue(objectId, i).cid;
                });
+
+    launch(1, 1, 0, m_stream)
+        .apply(
+            [cellArrayValue = make_viewer(cellArrayValue),
+             cellArrayKey   = make_viewer(cellArrayKey)] __device__() mutable
+            {
+                cellArrayKey(cellArrayKey.total_size() - 1)     = -1;
+                cellArrayValue(cellArrayValue.total_size() - 1) = Cell(-1, -1);
+            });
 }
 
 template <typename Hash>
@@ -151,19 +159,30 @@ void SpatialPartitionField<Hash>::beginSortHashCells()
                                         cellArrayValueSorted.data(),     //out
                                         (uint32_t*)cellArrayKey.data(),  //in
                                         cellArrayValue.data(),           //in
-                                        spheres.total_size() * 8);
+                                        cellArrayValue.size());
 }
 
 template <typename Hash>
 void SpatialPartitionField<Hash>::beginCountCollisionPerCell()
 {
-    auto count = spheres.total_size() * 8;
+    auto count = uniqueKey.size();
     DeviceRunLengthEncode(m_stream).Encode(encodeBuf,
                                            uniqueKey.data(),           // out
                                            objCountInCell.data(),      // out
                                            data(uniqueKeyCount),       // out
                                            cellArrayKeySorted.data(),  // in
                                            count);
+
+    //.wait();
+
+    //host_vector<SpatialPartitionCell> h;
+    //cellArrayValueSorted.copy_to(h).wait();
+    //std::vector<SpatialPartitionCell> v(h.begin(), h.end());
+    //for(size_t i = 0; i < v.size(); i++)
+    //{
+    //    std::cout << "home " << std::hex << v[i].cid << std::dec << " "
+    //              << v[i].ctlbit.home << "," << v[i].ctlbit.pass << std::endl;
+    //}
 }
 
 template <typename Hash>
@@ -223,10 +242,8 @@ void SpatialPartitionField<Hash>::beginCountCollisionPairs(Pred&& pred)
                            auto cell1 = cellArrayValueSorted(offset + j);
                            auto oid1  = cell1.oid;
                            auto s1    = spheres(oid1);
-                           //print("test => %d,%d\n", oid0, oid1);
-                           if(!Cell::allowIgnore(cell0, cell1)  // cell0, cell1 are created by test the proxy sphere
-                              && collide::detect(s0, s1)  // test the bounding spheres to get exact collision result
-                              && pred(s0.id, s1.id))  // user predicate
+                           if(!Cell::allowIgnore(cell0, cell1)
+                              && collide::detect(s0, s1) && pred(s0.id, s1.id))  // user predicate
                            {
                                //print("pair");
                                ++pairCount;
@@ -236,13 +253,21 @@ void SpatialPartitionField<Hash>::beginCountCollisionPairs(Pred&& pred)
                    collisionPairCount(cell) = pairCount;
                });
 
-    DeviceScan(m_stream).ExclusiveSum(collisionScanBuf,
-                                      collisionPairPrefixSum.data(),
-                                      collisionPairCount.data(),
-                                      uniqueKeyCount);
-
-    auto lastOffset = validCellCount;
-    memory(m_stream).copy(&sum, collisionPairPrefixSum.data() + lastOffset, sizeof(int), cudaMemcpyDeviceToHost);
+    int keycount = uniqueKeyCount;
+    if(keycount)
+    {
+        DeviceScan(m_stream).ExclusiveSum(collisionScanBuf,
+                                          collisionPairPrefixSum.data(),
+                                          collisionPairCount.data(),
+                                          keycount);
+        auto lastOffset = validCellCount;
+        memory(m_stream).copy(&sum,
+                              collisionPairPrefixSum.data() + lastOffset,
+                              sizeof(int),
+                              cudaMemcpyDeviceToHost);
+    }
+    else
+        sum = 0;
 }
 
 template <typename Hash>

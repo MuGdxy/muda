@@ -38,6 +38,7 @@ struct example
             const std::string& description = "",
             bool               show_code   = false)
     {
+        std::cout << std::dec;
         //get console width
         std::string name = "muda example: " + n;
         int         w    = 79;
