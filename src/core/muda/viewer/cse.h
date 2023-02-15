@@ -82,21 +82,32 @@ class cse : public viewer_base<cse<T>>
     MUDA_GENERIC __forceinline__ void check_dimi(int i) const noexcept
     {
         if constexpr(DEBUG_VIEWER)
+        {
             if(i < 0 || i >= m_dim_i)
-                muda_kernel_error("cse[%s]: out of range, i=(%d), dim_i=(%d)\n", this->name(), i, m_dim_i);
+                muda_kernel_error(
+                    "cse[%s]: out of range, i=(%d), dim_i=(%d)\n", this->name(), i, m_dim_i);
+        }
+
     }
 
     MUDA_GENERIC __forceinline__ void check_dimj(int i, int j, int dimj) const noexcept
     {
         if constexpr(DEBUG_VIEWER)
+        {
             if(dimj < 0 || j < 0 || j >= dimj)
-                muda_kernel_error(
-                    "cse[%s]: out of range, ij=(%d,%d), dim=(%d,%d)\n", this->name(), i, j, m_dim_i, dimj);
+                muda_kernel_error("cse[%s]: out of range, ij=(%d,%d), dim=(%d,%d)\n",
+                                  this->name(),
+                                  i,
+                                  j,
+                                  m_dim_i,
+                                  dimj);
+        }
     }
 
     MUDA_GENERIC __forceinline__ void check_global_offset(int i, int j, int dimj, int global_offset) const noexcept
     {
         if constexpr(DEBUG_VIEWER)
+        {
             if(global_offset < 0 || global_offset >= m_ndata)
                 muda_kernel_error("cse[%s]: global_offset out of range, ij=(%d,%d), dim=(%d,%d), offset=(%d), ndata=(%d)\n",
                                   this->name(),
@@ -106,6 +117,7 @@ class cse : public viewer_base<cse<T>>
                                   dimj,
                                   global_offset,
                                   m_ndata);
+        }
     }
 
     MUDA_GENERIC __forceinline__ int cal_global_offset(int i, int j) const noexcept

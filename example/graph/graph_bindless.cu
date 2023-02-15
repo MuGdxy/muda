@@ -143,6 +143,7 @@ NOTE: direct copy from kernel heap memory to host memory is not allowed in cuda!
                 delete[] kernel_heap_data;
             })
         .wait();
+    std::cout << std::dec;
 }
 
 TEST_CASE("graph_bindless", "[graph]")

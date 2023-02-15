@@ -35,7 +35,7 @@ template <typename Hash>
 void SpatialPartitionField<Hash>::beginFillHashCells()
 {
     int size  = spheres.total_size();
-    int count = 8 * size + 1;
+    int count = 8 * size + 1;  //
 
     cellArrayValue.resize(count, buf_op::ignore);
 
@@ -166,14 +166,15 @@ template <typename Hash>
 void SpatialPartitionField<Hash>::beginCountCollisionPerCell()
 {
     auto count = uniqueKey.size();
-    DeviceRunLengthEncode(m_stream)
-        .Encode(encodeBuf,
-                uniqueKey.data(),           // out
-                objCountInCell.data(),      // out
-                data(uniqueKeyCount),       // out
-                cellArrayKeySorted.data(),  // in
-                count)
-        .wait();
+    DeviceRunLengthEncode(m_stream).Encode(encodeBuf,
+                                           uniqueKey.data(),           // out
+                                           objCountInCell.data(),      // out
+                                           data(uniqueKeyCount),       // out
+                                           cellArrayKeySorted.data(),  // in
+                                           count);
+
+    //.wait();
+
     //host_vector<SpatialPartitionCell> h;
     //cellArrayValueSorted.copy_to(h).wait();
     //std::vector<SpatialPartitionCell> v(h.begin(), h.end());

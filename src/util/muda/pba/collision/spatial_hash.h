@@ -167,7 +167,7 @@ class SpatialPartitionCell
     {
         os << std::hex << cell.cid << "," << std::dec << cell.oid << "," << std::hex
            << cell.ctlbit.pass << "," << cell.ctlbit.home << "," << cell.ctlbit.overlap
-           << "," << cell.ijk(0) << "," << cell.ijk(1) << "," << cell.ijk(2);
+           << "," << std::dec << cell.ijk(0) << "," << cell.ijk(1) << "," << cell.ijk(2);
         return os;
     }
 };

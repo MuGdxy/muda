@@ -195,7 +195,7 @@ parallel_for(32 /*gridDim*/, 64 /*blockDim*/)
     .wait();  // wait the kernel to finish
 ```
 
-当然，除了可以指定遍历的大小`N`你还可以用一下形式来指定遍历的范围
+当然，除了可以指定遍历的大小`N`你还可以用以下形式来指定遍历的范围
 
 - (count) : 遍历区间[0, count)
 - (begin, count)：遍历区间 [begin, begin + count)

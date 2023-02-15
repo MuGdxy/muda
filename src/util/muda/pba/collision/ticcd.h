@@ -1,4 +1,4 @@
-﻿#include <Eigen/Core>
+#include <Eigen/Core>
 #include <muda/muda_def.h>
 #include <muda/tools/debug_log.h>
 #include <muda/math/math.h>
@@ -13,7 +13,8 @@
 #undef max
 #undef min
 
-namespace muda::thread_only
+
+namespace muda
 {
 namespace details
 {
@@ -22,7 +23,7 @@ namespace details
     MUDA_GENERIC inline uint64_t power(const uint64_t a, const uint8_t b)
     {
         // The fast bit shifting power trick only works if b is not too larger.
-        muda_kernel_check(b < MAX_DENOM_POWER);
+        muda_kernel_check(b < MAX_DENOM_POWER, "b=%d, MAX_DENOM_POWER=%d\n", int(b), int(MAX_DENOM_POWER));
         // WARNING: Technically this can still fail with `b < MAX_DENOM_POWER` if `a > 1`.
         return a << b;
     }
@@ -80,9 +81,14 @@ namespace details
     }
 }  // namespace details
 
-template <typename T = float, typename Alloc = thread_allocator>
+// Tight-Inclusion Continuous-Collision-Detection
+// reference: https://continuous-collision-detection.github.io/tight_inclusion/
+template <typename T = float, typename Alloc = thread_only::thread_allocator>
 class ticcd
 {
+  private:
+    int MAX_QUEUE_SIZE;
+
   public:
     using allocator_type = Alloc;
     MUDA_GENERIC ticcd(const Alloc& alloc, int max_queue_size = -1)
@@ -104,8 +110,6 @@ class ticcd
         else
             istack.get_container().reserve(64);
     }
-    int MAX_QUEUE_SIZE;
-
     using Scalar  = T;
     using Vector3 = Eigen::Vector<Scalar, 3>;
     using Vector4 = Eigen::Vector<Scalar, 4>;
@@ -128,7 +132,7 @@ class ticcd
         MUDA_GENERIC NumCCD(Scalar x)
         {
             // Use bisection to find an upper bound of x.
-            muda_kernel_check(x >= 0 && x <= 1);
+            muda_kernel_check(x >= 0 && x <= 1, "x=%f\n", x);
             NumCCD low(0, 0), high(1, 0), mid;
 
             // Hard code these cases for better accuracy.
@@ -157,7 +161,7 @@ class ticcd
                     break;
             } while(mid.denom_power < MAX_DENOM_POWER);
             *this = high;
-            muda_kernel_check(x <= value());
+            muda_kernel_check(x <= value(), "x=%f, value()=%f\n", x, value());
         }
 
         MUDA_GENERIC ~NumCCD() {}
@@ -186,13 +190,17 @@ class ticcd
             else if(n2 > n1)
             {
                 result.numerator = k1 * details::pow2(n2 - n1) + k2;
-                muda_kernel_check(result.numerator % 2 == 1);
+                muda_kernel_check(result.numerator % 2 == 1,
+                                  "result.numerator=%lld\n",
+                                  result.numerator);
                 result.denom_power = n2;
             }
             else
             {  // n2 < n1
                 result.numerator = k1 + k2 * details::pow2(n1 - n2);
-                muda_kernel_check(result.numerator % 2 == 1);
+                muda_kernel_check(result.numerator % 2 == 1,
+                                  "result.numerator=%lld\n",
+                                  result.numerator);
                 result.denom_power = n1;
             }
             return result;
@@ -218,7 +226,12 @@ class ticcd
                 tmp_k1 = details::pow2(n2 - n1) * k1;
             else if(n1 > n2)
                 tmp_k2 = details::pow2(n1 - n2) * k2;
-            muda_kernel_check((value() < other.value()) == (tmp_k1 < tmp_k2));
+            muda_kernel_check((value() < other.value()) == (tmp_k1 < tmp_k2),
+                              "value()=%f, other.value()=%f, tmp_k1=%f, tmp_k2=%f",
+                              value(),
+                              other.value(),
+                              tmp_k1,
+                              tmp_k2);
             return tmp_k1 < tmp_k2;
         }
 
@@ -289,8 +302,12 @@ class ticcd
         {
             // interval is [k1/pow2(n1), k2/pow2(n2)]
             NumCCD mid = upper + lower;
-            mid.denom_power++;  // ÷ 2
-            muda_kernel_check(mid.value() > lower.value() && mid.value() < upper.value());
+            mid.denom_power++;  // /2
+            muda_kernel_check(mid.value() > lower.value() && mid.value() < upper.value(),
+                              "mid.value()=%f, lower.value()=%f, upper.value()=%f\n",
+                              mid.value(),
+                              lower.value(),
+                              upper.value());
             return Interval2(Interval(lower, mid), Interval(mid, upper));
         }
 
@@ -305,7 +322,6 @@ class ticcd
         Interval3 first;
         int       second;
     };
-
     struct Compare
     {
         MUDA_GENERIC bool operator()(const Interval3Pair& i1, const Interval3Pair& i2)
@@ -383,7 +399,7 @@ class ticcd
 
         do
         {
-            muda_kernel_check(t_max >= 0 && t_max <= 1);
+            muda_kernel_check(t_max >= 0 && t_max <= 1, "t_max=%f\n", t_max);
             tmp_is_impacting = edge_edge_interval_root_finder_BFS(a0_start,
                                                                   a1_start,
                                                                   b0_start,
@@ -401,7 +417,10 @@ class ticcd
                                                                   toi,
                                                                   output_tolerance);
             // printf("edge_edge_interval_root_finder_BFS\n");
-            muda_kernel_check(!tmp_is_impacting || toi >= 0);
+            muda_kernel_check(!tmp_is_impacting || toi >= 0,
+                              "tmp_is_impacting=%d, toi=%f\n",
+                              tmp_is_impacting,
+                              toi);
 
             if(t_max == t_max_in)
             {
@@ -444,8 +463,168 @@ class ticcd
         } while(no_zero_toi && ++no_zero_toi_iter < MAX_NO_ZERO_TOI_ITER
                 && tmp_is_impacting && toi == 0);
 
-        muda_kernel_check(!no_zero_toi || !is_impacting || toi != 0);
+        muda_kernel_check(!no_zero_toi || !is_impacting || toi != 0,
+                          "no_zero_toi=%d, is_impacting=%d, toi=%f\n",
+                          no_zero_toi,
+                          is_impacting,
+                          toi);
 
+        return is_impacting;
+    }
+
+    /// This function can give you the answer of continous collision detection with minimum
+    /// seperation, and the earlist collision time if collision happens.
+    ///
+    /// @param[in] err The filters calculated using the bounding box of the simulation scene.
+    ///                If you are checking a single query without a scene, please set it as {-1,-1,-1}.
+    /// @param[in] ms The minimum seperation. should set: ms < max(abs(x),1), ms < max(abs(y),1), ms < max(abs(z),1) of the QUERY (NOT THE SCENE!).
+    /// @param[out] toi The earlist time of collision if collision happens. If there is no collision, toi will be infinate.
+    /// @param[in] tolerance A user - input solving precision. We suggest to use 1e-6.
+    /// @param[in] t_max The upper bound of the time interval [0,t_max] to be checked. 0<=t_max<=1
+    /// @param[in] max_itr A user-defined value to terminate the algorithm earlier, and return a result under current
+    ///                    precision. please set max_itr either a big number like 1e7, or -1 which means it will not be terminated
+    ///                    earlier and the precision will be user-defined precision -- tolerance.
+    /// @param[out] output_tolerance The precision under max_itr ( > 0). if max_itr < 0, output_tolerance = tolerance;
+    /// @param[in] no_zero_toi Refine further if a zero toi is produced (assumes not initially in contact).
+    MUDA_GENERIC bool vertexFaceCCD(const Vector3& vertex_start,
+                                    const Vector3& face_vertex0_start,
+                                    const Vector3& face_vertex1_start,
+                                    const Vector3& face_vertex2_start,
+                                    const Vector3& vertex_end,
+                                    const Vector3& face_vertex0_end,
+                                    const Vector3& face_vertex1_end,
+                                    const Vector3& face_vertex2_end,
+                                    const Array3&  err_in,
+                                    const Scalar   ms_in,
+                                    Scalar&        toi,
+                                    const Scalar   tolerance_in,
+                                    const Scalar   t_max_in,
+                                    const int      max_itr,
+                                    Scalar&        output_tolerance,
+                                    bool           no_zero_toi = false)
+    {
+        // unsigned so can be larger than MAX_NO_ZERO_TOI_ITER
+        unsigned int no_zero_toi_iter = 0;
+
+        bool is_impacting, tmp_is_impacting;
+
+        // Mutable copies for no_zero_toi
+        Scalar t_max     = t_max_in;
+        Scalar tolerance = tolerance_in;
+        Scalar ms        = ms_in;
+
+        Array3 tol = compute_face_vertex_tolerances(vertex_start,
+                                                    face_vertex0_start,
+                                                    face_vertex1_start,
+                                                    face_vertex2_start,
+                                                    vertex_end,
+                                                    face_vertex0_end,
+                                                    face_vertex1_end,
+                                                    face_vertex2_end,
+                                                    tolerance);
+
+        //////////////////////////////////////////////////////////
+        // this is the error of the whole mesh
+        Array3 err;
+        // if error[0]<0, means we need to calculate error here
+        if(err_in[0] < 0)
+        {
+            Vector3 vlist[] = {vertex_start,
+                               face_vertex0_start,
+                               face_vertex1_start,
+                               face_vertex2_start,
+                               vertex_end,
+                               face_vertex0_end,
+                               face_vertex1_end,
+                               face_vertex2_end};
+            bool    use_ms  = ms > 0;
+            err             = get_numerical_error(vlist, 8, true, use_ms);
+        }
+        else
+        {
+            err = err_in;
+        }
+        //////////////////////////////////////////////////////////
+
+        do
+        {
+            muda_kernel_assert(t_max >= 0 && t_max <= 1, "t_max=%f\n", t_max);
+            tmp_is_impacting =
+                vertex_face_interval_root_finder_BFS(vertex_start,
+                                                     face_vertex0_start,
+                                                     face_vertex1_start,
+                                                     face_vertex2_start,
+                                                     vertex_end,
+                                                     face_vertex0_end,
+                                                     face_vertex1_end,
+                                                     face_vertex2_end,
+                                                     tol,
+                                                     tolerance,
+                                                     err,
+                                                     ms,
+                                                     t_max,
+                                                     max_itr,
+                                                     toi,
+                                                     output_tolerance);
+            muda_kernel_assert(!tmp_is_impacting || toi >= 0,
+                               "tmp_is_impacting=%d, toi=%d\n",
+                               tmp_is_impacting,
+                               toi);
+
+            if(t_max == t_max_in)
+            {
+                // This will be the final output because we might need to
+                // perform CCD again if the toi is zero. In which case we will
+                // use a smaller t_max for more time resolution.
+                is_impacting = tmp_is_impacting;
+            }
+            else
+            {
+                toi = tmp_is_impacting ? toi : t_max;
+            }
+
+            // This modification is for CCD-filtered line-search (e.g., IPC)
+            // strategies for dealing with toi = 0:
+            // 1. shrink t_max (when reaches max_itr),
+            // 2. shrink tolerance (when not reach max_itr and tolerance is big) or
+            // ms (when tolerance is too small comparing with ms)
+            if(tmp_is_impacting && toi == 0 && no_zero_toi)
+            {
+                if(output_tolerance > tolerance)
+                {
+                    // reaches max_itr, so shrink t_max to return a more accurate result to reach target tolerance.
+                    t_max *= 0.9;
+                }
+                else if(10 * tolerance < ms)
+                {
+                    ms *= 0.5;  // ms is too large, shrink it
+                }
+                else
+                {
+                    tolerance *= 0.5;  // tolerance is too large, shrink it
+
+                    // recompute this
+                    tol = compute_face_vertex_tolerances(vertex_start,
+                                                         face_vertex0_start,
+                                                         face_vertex1_start,
+                                                         face_vertex2_start,
+                                                         vertex_end,
+                                                         face_vertex0_end,
+                                                         face_vertex1_end,
+                                                         face_vertex2_end,
+                                                         tolerance);
+                }
+            }
+
+            // Only perform a second iteration if toi == 0.
+            // WARNING: This option assumes the initial distance is not zero.
+        } while(no_zero_toi && ++no_zero_toi_iter < MAX_NO_ZERO_TOI_ITER
+                && tmp_is_impacting && toi == 0);
+        muda_kernel_assert(!no_zero_toi || !is_impacting || toi != 0,
+                           "no_zero_toi=%d, is_impacting=%d, toi=%f\n",
+                           no_zero_toi,
+                           is_impacting,
+                           toi);
         return is_impacting;
     }
 
@@ -484,9 +663,39 @@ class ticcd
         Scalar edge1_length =
             3 * details::max_linf_4(p000, p100, p110, p010, p001, p101, p111, p011);
 
-        return Array3(muda::min(distance_tolerance / dl, CCD_MAX_TIME_TOL),
-                      muda::min(distance_tolerance / edge0_length, CCD_MAX_COORD_TOL),
-                      muda::min(distance_tolerance / edge1_length, CCD_MAX_COORD_TOL));
+        return Array3(::min(distance_tolerance / dl, CCD_MAX_TIME_TOL),
+                      ::min(distance_tolerance / edge0_length, CCD_MAX_COORD_TOL),
+                      ::min(distance_tolerance / edge1_length, CCD_MAX_COORD_TOL));
+    }
+
+    MUDA_GENERIC static Array3 compute_face_vertex_tolerances(const Vector3& vs,
+                                                              const Vector3& f0s,
+                                                              const Vector3& f1s,
+                                                              const Vector3& f2s,
+                                                              const Vector3& ve,
+                                                              const Vector3& f0e,
+                                                              const Vector3& f1e,
+                                                              const Vector3& f2e,
+                                                              const Scalar distance_tolerance)
+    {
+        const Vector3 p000 = vs - f0s;
+        const Vector3 p001 = vs - f2s;
+        const Vector3 p011 = vs - (f1s + f2s - f0s);
+        const Vector3 p010 = vs - f1s;
+        const Vector3 p100 = ve - f0e;
+        const Vector3 p101 = ve - f2e;
+        const Vector3 p111 = ve - (f1e + f2e - f0e);
+        const Vector3 p110 = ve - f1e;
+
+        Scalar dl = 3 * details::max_linf_4(p000, p001, p011, p010, p100, p101, p111, p110);
+        Scalar edge0_length =
+            3 * details::max_linf_4(p000, p100, p101, p001, p010, p110, p111, p011);
+        Scalar edge1_length =
+            3 * details::max_linf_4(p000, p100, p110, p010, p001, p101, p111, p011);
+
+        return Array3(::min(distance_tolerance / dl, CCD_MAX_TIME_TOL),
+                      ::min(distance_tolerance / edge0_length, CCD_MAX_COORD_TOL),
+                      ::min(distance_tolerance / edge1_length, CCD_MAX_COORD_TOL));
     }
 
     MUDA_GENERIC static Array3 get_numerical_error(const Vector3 vertices[],
@@ -537,7 +746,14 @@ class ticcd
     // find the largest width/tol dimension that is greater than its tolerance
     MUDA_GENERIC static int find_next_split(const Array3& widths, const Array3& tols)
     {
-        // muda_kernel_check((widths > tols).any());
+        //muda_kernel_check((widths > tols).any(),
+        //                  "widths=(%f, %f, %f), tols=(%f, %f, %f)\n",
+        //                  widths[0],
+        //                  widths[1],
+        //                  widths[2],
+        //                  tols[0],
+        //                  tols[1],
+        //                  tols[2]);
         Array3 tmp = (widths > tols).select(widths / tols, -INFINITY);
         int    max_index;
         tmp.maxCoeff(&max_index);
@@ -582,7 +798,7 @@ class ticcd
     //    else
     //    {
     //        muda_kernel_check(check_vf && split_i != 0);
-    //        // u + v ≤ 1
+    //        // u + v <= 1
     //        if(split_i == 1)
     //        {
     //            const Interval& v = tuv[2];
@@ -879,6 +1095,43 @@ class ticcd
             a0s, a1s, b0s, b1s, a0e, a1e, b0e, b1e, tol, co_domain_tolerance, err, ms, max_time, max_itr, toi, output_tolerance);
     }
 
+    MUDA_GENERIC bool vertex_face_interval_root_finder_BFS(
+        const Vector3& vertex_start,
+        const Vector3& face_vertex0_start,
+        const Vector3& face_vertex1_start,
+        const Vector3& face_vertex2_start,
+        const Vector3& vertex_end,
+        const Vector3& face_vertex0_end,
+        const Vector3& face_vertex1_end,
+        const Vector3& face_vertex2_end,
+        const Array3&  tol,
+        const Scalar   co_domain_tolerance,
+        // this is the maximum error on each axis when calculating the vertices, err, aka, filter
+        const Array3& err,
+        const Scalar  ms,
+        const Scalar  max_time,
+        const int     max_itr,
+        Scalar&       toi,
+        Scalar&       output_tolerance)
+    {
+        return interval_root_finder_BFS<true>(vertex_start,
+                                              face_vertex0_start,
+                                              face_vertex1_start,
+                                              face_vertex2_start,
+                                              vertex_end,
+                                              face_vertex0_end,
+                                              face_vertex1_end,
+                                              face_vertex2_end,
+                                              tol,
+                                              co_domain_tolerance,
+                                              err,
+                                              ms,
+                                              max_time,
+                                              max_itr,
+                                              toi,
+                                              output_tolerance);
+    }
+
     template <bool check_vf>
     MUDA_GENERIC bool interval_root_finder_BFS(const Vector3& a0s,
                                                const Vector3& a1s,
@@ -906,7 +1159,8 @@ class ticcd
     }
 
     using IStack =
-        priority_queue<Interval3Pair, vector<Interval3Pair, allocator_type>, Compare>;
+        thread_only::priority_queue<Interval3Pair, thread_only::vector<Interval3Pair, allocator_type>, Compare>;
+
     IStack istack;
 
     // when check_t_overlap = false, check [0,1]x[0,1]x[0,1]; otherwise, check [0, t_max]x[0,1]x[0,1]
@@ -968,7 +1222,7 @@ class ticcd
 
             if(MAX_QUEUE_SIZE > 0 && istack.size() >= MAX_QUEUE_SIZE)
             {
-                //muda_kernel_debug_info(DEBUG_TICCD, "ticcd istack full so just return");
+                muda_kernel_debug_info(DEBUG_TICCD, "ticcd istack full so just return, toi=%f", toi);
                 return true;
             }
 
@@ -1046,7 +1300,7 @@ class ticcd
             }
 
             if(max_itr > 0)
-            {  // if max_itr <= 0 ⟹ unlimited iterations
+            {  // if max_itr <= 0  -> unlimited iterations
                 if(current_level != level)
                 {
                     // output_tolerance=current_tolerance;
@@ -1151,8 +1405,8 @@ class ticcd
         }
         else
         {
-            muda_kernel_check(check_vf && split_i != 0);
-            // u + v ≤ 1
+            muda_kernel_check(check_vf && split_i != 0, "check_vf=%d, split_i=%d\n", check_vf, split_i);
+            // u + v <= 1
             if(split_i == 1)
             {
                 const Interval& v = tuv[2];
@@ -1189,7 +1443,7 @@ class ticcd
 
 template <typename T>
 using ticcd_alloc_elem_type = typename ticcd<T>::Interval3Pair;
-}  // namespace muda::thread_only
+}  // namespace muda
 
 #undef TIGHT_INCLUSION_SCOPED_TIMER
 #undef CCD_MAX_TIME_TOL
