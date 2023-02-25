@@ -6,14 +6,14 @@ namespace muda
 namespace details
 {
     template <typename F, typename UserTag>
-    __host__ void __stdcall genericHostCall(void* userdata)
+    MUDA_HOST void CUDARTAPI genericHostCall(void* userdata)
     {
         auto f = reinterpret_cast<F*>(userdata);
         (*f)();
     }
 
     template <typename F, typename UserTag>
-    __host__ void __stdcall deleteFunctionObject(void* userdata)
+    MUDA_HOST void CUDARTAPI deleteFunctionObject(void* userdata)
     {
         auto f = reinterpret_cast<F*>(userdata);
         delete f;
@@ -51,7 +51,7 @@ class host_call : public launch_base<host_call>
     /// <param name="tag"></param>
     /// <returns></returns>
     template <typename F, typename UserTag = DefaultTag>
-    [[nodiscard]] auto asNodeParms(F&& f, UserTag tag = {})
+    MUDA_NODISCARD auto asNodeParms(F&& f, UserTag tag = {})
     {
         using CallableType = raw_type_t<F>;
         auto parms = std::make_shared<hostNodeParms<CallableType>>(std::forward<F>(f));

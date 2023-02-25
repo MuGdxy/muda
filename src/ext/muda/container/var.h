@@ -1,10 +1,11 @@
 #pragma once
+#include <vector>
 #include <thrust/device_allocator.h>
 #include <thrust/universal_allocator.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/fill.h>
 #include <thrust/copy.h>
-#include <vector>
+#include <muda/muda_def.h>
 
 namespace muda
 {
@@ -19,31 +20,31 @@ namespace details
         using pointer       = typename Allocator::pointer;
         using const_pointer = typename Allocator::const_pointer;
 
-        __host__ var_base() noexcept
+        MUDA_HOST var_base() MUDA_NOEXCEPT
             : m_data(Allocator().allocate(1))
         {
         }
 
-        __host__ var_base(const T& value) noexcept
+        MUDA_HOST var_base(const T& value) MUDA_NOEXCEPT
             : m_data(Allocator().allocate(1))
         {
             this->operator=(value);
         }
 
-        __host__ ~var_base() noexcept { Allocator().deallocate(m_data, 1); }
+        MUDA_HOST ~var_base() MUDA_NOEXCEPT { Allocator().deallocate(m_data, 1); }
 
         pointer       data() { return m_data; }
         const_pointer data() const { return m_data; }
 
         // copy value from host to device
-        __host__ var_base& operator=(const T& rhs)
+        MUDA_HOST var_base& operator=(const T& rhs)
         {
             thrust::fill_n(data(), 1, rhs);
             return *this;
         }
 
         // copy value from device to host
-        __host__ operator T()
+        MUDA_HOST operator T()
         {
             T t;
             thrust::copy_n(data(), 1, &t);
@@ -67,26 +68,14 @@ using host_var = details::var_base<T, Allocator>;
 
 namespace muda
 {
-//template <typename T>
-//inline const T* data(const T& v) noexcept
-//{
-//    return std::addressof(v);
-//}
-//
-//template <typename T>
-//inline T* data(T& v) noexcept
-//{
-//    return std::addressof(v);
-//}
-
 template <typename T, typename Allocator>
-inline const T* data(const details::var_base<T, Allocator>& v) noexcept
+MUDA_INLINE const T* data(const details::var_base<T, Allocator>& v) MUDA_NOEXCEPT
 {
     return thrust::raw_pointer_cast(v.data());
 }
 
 template <typename T, typename Allocator>
-inline T* data(details::var_base<T, Allocator>& v) noexcept
+MUDA_INLINE T* data(details::var_base<T, Allocator>& v) MUDA_NOEXCEPT
 {
     return thrust::raw_pointer_cast(v.data());
 }
@@ -96,20 +85,20 @@ inline T* data(details::var_base<T, Allocator>& v) noexcept
 namespace muda
 {
 template <typename T, typename Allocator>
-inline __host__ auto make_dense(details::var_base<T, Allocator>& v) noexcept
+MUDA_INLINE MUDA_HOST auto make_dense(details::var_base<T, Allocator>& v) MUDA_NOEXCEPT
 {
     return dense<T>(data(v));
 }
 
 template <typename T, typename Allocator>
-inline __host__ auto make_viewer(details::var_base<T, Allocator>& v) noexcept
+MUDA_INLINE MUDA_HOST auto make_viewer(details::var_base<T, Allocator>& v) MUDA_NOEXCEPT
 {
     return make_dense(v);
 }
 
 //print convert
 template <typename T>
-inline __host__ __device__ const T& printConvert(const dense<T>& idx)
+MUDA_INLINE MUDA_GENERIC const T& printConvert(const dense<T>& idx) MUDA_NOEXCEPT
 {
     return idx.operator const T&();
 }

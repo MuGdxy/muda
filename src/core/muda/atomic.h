@@ -1,4 +1,5 @@
 #pragma once
+#include <muda/tools/platform.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
@@ -54,7 +55,7 @@ unsigned long long int atomicXor(unsigned long long int* address, unsigned long 
 #include <Eigen/Core>
 
 template <typename T, int N>
-inline __device__ Eigen::Vector<T, N> atomicAdd(Eigen::Vector<T, N>& v, const Eigen::Vector<T, N>& val) noexcept
+MUDA_INLINE __device__ Eigen::Vector<T, N> atomicAdd(Eigen::Vector<T, N>& v, const Eigen::Vector<T, N>& val) MUDA_NOEXCEPT
 {
     Eigen::Vector<T, N> ret;
 #pragma unroll

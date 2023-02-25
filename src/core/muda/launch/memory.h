@@ -29,7 +29,7 @@ class memory : public launch_base<memory>
     }
 
     template <typename T>
-    [[nodiscard]] static auto asAllocNodeParms(size_t count)
+    MUDA_NODISCARD static auto asAllocNodeParms(size_t count)
     {
         auto parms = std::make_shared<memAllocNodeParms<T>>(count);
         return parms;

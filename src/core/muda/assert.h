@@ -1,4 +1,6 @@
 #pragma once
+#include <muda/muda_def.h>
+#include <muda/tools/debug_break.h>
 #include <assert.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -6,22 +8,21 @@
 #include <cuda_device_runtime_api.h>
 namespace muda
 {
-inline __host__ __device__ void trap()
+MUDA_INLINE MUDA_GENERIC void trap() MUDA_NOEXCEPT
 {
 #ifdef __CUDA_ARCH__
     __trap();
 #else
-    assert(0 && "trap");
+    throw std::exception("trap");
 #endif
 }
 
-inline __host__ __device__ void break_point()
+MUDA_INLINE MUDA_GENERIC void break_point() MUDA_NOEXCEPT
 {
 #ifdef __CUDA_ARCH__
     __brkpt();
 #else
-    // TODO:
-    // __debugbreak();
+    debug_break();
 #endif
 }
 }  // namespace muda

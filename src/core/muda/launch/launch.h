@@ -6,7 +6,7 @@ namespace muda
 namespace details
 {
     template <typename F, typename UserTag>
-    __global__ void genericKernel(F f)
+    MUDA_GLOBAL void genericKernel(F f)
     {
         f();
     }
@@ -46,7 +46,7 @@ class launch : public launch_base<launch>
     }
 
     template <typename F, typename UserTag = DefaultTag>
-    [[nodiscard]] auto asNodeParms(F&& f, UserTag tag = {})
+    MUDA_NODISCARD auto asNodeParms(F&& f, UserTag tag = {})
     {
         using CallableType = raw_type_t<F>;
         static_assert(std::is_invocable_v<CallableType>, "f:void (void)");

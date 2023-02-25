@@ -22,7 +22,7 @@ class graph
     friend class graphExec;
     friend class std::shared_ptr<graph>;
 
-    [[nodiscard]] sptr<graphExec> instantiate()
+    MUDA_NODISCARD sptr<graphExec> instantiate()
     {
         auto ret = std::make_shared<graphExec>();
         checkCudaErrors(cudaGraphInstantiate(&ret->m_handle, m_handle, nullptr, nullptr, 0));
@@ -142,7 +142,7 @@ class graph
 
 
 template <typename T>
-inline size_t make_resource_id(T& t) noexcept
+MUDA_INLINE size_t make_resource_id(T& t) MUDA_NOEXCEPT
 {
     return size_t(std::addressof(t));
 }
@@ -219,7 +219,7 @@ class graphManager
         return node;
     }
 
-    [[nodiscard]] sptr<graphExec> instantiate()
+    MUDA_NODISCARD sptr<graphExec> instantiate()
     {
         return m_graph.instantiate();
     }

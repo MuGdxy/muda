@@ -16,7 +16,7 @@
 namespace muda
 {
 template <typename F>
-__host__ double profile_host(F&& f)
+MUDA_HOST double profile_host(F&& f)
 {
     using namespace std::chrono;
     auto start = high_resolution_clock::now();
@@ -30,12 +30,12 @@ class profile
     bool need_pop;
 
   public:
-    profile() noexcept
+    profile() MUDA_NOEXCEPT
         : need_pop(false)
     {
         checkCudaErrors(cudaProfilerStart());
     }
-    profile(const std::string& name) noexcept
+    profile(const std::string& name) MUDA_NOEXCEPT
         : need_pop(true)
     {
         nvtxEventAttributes_t eventAttrib = {0};
@@ -60,7 +60,7 @@ class profile
 class range_name
 {
   public:
-    range_name(const std::string& name) noexcept
+    range_name(const std::string& name) MUDA_NOEXCEPT
     {
         nvtxEventAttributes_t eventAttrib = {0};
         eventAttrib.version               = NVTX_VERSION;

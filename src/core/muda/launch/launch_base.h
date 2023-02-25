@@ -15,6 +15,7 @@
 #include "../check/checkCudaErrors.h"
 #include "../type_traits/type_mod.h"
 #include "../graph.h"
+#include "../muda_def.h"
 #include "event.h"
 
 namespace muda

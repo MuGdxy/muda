@@ -12,21 +12,22 @@ namespace muda
 /// </summary>
 class stream
 {
-    enum class flag
-    {
-        block    = cudaStreamDefault,
-        nonblock = cudaStreamNonBlocking
-    };
     cudaStream_t m_handle;
 
   public:
-    [[nodiscard]] stream(flag f = flag::block)
+    enum class flag : unsigned int
     {
-        checkCudaErrors(cudaStreamCreateWithFlags(&m_handle, (int)f));
+        eDefault     = cudaStreamDefault,
+        eNonBlocking = cudaStreamNonBlocking
+    };
+
+    MUDA_NODISCARD stream(flag f = flag::eDefault)
+    {
+        checkCudaErrors(cudaStreamCreateWithFlags(&m_handle, static_cast<unsigned int>(f)));
     }
 
     ~stream() { checkCudaErrors(cudaStreamDestroy(m_handle)); }
-    
+
     operator cudaStream_t() { return m_handle; }
 };
 }  // namespace muda

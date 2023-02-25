@@ -132,13 +132,13 @@ class matrixBCSR
 namespace muda
 {
 template <typename T>
-inline __host__ auto make_csr(matCSR<T>& m) noexcept
+MUDA_INLINE MUDA_HOST auto make_csr(matCSR<T>& m) MUDA_NOEXCEPT
 {
     return csr<T>(m.rowPtr(), m.colIdx(), m.values(), m.rows(), m.cols(), m.nnz());
 }
 
 template <typename T>
-inline __host__ auto make_viewer(matCSR<T>& m) noexcept
+MUDA_INLINE MUDA_HOST auto make_viewer(matCSR<T>& m) MUDA_NOEXCEPT
 {
     return make_csr(m);
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include <muda/tools/flag.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
@@ -13,19 +14,24 @@ namespace muda
 class event
 {
     cudaEvent_t m_handle;
+
   public:
-    // flags:
-    // cudaEventDefault         /**< Default event flag */
-    // cudaEventBlockingSync    /**< Event uses blocking synchronization */
-    // cudaEventDisableTiming   /**< Event will not record timing data */
-    // cudaEventInterprocess    /**< Event is suitable for interprocess use. cudaEventDisableTiming must be set */
-    [[nodiscard]] event(int flag = cudaEventDisableTiming)
+    enum class bit : unsigned int
     {
-        checkCudaErrors(cudaEventCreateWithFlags(&m_handle, flag));
+        eDefault = cudaEventDefault,                /**< Default event flag */
+        eBlockingSync = cudaEventBlockingSync,      /**< Event uses blocking synchronization */
+        eDisableTiming = cudaEventDisableTiming,    /**< Event will not record timing data */
+        eInterprocess = cudaEventInterprocess       /**< Event is suitable for interprocess use. cudaEventDisableTiming must be set */
+    };
+
+    MUDA_NODISCARD event(flags<bit> flag = bit::eDisableTiming)
+    {
+        checkCudaErrors(cudaEventCreateWithFlags(&m_handle, static_cast<unsigned int>(flag)));
     }
-    
+
     // elapsed time (in ms) between two events
-    static float elapsed_time(cudaEvent_t start, cudaEvent_t stop) {
+    static float elapsed_time(cudaEvent_t start, cudaEvent_t stop)
+    {
         float time;
         checkCudaErrors(cudaEventElapsedTime(&time, start, stop));
         return time;

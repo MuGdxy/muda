@@ -15,49 +15,49 @@ class denseND<T, 0> : public viewer_base<denseND<T, 0>>
   public:
     using value_type = T;
 
-    MUDA_GENERIC denseND() noexcept
+    MUDA_GENERIC denseND() MUDA_NOEXCEPT
         : m_data(nullptr)
     {
     }
 
-    MUDA_GENERIC explicit denseND(T* p) noexcept
+    MUDA_GENERIC explicit denseND(T* p) MUDA_NOEXCEPT
         : m_data(p)
     {
     }
 
-    MUDA_GENERIC denseND& operator=(const T& rhs) noexcept
+    MUDA_GENERIC denseND& operator=(const T& rhs) MUDA_NOEXCEPT
     {
         check();
         *m_data = rhs;
         return *this;
     }
 
-    MUDA_GENERIC T& operator()() noexcept
+    MUDA_GENERIC T& operator()() MUDA_NOEXCEPT
     {
         check();
         return *m_data;
     }
-    MUDA_GENERIC const T& operator()() const noexcept
+    MUDA_GENERIC const T& operator()() const MUDA_NOEXCEPT
     {
         check();
         return *m_data;
     }
-    MUDA_GENERIC T& operator*() noexcept
+    MUDA_GENERIC T& operator*() MUDA_NOEXCEPT
     {
         check();
         return *m_data;
     }
-    MUDA_GENERIC const T& operator*() const noexcept
+    MUDA_GENERIC const T& operator*() const MUDA_NOEXCEPT
     {
         check();
         return *m_data;
     }
-    MUDA_GENERIC operator T&() noexcept
+    MUDA_GENERIC operator T&() MUDA_NOEXCEPT
     {
         check();
         return *m_data;
     }
-    MUDA_GENERIC operator const T&() const noexcept
+    MUDA_GENERIC operator const T&() const MUDA_NOEXCEPT
     {
         check();
         return *m_data;
@@ -67,18 +67,18 @@ class denseND<T, 0> : public viewer_base<denseND<T, 0>>
         check();
         return m_data;
     }
-    MUDA_GENERIC const T* operator->() const noexcept
+    MUDA_GENERIC const T* operator->() const MUDA_NOEXCEPT
     {
         check();
         return m_data;
     }
 
-    MUDA_GENERIC T* data() noexcept { return m_data; }
+    MUDA_GENERIC T* data() MUDA_NOEXCEPT { return m_data; }
 
-    MUDA_GENERIC const T* data() const noexcept { return m_data; }
+    MUDA_GENERIC const T* data() const MUDA_NOEXCEPT { return m_data; }
 
   private:
-    MUDA_GENERIC __forceinline__ void check() const noexcept
+    MUDA_GENERIC __forceinline__ void check() const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
             if(m_data == nullptr)
@@ -95,35 +95,35 @@ class denseND<T, 1> : public viewer_base<denseND<T, 1>>
   public:
     using value_type = T;
 
-    MUDA_GENERIC denseND() noexcept
+    MUDA_GENERIC denseND() MUDA_NOEXCEPT
         : m_data(nullptr)
     {
     }
 
-    MUDA_GENERIC denseND(T* p, int dimx) noexcept
+    MUDA_GENERIC denseND(T* p, int dimx) MUDA_NOEXCEPT
         : denseND(p, Eigen::Vector<int, 1>(dimx))
     {
     }
 
-    MUDA_GENERIC denseND(T* p, const Eigen::Vector<int, 1>& dim) noexcept
+    MUDA_GENERIC denseND(T* p, const Eigen::Vector<int, 1>& dim) MUDA_NOEXCEPT
         : m_data(p)
         , m_dim(dim)
     {
     }
 
-    MUDA_GENERIC const T& operator()(int x) const noexcept
+    MUDA_GENERIC const T& operator()(int x) const MUDA_NOEXCEPT
     {
         check();
         return m_data[map(x)];
     }
 
-    MUDA_GENERIC T& operator()(int x) noexcept
+    MUDA_GENERIC T& operator()(int x) MUDA_NOEXCEPT
     {
         check();
         return m_data[map(x)];
     }
 
-    MUDA_GENERIC int map(int x) const noexcept
+    MUDA_GENERIC int map(int x) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
             if(!(x >= 0 && x < m_dim[0]))
@@ -134,16 +134,16 @@ class denseND<T, 1> : public viewer_base<denseND<T, 1>>
         return x;
     }
 
-    MUDA_GENERIC T* data() noexcept { return m_data; }
+    MUDA_GENERIC T* data() MUDA_NOEXCEPT { return m_data; }
 
-    MUDA_GENERIC const T* data() const noexcept { return m_data; }
+    MUDA_GENERIC const T* data() const MUDA_NOEXCEPT { return m_data; }
 
-    MUDA_GENERIC int total_size() const noexcept { return m_dim[0]; }
+    MUDA_GENERIC int total_size() const MUDA_NOEXCEPT { return m_dim[0]; }
 
-    MUDA_GENERIC int dim() const noexcept { return m_dim[0]; }
+    MUDA_GENERIC int dim() const MUDA_NOEXCEPT { return m_dim[0]; }
 
   private:
-    MUDA_GENERIC __forceinline__ void check() const noexcept
+    MUDA_GENERIC __forceinline__ void check() const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
             if(m_data == nullptr)
@@ -160,40 +160,40 @@ class denseND<T, 2> : public viewer_base<denseND<T, 2>>
   public:
     using value_type = T;
 
-    MUDA_GENERIC denseND() noexcept
+    MUDA_GENERIC denseND() MUDA_NOEXCEPT
         : m_data(nullptr)
     {
     }
 
-    MUDA_GENERIC denseND(T* p, int dimx, int dimy) noexcept
+    MUDA_GENERIC denseND(T* p, int dimx, int dimy) MUDA_NOEXCEPT
         : denseND(p, Eigen::Vector<int, 2>(dimx, dimy))
     {
     }
 
-    MUDA_GENERIC denseND(T* p, const Eigen::Vector<int, 2>& dim) noexcept
+    MUDA_GENERIC denseND(T* p, const Eigen::Vector<int, 2>& dim) MUDA_NOEXCEPT
         : m_data((T*)p)
         , m_dim(dim)
     {
     }
 
-    MUDA_GENERIC const T& operator()(int x, int y) const noexcept
+    MUDA_GENERIC const T& operator()(int x, int y) const MUDA_NOEXCEPT
     {
         check();
         return m_data[map(x, y)];
     }
 
-    MUDA_GENERIC T& operator()(int x, int y) noexcept
+    MUDA_GENERIC T& operator()(int x, int y) MUDA_NOEXCEPT
     {
         check();
         return m_data[map(x, y)];
     }
 
-    MUDA_GENERIC T* data() noexcept { return m_data; }
+    MUDA_GENERIC T* data() MUDA_NOEXCEPT { return m_data; }
 
-    MUDA_GENERIC const T* data() const noexcept { return m_data; }
+    MUDA_GENERIC const T* data() const MUDA_NOEXCEPT { return m_data; }
 
     // map index (x,y) to an offset. offset = x * dim_y + y
-    MUDA_GENERIC int map(int x, int y) const noexcept
+    MUDA_GENERIC int map(int x, int y) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
             if(!(x >= 0 && x < m_dim[0] && y >= 0 && y < m_dim[1]))
@@ -207,19 +207,19 @@ class denseND<T, 2> : public viewer_base<denseND<T, 2>>
             }
         return x * m_dim[1] + y;
     }
-    MUDA_GENERIC int total_size() const noexcept { return m_dim[0] * m_dim[1]; }
+    MUDA_GENERIC int total_size() const MUDA_NOEXCEPT { return m_dim[0] * m_dim[1]; }
 
-    MUDA_GENERIC int area() const noexcept { return total_size(); }
+    MUDA_GENERIC int area() const MUDA_NOEXCEPT { return total_size(); }
 
     template <int i>
-    MUDA_GENERIC int dim() const noexcept
+    MUDA_GENERIC int dim() const MUDA_NOEXCEPT
     {
         static_assert(i >= 0 && i <= 2, "dense2D: dim index out of range");
         return m_dim[i];
     }
 
   private:
-    MUDA_GENERIC __forceinline__ void check() const noexcept
+    MUDA_GENERIC __forceinline__ void check() const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
             if(m_data == nullptr)
@@ -237,38 +237,38 @@ class denseND<T, 3> : public viewer_base<denseND<T, 3>>
   public:
     using value_type = T;
 
-    MUDA_GENERIC denseND() noexcept
+    MUDA_GENERIC denseND() MUDA_NOEXCEPT
         : m_data(nullptr){};
 
-    MUDA_GENERIC denseND(T* p, int dimx, int dimy, int dimz) noexcept
+    MUDA_GENERIC denseND(T* p, int dimx, int dimy, int dimz) MUDA_NOEXCEPT
         : denseND(p, Eigen::Vector<int, 3>(dimx, dimy, dimz))
     {
     }
 
-    MUDA_GENERIC denseND(T* p, const Eigen::Vector<int, 3>& dim) noexcept
+    MUDA_GENERIC denseND(T* p, const Eigen::Vector<int, 3>& dim) MUDA_NOEXCEPT
         : m_data(p)
         , m_dim(dim)
     {
     }
 
-    MUDA_GENERIC const T& operator()(int x, int y, int z) const noexcept
+    MUDA_GENERIC const T& operator()(int x, int y, int z) const MUDA_NOEXCEPT
     {
         check();
         return m_data[map(x, y, z)];
     }
 
-    MUDA_GENERIC T& operator()(int x, int y, int z) noexcept
+    MUDA_GENERIC T& operator()(int x, int y, int z) MUDA_NOEXCEPT
     {
         check();
         return m_data[map(x, y, z)];
     }
 
-    MUDA_GENERIC T* data() noexcept { return m_data; }
+    MUDA_GENERIC T* data() MUDA_NOEXCEPT { return m_data; }
 
-    MUDA_GENERIC const T* data() const noexcept { return m_data; }
+    MUDA_GENERIC const T* data() const MUDA_NOEXCEPT { return m_data; }
 
     // map index (x,y,z) to an offset. offset = dim_z * (x * dim_y + y) + z
-    MUDA_GENERIC int map(int x, int y, int z) const noexcept
+    MUDA_GENERIC int map(int x, int y, int z) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
             if(!(x >= 0 && x < m_dim[0] && y >= 0 && y < m_dim[1] && z >= 0 && z < m_dim[2]))
@@ -284,20 +284,20 @@ class denseND<T, 3> : public viewer_base<denseND<T, 3>>
     }
 
     template <int i>
-    MUDA_GENERIC int dim() const noexcept
+    MUDA_GENERIC int dim() const MUDA_NOEXCEPT
     {
         static_assert(i >= 0 && i <= 2, "dense3D: dim index out of range");
         return m_dim[i];
     }
 
-    MUDA_GENERIC int area() const noexcept { return m_area; }
+    MUDA_GENERIC int area() const MUDA_NOEXCEPT { return m_area; }
 
-    MUDA_GENERIC int total_size() const noexcept { return m_dim[0] * m_area; }
+    MUDA_GENERIC int total_size() const MUDA_NOEXCEPT { return m_dim[0] * m_area; }
 
-    MUDA_GENERIC int volume() const noexcept { return total_size(); }
+    MUDA_GENERIC int volume() const MUDA_NOEXCEPT { return total_size(); }
 
   private:
-    MUDA_GENERIC __forceinline__ void check() const noexcept
+    MUDA_GENERIC __forceinline__ void check() const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
             if(m_data == nullptr)
@@ -321,67 +321,67 @@ using dense3D = denseND<T, 3>;
 namespace muda
 {
 template <typename T>
-MUDA_GENERIC inline auto make_dense(T* data) noexcept
+MUDA_INLINE MUDA_GENERIC auto make_dense(T* data) MUDA_NOEXCEPT
 {
     return dense<T>(data);
 }
 
 template <typename T>
-MUDA_GENERIC inline auto make_dense1D(T* data, int dimx) noexcept
+MUDA_INLINE MUDA_GENERIC auto make_dense1D(T* data, int dimx) MUDA_NOEXCEPT
 {
     return dense1D<T>(data, dimx);
 }
 
 template <typename T>
-MUDA_GENERIC inline auto make_dense2D(T* data, int dimx, int dimy) noexcept
+MUDA_INLINE MUDA_GENERIC auto make_dense2D(T* data, int dimx, int dimy) MUDA_NOEXCEPT
 {
     return dense2D<T>(data, dimx, dimy);
 }
 
 template <typename T>
-MUDA_GENERIC inline auto make_dense2D(T* data, const Eigen::Vector2i& dim) noexcept
+MUDA_INLINE MUDA_GENERIC auto make_dense2D(T* data, const Eigen::Vector2i& dim) MUDA_NOEXCEPT
 {
     return dense2D<T>(data, dim);
 }
 
 template <typename T>
-MUDA_GENERIC inline auto make_dense3D(T* data, int dimx, int dimy, int dimz) noexcept
+MUDA_INLINE MUDA_GENERIC auto make_dense3D(T* data, int dimx, int dimy, int dimz) MUDA_NOEXCEPT
 {
     return dense3D<T>(data, dimx, dimy, dimz);
 }
 
 template <typename T>
-MUDA_GENERIC inline auto make_dense3D(T* data, const Eigen::Vector3i& dim) noexcept
+MUDA_INLINE MUDA_GENERIC auto make_dense3D(T* data, const Eigen::Vector3i& dim) MUDA_NOEXCEPT
 {
     return dense3D<T>(data, dim);
 }
 
 template <typename T>
-MUDA_GENERIC inline auto make_dense(T* data, int dimx) noexcept
+MUDA_INLINE MUDA_GENERIC auto make_dense(T* data, int dimx) MUDA_NOEXCEPT
 {
     return make_dense1D(data, dimx);
 }
 
 template <typename T>
-MUDA_GENERIC inline auto make_dense(T* data, int dimx, int dimy) noexcept
+MUDA_INLINE MUDA_GENERIC auto make_dense(T* data, int dimx, int dimy) MUDA_NOEXCEPT
 {
     return make_dense2D(data, dimx, dimy);
 }
 
 template <typename T>
-MUDA_GENERIC inline auto make_dense(T* data, const Eigen::Vector2i& dim) noexcept
+MUDA_INLINE MUDA_GENERIC auto make_dense(T* data, const Eigen::Vector2i& dim) MUDA_NOEXCEPT
 {
     return make_dense2D(data, dim.x(), dim.y());
 }
 
 template <typename T>
-MUDA_GENERIC inline auto make_dense(T* data, int dimx, int dimy, int dimz) noexcept
+MUDA_INLINE MUDA_GENERIC auto make_dense(T* data, int dimx, int dimy, int dimz) MUDA_NOEXCEPT
 {
     return make_dense3D(data, dimx, dimy, dimz);
 }
 
 template <typename T>
-MUDA_GENERIC inline auto make_dense(T* data, const Eigen::Vector3i& dim) noexcept
+MUDA_INLINE MUDA_GENERIC auto make_dense(T* data, const Eigen::Vector3i& dim) noexcept
 {
     return make_dense3D(data, dim);
 }

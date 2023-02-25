@@ -35,5 +35,11 @@ constexpr int VIEWER_NAME_MAX = MUDA_NDEBUG ? 0 : 16;
 }  // namespace muda
 
 
+
+
+// allow thread_only container to be used in host code & device code
+#define MUDA_THREAD_ONLY_AS_GENERIC
+
+// internal eastl config
 #define EASTL_ASSERT_ENABLED 1
 #define EASTL_EMPTY_REFERENCE_ASSERT_ENABLED 1
