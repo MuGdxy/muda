@@ -8,6 +8,18 @@
 #include <exception>
 #include <string>
 
+
+#include <cusparse.h>
+
+__host__ __device__ inline const char* mudaCudaGetErrorEnum(cudaError_t error)
+{
+#ifdef __CUDA_ARCH__
+    return "<muda: not impl yet>";
+#else
+    return cudaGetErrorName(error);
+#endif
+}
+
 namespace muda
 {
 template <typename T = cudaError_t>
@@ -33,7 +45,11 @@ class cuda_error : public std::exception
                  + std::to_string((int)m_error) + "(" + m_error_string + ")" + m_func;
     }
 
-    virtual char const* what() const { return m_what.c_str(); }
+    virtual char const* what() const 
+#ifdef MUDA_PLATFORM_LINUX
+    MUDA_NOEXCEPT
+#endif
+    { return m_what.c_str(); }
 
     T                  error() const { return m_error; }
     const std::string& error_string() const { return m_error_string; }
@@ -41,15 +57,6 @@ class cuda_error : public std::exception
     size_t             line() const { return m_line; }
     const std::string& func() const { return m_func; }
 };
-
-__host__ __device__ inline const char* _cudaGetErrorEnum(cudaError_t error)
-{
-#ifdef __CUDA_ARCH__
-    return "<muda: not impl yet>";
-#else
-    return cudaGetErrorName(error);
-#endif
-}
 
 template <typename T>
 __host__ __device__ inline void check(T                 result,
@@ -64,7 +71,7 @@ __host__ __device__ inline void check(T                 result,
                file,
                line,
                static_cast<unsigned int>(result),
-               _cudaGetErrorEnum(result),
+               mudaCudaGetErrorEnum(result),
                func);
         if constexpr(TRAP_ON_ERROR)
             trap();
@@ -77,9 +84,9 @@ __host__ __device__ inline void check(T                 result,
                      file,
                      line,
                      static_cast<unsigned int>(result),
-                     _cudaGetErrorEnum(result),
+                     mudaCudaGetErrorEnum(result),
                      func);
-        throw cuda_error<T>(result, _cudaGetErrorEnum(result), file, line, func);
+        throw cuda_error<T>(result, mudaCudaGetErrorEnum(result), file, line, func);
     }
 #endif
 }

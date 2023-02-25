@@ -27,6 +27,7 @@ template <typename T, typename RowOffsetType = int, typename ColIndexType = int,
 class matCSR : public sparse_matrix_base<T>
 {
   public:
+    using value_type      = T;
     using row_offset_type = RowOffsetType;
     using col_index_type  = ColIndexType;
     using this_type       = matCSR;
@@ -54,7 +55,7 @@ class matCSR : public sparse_matrix_base<T>
                                           details::cusparseIndexTypeMap_v<row_offset_type>,
                                           details::cusparseIndexTypeMap_v<col_index_type>,
                                           IndexBase,
-                                          dataType));
+                                          this->dataType));
     }
     ~matCSR() { checkCudaErrors(cusparseDestroySpMat(m_spM)); }
     operator cusparseSpMatDescr_t() { return m_spM; }

@@ -31,7 +31,7 @@ inline void read_ticcd_csv(const std::string&            inputFileName,
     std::array<double, 3> v;
     if(!infile.is_open())
     {
-        throw std::exception("error path");
+        throw muda::exception("error path");
     }
 
     int l = 0;

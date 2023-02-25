@@ -12,7 +12,7 @@
 #define EASTL_ASSERT(x)                                                        \
     do                                                                         \
     {                                                                          \
-        muda_kernel_assert(x, "");                                             \
+        muda_kernel_assert(x, "\n");                                           \
     } while(0)
 #endif
 

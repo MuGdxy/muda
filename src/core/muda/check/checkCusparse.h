@@ -1,10 +1,8 @@
 #pragma once
-#include "checkCudaErrors.h"
 #include <cusparse.h>
 
-namespace muda
-{
-inline const char* _cudaGetErrorEnum(cusparseStatus_t error)
+
+__host__ __device__ inline const char* mudaCudaGetErrorEnum(cusparseStatus_t error)
 {
     switch(error)
     {
@@ -38,4 +36,3 @@ inline const char* _cudaGetErrorEnum(cusparseStatus_t error)
 
     return "<unknown>";
 }
-}  // namespace muda

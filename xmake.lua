@@ -49,7 +49,7 @@ if(has_config("ext")) then
         add_defines("_SCL_SECURE_NO_WARNINGS")
         add_defines("EASTL_OPENSOURCE=1")
         add_includedirs("src/ext/muda/thread_only", {public = true}) -- EASTL requirement
-        add_includedirs("src/ext/muda/thread_only/EABase/include/common", {public = true}) -- EASTL requirement
+        add_includedirs("src/ext/muda/thread_only/EABase/include/Common", {public = true}) -- EASTL requirement
     target_end()
 end 
 
@@ -62,26 +62,31 @@ if(has_config("util")) then
         add_headerfiles("src/util/(muda/pba/**.h)","src/util/(muda/pba/**.inl)")
     target_end()  
 
-    -- this target includes GUI
-    target("muda-gui")
-        add_deps("muda-ext")
-        add_packages("glfw", {public = true})
-        set_kind("static")
-        -- add imgui src
-        add_headerfiles("external/(imgui/**.h)")
-        add_files("external/imgui/**.cpp")
-        add_includedirs("external/", {public=true})
-        -- add muda gui src
-        add_files(
-            "src/util/muda/gui/**.cpp",
-            "src/util/muda/gui/**.cu")
-        add_includedirs("src/util/", {public=true})
-        add_headerfiles("src/util/(muda/gui/**.h)")
-    target_end()
+    -- TODO: need linux gui fix 
+    if(not is_config("plat", "linux")) then
+        -- this target includes GUI
+        target("muda-gui")
+            add_deps("muda-ext")
+            add_packages("glfw", {public = true})
+            set_kind("static")
+            -- add imgui src
+            add_headerfiles("external/(imgui/**.h)")
+            add_files("external/imgui/**.cpp")
+            add_includedirs("external/", {public=true})
+            -- add muda gui src
+            add_files(
+                "src/util/muda/gui/**.cpp",
+                "src/util/muda/gui/**.cu")
+            add_includedirs("src/util/", {public=true})
+            add_headerfiles("src/util/(muda/gui/**.h)")
+        target_end()
+    end
 end
 
-
-if(has_config("util") and has_config("ext")) then
+-- TODO: need linux gui fix 
+if(has_config("util") 
+    and has_config("ext") 
+    and not is_config('plat', 'linux')) then
     -- this is a phony target to collect all muda functionalities which is convenient for quick-starts, examples and tests.
     target("muda-full")
         add_deps(
@@ -95,8 +100,19 @@ end
 
 
 -- a convenient function to create executable targets
-function muda_app_base()
-    add_deps("muda-full")
+-- kind = "gui" / "cui"
+function muda_app_base(kind)
+    if(kind == "gui") then 
+        add_deps("muda-full")
+    elseif (kind == "cui") then
+        add_deps("muda-ext","muda-pba")
+    end
+    
+    if is_config("plat","linux") then
+        add_cxflags("-lstdc++fs") 
+        add_links("stdc++fs")
+    end
+
     add_undefines("min","max")
     
     set_kind("binary")
@@ -104,6 +120,7 @@ function muda_app_base()
     add_headerfiles("src/core/muda/**.h","src/core/muda/**.inl")
     add_headerfiles("src/ext/muda/**.h","src/ext/muda/**.inl")
     add_headerfiles("src/util/muda/**.h","src/util/muda/**.inl")
+    
     add_cugencodes("native")
     add_cugencodes("compute_75")
     add_links("cublas","cusparse")
@@ -111,7 +128,7 @@ end
 
 if has_config("test") then
     target("muda_test")
-        muda_app_base()
+        muda_app_base("cui")
         test_data_dir = path.absolute("test/data")
         add_defines("MUDA_TEST_DATA_DIR=R\"(".. test_data_dir..")\"")
         add_files("test/muda_test/**.cu","test/muda_test/**.cpp")
@@ -120,13 +137,13 @@ end
 
 if has_config("example") then
     target("muda_example")
-        muda_app_base()
+        muda_app_base("cui")
         add_files("example/**.cu","example/**.cpp")
 end
 
 if has_config("playground") then
     target("muda_pg")
-        muda_app_base()
+        muda_app_base("gui")
         add_files("test/playground/**.cu","test/playground/**.cpp")
     target_end()
 end

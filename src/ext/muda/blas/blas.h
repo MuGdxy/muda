@@ -1,10 +1,11 @@
 #pragma once
-#include <cublas.h>
-#include <cusparse.h>
-
-#include <muda/launch/launch_base.h>
 #include <muda/check/checkCusparse.h>
 #include <muda/check/checkCublas.h>
+#include <muda/check/checkCudaErrors.h>
+#include <muda/launch/launch_base.h>
+
+#include <cublas.h>
+#include <cusparse.h>
 
 #include "mat_view.h"
 #include "dense.h"

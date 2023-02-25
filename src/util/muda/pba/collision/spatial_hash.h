@@ -395,7 +395,7 @@ class SpatialPartitionField
     details::SpatialPartitionField<Hash> m_impl;
 
   public:
-    template <typename Hash>
+    template <typename OtherHash>
     friend class SpatialPartitionLauncher;
 };
 

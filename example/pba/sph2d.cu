@@ -5,7 +5,7 @@
 #include "../example_common.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include <filesystem>
+#include <muda/tools/filesystem.h>
 using namespace muda;
 
 using Vector2 = Eigen::Vector2f;
@@ -304,11 +304,11 @@ void sph2d(int particle_count)
     solver.SetParticles(particles);
 
     // create a folder for frame data output
-    std::filesystem::path folder("sph2d/");
-    if(!std::filesystem::exists(folder))
-        std::filesystem::create_directory(folder);
+    filesystem::path folder("sph2d/");
+    if(!filesystem::exists(folder))
+        filesystem::create_directory(folder);
 
-    auto abspath = std::filesystem::absolute(folder);
+    auto abspath = filesystem::absolute(folder);
     std::cout << "solve frames to folder: " << abspath << std::endl;
 
     int bar    = 77;

@@ -17,7 +17,7 @@ class mat_view
     {
     }
     
-    mat_view(matrix_type& mat, cusparseOperation_t trans_)
+    mat_view(matrix_type& mat, cusparseOperation_t trans)
         : m_mat(mat)
         , m_trans(trans)
     {

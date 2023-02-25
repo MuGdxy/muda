@@ -3,6 +3,7 @@
 #include <cuda_runtime_api.h>
 #include <cuda_device_runtime_api.h>
 
+#include <list>
 #include <vector>
 #include <memory>
 #include <functional>

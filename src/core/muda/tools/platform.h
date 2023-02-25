@@ -21,8 +21,10 @@
 #define MUDA_STDCALL __stdcall
 #define MUDA_CDECL __cdecl
 #define MUDA_FASTCALL __fastcall
+#define MUDA_FUNCTION_SIG __FUNCSIG__
 #elif defined(MUDA_PLATFORM_LINUX)
 #define MUDA_STDCALL __attribute__((__stdcall__))
 #define MUDA_CDECL __attribute__((__cdecl__))
 #define MUDA_FASTCALL __attribute__((__fastcall__))
+#define MUDA_FUNCTION_SIG __PRETTY_FUNCTION__
 #endif
