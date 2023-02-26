@@ -1,4 +1,6 @@
 #pragma once
+#include <muda/tools/version.h>
+
 #include <muda/check/checkCusparse.h>
 #include <muda/check/checkCublas.h>
 #include <muda/check/checkCudaErrors.h>
@@ -24,22 +26,25 @@ class blasContext
     blasContext(cudaStream_t stream = nullptr)
         : m_stream(stream)
     {
-        checkCudaErrors(cusparseCreate(&m_csh));
         checkCudaErrors(cublasCreate_v2(&m_cbh));
-        checkCudaErrors(cusparseSetStream(m_csh, stream));
         checkCudaErrors(cublasSetStream_v2(m_cbh, stream));
+
+        checkCudaErrors(cusparseCreate(&m_csh));
+        checkCudaErrors(cusparseSetStream(m_csh, stream));
     }
+
     ~blasContext()
     {
-        checkCudaErrors(cusparseDestroy(m_csh));
         checkCudaErrors(cublasDestroy_v2(m_cbh));
+
+        checkCudaErrors(cusparseDestroy(m_csh));
     }
 
     operator cusparseHandle_t() { return m_csh; }
+    cusparseHandle_t spHandle() { return m_csh; };
+
     operator cublasHandle_t() { return m_cbh; }
     operator cudaStream_t() { return m_stream; }
-
-    cusparseHandle_t spHandle() { return m_csh; };
     cublasHandle_t   dnHandle() { return m_cbh; };
     cudaStream_t     stream() { return m_stream; };
 };
@@ -144,7 +149,7 @@ class blas : public launch_base<blas>
                                                 b.data(),
                                                 y_inout,
                                                 details::cudaDataTypeMap_v<value_type>,
-                                                cusparseSpMVAlg_t::CUSPARSE_SPMV_ALG_DEFAULT,
+                                                cusparseSpMVAlg_t::CUSPARSE_MV_ALG_DEFAULT,
                                                 &bufferSize));
 
         details::set_stream_check(external_buffer, m_ctx);
@@ -158,7 +163,7 @@ class blas : public launch_base<blas>
                                      b.data(),
                                      y_inout,
                                      details::cudaDataTypeMap_v<value_type>,
-                                     cusparseSpMVAlg_t::CUSPARSE_SPMV_ALG_DEFAULT,
+                                     cusparseSpMVAlg_t::CUSPARSE_MV_ALG_DEFAULT,
                                      external_buffer.data()));
         return *this;
     }

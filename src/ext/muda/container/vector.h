@@ -1,7 +1,13 @@
 #pragma once
+
+#include <muda/tools/version.h>
 #include <thrust/device_allocator.h>
+
+#ifdef MUDA_WITH_THRUST_UNIVERSAL
 #include <thrust/universal_allocator.h>
 #include <thrust/universal_vector.h>
+#endif
+
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <vector>
@@ -20,8 +26,10 @@ namespace details
 template <typename T, typename Alloc = thrust::device_allocator<T>>
 using device_vector = thrust::device_vector<T, Alloc>;
 
+#ifdef MUDA_WITH_THRUST_UNIVERSAL
 template <typename T, typename Alloc = thrust::universal_allocator<T>>
 using universal_vector = thrust::universal_vector<T, Alloc>;
+#endif
 
 template <typename T, typename Alloc = ::std::allocator<T>>
 using host_vector = thrust::host_vector<T, Alloc>;
@@ -59,7 +67,7 @@ MUDA_INLINE T* data(details::vector_base<T, Allocator>& v) MUDA_NOEXCEPT
 template <typename T, typename Allocator>
 MUDA_INLINE MUDA_HOST auto make_dense(details::vector_base<T, Allocator>& v) MUDA_NOEXCEPT
 {
-    return muda::denseND<T, 1>(data(v), v.size());
+    return muda::denseND<T, 1>(::muda::data(v), v.size());
 }
 
 template <typename T, typename Allocator>
@@ -71,7 +79,7 @@ MUDA_INLINE MUDA_HOST auto make_viewer(details::vector_base<T, Allocator>& v) MU
 template <typename T, typename Allocator>
 MUDA_INLINE MUDA_HOST auto make_dense2D(details::vector_base<T, Allocator>& v, int dimy) MUDA_NOEXCEPT
 {
-    return make_dense2D(data(v), v.size() / dimy, dimy);
+    return make_dense2D(::muda::data(v), v.size() / dimy, dimy);
 }
 
 template <typename T, typename Allocator>
@@ -79,7 +87,7 @@ MUDA_INLINE MUDA_HOST auto make_dense2D(details::vector_base<T, Allocator>& v, i
 {
     muda_kernel_assert(
         dimx * dimy <= v.size(), "dimx=%d, dimy=%d, v.size()=%d\n", dimx, dimy, v.size());
-    return make_dense2D(data(v), dimx, dimy);
+    return make_dense2D(::muda::data(v), dimx, dimy);
 }
 
 template <typename T, typename Allocator>
@@ -91,7 +99,7 @@ MUDA_INLINE MUDA_HOST auto make_dense2D(details::vector_base<T, Allocator>& v,
                        dim.x(),
                        dim.y(),
                        v.size());
-    return make_dense2D(data(v), dim.x(), dim.y());
+    return make_dense2D(::muda::data(v), dim.x(), dim.y());
 }
 
 template <typename T, typename Allocator>
@@ -99,7 +107,7 @@ MUDA_INLINE MUDA_HOST auto make_dense3D(details::vector_base<T, Allocator>& v, i
 {
     muda_kernel_assert(
         dimy * dimz <= v.size(), "dimy=%d, dimz=%d, v.size()=%d\n", dimy, dimz, v.size());
-    return make_dense3D(data(v), v.size() / (dimy * dimz), dimy, dimz);
+    return make_dense3D(::muda::data(v), v.size() / (dimy * dimz), dimy, dimz);
 }
 
 template <typename T, typename Allocator>
@@ -111,7 +119,7 @@ MUDA_INLINE MUDA_HOST auto make_dense3D(details::vector_base<T, Allocator>& v,
                        dimyz(0),
                        dimyz(1),
                        v.size());
-    return make_dense3D(data(v), v.size() / (dimyz(0) * dimyz(1)), dimyz(0), dimyz(1));
+    return make_dense3D(::muda::data(v), v.size() / (dimyz(0) * dimyz(1)), dimyz(0), dimyz(1));
 }
 
 template <typename T, typename Allocator>
@@ -123,7 +131,7 @@ MUDA_INLINE MUDA_HOST auto make_dense3D(details::vector_base<T, Allocator>& v, i
                        dimy,
                        dimz,
                        v.size());
-    return make_dense3D(data(v), dimx, dimy, dimz);
+    return make_dense3D(::muda::data(v), dimx, dimy, dimz);
 }
 
 template <typename T, typename Allocator>
@@ -136,7 +144,7 @@ MUDA_INLINE MUDA_HOST auto make_dense3D(details::vector_base<T, Allocator>& v,
                        dim.y(),
                        dim.z(),
                        v.size());
-    return make_dense3D(data(v), dim.x(), dim.y(), dim.z());
+    return make_dense3D(::muda::data(v), dim.x(), dim.y(), dim.z());
 }
 }  // namespace muda
 #include <string>

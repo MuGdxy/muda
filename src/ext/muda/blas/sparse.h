@@ -1,4 +1,5 @@
 #pragma once
+#include <muda/tools/version.h>
 #include <cublas.h>
 #include <cusparse.h>
 #include <muda/container/vector.h>

@@ -22,18 +22,22 @@ class memory : public launch_base<memory>
         return *this;
     }
 
-    memory& copy(void* dst, const void* src, size_t byte_size, cudaMemcpyKind kind)
-    {
-        checkCudaErrors(cudaMemcpyAsync(dst, src, byte_size, kind, m_stream));
-        return *this;
-    }
-
+#ifdef MUDA_WITH_GRAPH_MEMORY_ALLOC_FREE
     template <typename T>
     MUDA_NODISCARD static auto asAllocNodeParms(size_t count)
     {
         auto parms = std::make_shared<memAllocNodeParms<T>>(count);
         return parms;
     }
+#endif
+
+    memory& copy(void* dst, const void* src, size_t byte_size, cudaMemcpyKind kind)
+    {
+        checkCudaErrors(cudaMemcpyAsync(dst, src, byte_size, kind, m_stream));
+        return *this;
+    }
+
+
 
     memory& set(void* data, size_t byte_size, char byte = 0)
     {
