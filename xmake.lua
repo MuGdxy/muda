@@ -10,9 +10,14 @@ includes("options.lua")
 -- 
 -- **********************************
 
-add_requires("glfw", {optional = true})
+
 add_requires("cuda", {optional = false})
 add_requires("eigen", {optional = false})
+
+if (has_config("gui-enabled")) then 
+    add_requires("glfw", {optional = true})
+end
+
 -- **********************************
 -- 
 -- targets
@@ -63,7 +68,7 @@ if(has_config("util")) then
     target_end()  
 
     -- TODO: need linux gui fix 
-    if(not is_config("plat", "linux")) then
+    if (has_config("gui-enabled")) then 
         -- this target includes GUI
         target("muda-gui")
             add_deps("muda-ext")
@@ -85,15 +90,17 @@ end
 
 -- TODO: need linux gui fix 
 if(has_config("util") 
-    and has_config("ext") 
-    and not is_config('plat', 'linux')) then
+    and has_config("ext")) then
     -- this is a phony target to collect all muda functionalities which is convenient for quick-starts, examples and tests.
     target("muda-full")
         add_deps(
             "muda-ext",
-            "muda-pba",
-            "muda-gui"
+            "muda-pba"
         )
+        if (has_config("gui-enabled")) then 
+            add_deps("muda-gui")
+        end 
+
         set_kind("phony")
     target_end()
 end
@@ -143,8 +150,10 @@ end
 
 if has_config("playground") then
     target("muda_pg")
-        muda_app_base("gui")
-        add_files("test/playground/**.cu","test/playground/**.cpp")
+        if (has_config("gui-enabled")) then 
+            muda_app_base("gui")
+            add_files("test/playground/**.cu","test/playground/**.cpp")
+        end
     target_end()
 end
 
