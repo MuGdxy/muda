@@ -134,7 +134,7 @@ TEST_CASE("graph_memop_node", "[graph]")
 
 void host_call_graph(int& ground_thruth, int& res)
 {
-    device_var<int> v = 0;
+    host_var<int> v = 0;
 
     auto hp = host_call().asNodeParms([v = make_viewer(v)] __host__() mutable
                                       { for(int i = 0; i < 5; ++i) v++; });
