@@ -121,7 +121,7 @@ function muda_app_base(kind)
     end
 
     add_undefines("min","max")
-    
+
     set_kind("binary")
     add_includedirs("test/", {public = false})
     add_headerfiles("src/core/muda/**.h","src/core/muda/**.inl")
