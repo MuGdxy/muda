@@ -31,7 +31,7 @@ inline void read_ticcd_csv(const std::string&            inputFileName,
     std::array<double, 3> v;
     if(!infile.is_open())
     {
-        throw muda::exception("error path");
+        throw muda::exception("error path" + inputFileName);
     }
 
     int l = 0;
@@ -217,9 +217,9 @@ void ticcd_test(bool                   is_ee,
 {
     host_vector<Eigen::Vector3f> X;
     if(is_ee)
-        read_ticcd_csv(MUDA_TEST_DATA_DIR R"(\unit-tests\edge-edge\data_0_1.csv)", X, ground_thruth);
+        read_ticcd_csv(MUDA_TEST_DATA_DIR R"(/unit-tests/edge-edge/data_0_1.csv)", X, ground_thruth);
     else
-        read_ticcd_csv(MUDA_TEST_DATA_DIR R"(\unit-tests\vertex-face\data_0_0.csv)", X, ground_thruth);
+        read_ticcd_csv(MUDA_TEST_DATA_DIR R"(/unit-tests/vertex-face/data_0_0.csv)", X, ground_thruth);
 
     auto resultSize = X.size() / 8;
 
@@ -281,7 +281,7 @@ TEST_CASE("ticcd", "[collide]")
     }
 }
 
-TEST_CASE("ticcd-unlimited", "[.collide]") 
+TEST_CASE("ticcd-unlimited", "[.collide]")
 {
     SECTION("UnlimitedQueueSize-EE")
     {
@@ -290,7 +290,7 @@ TEST_CASE("ticcd-unlimited", "[.collide]")
         CHECK(check_allow_false_positive(ground_thruth, h_results));
         CHECK(check_allow_false_positive(ground_thruth, d_results));
     }
-    
+
     SECTION("UnlimitedQueueSize-VF")
     {
         host_vector<uint32_t> ground_thruth, h_results, d_results;

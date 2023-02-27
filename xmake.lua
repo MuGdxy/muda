@@ -12,7 +12,7 @@ includes("options.lua")
 
 
 add_requires("cuda", {optional = false})
-add_requires("eigen", {optional = false})
+add_requires("eigen 3.4.*", {optional = false})
 
 if (has_config("gui-enabled")) then 
     add_requires("glfw", {optional = true})
@@ -121,7 +121,7 @@ function muda_app_base(kind)
     end
 
     add_undefines("min","max")
-    
+
     set_kind("binary")
     add_includedirs("test/", {public = false})
     add_headerfiles("src/core/muda/**.h","src/core/muda/**.inl")

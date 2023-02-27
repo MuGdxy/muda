@@ -12,13 +12,15 @@ class memory : public launch_base<memory>
     template <typename T>
     memory& alloc(T** ptr, size_t byte_size)
     {
-        checkCudaErrors(cudaMallocAsync(ptr, byte_size, m_stream));
+        // checkCudaErrors(cudaMallocAsync(ptr, byte_size, m_stream));
+        checkCudaErrors(cudaMalloc(ptr, byte_size));
         return *this;
     }
 
     memory& free(void* ptr)
     {
-        checkCudaErrors(cudaFreeAsync(ptr, m_stream));
+        // checkCudaErrors(cudaFreeAsync(ptr, m_stream));
+        checkCudaErrors(cudaFree(ptr));
         return *this;
     }
 
@@ -36,7 +38,6 @@ class memory : public launch_base<memory>
         checkCudaErrors(cudaMemcpyAsync(dst, src, byte_size, kind, m_stream));
         return *this;
     }
-
 
 
     memory& set(void* data, size_t byte_size, char byte = 0)

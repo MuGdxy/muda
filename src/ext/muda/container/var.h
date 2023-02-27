@@ -26,10 +26,7 @@ namespace details
         using pointer       = typename Allocator::pointer;
         using const_pointer = typename Allocator::const_pointer;
 
-        MUDA_HOST var_base() MUDA_NOEXCEPT
-            : m_data(Allocator().allocate(1))
-        {
-        }
+        MUDA_HOST var_base() MUDA_NOEXCEPT : m_data(Allocator().allocate(1)) {}
 
         MUDA_HOST var_base(const T& value) MUDA_NOEXCEPT
             : m_data(Allocator().allocate(1))
@@ -37,7 +34,10 @@ namespace details
             this->operator=(value);
         }
 
-        MUDA_HOST ~var_base() MUDA_NOEXCEPT { Allocator().deallocate(m_data, 1); }
+        MUDA_HOST ~var_base() MUDA_NOEXCEPT
+        {
+            Allocator().deallocate(m_data, 1);
+        }
 
         pointer       data() { return m_data; }
         const_pointer data() const { return m_data; }
@@ -98,7 +98,7 @@ namespace muda
 template <typename T, typename Allocator>
 MUDA_INLINE MUDA_HOST auto make_dense(details::var_base<T, Allocator>& v) MUDA_NOEXCEPT
 {
-    return dense<T>(data(v));
+    return dense<T>(::muda::data(v));
 }
 
 template <typename T, typename Allocator>
