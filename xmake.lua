@@ -14,7 +14,7 @@ includes("options.lua")
 add_requires("cuda", {optional = false})
 add_requires("eigen 3.4.*", {optional = false})
 
-if (has_config("gui-enabled")) then 
+if (has_config("with_gui")) then 
     add_requires("glfw", {optional = true})
 end
 
@@ -68,7 +68,7 @@ if(has_config("util")) then
     target_end()  
 
     -- TODO: need linux gui fix 
-    if (has_config("gui-enabled")) then 
+    if (has_config("with_gui")) then 
         -- this target includes GUI
         target("muda-gui")
             add_deps("muda-ext")
@@ -97,7 +97,7 @@ if(has_config("util")
             "muda-ext",
             "muda-pba"
         )
-        if (has_config("gui-enabled")) then 
+        if (has_config("with_gui")) then 
             add_deps("muda-gui")
         end 
 
@@ -146,14 +146,18 @@ if has_config("example") then
     target("muda_example")
         muda_app_base("cui")
         add_files("example/**.cu","example/**.cpp")
+    target_end()
 end
 
 if has_config("playground") then
     target("muda_pg")
-        if (has_config("gui-enabled")) then 
-            muda_app_base("gui")
-            add_files("test/playground/**.cu","test/playground/**.cpp")
-        end
+    if(has_config("with_gui")) then
+        muda_app_base("gui")
+        add_files("test/playground/**.cu","test/playground/**.cpp")
+    else
+        muda_app_base("cui")
+        add_files("test/playground/main.cpp")
+    end
     target_end()
 end
 

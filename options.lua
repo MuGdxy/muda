@@ -59,7 +59,7 @@ option("playground")
     option_dev_core_only_related()
 option_end()
 
-option("gui-enabled")
+option("with_gui")
     set_default(false)
     set_showmenu(true)
     set_category("root menu/dev")

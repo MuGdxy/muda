@@ -129,7 +129,8 @@ class blas : public launch_base<blas>
                dense_vec<typename raw_type_t<MatView>::value_type>& x_in,
                ScalarValueOrPointer                                 beta,
                dense_vec<typename raw_type_t<MatView>::value_type>& y_inout,
-               device_buffer<std::byte>& external_buffer)
+               device_buffer<std::byte>& external_buffer,
+               cusparseSpMVAlg_t         alg = static_cast<cusparseSpMVAlg_t>(0))
     {
 
 
@@ -149,7 +150,7 @@ class blas : public launch_base<blas>
                                                 b.data(),
                                                 y_inout,
                                                 details::cudaDataTypeMap_v<value_type>,
-                                                cusparseSpMVAlg_t::CUSPARSE_MV_ALG_DEFAULT,
+                                                alg,
                                                 &bufferSize));
 
         details::set_stream_check(external_buffer, m_ctx);
@@ -163,7 +164,7 @@ class blas : public launch_base<blas>
                                      b.data(),
                                      y_inout,
                                      details::cudaDataTypeMap_v<value_type>,
-                                     cusparseSpMVAlg_t::CUSPARSE_MV_ALG_DEFAULT,
+                                     alg,
                                      external_buffer.data()));
         return *this;
     }
@@ -195,10 +196,11 @@ class blas : public launch_base<blas>
     blas& spmv(MatView&&                                            matA,
                dense_vec<typename raw_type_t<MatView>::value_type>& x_in,
                dense_vec<typename raw_type_t<MatView>::value_type>& y_inout,
-               device_buffer<std::byte>& external_buffer)
+               device_buffer<std::byte>& external_buffer,
+               cusparseSpMVAlg_t         alg = static_cast<cusparseSpMVAlg_t>(0))
     {
         using value_type = typename raw_type_t<MatView>::value_type;
-        spmv(value_type(1), std::forward<MatView>(matA), x_in, value_type(0), y_inout, external_buffer);
+        spmv(value_type(1), std::forward<MatView>(matA), x_in, value_type(0), y_inout, external_buffer, alg);
         return *this;
     }
 };
