@@ -12,7 +12,7 @@ includes("options.lua")
 
 
 add_requires("cuda", {optional = false})
-add_requires("eigen", {optional = false})
+add_requires("eigen 3.4.*", {optional = false})
 
 if (has_config("gui-enabled")) then 
     add_requires("glfw", {optional = true})
