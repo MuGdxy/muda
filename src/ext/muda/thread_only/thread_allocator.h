@@ -109,6 +109,7 @@ class external_buffer_allocator
             m_used = true;
             return m_buf;
         }
+        return nullptr;
     }
     MUDA_THREAD_ONLY void* allocate(size_t n, size_t alignment, size_t offset, int flags = 0)
     {

@@ -53,19 +53,6 @@ class graph
     }
 
     template <typename T>
-    auto addMemAllocNode(sptr<memAllocNodeParms<T>>&         memAllocParms,
-                         const std::vector<sptr<graphNode>>& deps = {})
-    {
-        auto                         node  = std::make_shared<memAllocNode>();
-        std::vector<cudaGraphNode_t> nodes = mapDependencies(deps);
-        checkCudaErrors(cudaGraphAddMemAllocNode(
-            &node->m_handle, m_handle, nodes.data(), nodes.size(), memAllocParms->getRaw()));
-        auto ptr     = reinterpret_cast<T*>(memAllocParms->getRaw()->dptr);
-        node->m_dptr = ptr;
-        return std::make_tuple(node, ptr);
-    }
-
-    template <typename T>
     auto addMemcpyNode(T*                                  dst,
                        const T*                            src,
                        size_t                              count,
@@ -77,6 +64,20 @@ class graph
         checkCudaErrors(cudaGraphAddMemcpyNode1D(
             &ret->m_handle, m_handle, nodes.data(), nodes.size(), dst, src, sizeof(T) * count, kind));
         return ret;
+    }
+
+#ifdef MUDA_WITH_GRAPH_MEMORY_ALLOC_FREE
+    template <typename T>
+    auto addMemAllocNode(sptr<memAllocNodeParms<T>>&         memAllocParms,
+                         const std::vector<sptr<graphNode>>& deps = {})
+    {
+        auto                         node  = std::make_shared<memAllocNode>();
+        std::vector<cudaGraphNode_t> nodes = mapDependencies(deps);
+        checkCudaErrors(cudaGraphAddMemAllocNode(
+            &node->m_handle, m_handle, nodes.data(), nodes.size(), memAllocParms->getRaw()));
+        auto ptr     = reinterpret_cast<T*>(memAllocParms->getRaw()->dptr);
+        node->m_dptr = ptr;
+        return std::make_tuple(node, ptr);
     }
 
     auto addMemFreeNode(sptr<memAllocNode>                  allocNode,
@@ -97,6 +98,7 @@ class graph
             &ret->m_handle, m_handle, nodes.data(), nodes.size(), ptr));
         return ret;
     }
+#endif
 
     auto addEventRecordNode(cudaEvent_t e, const std::vector<sptr<graphNode>>& deps = {})
     {

@@ -98,6 +98,7 @@ TEST_CASE("radix_sort", "[algorithm]")
     REQUIRE(value_out == ground_thruth_value_out);
 }
 
+#ifndef MUDA_PLATFORM_LINUX
 #include <muda/algorithm/device_reduce.h>
 #undef max
 void reduce(host_vector<int> in, int& out, int& ground_thruth_out)
@@ -129,3 +130,4 @@ TEST_CASE("reduce", "[algorithm]")
     int ground_thruth_out;
     reduce(in, out, ground_thruth_out);
 }
+#endif

@@ -64,9 +64,12 @@ template <typename T>
 using host_cse =
     compressed_sparse_elements<host_vector<T>, host_vector<int>, host_vector<int>>;
 
+
+#ifdef MUDA_WITH_THRUST_UNIVERSAL
 template <typename T>
 using universal_cse =
     compressed_sparse_elements<universal_vector<T>, universal_vector<int>, universal_vector<int>>;
+#endif
 
 template <typename T>
 class device_buffer_cse

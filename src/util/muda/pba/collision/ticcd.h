@@ -1053,13 +1053,12 @@ class ticcd
         return rst;
     }
 
-    template <typename T, int N>
-    MUDA_GENERIC static void min_max_array(const Eigen::Array<T, N, 1>& arr, T& min, T& max)
+    MUDA_GENERIC static void min_max_array(const Eigen::Array<Scalar, 8, 1>& arr, T& min, T& max)
     {
-        static_assert(N > 0, "no min/max of empty array");
+        // static_assert(N > 0, "no min/max of empty array");
         min = arr[0];
         max = arr[0];
-        for(int i = 1; i < N; i++)
+        for(int i = 1; i < 8; i++)
         {
             if(min > arr[i])
             {
