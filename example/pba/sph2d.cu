@@ -5,7 +5,7 @@
 #include "../example_common.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include <filesystem>
+#include <muda/tools/filesystem.h>
 using namespace muda;
 
 using Vector2 = Eigen::Vector2f;
@@ -15,36 +15,36 @@ struct ConstData
 {
     // "Particle-Based Fluid Simulation for Interactive Applications" by Mueller et al.
     // solver parameters
-    const Vector2 G = Vector2(0.f, -10.f);  // external (gravitational) forces
-    const float   REST_DENS = 300.f;        // rest density
-    const float   GAS_CONST = 2000.f;       // const for equation of state
-    const float   H         = 16.f;         // kernel radius
-    const float   HSQ       = H * H;        // radius^2 for optimization
-    const float   MASS      = 2.5f;   // assume all particles have the same mass
-    const float   VISC      = 200.f;  // viscosity constant
-    const float   DT        = 0.0007f;  // integration timestep
+    Vector2 G         = Vector2(0.f, -10.f);  // external (gravitational) forces
+    float   REST_DENS = 300.f;                // rest density
+    float   GAS_CONST = 2000.f;               //  for equation of state
+    float   H         = 16.f;                 // kernel radius
+    float   HSQ       = H * H;                // radius^2 for optimization
+    float   MASS      = 2.5f;     // assume all particles have the same mass
+    float   VISC      = 200.f;    // viscosity constant
+    float   DT        = 0.0007f;  // integration timestep
 
     // smoothing kernels defined in Mueller and their gradients
     // adapted to 2D per "SPH Based Shallow Water Simulation" by Solenthaler et al.
-    const float POLY6      = 4.f / (M_PI * pow(H, 8.f));
-    const float SPIKY_GRAD = -10.f / (M_PI * pow(H, 5.f));
-    const float VISC_LAP   = 40.f / (M_PI * pow(H, 5.f));
+    float POLY6      = 4.f / (M_PI * pow(H, 8.f));
+    float SPIKY_GRAD = -10.f / (M_PI * pow(H, 5.f));
+    float VISC_LAP   = 40.f / (M_PI * pow(H, 5.f));
 
     // simulation parameters
-    const float EPS           = H;  // boundary epsilon
-    const float BOUND_DAMPING = -0.5f;
+    float EPS           = H;  // boundary epsilon
+    float BOUND_DAMPING = -0.5f;
 
     // interaction
-    // const int MAX_PARTICLES   = 2500;
-    const int DAM_PARTICLES   = 1000;
-    //const int BLOCK_PARTICLES = 250;
+    //  int MAX_PARTICLES   = 2500;
+    int DAM_PARTICLES = 1000;
+    // int BLOCK_PARTICLES = 250;
 
     // rendering projection parameters
-    const int    WINDOW_WIDTH  = 800;
-    const int    WINDOW_HEIGHT = 600;
-    const double VIEW_WIDTH    = 1.5 * 800.f;
-    const double VIEW_HEIGHT   = 1.5 * 600.f;
-} const CONST_DATA;
+    int    WINDOW_WIDTH  = 800;
+    int    WINDOW_HEIGHT = 600;
+    double VIEW_WIDTH    = 1.5 * 800.f;
+    double VIEW_HEIGHT   = 1.5 * 600.f;
+} CONST_DATA;
 
 // particle data structure
 // stores position, velocity, and force for integration
@@ -271,20 +271,22 @@ void ExportParticlesToCSV(const std::string& folder, int idx, host_vector<Partic
 void MakeProgress(float progress, int bar)
 {
     // make a progress bar
-    int         w        = std::round(progress * bar);
+    int         w = std::round(progress * bar);
     std::string done(w, '>');
     std::string undone(bar - w, '=');
     std::cout << "[" << done << undone << "]\r";
 }
 
-void sph2d()
+void sph2d(int particle_count)
 {
     example_desc(
         "a simple 2d Smoothed Particle Hydrodynamics exmaple.\n"
-        "ref: https://lucasschuermann.com/writing/implementing-sph-in-2d\n");
+        "ref: https://lucasschuermann.com/writing/implementing-sph-in-2d\n"
+        "you could modify the particle count to get better result.\n");
 
     // create particles on host
     host_vector<Particle> particles;
+    CONST_DATA.DAM_PARTICLES = particle_count;
     particles.reserve(CONST_DATA.DAM_PARTICLES);
     // generate particles randomly
     InitSPH(particles);
@@ -302,11 +304,11 @@ void sph2d()
     solver.SetParticles(particles);
 
     // create a folder for frame data output
-    std::filesystem::path folder("sph2d/");
-    if(!std::filesystem::exists(folder))
-        std::filesystem::create_directory(folder);
+    filesystem::path folder("sph2d/");
+    if(!filesystem::exists(folder))
+        filesystem::create_directory(folder);
 
-    auto abspath = std::filesystem::absolute(folder);
+    auto abspath = filesystem::absolute(folder);
     std::cout << "solve frames to folder: " << abspath << std::endl;
 
     int bar    = 77;
@@ -320,7 +322,12 @@ void sph2d()
     }
 }
 
-TEST_CASE("sph2d", "[pba]")
+TEST_CASE("sph2d-light", "[pba]")
 {
-    sph2d();
+    sph2d(100);
+}
+
+TEST_CASE("sph2d-full", "[.pba]")
+{
+    sph2d(1000);
 }

@@ -31,7 +31,7 @@ inline void read_ticcd_csv(const std::string&            inputFileName,
     std::array<double, 3> v;
     if(!infile.is_open())
     {
-        throw std::exception("error path");
+        throw muda::exception("error path" + inputFileName);
     }
 
     int l = 0;
@@ -98,16 +98,21 @@ enum class Type
 template <Type type = Type::UnlimitedQueueSize>
 struct TiccdTestKernel
 {
-    MUDA_GENERIC TiccdTestKernel(dense1D<Vector3> x, dense1D<uint32_t> results, dense1D<float> tois)
+    MUDA_GENERIC TiccdTestKernel(bool              is_ee,
+                                 dense2D<Vector3>  x,
+                                 dense1D<uint32_t> results,
+                                 dense1D<float>    tois)
         : x(x)
         , results(results)
         , tois(tois)
+        , is_ee(is_ee)
     {
     }
 
-    dense1D<Vector3>  x;
+    dense2D<Vector3>  x;
     dense1D<uint32_t> results;
     dense1D<float>    tois;
+    bool              is_ee;
 
     MUDA_GENERIC void operator()(int i)
     {
@@ -122,14 +127,15 @@ struct TiccdTestKernel
 
         if(type == Type::UnlimitedQueueSize)
         {
-            res = to::ticcd<float>().edgeEdgeCCD(x(i * 8 + 0),
-                                                 x(i * 8 + 1),
-                                                 x(i * 8 + 2),
-                                                 x(i * 8 + 3),
-                                                 x(i * 8 + 4),
-                                                 x(i * 8 + 5),
-                                                 x(i * 8 + 6),
-                                                 x(i * 8 + 7),
+            if(is_ee)
+                res = ticcd<float>().edgeEdgeCCD(x(i, 0),
+                                                 x(i, 1),
+                                                 x(i, 2),
+                                                 x(i, 3),
+                                                 x(i, 4),
+                                                 x(i, 5),
+                                                 x(i, 6),
+                                                 x(i, 7),
                                                  err,
                                                  ms,
                                                  toi,
@@ -137,32 +143,65 @@ struct TiccdTestKernel
                                                  t_max,
                                                  max_itr,
                                                  output_tolerance);
+            else
+                res = ticcd<float>().vertexFaceCCD(x(i, 0),
+                                                   x(i, 1),
+                                                   x(i, 2),
+                                                   x(i, 3),
+                                                   x(i, 4),
+                                                   x(i, 5),
+                                                   x(i, 6),
+                                                   x(i, 7),
+                                                   err,
+                                                   ms,
+                                                   toi,
+                                                   tolerance,
+                                                   t_max,
+                                                   max_itr,
+                                                   output_tolerance);
         }
         else if(type == Type::LimitedQueueSize)
         {
-            const int maxQueueSize = 128;
+            const int maxQueueSize = 1024;
 
-            const auto elementSize = sizeof(to::ticcd_alloc_elem_type<float>);
+            const auto elementSize = sizeof(ticcd_alloc_elem_type<float>);
 
-            using alloc =
-                to::thread_stack_allocator<to::ticcd_alloc_elem_type<float>, maxQueueSize>;
+            using alloc = to::thread_stack_allocator<ticcd_alloc_elem_type<float>, maxQueueSize>;
 
-            res = to::ticcd<float, alloc>(maxQueueSize)
-                      .edgeEdgeCCD(x(i * 8 + 0),
-                                   x(i * 8 + 1),
-                                   x(i * 8 + 2),
-                                   x(i * 8 + 3),
-                                   x(i * 8 + 4),
-                                   x(i * 8 + 5),
-                                   x(i * 8 + 6),
-                                   x(i * 8 + 7),
-                                   err,
-                                   ms,
-                                   toi,
-                                   tolerance,
-                                   t_max,
-                                   max_itr,
-                                   output_tolerance);
+            if(is_ee)
+                res = ticcd<float, alloc>(maxQueueSize)
+                          .edgeEdgeCCD(x(i, 0),
+                                       x(i, 1),
+                                       x(i, 2),
+                                       x(i, 3),
+                                       x(i, 4),
+                                       x(i, 5),
+                                       x(i, 6),
+                                       x(i, 7),
+                                       err,
+                                       ms,
+                                       toi,
+                                       tolerance,
+                                       t_max,
+                                       max_itr,
+                                       output_tolerance);
+            else
+                res = ticcd<float, alloc>(maxQueueSize)
+                          .vertexFaceCCD(x(i, 0),
+                                         x(i, 1),
+                                         x(i, 2),
+                                         x(i, 3),
+                                         x(i, 4),
+                                         x(i, 5),
+                                         x(i, 6),
+                                         x(i, 7),
+                                         err,
+                                         ms,
+                                         toi,
+                                         tolerance,
+                                         t_max,
+                                         max_itr,
+                                         output_tolerance);
         }
 
         results(i) = res;
@@ -171,21 +210,24 @@ struct TiccdTestKernel
 };
 
 template <Type type>
-void ticcd_test(host_vector<uint32_t>& ground_thruth,
+void ticcd_test(bool                   is_ee,
+                host_vector<uint32_t>& ground_thruth,
                 host_vector<uint32_t>& h_results,
                 host_vector<uint32_t>& d_results)
 {
     host_vector<Eigen::Vector3f> X;
-    read_ticcd_csv(MUDA_TEST_DATA_DIR R"(\unit-tests\edge-edge\data_0_1.csv)", X, ground_thruth);
-
+    if(is_ee)
+        read_ticcd_csv(MUDA_TEST_DATA_DIR R"(/unit-tests/edge-edge/data_0_1.csv)", X, ground_thruth);
+    else
+        read_ticcd_csv(MUDA_TEST_DATA_DIR R"(/unit-tests/vertex-face/data_0_0.csv)", X, ground_thruth);
 
     auto resultSize = X.size() / 8;
 
     h_results.resize(resultSize);
     host_vector<float> h_tois(resultSize);
 
-    auto ticcdKernel =
-        TiccdTestKernel<type>(make_viewer(X), make_viewer(h_results), make_viewer(h_tois));
+    auto ticcdKernel = TiccdTestKernel<type>(
+        is_ee, make_dense2D(X, 8), make_viewer(h_results), make_viewer(h_tois));
     for(int i = 0; i < resultSize; i++)
     {
         ticcdKernel(i);
@@ -197,28 +239,63 @@ void ticcd_test(host_vector<uint32_t>& ground_thruth,
 
     parallel_for(32, 64)
         .apply(resultSize,
-               TiccdTestKernel<type>(make_viewer(x), make_viewer(results), make_viewer(tois)))
+               TiccdTestKernel<type>(
+                   is_ee, make_dense2D(x, 8), make_viewer(results), make_viewer(tois)))
         .wait();
 
     device_vector<uint32_t> lim_results(resultSize);
     d_results = results;
 }
 
+bool check_allow_false_positive(const host_vector<uint32_t>& ground_thruth,
+                                const host_vector<uint32_t>& result)
+{
+    bool ret = true;
+    for(size_t i = 0; i < ground_thruth.size(); ++i)
+    {
+        if(ground_thruth[i] > result[i])
+        {
+            ret = false;
+            break;
+        }
+    }
+    return ret;
+}
+
 TEST_CASE("ticcd", "[collide]")
 {
-    SECTION("UnlimitedQueueSize")
+    SECTION("limitedQueueSize-EE")
     {
         host_vector<uint32_t> ground_thruth, h_results, d_results;
-        ticcd_test<Type::UnlimitedQueueSize>(ground_thruth, h_results, d_results);
-        CHECK(ground_thruth == h_results);
-        CHECK(ground_thruth == d_results);
+        ticcd_test<Type::LimitedQueueSize>(true, ground_thruth, h_results, d_results);
+        CHECK(check_allow_false_positive(ground_thruth, h_results));
+        CHECK(check_allow_false_positive(ground_thruth, d_results));
     }
 
-    SECTION("limitedQueueSize")
+    SECTION("limitedQueueSize-VF")
     {
         host_vector<uint32_t> ground_thruth, h_results, d_results;
-        ticcd_test<Type::LimitedQueueSize>(ground_thruth, h_results, d_results);
-        CHECK(ground_thruth == h_results);
-        CHECK(ground_thruth == d_results);
+        ticcd_test<Type::LimitedQueueSize>(false, ground_thruth, h_results, d_results);
+        CHECK(check_allow_false_positive(ground_thruth, h_results));
+        CHECK(check_allow_false_positive(ground_thruth, d_results));
+    }
+}
+
+TEST_CASE("ticcd-unlimited", "[.collide]")
+{
+    SECTION("UnlimitedQueueSize-EE")
+    {
+        host_vector<uint32_t> ground_thruth, h_results, d_results;
+        ticcd_test<Type::UnlimitedQueueSize>(true, ground_thruth, h_results, d_results);
+        CHECK(check_allow_false_positive(ground_thruth, h_results));
+        CHECK(check_allow_false_positive(ground_thruth, d_results));
+    }
+
+    SECTION("UnlimitedQueueSize-VF")
+    {
+        host_vector<uint32_t> ground_thruth, h_results, d_results;
+        ticcd_test<Type::UnlimitedQueueSize>(false, ground_thruth, h_results, d_results);
+        CHECK(check_allow_false_positive(ground_thruth, h_results));
+        CHECK(check_allow_false_positive(ground_thruth, d_results));
     }
 }

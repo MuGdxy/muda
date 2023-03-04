@@ -47,7 +47,7 @@ MUDA_THREAD_ONLY inline int memcmp(const char* p1, const char* p2, size_t n)
     for(; n > 0; ++p1, ++p2, --n)
     {
         if(*p1 != *p2)
-            return unsigned char(*p1) < unsigned char(*p2) ? -1 : 1;
+            return (unsigned char)(*p1) < (unsigned char)(*p2) ? -1 : 1;
     }
     return 0;
 #else

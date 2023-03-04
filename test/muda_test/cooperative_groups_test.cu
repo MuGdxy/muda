@@ -1,3 +1,6 @@
+#include <muda/tools/version.h>
+
+#ifdef MUDA_BASELINE_CUDACC_VER_SATISFIED
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
 #include <muda/container.h>
@@ -45,3 +48,4 @@ TEST_CASE("async_transfer", "[cooperative_groups]")
     async_transfer(res, ground_thruth);
     REQUIRE(res == ground_thruth);
 };
+#endif

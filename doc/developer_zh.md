@@ -38,7 +38,7 @@ TEST_CASE("my_launch","[launch]")
 }
 ```
 
-[catch2 命令行](https://catch2.docsforge.com/v2.13.2/running/command-line/)
+[catch2 tutorial](https://github.com/catchorg/Catch2/blob/v2.x/docs/tutorial.md)
 
 根据tag来运行测试
 

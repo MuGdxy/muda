@@ -1,10 +1,13 @@
 #pragma once
-#include <cublas.h>
-#include <cusparse.h>
+#include <muda/tools/version.h>
 
-#include <muda/launch/launch_base.h>
 #include <muda/check/checkCusparse.h>
 #include <muda/check/checkCublas.h>
+#include <muda/check/checkCudaErrors.h>
+#include <muda/launch/launch_base.h>
+
+#include <cublas.h>
+#include <cusparse.h>
 
 #include "mat_view.h"
 #include "dense.h"
@@ -23,22 +26,25 @@ class blasContext
     blasContext(cudaStream_t stream = nullptr)
         : m_stream(stream)
     {
-        checkCudaErrors(cusparseCreate(&m_csh));
         checkCudaErrors(cublasCreate_v2(&m_cbh));
-        checkCudaErrors(cusparseSetStream(m_csh, stream));
         checkCudaErrors(cublasSetStream_v2(m_cbh, stream));
+
+        checkCudaErrors(cusparseCreate(&m_csh));
+        checkCudaErrors(cusparseSetStream(m_csh, stream));
     }
+
     ~blasContext()
     {
-        checkCudaErrors(cusparseDestroy(m_csh));
         checkCudaErrors(cublasDestroy_v2(m_cbh));
+
+        checkCudaErrors(cusparseDestroy(m_csh));
     }
 
     operator cusparseHandle_t() { return m_csh; }
+    cusparseHandle_t spHandle() { return m_csh; };
+
     operator cublasHandle_t() { return m_cbh; }
     operator cudaStream_t() { return m_stream; }
-
-    cusparseHandle_t spHandle() { return m_csh; };
     cublasHandle_t   dnHandle() { return m_cbh; };
     cudaStream_t     stream() { return m_stream; };
 };
@@ -123,7 +129,8 @@ class blas : public launch_base<blas>
                dense_vec<typename raw_type_t<MatView>::value_type>& x_in,
                ScalarValueOrPointer                                 beta,
                dense_vec<typename raw_type_t<MatView>::value_type>& y_inout,
-               device_buffer<std::byte>& external_buffer)
+               device_buffer<std::byte>& external_buffer,
+               cusparseSpMVAlg_t         alg = static_cast<cusparseSpMVAlg_t>(0))
     {
 
 
@@ -143,7 +150,7 @@ class blas : public launch_base<blas>
                                                 b.data(),
                                                 y_inout,
                                                 details::cudaDataTypeMap_v<value_type>,
-                                                cusparseSpMVAlg_t::CUSPARSE_SPMV_ALG_DEFAULT,
+                                                alg,
                                                 &bufferSize));
 
         details::set_stream_check(external_buffer, m_ctx);
@@ -157,7 +164,7 @@ class blas : public launch_base<blas>
                                      b.data(),
                                      y_inout,
                                      details::cudaDataTypeMap_v<value_type>,
-                                     cusparseSpMVAlg_t::CUSPARSE_SPMV_ALG_DEFAULT,
+                                     alg,
                                      external_buffer.data()));
         return *this;
     }
@@ -189,10 +196,11 @@ class blas : public launch_base<blas>
     blas& spmv(MatView&&                                            matA,
                dense_vec<typename raw_type_t<MatView>::value_type>& x_in,
                dense_vec<typename raw_type_t<MatView>::value_type>& y_inout,
-               device_buffer<std::byte>& external_buffer)
+               device_buffer<std::byte>& external_buffer,
+               cusparseSpMVAlg_t         alg = static_cast<cusparseSpMVAlg_t>(0))
     {
         using value_type = typename raw_type_t<MatView>::value_type;
-        spmv(value_type(1), std::forward<MatView>(matA), x_in, value_type(0), y_inout, external_buffer);
+        spmv(value_type(1), std::forward<MatView>(matA), x_in, value_type(0), y_inout, external_buffer, alg);
         return *this;
     }
 };

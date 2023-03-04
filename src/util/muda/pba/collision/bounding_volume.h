@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <muda/muda_def.h>

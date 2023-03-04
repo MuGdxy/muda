@@ -71,6 +71,7 @@ TEST_CASE("set_graphExec_node_parms", "[graph]")
     }
 }
 
+#ifdef MUDA_WITH_GRAPH_MEMORY_ALLOC_FREE
 // graph alloc
 void alloc_cpy_free(int half, host_vector<int>& host_data, host_vector<int>& ground_thruth)
 {
@@ -90,7 +91,7 @@ void alloc_cpy_free(int half, host_vector<int>& host_data, host_vector<int>& gro
     graph g;
     auto [allocNode, ptr] = g.addMemAllocNode(allocParm);
 
-    auto dense = make_viewer(ptr, count);
+    auto dense = make_dense(ptr, count);
 
     auto writeKernelParm = parallel_for(2, 8).asNodeParms(
         count, [dense = dense] __device__(int i) mutable { dense(i) = i; });
@@ -129,10 +130,11 @@ TEST_CASE("graph_memop_node", "[graph]")
         }
     }
 }
+#endif
 
 void host_call_graph(int& ground_thruth, int& res)
 {
-    universal_var<int> v = 0;
+    host_var<int> v = 0;
 
     auto hp = host_call().asNodeParms([v = make_viewer(v)] __host__() mutable
                                       { for(int i = 0; i < 5; ++i) v++; });

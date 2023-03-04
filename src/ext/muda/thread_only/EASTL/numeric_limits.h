@@ -1272,7 +1272,7 @@ namespace eastl
 	};
 
 
-	#if (EA_COMPILER_INTMAX_SIZE >= 16) && (defined(EA_COMPILER_GNUC) || defined(__clang__)) // If __int128_t/__uint128_t is supported...
+	#if 0 // If __int128_t/__uint128_t is supported...
 		// numeric_limits<__uint128_t>
 		template<>
 		struct numeric_limits<__uint128_t>
