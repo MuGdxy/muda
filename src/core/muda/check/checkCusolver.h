@@ -4,7 +4,7 @@
 
 namespace muda
 {
-inline const char* _cudaGetErrorEnum(cusolverStatus_t error)
+inline const char* mudaCudaGetErrorEnum(cusolverStatus_t error)
 {
     switch(error)
     {

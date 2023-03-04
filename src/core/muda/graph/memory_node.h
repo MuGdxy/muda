@@ -3,6 +3,7 @@
 
 namespace muda
 {
+#ifdef MUDA_WITH_GRAPH_MEMORY_ALLOC_FREE
 class memAllocNode : public graphNode
 {
     void* m_dptr;
@@ -43,6 +44,7 @@ class memFreeNode : public graphNode
     using this_type = memFreeNode;
     friend class graph;
 };
+#endif
 
 class memcpyNode : public graphNode
 {

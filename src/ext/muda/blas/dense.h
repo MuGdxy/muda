@@ -1,4 +1,6 @@
 #pragma once
+#include <muda/tools/version.h>
+
 #include <cublas.h>
 #include "data_type_map.h"
 #include <muda/check/checkCublas.h>
@@ -18,13 +20,19 @@ class dense_vec
     {
         checkCudaErrors(cusparseCreateDnVec(&m_dnvec, n, data, details::cudaDataTypeMap_v<T>));
     }
-    ~dense_vec() { checkCudaErrors(cusparseDestroyDnVec(m_dnvec)); }
+
+    ~dense_vec() 
+    { 
+        checkCudaErrors(cusparseDestroyDnVec(m_dnvec)); 
+    }
+    
     value_type*       data() { return m_data; }
     const value_type* data() const { return m_data; }
     size_t            size() const { return m_size; }
-                      operator cusparseDnVecDescr_t() { return m_dnvec; }
+    operator cusparseDnVecDescr_t() { return m_dnvec; }
 
   private:
+
     cusparseDnVecDescr_t m_dnvec;
     value_type*          m_data;
     size_t               m_size;

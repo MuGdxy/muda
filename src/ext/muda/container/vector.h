@@ -1,10 +1,18 @@
 #pragma once
+
+#include <muda/tools/version.h>
 #include <thrust/device_allocator.h>
+
+#ifdef MUDA_WITH_THRUST_UNIVERSAL
 #include <thrust/universal_allocator.h>
 #include <thrust/universal_vector.h>
+#endif
+
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <vector>
+
+#include <muda/muda_def.h>
 #include <muda/viewer.h>
 
 namespace muda
@@ -18,8 +26,10 @@ namespace details
 template <typename T, typename Alloc = thrust::device_allocator<T>>
 using device_vector = thrust::device_vector<T, Alloc>;
 
+#ifdef MUDA_WITH_THRUST_UNIVERSAL
 template <typename T, typename Alloc = thrust::universal_allocator<T>>
 using universal_vector = thrust::universal_vector<T, Alloc>;
+#endif
 
 template <typename T, typename Alloc = ::std::allocator<T>>
 using host_vector = thrust::host_vector<T, Alloc>;
@@ -43,77 +53,77 @@ host_vector<T, HostAlloc> to_host(const device_vector<T, DevAlloc>& dev_vec)
 
 // raw pointer
 template <typename T, typename Allocator>
-inline const T* data(const details::vector_base<T, Allocator>& v) noexcept
+MUDA_INLINE const T* data(const details::vector_base<T, Allocator>& v) MUDA_NOEXCEPT
 {
     return thrust::raw_pointer_cast(v.data());
 }
 
 template <typename T, typename Allocator>
-inline T* data(details::vector_base<T, Allocator>& v) noexcept
+MUDA_INLINE T* data(details::vector_base<T, Allocator>& v) MUDA_NOEXCEPT
 {
     return thrust::raw_pointer_cast(v.data());
 }
 
 template <typename T, typename Allocator>
-inline __host__ auto make_dense(details::vector_base<T, Allocator>& v) noexcept
+MUDA_INLINE MUDA_HOST auto make_dense(details::vector_base<T, Allocator>& v) MUDA_NOEXCEPT
 {
-    return muda::denseND<T, 1>(data(v), v.size());
+    return muda::denseND<T, 1>(::muda::data(v), v.size());
 }
 
 template <typename T, typename Allocator>
-inline __host__ auto make_viewer(details::vector_base<T, Allocator>& v) noexcept
+MUDA_INLINE MUDA_HOST auto make_viewer(details::vector_base<T, Allocator>& v) MUDA_NOEXCEPT
 {
     return make_dense(v);
 }
 
 template <typename T, typename Allocator>
-inline __host__ auto make_dense2D(details::vector_base<T, Allocator>& v, int dimy) noexcept
+MUDA_INLINE MUDA_HOST auto make_dense2D(details::vector_base<T, Allocator>& v, int dimy) MUDA_NOEXCEPT
 {
-    return make_dense2D(data(v), v.size() / dimy, dimy);
+    return make_dense2D(::muda::data(v), v.size() / dimy, dimy);
 }
 
 template <typename T, typename Allocator>
-inline __host__ auto make_dense2D(details::vector_base<T, Allocator>& v, int dimx, int dimy) noexcept
+MUDA_INLINE MUDA_HOST auto make_dense2D(details::vector_base<T, Allocator>& v, int dimx, int dimy) MUDA_NOEXCEPT
 {
     muda_kernel_assert(
         dimx * dimy <= v.size(), "dimx=%d, dimy=%d, v.size()=%d\n", dimx, dimy, v.size());
-    return make_dense2D(data(v), dimx, dimy);
+    return make_dense2D(::muda::data(v), dimx, dimy);
 }
 
 template <typename T, typename Allocator>
-inline __host__ auto make_dense2D(details::vector_base<T, Allocator>& v,
-                                  const ::Eigen::Vector2i& dim) noexcept
+MUDA_INLINE MUDA_HOST auto make_dense2D(details::vector_base<T, Allocator>& v,
+                                  const ::Eigen::Vector2i& dim) MUDA_NOEXCEPT
 {
     muda_kernel_assert(dim.x() * dim.y() <= v.size(),
                        "dim.x()=%d, dim.y()=%d, v.size()=%d\n",
                        dim.x(),
                        dim.y(),
                        v.size());
-    return make_dense2D(data(v), dim.x(), dim.y());
+    return make_dense2D(::muda::data(v), dim.x(), dim.y());
 }
 
 template <typename T, typename Allocator>
-inline __host__ auto make_dense3D(details::vector_base<T, Allocator>& v, int dimy, int dimz) noexcept
+MUDA_INLINE MUDA_HOST auto make_dense3D(details::vector_base<T, Allocator>& v, int dimy, int dimz) MUDA_NOEXCEPT
 {
     muda_kernel_assert(
         dimy * dimz <= v.size(), "dimy=%d, dimz=%d, v.size()=%d\n", dimy, dimz, v.size());
-    return make_dense3D(data(v), v.size() / (dimy * dimz), dimy, dimz);
+    return make_dense3D(::muda::data(v), v.size() / (dimy * dimz), dimy, dimz);
 }
 
 template <typename T, typename Allocator>
-inline __host__ auto make_dense3D(details::vector_base<T, Allocator>& v,
-                                  const ::Eigen::Vector2i dimyz) noexcept
+MUDA_INLINE MUDA_HOST auto make_dense3D(details::vector_base<T, Allocator>& v,
+                                  const ::Eigen::Vector2i dimyz) MUDA_NOEXCEPT
 {
-    muda_kernel_assert(dim(0) * dim(1) <= v.size(),
+    muda_kernel_assert(dimyz(0) * dimyz(1) <= v.size(),
                        "dimy=%d, dimz=%d, v.size()=%d\n",
-                       dim(0),
-                       dim(1),
+                       dimyz(0),
+                       dimyz(1),
                        v.size());
-    return make_dense3D(data(v), v.size() / (dim(0) * dim(1)), dim(0), dim(1));
+    return make_dense3D(::muda::data(v), v.size() / (dimyz(0) * dimyz(1)), dimyz(0), dimyz(1));
 }
 
 template <typename T, typename Allocator>
-inline __host__ auto make_dense3D(details::vector_base<T, Allocator>& v, int dimx, int dimy, int dimz) noexcept
+MUDA_INLINE MUDA_HOST auto make_dense3D(details::vector_base<T, Allocator>& v, int dimx, int dimy, int dimz) MUDA_NOEXCEPT
 {
     muda_kernel_assert(dimx * dimy * dimz <= v.size(),
                        "dimx=%d, dimy=%d, dimz=%d, v.size()=%d\n",
@@ -121,12 +131,12 @@ inline __host__ auto make_dense3D(details::vector_base<T, Allocator>& v, int dim
                        dimy,
                        dimz,
                        v.size());
-    return make_dense3D(data(v), dimx, dimy, dimz);
+    return make_dense3D(::muda::data(v), dimx, dimy, dimz);
 }
 
 template <typename T, typename Allocator>
-inline __host__ auto make_dense3D(details::vector_base<T, Allocator>& v,
-                                  const ::Eigen::Vector3i& dim) noexcept
+MUDA_INLINE MUDA_HOST auto make_dense3D(details::vector_base<T, Allocator>& v,
+                                  const ::Eigen::Vector3i& dim) MUDA_NOEXCEPT
 {
     muda_kernel_assert(dim.x() * dim.y() * dim.z() <= v.size(),
                        "dim.x()=%d, dim.y()=%d, dim.z()=%d, v.size()=%d\n",
@@ -134,7 +144,7 @@ inline __host__ auto make_dense3D(details::vector_base<T, Allocator>& v,
                        dim.y(),
                        dim.z(),
                        v.size());
-    return make_dense3D(data(v), dim.x(), dim.y(), dim.z());
+    return make_dense3D(::muda::data(v), dim.x(), dim.y(), dim.z());
 }
 }  // namespace muda
 #include <string>
@@ -152,7 +162,7 @@ namespace muda
 ///<param name="filename"></param>
 ///<param name="ele_in_line">element count in a line</param>
 template <typename T, typename F>
-inline void csv(F&& header,  //callable: void (std::ostream& o)
+MUDA_INLINE void csv(F&& header,  //callable: void (std::ostream& o)
                 const host_vector<T>& h,
                 const ::std::string&  filename    = "data.csv",
                 int                   ele_in_line = 1)
@@ -180,7 +190,7 @@ inline void csv(F&& header,  //callable: void (std::ostream& o)
 /// <param name="filename">filename for saving</param>
 /// <param name="ele_in_line">element count in a line</param>
 template <typename T>
-inline void csv(const host_vector<T>& h,
+MUDA_INLINE void csv(const host_vector<T>& h,
                 const ::std::string&  filename    = "data.csv",
                 int                   ele_in_line = 1)
 {

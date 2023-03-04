@@ -25,7 +25,7 @@ class viewer_base
 #endif
     }
     
-    MUDA_GENERIC const char* name() const noexcept
+    MUDA_GENERIC const char* name() const MUDA_NOEXCEPT
     {
 #if !MUDA_NDEBUG
         if(m_name[0] != '\0')
@@ -34,7 +34,7 @@ class viewer_base
         return "unnamed";
     }
 
-    MUDA_GENERIC Derived& name(const char* n) noexcept
+    MUDA_GENERIC Derived& name(const char* n) MUDA_NOEXCEPT
     {
 #if !MUDA_NDEBUG
         if(n == nullptr)

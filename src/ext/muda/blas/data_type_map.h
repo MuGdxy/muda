@@ -54,7 +54,6 @@ namespace details
     //template<> constexpr cudaDataType cudaDataTypeMap_v<	> = CUDA_C_64I;
     //template<> constexpr cudaDataType cudaDataTypeMap_v<	> = CUDA_C_64U;
 
-
     template <typename T>
     struct cusparseIndexTypeMap
     {

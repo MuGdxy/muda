@@ -15,22 +15,12 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // EA_INT128_INTRINSIC_AVAILABLE
 //
-#if(EA_COMPILER_INTMAX_SIZE >= 16)                                             \
-    && (defined(EA_COMPILER_GNUC) || defined(EA_COMPILER_CLANG))
-// __int128_t/__uint128_t is supported
-#define EA_INT128_INTRINSIC_AVAILABLE 1
-#else
 #define EA_INT128_INTRINSIC_AVAILABLE 0
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // EA_INT128_ALIGNAS
 //
-#if EA_INT128_INTRINSIC_AVAILABLE && !defined(EA_COMPILER_NO_ALIGNAS)
-#define EA_INT128_ALIGNAS alignas(unsigned __int128)
-#else
 #define EA_INT128_ALIGNAS
-#endif
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -38,7 +28,7 @@
 //
 // Indicates that EABase implements 128-bit integer types
 //
-#define EA_HAVE_INT128 1
+#define EA_HAVE_INT128 0
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -17,7 +17,7 @@ class csr : public viewer_base<csr<T>>
         int     m_col;
         int     m_global_offset;
         csr<T>& csr_;
-        MUDA_GENERIC elem(csr<T>& csr, int row, int col, int global_offset) noexcept
+        MUDA_GENERIC elem(csr<T>& csr, int row, int col, int global_offset) MUDA_NOEXCEPT
             : csr_(csr)
             , m_row(row)
             , m_col(col)
@@ -31,21 +31,21 @@ class csr : public viewer_base<csr<T>>
         MUDA_GENERIC elem(const elem& e) = default;
         //trivial copy assignment
         MUDA_GENERIC elem& operator=(const elem& e) = default;
-        MUDA_GENERIC       operator const T&() const noexcept
+        MUDA_GENERIC       operator const T&() const MUDA_NOEXCEPT
         {
             return csr_.m_values[m_global_offset];
         }
-        MUDA_GENERIC operator T&() noexcept
+        MUDA_GENERIC operator T&() MUDA_NOEXCEPT
         {
             return csr_.m_values[m_global_offset];
         }
-        Eigen::Vector<int, 2> pos() const noexcept
+        Eigen::Vector<int, 2> pos() const MUDA_NOEXCEPT
         {
             return Eigen::Vector<int, 2>(m_row, m_col);
         }
-        int global_offset() const noexcept { return m_global_offset; }
+        int global_offset() const MUDA_NOEXCEPT { return m_global_offset; }
 
-        MUDA_GENERIC T& operator=(const T& v) noexcept
+        MUDA_GENERIC T& operator=(const T& v) MUDA_NOEXCEPT
         {
             auto& pos = csr_.m_values[m_global_offset];
             pos       = v;
@@ -58,7 +58,7 @@ class csr : public viewer_base<csr<T>>
         int           m_col;
         int           m_global_offset;
         const csr<T>& csr_;
-        MUDA_GENERIC celem(const csr<T>& csr, int row, int col, int global_offset) noexcept
+        MUDA_GENERIC celem(const csr<T>& csr, int row, int col, int global_offset) MUDA_NOEXCEPT
             : csr_(csr)
             , m_row(row)
             , m_col(col)
@@ -72,18 +72,18 @@ class csr : public viewer_base<csr<T>>
         MUDA_GENERIC celem(const celem& e) = default;
         //trivial copy assignment
         MUDA_GENERIC celem& operator=(const celem& e) = default;
-        MUDA_GENERIC        operator const T&() const noexcept
+        MUDA_GENERIC        operator const T&() const MUDA_NOEXCEPT
         {
             return csr_.m_values[m_global_offset];
         }
-        Eigen::Vector<int, 2> pos() const noexcept
+        Eigen::Vector<int, 2> pos() const MUDA_NOEXCEPT
         {
             return Eigen::Vector<int, 2>(m_row, m_col);
         }
-        int global_offset() const noexcept { return m_global_offset; }
+        int global_offset() const MUDA_NOEXCEPT { return m_global_offset; }
     };
 
-    MUDA_GENERIC csr() noexcept
+    MUDA_GENERIC csr() MUDA_NOEXCEPT
         : m_values(nullptr)
         , m_colIdx(nullptr)
         , m_rowPtr(nullptr)
@@ -93,7 +93,7 @@ class csr : public viewer_base<csr<T>>
     {
     }
 
-    MUDA_GENERIC csr(int* rowPtr, int* colIdx, T* values, int rows, int cols, int nNonZeros) noexcept
+    MUDA_GENERIC csr(int* rowPtr, int* colIdx, T* values, int rows, int cols, int nNonZeros) MUDA_NOEXCEPT
         : m_rowPtr(rowPtr)
         , m_colIdx(colIdx)
         , m_values(values)
@@ -104,14 +104,14 @@ class csr : public viewer_base<csr<T>>
     }
 
     // rows getter
-    MUDA_GENERIC int rows() const noexcept { return m_rows; }
+    MUDA_GENERIC int rows() const MUDA_NOEXCEPT { return m_rows; }
     // cols getter
-    MUDA_GENERIC int cols() const noexcept { return m_cols; }
+    MUDA_GENERIC int cols() const MUDA_NOEXCEPT { return m_cols; }
     // nnz getter
-    MUDA_GENERIC int nnz() const noexcept { return m_nnz; }
+    MUDA_GENERIC int nnz() const MUDA_NOEXCEPT { return m_nnz; }
 
     // get by row and col as if it is a dense matrix
-    MUDA_GENERIC T operator()(int row, int col) const noexcept
+    MUDA_GENERIC T operator()(int row, int col) const MUDA_NOEXCEPT
     {
         check_range(row, col);
         for(int i = m_rowPtr[row]; i < m_rowPtr[row + 1]; i++)
@@ -122,29 +122,29 @@ class csr : public viewer_base<csr<T>>
         return 0;
     }
     // read-write element
-    MUDA_GENERIC elem rw_elem(int row, int local_offset) noexcept
+    MUDA_GENERIC elem rw_elem(int row, int local_offset) MUDA_NOEXCEPT
     {
         int global_offset;
         check_all(row, local_offset, global_offset);
         return elem(*this, row, m_colIdx[global_offset], global_offset);
     }
     // read-only element
-    MUDA_GENERIC celem ro_elem(int row, int local_offset) const noexcept
+    MUDA_GENERIC celem ro_elem(int row, int local_offset) const MUDA_NOEXCEPT
     {
         int global_offset;
         check_all(row, local_offset, global_offset);
         return celem(*this, row, m_colIdx[global_offset], global_offset);
     }
 
-    MUDA_GENERIC void place_row(int row, int global_offset) noexcept
+    MUDA_GENERIC void place_row(int row, int global_offset) MUDA_NOEXCEPT
     {
         check_row(row);
         m_rowPtr[row] = global_offset;
     }
 
-    MUDA_GENERIC void place_tail() noexcept { m_rowPtr[m_rows] = m_nnz; }
+    MUDA_GENERIC void place_tail() MUDA_NOEXCEPT { m_rowPtr[m_rows] = m_nnz; }
 
-    MUDA_GENERIC int place_col(int row, int local_offset, int col) noexcept
+    MUDA_GENERIC int place_col(int row, int local_offset, int col) MUDA_NOEXCEPT
     {
         check_row(row);
         int global_offset = m_rowPtr[row] + local_offset;
@@ -153,7 +153,7 @@ class csr : public viewer_base<csr<T>>
         return global_offset;
     }
 
-    MUDA_GENERIC int place_col(int row, int local_offset, int col, const T& v) noexcept
+    MUDA_GENERIC int place_col(int row, int local_offset, int col, const T& v) MUDA_NOEXCEPT
     {
         check_row(row);
         int global_offset = m_rowPtr[row] + local_offset;
@@ -163,7 +163,7 @@ class csr : public viewer_base<csr<T>>
         return global_offset;
     }
 
-    MUDA_GENERIC int place_col(int global_offset, int col, const T& v) noexcept
+    MUDA_GENERIC int place_col(int global_offset, int col, const T& v) MUDA_NOEXCEPT
     {
         check_global_offset(global_offset);
         m_colIdx[global_offset] = col;
@@ -171,7 +171,7 @@ class csr : public viewer_base<csr<T>>
         return global_offset;
     }
 
-    MUDA_GENERIC int nnz(int row) const noexcept
+    MUDA_GENERIC int nnz(int row) const MUDA_NOEXCEPT
     {
         check_row(row);
         return m_rowPtr[row + 1] - m_rowPtr[row];
@@ -184,7 +184,7 @@ class csr : public viewer_base<csr<T>>
     int  m_nnz;
     int  m_rows;
     int  m_cols;
-    MUDA_GENERIC __forceinline__ void check_range(int row, int col) const noexcept
+    MUDA_GENERIC __forceinline__ void check_range(int row, int col) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
             if(row < 0 || row >= m_rows || col < 0 || col >= m_cols)
@@ -198,7 +198,7 @@ class csr : public viewer_base<csr<T>>
             }
     }
 
-    MUDA_GENERIC __forceinline__ void check_row(int row) const noexcept
+    MUDA_GENERIC __forceinline__ void check_row(int row) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
             if(row < 0 || row >= m_rows)
@@ -210,7 +210,7 @@ class csr : public viewer_base<csr<T>>
             }
     }
 
-    MUDA_GENERIC __forceinline__ void check_local_offset(int row, int offset) const noexcept
+    MUDA_GENERIC __forceinline__ void check_local_offset(int row, int offset) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
             if(row < 0 || row >= m_rows || offset < 0
@@ -227,7 +227,7 @@ class csr : public viewer_base<csr<T>>
             }
     }
 
-    MUDA_GENERIC __forceinline__ void check_global_offset(int globalOffset) const noexcept
+    MUDA_GENERIC __forceinline__ void check_global_offset(int globalOffset) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
             if(globalOffset < 0 || globalOffset >= m_nnz)
@@ -239,7 +239,7 @@ class csr : public viewer_base<csr<T>>
             }
     }
 
-    MUDA_GENERIC __forceinline__ void check_all(int row, int local_offset, int& global_offset) const noexcept
+    MUDA_GENERIC __forceinline__ void check_all(int row, int local_offset, int& global_offset) const MUDA_NOEXCEPT
     {
         check_row(row);
         check_local_offset(row, local_offset);

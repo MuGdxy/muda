@@ -58,7 +58,7 @@ class device_buffer
 
     device_buffer(const device_buffer& other) = delete;
 
-    device_buffer(device_buffer&& other) noexcept
+    device_buffer(device_buffer&& other) MUDA_NOEXCEPT
         : m_stream(other.m_stream)
         , m_data(other.m_data)
         , m_size(other.m_size)
@@ -276,33 +276,33 @@ class buffer_launch : public launch_base<buffer_launch>
 namespace muda
 {
 template <typename T>
-inline __host__ auto data(device_buffer<T>& buf) noexcept
+MUDA_INLINE MUDA_HOST auto data(device_buffer<T>& buf) MUDA_NOEXCEPT
 {
     return buf.data();
 }
 
 template <typename T>
-inline __host__ auto make_dense(device_buffer<T>& buf) noexcept
+MUDA_INLINE MUDA_HOST auto make_dense(device_buffer<T>& buf) MUDA_NOEXCEPT
 {
     return dense1D<T>(buf.data(), buf.size());
 }
 
 template <typename T>
-inline __host__ auto make_dense2D(device_buffer<T>& buf, uint32_t dimx, uint32_t dimy) noexcept
+MUDA_INLINE MUDA_HOST auto make_dense2D(device_buffer<T>& buf, uint32_t dimx, uint32_t dimy) MUDA_NOEXCEPT
 {
     assert(dimx * dimy <= buf.size());
     return dense2D<T>(buf.data(), dimx, dimy);
 }
 
 template <typename T>
-inline __host__ auto make_dense3D(device_buffer<T>& buf, uint32_t dimx, uint32_t dimy, uint32_t dimz) noexcept
+MUDA_INLINE MUDA_HOST auto make_dense3D(device_buffer<T>& buf, uint32_t dimx, uint32_t dimy, uint32_t dimz) MUDA_NOEXCEPT
 {
     assert(dimx * dimy * dimz <= buf.size());
     return dense3D<T>(buf.data(), dimx, dimy, dimz);
 }
 
 template <typename T>
-inline __host__ auto make_viewer(device_buffer<T>& buf) noexcept
+MUDA_INLINE MUDA_HOST auto make_viewer(device_buffer<T>& buf) MUDA_NOEXCEPT
 {
     return make_dense(buf);
 }

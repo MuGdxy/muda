@@ -16,12 +16,13 @@ class mat_view
         , m_trans(CUSPARSE_OPERATION_NON_TRANSPOSE)
     {
     }
-    
-    mat_view(matrix_type& mat, cusparseOperation_t trans_)
+
+    mat_view(matrix_type& mat, cusparseOperation_t trans)
         : m_mat(mat)
         , m_trans(trans)
     {
     }
+
     
     matrix_type&        m_mat;
     cusparseOperation_t m_trans;
