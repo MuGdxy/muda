@@ -299,47 +299,19 @@ namespace details
         //using hash_type = Hash;
         SpatialPartitionField() = default;
 
-        void configLaunch(int lightKernelBlockDim, int heavyKernelBlockDim)
-        {
-            this->lightKernelBlockDim = lightKernelBlockDim;
-            this->heavyKernelBlockDim = heavyKernelBlockDim;
-        }
+        void configLaunch(int lightKernelBlockDim, int heavyKernelBlockDim);
 
-        void configSpatialHash(const Eigen::Vector3f& coordMin, float cellSize = -1.0f)
-        {
-            h_spatialHashConfig.coordMin = coordMin;
-            h_spatialHashConfig.cellSize = cellSize;
-            spatialHashConfig            = h_spatialHashConfig;
-        }
+        void configSpatialHash(const Eigen::Vector3f& coordMin, float cellSize = -1.0f);
 
         template <typename Pred>
         void beginCreateCollisionPairs(dense1D<sphere> boundingSphereList,
                                        device_buffer<CollisionPair>& collisionPairs,
-                                       Pred&&                        pred)
-        {
-            spheres = boundingSphereList;
-
-            if(h_spatialHashConfig.cellSize <= 0.0f)  // to calculate the bounding sphere
-                beginCalculateCellSize();
-
-            beginSetupHashTable();
-            waitAndCreateTempData();
-
-            beginCountCollisionPairs(std::forward<Pred>(pred));
-            waitAndAllocCollisionPairList(collisionPairs);
-
-            beginSetupCollisionPairList(collisionPairs, std::forward<Pred>(pred));
-        }
+                                       Pred&& pred);
 
         device_buffer<float>     allRadius;
         device_buffer<std::byte> cellSizeBuf;
 
-        void beginSetupHashTable()
-        {
-            beginFillHashCells();
-            beginSortHashCells();
-            beginCountCollisionPerCell();
-        }
+        void beginSetupHashTable();
 
         void beginCalculateCellSize();
 
@@ -366,26 +338,7 @@ namespace details
         void beginSetupCollisionPairList(device_buffer<CollisionPair>& collisionPairs,
                                          Pred&&                        pred);
 
-        void stream(cudaStream_t stream)
-        {
-            m_stream = stream;
-            cellArrayValue.stream(stream);
-
-            cellArrayKey.stream(stream);
-            cellArrayValueSorted.stream(stream);
-            cellArrayKeySorted.stream(stream);
-
-            uniqueKey.stream(stream);
-
-            objCountInCell.stream(stream);
-            objCountInCellPrefixSum.stream(stream);
-
-            collisionPairCount.stream(stream);
-            collisionPairPrefixSum.stream(stream);
-
-            allRadius.stream(stream);
-            cellSizeBuf.stream(stream);
-        }
+        void stream(cudaStream_t stream);
     };
 }  // namespace details
 
@@ -475,7 +428,6 @@ class SpatialPartitionLauncher : public launch_base<SpatialPartitionLauncher<Has
     /// <param name="boundingSphereList"></param>
     /// <param name="collisionPairs"></param>
     /// <returns></returns>
-
     template <typename Pred = DefaultPred>
     SpatialPartitionLauncher& applyCreateCollisionPairs(dense1D<sphere> boundingSphereList,
                                                         device_buffer<CollisionPair>& collisionPairs,
@@ -527,4 +479,4 @@ class SpatialPartitionLauncher : public launch_base<SpatialPartitionLauncher<Has
 };
 }  // namespace muda
 
-#include "spatial_hash.inl"
+#include "impl/spatial_hash.inl"

@@ -61,6 +61,15 @@ inline MUDA_GENERIC const T& min(const Eigen::Vector<T, N>& v)
 }
 
 template <typename T>
+inline MUDA_GENERIC void swap(T& lhs, T& rhs)
+{
+    T tmp;
+    tmp = lhs;
+    lhs = rhs;
+    rhs = tmp;
+}
+
+template <typename T>
 inline MUDA_GENERIC T clamp(const T& x, const T& l, const T& r)
 {
     return min(max(x, l), r);

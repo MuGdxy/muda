@@ -1,9 +1,74 @@
 #ifdef __INTELLISENSE__
-#include "spatial_hash.h"
+#include "../spatial_hash.h"
 #endif
 
 namespace muda::details
 {
+template <typename Hash>
+inline void SpatialPartitionField<Hash>::configLaunch(int lightKernelBlockDim, int heavyKernelBlockDim)
+{
+    this->lightKernelBlockDim = lightKernelBlockDim;
+    this->heavyKernelBlockDim = heavyKernelBlockDim;
+}
+
+template <typename Hash>
+inline void SpatialPartitionField<Hash>::configSpatialHash(const Eigen::Vector3f& coordMin,
+                                                           float cellSize)
+{
+    h_spatialHashConfig.coordMin = coordMin;
+    h_spatialHashConfig.cellSize = cellSize;
+    spatialHashConfig            = h_spatialHashConfig;
+}
+
+template <typename Hash>
+inline void SpatialPartitionField<Hash>::beginSetupHashTable()
+{
+    beginFillHashCells();
+    beginSortHashCells();
+    beginCountCollisionPerCell();
+}
+
+template <typename Hash>
+template <typename Pred>
+inline void SpatialPartitionField<Hash>::beginCreateCollisionPairs(
+    dense1D<sphere> boundingSphereList, device_buffer<CollisionPair>& collisionPairs, Pred&& pred)
+{
+    spheres = boundingSphereList;
+
+    if(h_spatialHashConfig.cellSize <= 0.0f)  // to calculate the bounding sphere
+        beginCalculateCellSize();
+
+    beginSetupHashTable();
+    waitAndCreateTempData();
+
+    beginCountCollisionPairs(std::forward<Pred>(pred));
+    waitAndAllocCollisionPairList(collisionPairs);
+
+    beginSetupCollisionPairList(collisionPairs, std::forward<Pred>(pred));
+}
+
+template <typename Hash>
+inline void SpatialPartitionField<Hash>::stream(cudaStream_t stream)
+{
+    m_stream = stream;
+    cellArrayValue.stream(stream);
+
+    cellArrayKey.stream(stream);
+    cellArrayValueSorted.stream(stream);
+    cellArrayKeySorted.stream(stream);
+
+    uniqueKey.stream(stream);
+
+    objCountInCell.stream(stream);
+    objCountInCellPrefixSum.stream(stream);
+
+    collisionPairCount.stream(stream);
+    collisionPairPrefixSum.stream(stream);
+
+    allRadius.stream(stream);
+    cellSizeBuf.stream(stream);
+}
+
 template <typename Hash>
 void SpatialPartitionField<Hash>::beginCalculateCellSize()
 {
