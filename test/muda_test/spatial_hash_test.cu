@@ -1,11 +1,12 @@
 #include <catch2/catch.hpp>
 #include <algorithm>
+#include <numeric>
 #include <muda/muda.h>
 #include <muda/container.h>
 #include <muda/buffer.h>
 #include <muda/pba/collision/spatial_hash.h>
 
-using namespace muda;
+
 
 // if <input_file_name> is empty, we generate a random input
 // otherwise, we read the input from the file
@@ -16,10 +17,23 @@ std::string input_file_name = "";
 // we output the difference to a file with name <output_file_name> for further visualization and checking
 std::string output_file_name = "diff.csv";
 
-template <typename Hash>
-void spatial_hash_test(host_vector<CollisionPair>& res, host_vector<CollisionPair>& gt)
+
+namespace std
 {
-    host_vector<sphere> h_spheres;
+void swap(muda::CollisionPair& lhs, muda::CollisionPair& rhs)
+{
+    muda::CollisionPair tmp;
+    tmp = lhs;
+    lhs = rhs;
+    rhs = tmp;
+}
+}
+
+template <typename Hash>
+void spatial_hash_test(muda::host_vector<muda::CollisionPair>& res,
+                       muda::host_vector<muda::CollisionPair>&   gt)
+{
+    muda::host_vector<muda::sphere> h_spheres;
     if(input_file_name.empty())  // or generate random test set
     {
         h_spheres.resize(6400);
@@ -27,7 +41,7 @@ void spatial_hash_test(host_vector<CollisionPair>& res, host_vector<CollisionPai
                       h_spheres.end(),
                       [id = uint32_t(0)]() mutable
                       {
-                          return sphere(
+                          return muda::sphere(
                               Eigen::Vector3f(0.2 + rand() / (float)RAND_MAX * 10,
                                               0.2 + rand() / (float)RAND_MAX * 10,
                                               0.2 + rand() / (float)RAND_MAX * 10),
@@ -42,7 +56,7 @@ void spatial_hash_test(host_vector<CollisionPair>& res, host_vector<CollisionPai
         int i = 0;
         while(true)
         {
-            sphere s;
+            muda::sphere s;
             s.from_csv(ifs);
             i++;
             if(!ifs)
@@ -55,33 +69,37 @@ void spatial_hash_test(host_vector<CollisionPair>& res, host_vector<CollisionPai
     }
 
 
-    stream s;
+    muda::stream s;
     auto   spheres = to_device(h_spheres);
-    launch::wait_device();
-    SpatialPartitionField<Hash>  field;
-    device_buffer<CollisionPair> d_res;
+    muda::launch::wait_device();
+    muda::SpatialPartitionField<Hash> field;
+    muda::device_buffer<muda::CollisionPair> d_res;
 
-    on(s)
-        .next<SpatialPartitionLauncher<Hash>>(field)  // setup config
+    muda::on(s)
+        .next<muda::SpatialPartitionLauncher<Hash>>(field)  // setup config
         .configSpatialHash(Eigen::Vector3f(0, 0, 0),  // give the left-bottom corner of the domain
                            1.0f)  // set cell size manually which will disable automatic cell size calculation
-        .applyCreateCollisionPairs(make_viewer(spheres), d_res);
+        .applyCreateCollisionPairs(muda::make_viewer(spheres), d_res);
 
     d_res.copy_to(res);      // this copy is also async
-    launch::wait_stream(s);  // wait for the copy to finish
+    muda::launch::wait_stream(s);  // wait for the copy to finish
 
     // detect collision in these 1000 spheres brutely
     for(int i = 0; i < h_spheres.size(); i++)
         for(int j = i + 1; j < h_spheres.size(); j++)
-            if(collide::detect(h_spheres[i], h_spheres[j]))
-                gt.push_back(CollisionPair(h_spheres[i].id, h_spheres[j].id));
+            if(muda::collide::detect(h_spheres[i], h_spheres[j]))
+                gt.push_back(muda::CollisionPair(h_spheres[i].id, h_spheres[j].id));
 
     std::sort(gt.begin(), gt.end());
     std::sort(res.begin(), res.end());
+
+    std::vector<int> a(100);
+    std::sort(a.begin(), a.end());
+	
     if(gt.size() != res.size())
         std::cout << "incoherence: gt-size =" << gt.size()
                   << " res-size =" << res.size() << std::endl;
-    std::vector<CollisionPair> difference;
+    std::vector<muda::CollisionPair> difference;
     std::set_difference(gt.begin(), gt.end(), res.begin(), res.end(), std::back_inserter(difference));
 
     if(difference.size())
@@ -114,14 +132,14 @@ TEST_CASE("spatial_hash", "[collide]")
 {
     SECTION("shift_hash")
     {
-        host_vector<CollisionPair> res, gt;
-        spatial_hash_test<shift_hash<20, 10, 0>>(res, gt);
+        muda::host_vector<muda::CollisionPair> res, gt;
+        spatial_hash_test<muda::shift_hash<20, 10, 0>>(res, gt);
         REQUIRE(res == gt);
     }
     SECTION("morton")
     {
-        host_vector<CollisionPair> res, gt;
-        spatial_hash_test<morton>(res, gt);
+        muda::host_vector<muda::CollisionPair> res, gt;
+        spatial_hash_test<muda::morton>(res, gt);
         REQUIRE(res == gt);
     }
 }
