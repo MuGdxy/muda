@@ -10,6 +10,8 @@ class $CLASS_NAME$ : public AlgBase<$CLASS_NAME$>
         : AlgBase(stream)
     {
     }
+
+    //$CLASS_NAME$& ExampleFunction(device_buffer<std::byte>& external_buffer, ...);
 };
 }  // namespace muda
 
@@ -26,7 +28,10 @@ incl = '''#pragma once
 #endif
 namespace muda
 {
-    //prepareBuffer(external_buffer, temp_storage_bytes);
+    //$CLASS_NAME$& ExampleFunction(device_buffer<std::byte>& external_buffer, ...);
+    //{
+        //prepareBuffer(external_buffer, temp_storage_bytes);
+    //}
 }  // namespace muda
 '''
 

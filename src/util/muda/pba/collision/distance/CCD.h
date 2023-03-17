@@ -396,6 +396,7 @@ MUDA_GENERIC bool Edge_Edge_CCD(Eigen::Matrix<T, 3, 1> ea0,
                                 Eigen::Matrix<T, 3, 1> deb1,
                                 T                      eta,
                                 T                      thickness,
+                                int                    max_iter,
                                 T&                     toc)
 {
     Eigen::Matrix<T, 3, 1> mov = (dea0 + dea1 + deb0 + deb1) / 4;
@@ -430,6 +431,12 @@ MUDA_GENERIC bool Edge_Edge_CCD(Eigen::Matrix<T, 3, 1> ea0,
     toc        = 0;
     while(true)
     {
+        if(max_iter > 0)
+        {
+            if(--max_iter == 0)
+                return true;
+        }
+
         T tocLowerBound = (1 - eta) * dFunc / ((dist_cur + thickness) * maxDispMag);
 
         ea0 += tocLowerBound * dea0;

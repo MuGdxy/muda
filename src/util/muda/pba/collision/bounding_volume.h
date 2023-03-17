@@ -9,7 +9,6 @@ namespace muda
 class sphere
 {
     using vec3 = Eigen::Vector3f;
-
   public:
     MUDA_GENERIC sphere(const Eigen::Vector3f& o, float r, int id = -1)
         : o(o)
@@ -26,6 +25,7 @@ class sphere
     int             id = -1;
     Eigen::Vector3f o;
     float           r;
+    int             level = 0;
     void csv_header(std::ostream& os) { os << "ox,oy,oz,r,id" << std::endl; }
 
     auto& from_csv(std::istream& in)

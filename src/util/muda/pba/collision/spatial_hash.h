@@ -269,6 +269,7 @@ namespace details
         cudaStream_t    m_stream;
         int             lightKernelBlockDim;
         int             heavyKernelBlockDim;
+
         dense1D<sphere> spheres;
 
 
@@ -289,6 +290,7 @@ namespace details
         device_var<int> uniqueKeyCount;
         int             validCellCount;
         int             sum;
+        size_t          pairListOffset = 0;
 
         dvec<int> objCountInCell;
         dvec<int> objCountInCellPrefixSum;
@@ -296,12 +298,14 @@ namespace details
         dvec<int> collisionPairCount;
         dvec<int> collisionPairPrefixSum;
 
+        int level = 0;
+
         //using hash_type = Hash;
         SpatialPartitionField() = default;
 
         void configLaunch(int lightKernelBlockDim, int heavyKernelBlockDim);
 
-        void configSpatialHash(const Eigen::Vector3f& coordMin, float cellSize = -1.0f);
+        void configSpatialHash(const Eigen::Vector3f& coordMin, int level=0, float cellSize = -1.0f);
 
         template <typename Pred>
         void beginCreateCollisionPairs(dense1D<sphere> boundingSphereList,
@@ -415,10 +419,10 @@ class SpatialPartitionLauncher : public launch_base<SpatialPartitionLauncher<Has
 
     virtual void init_stream(cudaStream_t s) override { m_field.stream(s); }
 
-    SpatialPartitionLauncher& configSpatialHash(const Eigen::Vector3f& coordMin,
+    SpatialPartitionLauncher& configSpatialHash(const Eigen::Vector3f& coordMin, int level = 0,
                                                 float cellSize = -1.0f)
     {
-        m_field.configSpatialHash(coordMin, cellSize);
+        m_field.configSpatialHash(coordMin, level, cellSize);
         return *this;
     }
 

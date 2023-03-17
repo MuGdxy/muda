@@ -65,12 +65,12 @@ class accd
                                     Eigen::Matrix<T, 3, 1> deb1,
                                     T                      eta,
                                     T                      thickness,
+                                    int                    max_iter,
                                     T&                     toc)
     {
-        return JGSL::Edge_Edge_CCD(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, eta, thickness, toc);
+        return JGSL::Edge_Edge_CCD(
+            ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, eta, thickness, max_iter, toc);
     }
-
-
 
 
     template <int dim>
