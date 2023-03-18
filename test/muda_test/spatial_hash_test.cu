@@ -7,7 +7,6 @@
 #include <muda/pba/collision/spatial_hash.h>
 
 
-
 // if <input_file_name> is empty, we generate a random input
 // otherwise, we read the input from the file
 // input format:
@@ -27,11 +26,11 @@ void swap(muda::CollisionPair& lhs, muda::CollisionPair& rhs)
     lhs = rhs;
     rhs = tmp;
 }
-}
+}  // namespace std
 
 template <typename Hash>
 void spatial_hash_test(muda::host_vector<muda::CollisionPair>& res,
-                       muda::host_vector<muda::CollisionPair>&   gt)
+                       muda::host_vector<muda::CollisionPair>& gt)
 {
     muda::host_vector<muda::sphere> h_spheres;
     if(input_file_name.empty())  // or generate random test set
@@ -70,18 +69,19 @@ void spatial_hash_test(muda::host_vector<muda::CollisionPair>& res,
 
 
     muda::stream s;
-    auto   spheres = to_device(h_spheres);
+    auto         spheres = to_device(h_spheres);
     muda::launch::wait_device();
-    muda::SpatialPartitionField<Hash> field;
+    muda::SpatialPartitionField<Hash>        field;
     muda::device_buffer<muda::CollisionPair> d_res;
 
     muda::on(s)
         .next<muda::SpatialPartitionLauncher<Hash>>(field)  // setup config
         .configSpatialHash(Eigen::Vector3f(0, 0, 0),  // give the left-bottom corner of the domain
+                           0,                         //level 0
                            1.0f)  // set cell size manually which will disable automatic cell size calculation
         .applyCreateCollisionPairs(muda::make_viewer(spheres), d_res);
 
-    d_res.copy_to(res);      // this copy is also async
+    d_res.copy_to(res);            // this copy is also async
     muda::launch::wait_stream(s);  // wait for the copy to finish
 
     // detect collision in these 1000 spheres brutely
@@ -95,7 +95,7 @@ void spatial_hash_test(muda::host_vector<muda::CollisionPair>& res,
 
     std::vector<int> a(100);
     std::sort(a.begin(), a.end());
-	
+
     if(gt.size() != res.size())
         std::cout << "incoherence: gt-size =" << gt.size()
                   << " res-size =" << res.size() << std::endl;

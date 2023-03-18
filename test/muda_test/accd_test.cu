@@ -47,6 +47,7 @@ struct ACCDKernel
                                                     vec3(b1e - b1s),
                                                     eta,
                                                     thick,
+                                                    -1,
                                                     toi);
         }
         else
@@ -56,16 +57,23 @@ struct ACCDKernel
             vec3 t1s = x(i, 2);
             vec3 t2s = x(i, 3);
 
-            vec3 pe  = x(i, 4);
-            vec3 t0e = x(i, 5);
-            vec3 t1e = x(i, 6);
-            vec3 t2e = x(i, 7);
+            vec3 pe    = x(i, 4);
+            vec3 t0e   = x(i, 5);
+            vec3 t1e   = x(i, 6);
+            vec3 t2e   = x(i, 7);
             auto a     = accd<real>();
-            results(i) = a.Point_Triangle_CCD(
-                ps, t0s, t1s, t2s, 
-                vec3(pe - ps), vec3(t0e - t0s), 
-                vec3(t1e - t1s), vec3(t2e - t2s), 
-                eta, thick, toi);
+            results(i) = a.Point_Triangle_CCD(ps,
+                                              t0s,
+                                              t1s,
+                                              t2s,
+                                              vec3(pe - ps),
+                                              vec3(t0e - t0s),
+                                              vec3(t1e - t1s),
+                                              vec3(t2e - t2s),
+                                              eta,
+                                              thick,
+                                              -1,
+                                              toi);
         }
     }
 
@@ -87,11 +95,11 @@ void accd_test(const std::string      file,
     h_results.resize(resultSize);
     host_vector<float> h_tois(resultSize);
 
-     HOST:
+HOST:
     auto accdKernel = ACCDKernel(is_ee, make_dense2D(X, 8), make_viewer(h_results));
     for(int i = 0; i < resultSize; i++)
         accdKernel(i);
-	
+
 
     // DEVICE:
     device_vector<Eigen::Vector3f> x = X;

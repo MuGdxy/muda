@@ -20,9 +20,10 @@ class accd
                                       Eigen::Matrix<T, 3, 1> dp1,
                                       T                      eta,
                                       T                      thickness,
+                                      int                    max_iter,
                                       T&                     toc)
     {
-        return JGSL::Point_Point_CCD(p0, p1, dp0, dp1, eta, thickness, toc);
+        return JGSL::Point_Point_CCD(p0, p1, dp0, dp1, eta, thickness, max_iter, toc);
     }
 
 
@@ -38,6 +39,20 @@ class accd
         return JGSL::Point_Edge_CCD(x0, x1, x2, d0, d1, d2, eta, toc);
     }
 
+    template <class T>
+    MUDA_GENERIC bool Point_Edge_CCD(Eigen::Matrix<T, 3, 1> p,
+                                     Eigen::Matrix<T, 3, 1> e0,
+                                     Eigen::Matrix<T, 3, 1> e1,
+                                     Eigen::Matrix<T, 3, 1> dp,
+                                     Eigen::Matrix<T, 3, 1> de0,
+                                     Eigen::Matrix<T, 3, 1> de1,
+                                     T                      eta,
+                                     T                      thickness,
+                                     int                    max_iter,
+                                     T&                     toc)
+    {
+        return JGSL::Point_Edge_CCD(p, e0, e1, dp, de0, de1, eta, max_iter, toc);
+    }
 
     MUDA_GENERIC bool Point_Triangle_CCD(Eigen::Matrix<T, 3, 1> p,
                                          Eigen::Matrix<T, 3, 1> t0,
@@ -49,9 +64,11 @@ class accd
                                          Eigen::Matrix<T, 3, 1> dt2,
                                          T                      eta,
                                          T                      thickness,
+                                         int                    max_iter,
                                          T&                     toc)
     {
-        return JGSL::Point_Triangle_CCD(p, t0, t1, t2, dp, dt0, dt1, dt2, eta, thickness, toc);
+        return JGSL::Point_Triangle_CCD(
+            p, t0, t1, t2, dp, dt0, dt1, dt2, eta, thickness, max_iter, toc);
     }
 
     template <class T>

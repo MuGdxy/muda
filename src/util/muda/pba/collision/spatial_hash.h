@@ -8,10 +8,11 @@
 #include <muda/container.h>
 #include <muda/composite/cse.h>
 
-#include <muda/algorithm/device_reduce.h>
-#include <muda/algorithm/device_radix_sort.h>
-#include <muda/algorithm/device_run_length_encode.h>
-#include <muda/algorithm/device_scan.h>
+#include <muda/cub/device/device_reduce.h>
+#include <muda/cub/device/device_radix_sort.h>
+#include <muda/cub/device/device_run_length_encode.h>
+#include <muda/cub/device/device_scan.h>
+
 #include <muda/encode/hash.h>
 #include <muda/encode/morton.h>
 
@@ -165,14 +166,15 @@ class SpatialPartitionCell
 
     friend std::ostream& operator<<(std::ostream& os, const SpatialPartitionCell& cell)
     {
-        os << std::hex << cell.cid << "," << std::dec << cell.oid << "," << std::hex
-           << cell.ctlbit.pass << "," << cell.ctlbit.home << "," << cell.ctlbit.overlap
-           << "," << std::dec << cell.ijk(0) << "," << cell.ijk(1) << "," << cell.ijk(2);
+        os << std::hex << cell.cid << "," << std::dec << cell.oid << ","
+           << std::hex << cell.ctlbit.pass << "," << cell.ctlbit.home << ","
+           << cell.ctlbit.overlap << "," << std::dec << cell.ijk(0) << ","
+           << cell.ijk(1) << "," << cell.ijk(2);
         return os;
     }
 };
 
-template <typename Hash = muda::shift_hash<20, 10, 0>>
+template <typename Hash = muda::morton>
 class SpatialHashConfig
 {
     using real      = float;
@@ -266,9 +268,9 @@ namespace details
         using Cell      = SpatialPartitionCell;
         using hash_type = Hash;
 
-        cudaStream_t    m_stream;
-        int             lightKernelBlockDim;
-        int             heavyKernelBlockDim;
+        cudaStream_t m_stream;
+        int          lightKernelBlockDim;
+        int          heavyKernelBlockDim;
 
         dense1D<sphere> spheres;
 
@@ -305,7 +307,9 @@ namespace details
 
         void configLaunch(int lightKernelBlockDim, int heavyKernelBlockDim);
 
-        void configSpatialHash(const Eigen::Vector3f& coordMin, int level=0, float cellSize = -1.0f);
+        void configSpatialHash(const Eigen::Vector3f& coordMin,
+                               int                    level    = 0,
+                               float                  cellSize = -1.0f);
 
         template <typename Pred>
         void beginCreateCollisionPairs(dense1D<sphere> boundingSphereList,
@@ -315,32 +319,32 @@ namespace details
         device_buffer<float>     allRadius;
         device_buffer<std::byte> cellSizeBuf;
 
-        void beginSetupHashTable();
+
+        event setupHashTableDone;
+        void  beginSetupHashTable();
 
         void beginCalculateCellSize();
 
         void beginFillHashCells();
 
         device_buffer<std::byte> cellArraySortBuf;
-
         void beginSortHashCells();
 
         device_buffer<std::byte> encodeBuf;
-
         void beginCountCollisionPerCell();
 
         void waitAndCreateTempData();
 
+        device_buffer<std::byte> collisionScanBuf;
+		event countCollisionPairsDone;
         template <typename Pred>
         void beginCountCollisionPairs(Pred&& pred);
-
-        device_buffer<std::byte> collisionScanBuf;
 
         void waitAndAllocCollisionPairList(device_buffer<CollisionPair>& collisionPairs);
 
         template <typename Pred>
         void beginSetupCollisionPairList(device_buffer<CollisionPair>& collisionPairs,
-                                         Pred&&                        pred);
+                                         Pred&& pred);
 
         void stream(cudaStream_t stream);
     };
@@ -419,7 +423,8 @@ class SpatialPartitionLauncher : public launch_base<SpatialPartitionLauncher<Has
 
     virtual void init_stream(cudaStream_t s) override { m_field.stream(s); }
 
-    SpatialPartitionLauncher& configSpatialHash(const Eigen::Vector3f& coordMin, int level = 0,
+    SpatialPartitionLauncher& configSpatialHash(const Eigen::Vector3f& coordMin,
+                                                int   level    = 0,
                                                 float cellSize = -1.0f)
     {
         m_field.configSpatialHash(coordMin, level, cellSize);

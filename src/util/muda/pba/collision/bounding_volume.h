@@ -22,11 +22,13 @@ class sphere
         , id(-1)
     {
     }
+	
     int             id = -1;
     Eigen::Vector3f o;
     float           r;
     int             level = 0;
-    void csv_header(std::ostream& os) { os << "ox,oy,oz,r,id" << std::endl; }
+	
+    void csv_header(std::ostream& os) noexcept { os << "ox,oy,oz,r,id,level" << std::endl; }
 
     auto& from_csv(std::istream& in)
     {
@@ -34,14 +36,14 @@ class sphere
         in >> o(0);
         if(!in)
             return in;
-        in >> c >> o(1) >> c >> o(2) >> c >> r >> c >> id;
+        in >> c >> o(1) >> c >> o(2) >> c >> r >> c >> id >> c >> level;
         return in;
     }
 
     auto& to_csv(std::ostream& os)
     {
         char c = ',';
-        os << o(0) << c << o(1) << c << o(2) << c << r << c << id;
+        os << o(0) << c << o(1) << c << o(2) << c << r << c << id << c << level;
         return os;
     }
 };

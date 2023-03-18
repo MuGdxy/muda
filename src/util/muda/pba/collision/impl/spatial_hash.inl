@@ -28,6 +28,7 @@ inline void SpatialPartitionField<Hash>::beginSetupHashTable()
     beginFillHashCells();
     beginSortHashCells();
     beginCountCollisionPerCell();
+    on(m_stream).record(setupHashTableDone);
 }
 
 template <typename Hash>
@@ -87,7 +88,7 @@ void SpatialPartitionField<Hash>::beginCalculateCellSize()
                    allRadius(i)  = s.level <= level ? s.r : 0.0f;
                });
 
-    DeviceReduce(m_stream).Max(cellSizeBuf, data(maxRadius), allRadius.data(), count);
+    DeviceReduce(m_stream).Max(cellSizeBuf, allRadius.data(), data(maxRadius), count);
 
     launch(1, 1, 0, m_stream)
         .apply(
@@ -228,10 +229,10 @@ template <typename Hash>
 void SpatialPartitionField<Hash>::beginSortHashCells()
 {
     DeviceRadixSort(m_stream).SortPairs(cellArraySortBuf,
-                                        (uint32_t*)cellArrayKeySorted.data(),  //out
-                                        cellArrayValueSorted.data(),     //out
                                         (uint32_t*)cellArrayKey.data(),  //in
-                                        cellArrayValue.data(),           //in
+                                        (uint32_t*)cellArrayKeySorted.data(),  //out
+                                        cellArrayValue.data(),        //in
+                                        cellArrayValueSorted.data(),  //out
                                         cellArrayValue.size());
 }
 
@@ -240,10 +241,10 @@ void SpatialPartitionField<Hash>::beginCountCollisionPerCell()
 {
     auto count = uniqueKey.size();
     DeviceRunLengthEncode(m_stream).Encode(encodeBuf,
+                                           cellArrayKeySorted.data(),  // in
                                            uniqueKey.data(),           // out
                                            objCountInCell.data(),      // out
                                            data(uniqueKeyCount),       // out
-                                           cellArrayKeySorted.data(),  // in
                                            count);
 
     //.wait();
@@ -261,18 +262,30 @@ void SpatialPartitionField<Hash>::beginCountCollisionPerCell()
 template <typename Hash>
 void SpatialPartitionField<Hash>::waitAndCreateTempData()
 {
-    on(m_stream).wait();
+    launch::wait_event(setupHashTableDone);
 
     // wait for uniqueKeyCount
     // we need use uniqueKeyCount to resize arrays
+    int h_uniqueKeyCount = -1;
+    on(m_stream)
+        .when(setupHashTableDone)
+        .next(memory{})
+        .download(&h_uniqueKeyCount, muda::data(uniqueKeyCount), sizeof(int))
+        .wait();  // wait for download to finish
 
-    int h_uniqueKeyCount = uniqueKeyCount;
+    on(m_stream)
+        .next(buffer_launch{})
+        .resize(uniqueKey, h_uniqueKeyCount)
+        .resize(objCountInCell, h_uniqueKeyCount)
+        .resize(objCountInCellPrefixSum, h_uniqueKeyCount)
+        .resize(collisionPairCount, h_uniqueKeyCount)
+        .resize(collisionPairPrefixSum, h_uniqueKeyCount);
 
-    uniqueKey.resize(h_uniqueKeyCount);
-    objCountInCell.resize(h_uniqueKeyCount);
-    objCountInCellPrefixSum.resize(h_uniqueKeyCount);
-    collisionPairCount.resize(h_uniqueKeyCount);
-    collisionPairPrefixSum.resize(h_uniqueKeyCount);
+    //uniqueKey.resize(h_uniqueKeyCount);
+    //objCountInCell.resize(h_uniqueKeyCount);
+    //objCountInCellPrefixSum.resize(h_uniqueKeyCount);
+    //collisionPairCount.resize(h_uniqueKeyCount);
+    //collisionPairPrefixSum.resize(h_uniqueKeyCount);
 
     // validCellCount is always 1 less than the uniqueKeyCount,
     // the last one is typically the cell-object-pair {cid = -1, oid = -1}
@@ -288,8 +301,8 @@ void SpatialPartitionField<Hash>::beginCountCollisionPairs(Pred&& pred)
     // because we need to know the total number of collision pairs
     // which is at the last element of the prefix sum array
     DeviceScan(m_stream).ExclusiveSum(cellArraySortBuf,
-                                      objCountInCellPrefixSum.data(),
                                       objCountInCell.data(),
+                                      objCountInCellPrefixSum.data(),
                                       validCellCount + 1);
 
     parallel_for(lightKernelBlockDim, 0, m_stream)
@@ -329,12 +342,12 @@ void SpatialPartitionField<Hash>::beginCountCollisionPairs(Pred&& pred)
                    collisionPairCount(cell) = pairCount;
                });
 
-    int keycount = uniqueKeyCount;
+    int keycount = validCellCount + 1;
     if(keycount)
     {
         DeviceScan(m_stream).ExclusiveSum(collisionScanBuf,
-                                          collisionPairPrefixSum.data(),
                                           collisionPairCount.data(),
+                                          collisionPairPrefixSum.data(),
                                           keycount);
         auto lastOffset = validCellCount;
         memory(m_stream).copy(&sum,
@@ -344,17 +357,19 @@ void SpatialPartitionField<Hash>::beginCountCollisionPairs(Pred&& pred)
     }
     else
         sum = 0;
+
+    on(m_stream).record(countCollisionPairsDone);
 }
 
 template <typename Hash>
 void SpatialPartitionField<Hash>::waitAndAllocCollisionPairList(device_buffer<CollisionPair>& collisionPairs)
 {
-    on(m_stream).wait();
+    launch::wait_event(countCollisionPairsDone);
 
     int totalCollisionPairCount = sum;
-    collisionPairs.stream(m_stream);
+    details::set_stream_check(collisionPairs, m_stream);
     pairListOffset = collisionPairs.size();
-    collisionPairs.resize(collisionPairs.size() + totalCollisionPairCount);
+    collisionPairs.resize(pairListOffset + totalCollisionPairCount);
 }
 
 template <typename Hash>

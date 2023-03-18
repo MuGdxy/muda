@@ -58,126 +58,6 @@ MUDA_GENERIC bool Point_Edge_CCD_Broadphase(const Eigen::Matrix<T, 2, 1>& p,
 }
 
 template <class T>
-MUDA_GENERIC bool Point_Edge_CCD(const Eigen::Matrix<T, 2, 1>& x0,
-                                 const Eigen::Matrix<T, 2, 1>& x1,
-                                 const Eigen::Matrix<T, 2, 1>& x2,
-                                 const Eigen::Matrix<T, 2, 1>& d0,
-                                 const Eigen::Matrix<T, 2, 1>& d1,
-                                 const Eigen::Matrix<T, 2, 1>& d2,
-                                 T                             eta,
-                                 T&                            toc)
-{
-    T a = d0[0] * (d2[1] - d1[1]) + d0[1] * (d1[0] - d2[0]) + d2[0] * d1[1]
-          - d2[1] * d1[0];
-    T b = x0[0] * (d2[1] - d1[1]) + d0[0] * (x2[1] - x1[1])
-          + d0[1] * (x1[0] - x2[0]) + x0[1] * (d1[0] - d2[0]) + d1[1] * x2[0]
-          + d2[0] * x1[1] - d1[0] * x2[1] - d2[1] * x1[0];
-    T c = x0[0] * (x2[1] - x1[1]) + x0[1] * (x1[0] - x2[0]) + x2[0] * x1[1]
-          - x2[1] * x1[0];
-
-    T   roots[2];
-    int rootAmt = 0;
-    if(a == 0)
-    {
-        if(b == 0)
-        {
-            // parallel motion, only need to handle colinear case
-            if(c == 0)
-            {
-                // colinear PP CCD
-                if((x0 - x1).dot(d0 - d1) < 0)
-                {
-                    roots[rootAmt] =
-                        sqrt((x0 - x1).squaredNorm() / (d0 - d1).squaredNorm());
-                    if(roots[rootAmt] > 0 && roots[rootAmt] <= 1)
-                    {
-                        ++rootAmt;
-                    }
-                }
-                if((x0 - x2).dot(d0 - d2) < 0)
-                {
-                    roots[rootAmt] =
-                        sqrt((x0 - x2).squaredNorm() / (d0 - d2).squaredNorm());
-                    if(roots[rootAmt] > 0 && roots[rootAmt] <= 1)
-                    {
-                        ++rootAmt;
-                    }
-                }
-
-                if(rootAmt == 2)
-                {
-                    toc = min(roots[0], roots[1]) * (1 - eta);
-                    return true;
-                }
-                else if(rootAmt == 1)
-                {
-                    toc = roots[0] * (1 - eta);
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-        }
-        else
-        {
-            rootAmt  = 1;
-            roots[0] = -c / b;
-        }
-    }
-    else
-    {
-        T delta = b * b - 4 * a * c;
-        if(delta == 0)
-        {
-            rootAmt  = 1;
-            roots[0] = -b / (2 * a);
-        }
-        else if(delta > 0)
-        {
-            rootAmt = 2;
-            // accurate expression differs in b's sign
-            if(b > 0)
-            {
-                roots[0] = (-b - sqrt(delta)) / (2 * a);
-                roots[1] = 2 * c / (-b - sqrt(delta));
-            }
-            else
-            {
-                roots[0] = 2 * c / (-b + sqrt(delta));
-                roots[1] = (-b + sqrt(delta)) / (2 * a);
-            }
-
-            if(roots[0] > roots[1])
-            {
-                muda::swap(roots[0], roots[1]);
-            }
-        }
-    }
-
-    for(int i = 0; i < rootAmt; ++i)
-    {
-        if(roots[i] > 0 && roots[i] <= 1)
-        {
-            // check overlap
-            T ratio;
-            if(Point_Edge_Distance_Type(Eigen::Matrix<T, 2, 1>(x0 + roots[i] * d0),
-                                        Eigen::Matrix<T, 2, 1>(x1 + roots[i] * d1),
-                                        Eigen::Matrix<T, 2, 1>(x2 + roots[i] * d2),
-                                        ratio)
-               == 2)
-            {
-                toc = roots[i] * (1 - eta);  //TODO: distance eta
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-template <class T>
 MUDA_GENERIC bool Point_Triangle_CD_Broadphase(const Eigen::Matrix<T, 3, 1>& p,
                                                const Eigen::Matrix<T, 3, 1>& t0,
                                                const Eigen::Matrix<T, 3, 1>& t1,
@@ -338,6 +218,7 @@ MUDA_GENERIC bool Point_Triangle_CCD(Eigen::Matrix<T, 3, 1> p,
                                      Eigen::Matrix<T, 3, 1> dt2,
                                      T                      eta,
                                      T                      thickness,
+                                     int                    max_iter,
                                      T&                     toc)
 {
     Eigen::Matrix<T, 3, 1> mov = (dt0 + dt1 + dt2 + dp) / 4;
@@ -346,7 +227,7 @@ MUDA_GENERIC bool Point_Triangle_CCD(Eigen::Matrix<T, 3, 1> p,
     dt2 -= mov;
     dp -= mov;
     Eigen::Array3<T> dispMag2Vec{dt0.squaredNorm(), dt1.squaredNorm(), dt2.squaredNorm()};
-    T                maxDispMag = dp.norm() + sqrt(dispMag2Vec.maxCoeff());
+    T maxDispMag = dp.norm() + sqrt(dispMag2Vec.maxCoeff());
 
     if(maxDispMag <= T(0))
     {
@@ -361,6 +242,12 @@ MUDA_GENERIC bool Point_Triangle_CCD(Eigen::Matrix<T, 3, 1> p,
     toc        = 0;
     while(true)
     {
+        if(max_iter >= 0)
+        {
+            if(--max_iter < 0)
+                return true;
+        }
+
         T tocLowerBound = (1 - eta) * (dist2_cur - thickness * thickness)
                           / ((dist_cur + thickness) * maxDispMag);
 
@@ -431,9 +318,9 @@ MUDA_GENERIC bool Edge_Edge_CCD(Eigen::Matrix<T, 3, 1> ea0,
     toc        = 0;
     while(true)
     {
-        if(max_iter > 0)
+        if(max_iter >= 0)
         {
-            if(--max_iter == 0)
+            if(--max_iter < 0)
                 return true;
         }
 
@@ -473,6 +360,126 @@ MUDA_GENERIC bool Edge_Edge_CCD(Eigen::Matrix<T, 3, 1> ea0,
 }
 
 template <class T>
+MUDA_GENERIC bool Point_Edge_CCD(const Eigen::Matrix<T, 2, 1>& x0,
+                                 const Eigen::Matrix<T, 2, 1>& x1,
+                                 const Eigen::Matrix<T, 2, 1>& x2,
+                                 const Eigen::Matrix<T, 2, 1>& d0,
+                                 const Eigen::Matrix<T, 2, 1>& d1,
+                                 const Eigen::Matrix<T, 2, 1>& d2,
+                                 T                             eta,
+                                 T&                            toc)
+{
+    T a = d0[0] * (d2[1] - d1[1]) + d0[1] * (d1[0] - d2[0]) + d2[0] * d1[1]
+          - d2[1] * d1[0];
+    T b = x0[0] * (d2[1] - d1[1]) + d0[0] * (x2[1] - x1[1])
+          + d0[1] * (x1[0] - x2[0]) + x0[1] * (d1[0] - d2[0]) + d1[1] * x2[0]
+          + d2[0] * x1[1] - d1[0] * x2[1] - d2[1] * x1[0];
+    T c = x0[0] * (x2[1] - x1[1]) + x0[1] * (x1[0] - x2[0]) + x2[0] * x1[1]
+          - x2[1] * x1[0];
+
+    T   roots[2];
+    int rootAmt = 0;
+    if(a == 0)
+    {
+        if(b == 0)
+        {
+            // parallel motion, only need to handle colinear case
+            if(c == 0)
+            {
+                // colinear PP CCD
+                if((x0 - x1).dot(d0 - d1) < 0)
+                {
+                    roots[rootAmt] =
+                        sqrt((x0 - x1).squaredNorm() / (d0 - d1).squaredNorm());
+                    if(roots[rootAmt] > 0 && roots[rootAmt] <= 1)
+                    {
+                        ++rootAmt;
+                    }
+                }
+                if((x0 - x2).dot(d0 - d2) < 0)
+                {
+                    roots[rootAmt] =
+                        sqrt((x0 - x2).squaredNorm() / (d0 - d2).squaredNorm());
+                    if(roots[rootAmt] > 0 && roots[rootAmt] <= 1)
+                    {
+                        ++rootAmt;
+                    }
+                }
+
+                if(rootAmt == 2)
+                {
+                    toc = min(roots[0], roots[1]) * (1 - eta);
+                    return true;
+                }
+                else if(rootAmt == 1)
+                {
+                    toc = roots[0] * (1 - eta);
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            rootAmt  = 1;
+            roots[0] = -c / b;
+        }
+    }
+    else
+    {
+        T delta = b * b - 4 * a * c;
+        if(delta == 0)
+        {
+            rootAmt  = 1;
+            roots[0] = -b / (2 * a);
+        }
+        else if(delta > 0)
+        {
+            rootAmt = 2;
+            // accurate expression differs in b's sign
+            if(b > 0)
+            {
+                roots[0] = (-b - sqrt(delta)) / (2 * a);
+                roots[1] = 2 * c / (-b - sqrt(delta));
+            }
+            else
+            {
+                roots[0] = 2 * c / (-b + sqrt(delta));
+                roots[1] = (-b + sqrt(delta)) / (2 * a);
+            }
+
+            if(roots[0] > roots[1])
+            {
+                muda::swap(roots[0], roots[1]);
+            }
+        }
+    }
+
+    for(int i = 0; i < rootAmt; ++i)
+    {
+        if(roots[i] > 0 && roots[i] <= 1)
+        {
+            // check overlap
+            T ratio;
+            if(Point_Edge_Distance_Type(Eigen::Matrix<T, 2, 1>(x0 + roots[i] * d0),
+                                        Eigen::Matrix<T, 2, 1>(x1 + roots[i] * d1),
+                                        Eigen::Matrix<T, 2, 1>(x2 + roots[i] * d2),
+                                        ratio)
+               == 2)
+            {
+                toc = roots[i] * (1 - eta);  //TODO: distance eta
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+template <class T>
 MUDA_GENERIC bool Point_Edge_CCD(Eigen::Matrix<T, 3, 1> p,
                                  Eigen::Matrix<T, 3, 1> e0,
                                  Eigen::Matrix<T, 3, 1> e1,
@@ -481,6 +488,7 @@ MUDA_GENERIC bool Point_Edge_CCD(Eigen::Matrix<T, 3, 1> p,
                                  Eigen::Matrix<T, 3, 1> de1,
                                  T                      eta,
                                  T                      thickness,
+                                 int                    max_iter,
                                  T&                     toc)
 {
     Eigen::Matrix<T, 3, 1> mov = (dp + de0 + de1) / 3;
@@ -501,6 +509,12 @@ MUDA_GENERIC bool Point_Edge_CCD(Eigen::Matrix<T, 3, 1> p,
     toc        = 0;
     while(true)
     {
+        if(max_iter >= 0)
+        {
+            if(--max_iter < 0)
+                return true;
+        }
+
         T tocLowerBound = (1 - eta) * (dist2_cur - thickness * thickness)
                           / ((dist_cur + thickness) * maxDispMag);
 
@@ -531,6 +545,7 @@ MUDA_GENERIC bool Point_Point_CCD(Eigen::Matrix<T, 3, 1> p0,
                                   Eigen::Matrix<T, 3, 1> dp1,
                                   T                      eta,
                                   T                      thickness,
+                                  int                    max_iter,
                                   T&                     toc)
 {
     Eigen::Matrix<T, 3, 1> mov = (dp0 + dp1) / 2;
@@ -550,6 +565,12 @@ MUDA_GENERIC bool Point_Point_CCD(Eigen::Matrix<T, 3, 1> p0,
     toc        = 0;
     while(true)
     {
+        if(max_iter >= 0)
+        {
+            if(--max_iter < 0)
+                return true;
+        }
+
         T tocLowerBound = (1 - eta) * (dist2_cur - thickness * thickness)
                           / ((dist_cur + thickness) * maxDispMag);
 
@@ -571,5 +592,4 @@ MUDA_GENERIC bool Point_Point_CCD(Eigen::Matrix<T, 3, 1> p0,
 
     return true;
 }
-
 }  // namespace JGSL
