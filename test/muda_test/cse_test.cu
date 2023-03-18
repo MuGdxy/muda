@@ -3,7 +3,7 @@
 #include <muda/container.h>
 #include <muda/buffer.h>
 #include <muda/composite/cse.h>
-#include <muda/algorithm/device_scan.h>
+#include <muda/cub/device/device_scan.h>
 
 using namespace muda;
 
@@ -13,7 +13,7 @@ void cse_test(host_vector<float>& res, host_vector<float>& ground_thruth)
 
     device_buffer_cse<float> dbcse(10, 2);
     dbcse.stream(s);
-
+    device_buffer buf;
     //device_cse<float> dcse(10, 2);
 
     on(s)
@@ -25,7 +25,7 @@ void cse_test(host_vector<float>& res, host_vector<float>& ground_thruth)
                 count(1) = 8;
             })
         .next<DeviceScan>()
-        .ExclusiveSum(dbcse.begin.data(), dbcse.count.data(), dbcse.dim_i())
+        .ExclusiveSum(buf, dbcse.count.data(), dbcse.begin.data(), dbcse.dim_i())
         .next<parallel_for>(1, 32)
         .apply(dbcse.dim_i(),
                [cse = make_cse(dbcse)] __device__(const int i) mutable

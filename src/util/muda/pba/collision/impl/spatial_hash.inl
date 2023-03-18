@@ -1,9 +1,77 @@
 #ifdef __INTELLISENSE__
-#include "spatial_hash.h"
+#include "../spatial_hash.h"
 #endif
 
 namespace muda::details
 {
+template <typename Hash>
+inline void SpatialPartitionField<Hash>::configLaunch(int lightKernelBlockDim, int heavyKernelBlockDim)
+{
+    this->lightKernelBlockDim = lightKernelBlockDim;
+    this->heavyKernelBlockDim = heavyKernelBlockDim;
+}
+
+template <typename Hash>
+inline void SpatialPartitionField<Hash>::configSpatialHash(const Eigen::Vector3f& coordMin,
+                                                           int   level,
+                                                           float cellSize)
+{
+    h_spatialHashConfig.coordMin = coordMin;
+    h_spatialHashConfig.cellSize = cellSize;
+    spatialHashConfig            = h_spatialHashConfig;
+    this->level                  = level;
+}
+
+template <typename Hash>
+inline void SpatialPartitionField<Hash>::beginSetupHashTable()
+{
+    beginFillHashCells();
+    beginSortHashCells();
+    beginCountCollisionPerCell();
+    on(m_stream).record(setupHashTableDone);
+}
+
+template <typename Hash>
+template <typename Pred>
+inline void SpatialPartitionField<Hash>::beginCreateCollisionPairs(
+    dense1D<sphere> boundingSphereList, device_buffer<CollisionPair>& collisionPairs, Pred&& pred)
+{
+    spheres = boundingSphereList;
+
+    if(h_spatialHashConfig.cellSize <= 0.0f)  // to calculate the bounding sphere
+        beginCalculateCellSize();
+
+    beginSetupHashTable();
+    waitAndCreateTempData();
+
+    beginCountCollisionPairs(std::forward<Pred>(pred));
+    waitAndAllocCollisionPairList(collisionPairs);
+
+    beginSetupCollisionPairList(collisionPairs, std::forward<Pred>(pred));
+}
+
+template <typename Hash>
+inline void SpatialPartitionField<Hash>::stream(cudaStream_t stream)
+{
+    m_stream = stream;
+    cellArrayValue.stream(stream);
+
+    cellArrayKey.stream(stream);
+    cellArrayValueSorted.stream(stream);
+    cellArrayKeySorted.stream(stream);
+
+    uniqueKey.stream(stream);
+
+    objCountInCell.stream(stream);
+    objCountInCellPrefixSum.stream(stream);
+
+    collisionPairCount.stream(stream);
+    collisionPairPrefixSum.stream(stream);
+
+    allRadius.stream(stream);
+    cellSizeBuf.stream(stream);
+}
+
 template <typename Hash>
 void SpatialPartitionField<Hash>::beginCalculateCellSize()
 {
@@ -12,10 +80,15 @@ void SpatialPartitionField<Hash>::beginCalculateCellSize()
 
     parallel_for(lightKernelBlockDim, 0, m_stream)
         .apply(count,
-               [spheres = this->spheres, allRadius = make_viewer(allRadius)] __device__(
-                   int i) mutable { allRadius(i) = spheres(i).r; });
+               [spheres   = this->spheres,
+                allRadius = make_viewer(allRadius),
+                level     = this->level] __device__(int i) mutable
+               {
+                   const auto& s = spheres(i);
+                   allRadius(i)  = s.level <= level ? s.r : 0.0f;
+               });
 
-    DeviceReduce(m_stream).Max(cellSizeBuf, data(maxRadius), allRadius.data(), count);
+    DeviceReduce(m_stream).Max(cellSizeBuf, allRadius.data(), data(maxRadius), count);
 
     launch(1, 1, 0, m_stream)
         .apply(
@@ -26,8 +99,8 @@ void SpatialPartitionField<Hash>::beginCalculateCellSize()
                 // and ensuring that the grid cell is at least 1.5 times
                 // as large as the scaled bounding sphere of the largest object.
                 //https://developer.nvidia.com/gpugems/gpugems3/part-v-physics-simulation/chapter-32-broad-phase-collision-detection-cuda
-                spatialHashConfig->cellSize = maxRadius * 2.25f;
-                // print("spatialHashConfig->cellSize=%f\n", spatialHashConfig->cellSize);
+                spatialHashConfig->cellSize = maxRadius * 1.5f;
+                //print("spatialHashConfig->cellSize=%f\n", spatialHashConfig->cellSize);
             });
 }
 
@@ -56,7 +129,8 @@ void SpatialPartitionField<Hash>::beginFillHashCells()
                [spheres           = spheres,
                 spatialHashConfig = make_viewer(spatialHashConfig),
                 cellArrayValue    = make_dense2D(cellArrayValue, size, 8),
-                cellArrayKey = make_dense2D(cellArrayKey, size, 8)] __device__(int i) mutable
+                cellArrayKey      = make_dense2D(cellArrayKey, size, 8),
+                level             = this->level] __device__(int i) mutable
                {
                    using ivec3 = Eigen::Vector3i;
                    using vec3  = Eigen::Vector3f;
@@ -155,10 +229,10 @@ template <typename Hash>
 void SpatialPartitionField<Hash>::beginSortHashCells()
 {
     DeviceRadixSort(m_stream).SortPairs(cellArraySortBuf,
-                                        (uint32_t*)cellArrayKeySorted.data(),  //out
-                                        cellArrayValueSorted.data(),     //out
                                         (uint32_t*)cellArrayKey.data(),  //in
-                                        cellArrayValue.data(),           //in
+                                        (uint32_t*)cellArrayKeySorted.data(),  //out
+                                        cellArrayValue.data(),        //in
+                                        cellArrayValueSorted.data(),  //out
                                         cellArrayValue.size());
 }
 
@@ -167,10 +241,10 @@ void SpatialPartitionField<Hash>::beginCountCollisionPerCell()
 {
     auto count = uniqueKey.size();
     DeviceRunLengthEncode(m_stream).Encode(encodeBuf,
+                                           cellArrayKeySorted.data(),  // in
                                            uniqueKey.data(),           // out
                                            objCountInCell.data(),      // out
                                            data(uniqueKeyCount),       // out
-                                           cellArrayKeySorted.data(),  // in
                                            count);
 
     //.wait();
@@ -188,18 +262,30 @@ void SpatialPartitionField<Hash>::beginCountCollisionPerCell()
 template <typename Hash>
 void SpatialPartitionField<Hash>::waitAndCreateTempData()
 {
-    on(m_stream).wait();
+    launch::wait_event(setupHashTableDone);
 
     // wait for uniqueKeyCount
     // we need use uniqueKeyCount to resize arrays
+    int h_uniqueKeyCount = -1;
+    on(m_stream)
+        .when(setupHashTableDone)
+        .next(memory{})
+        .download(&h_uniqueKeyCount, muda::data(uniqueKeyCount), sizeof(int))
+        .wait();  // wait for download to finish
 
-    int h_uniqueKeyCount = uniqueKeyCount;
+    on(m_stream)
+        .next(buffer_launch{})
+        .resize(uniqueKey, h_uniqueKeyCount)
+        .resize(objCountInCell, h_uniqueKeyCount)
+        .resize(objCountInCellPrefixSum, h_uniqueKeyCount)
+        .resize(collisionPairCount, h_uniqueKeyCount)
+        .resize(collisionPairPrefixSum, h_uniqueKeyCount);
 
-    uniqueKey.resize(h_uniqueKeyCount);
-    objCountInCell.resize(h_uniqueKeyCount);
-    objCountInCellPrefixSum.resize(h_uniqueKeyCount);
-    collisionPairCount.resize(h_uniqueKeyCount);
-    collisionPairPrefixSum.resize(h_uniqueKeyCount);
+    //uniqueKey.resize(h_uniqueKeyCount);
+    //objCountInCell.resize(h_uniqueKeyCount);
+    //objCountInCellPrefixSum.resize(h_uniqueKeyCount);
+    //collisionPairCount.resize(h_uniqueKeyCount);
+    //collisionPairPrefixSum.resize(h_uniqueKeyCount);
 
     // validCellCount is always 1 less than the uniqueKeyCount,
     // the last one is typically the cell-object-pair {cid = -1, oid = -1}
@@ -215,8 +301,8 @@ void SpatialPartitionField<Hash>::beginCountCollisionPairs(Pred&& pred)
     // because we need to know the total number of collision pairs
     // which is at the last element of the prefix sum array
     DeviceScan(m_stream).ExclusiveSum(cellArraySortBuf,
-                                      objCountInCellPrefixSum.data(),
                                       objCountInCell.data(),
+                                      objCountInCellPrefixSum.data(),
                                       validCellCount + 1);
 
     parallel_for(lightKernelBlockDim, 0, m_stream)
@@ -226,7 +312,8 @@ void SpatialPartitionField<Hash>::beginCountCollisionPairs(Pred&& pred)
                 objCountInCellPrefixSum = make_viewer(objCountInCellPrefixSum),
                 cellArrayValueSorted    = make_viewer(cellArrayValueSorted),
                 collisionPairCount      = make_viewer(collisionPairCount),
-                pred = std::forward<Pred>(pred)] __device__(int cell) mutable
+                pred                    = std::forward<Pred>(pred),
+                level = this->level] __device__(int cell) mutable
                {
                    int size      = objCountInCell(cell);
                    int offset    = objCountInCellPrefixSum(cell);
@@ -237,6 +324,8 @@ void SpatialPartitionField<Hash>::beginCountCollisionPairs(Pred&& pred)
                        auto cell0 = cellArrayValueSorted(offset + i);
                        auto oid0  = cell0.oid;
                        auto s0    = spheres(oid0);
+                       if(s0.level < level)
+                           continue;
                        for(int j = i + 1; j < size; ++j)
                        {
                            auto cell1 = cellArrayValueSorted(offset + j);
@@ -253,12 +342,12 @@ void SpatialPartitionField<Hash>::beginCountCollisionPairs(Pred&& pred)
                    collisionPairCount(cell) = pairCount;
                });
 
-    int keycount = uniqueKeyCount;
+    int keycount = validCellCount + 1;
     if(keycount)
     {
         DeviceScan(m_stream).ExclusiveSum(collisionScanBuf,
-                                          collisionPairPrefixSum.data(),
                                           collisionPairCount.data(),
+                                          collisionPairPrefixSum.data(),
                                           keycount);
         auto lastOffset = validCellCount;
         memory(m_stream).copy(&sum,
@@ -268,16 +357,19 @@ void SpatialPartitionField<Hash>::beginCountCollisionPairs(Pred&& pred)
     }
     else
         sum = 0;
+
+    on(m_stream).record(countCollisionPairsDone);
 }
 
 template <typename Hash>
 void SpatialPartitionField<Hash>::waitAndAllocCollisionPairList(device_buffer<CollisionPair>& collisionPairs)
 {
-    on(m_stream).wait();
+    launch::wait_event(countCollisionPairsDone);
 
     int totalCollisionPairCount = sum;
-    collisionPairs.stream(m_stream);
-    collisionPairs.resize(totalCollisionPairCount);
+    details::set_stream_check(collisionPairs, m_stream);
+    pairListOffset = collisionPairs.size();
+    collisionPairs.resize(pairListOffset + totalCollisionPairCount);
 }
 
 template <typename Hash>
@@ -294,7 +386,9 @@ void SpatialPartitionField<Hash>::beginSetupCollisionPairList(device_buffer<Coll
                 collisionPairCount      = make_viewer(collisionPairCount),
                 collisionPairPrefixSum  = make_viewer(collisionPairPrefixSum),
                 collisionPairs          = make_viewer(collisionPairs),
-                pred = std::forward<Pred>(pred)] __device__(int cell) mutable
+                pairListOffset          = pairListOffset,
+                pred                    = std::forward<Pred>(pred),
+                level = this->level] __device__(int cell) mutable
                {
                    int size       = objCountInCell(cell);
                    int offset     = objCountInCellPrefixSum(cell);
@@ -311,14 +405,16 @@ void SpatialPartitionField<Hash>::beginSetupCollisionPairList(device_buffer<Coll
                            auto oid1  = cell1.oid;
                            auto s1    = spheres(oid1);
                            //print("test => %d,%d\n", oid0, oid1);
+                           if(s0.level < level)
+                               continue;
                            if(!Cell::allowIgnore(cell0, cell1)  // cell0, cell1 are created by test the proxy sphere
                               && collide::detect(s0, s1)  // test the bounding spheres to get exact collision result
                               && pred(s0.id, s1.id))  // user predicate
                            {
                                CollisionPair p;
-                               p.id[0]                            = oid0;
-                               p.id[1]                            = oid1;
-                               collisionPairs(pairOffset + index) = p;
+                               p.id[0] = s0.id;
+                               p.id[1] = s1.id;
+                               collisionPairs(pairListOffset + pairOffset + index) = p;
                                ++index;
                            }
                        }

@@ -5,7 +5,7 @@
 #include <math.h>
 #include <string.h>
 
-/* 2021-03-21 Camilla Löwy <elmindreda@elmindreda.org>
+/* 2021-03-21 Camilla L枚wy <elmindreda@elmindreda.org>
  * - Replaced double constants with float equivalents
  */
 

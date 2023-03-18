@@ -1,0 +1,107 @@
+#pragma once
+#include "base.h"
+#ifndef __INTELLISENSE__
+#include <cub/device/device_reduce.cuh>
+#endif
+
+namespace muda
+{
+//ref: https://nvlabs.github.io/cub/structcub_1_1_device_reduce.html
+class DeviceReduce : public CubWrapper<DeviceReduce>
+{
+  public:
+    DeviceReduce(cudaStream_t stream = nullptr)
+        : CubWrapper(stream)
+    {
+    }
+
+    template <typename InputIteratorT, typename OutputIteratorT, typename ReductionOpT, typename T>
+    DeviceReduce& Reduce(device_buffer<std::byte>& external_buffer,
+                         InputIteratorT            d_in,
+                         OutputIteratorT           d_out,
+                         int                       num_items,
+                         ReductionOpT              reduction_op,
+                         T                         init)
+    {
+        MUDA_CUB_WRAPPER_IMPL(cub::DeviceReduce::Reduce(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, m_stream, false));
+    }
+
+
+    template <typename InputIteratorT, typename OutputIteratorT>
+    DeviceReduce& Sum(device_buffer<std::byte>& external_buffer,
+                      InputIteratorT            d_in,
+                      OutputIteratorT           d_out,
+                      int                       num_items)
+    {
+        MUDA_CUB_WRAPPER_IMPL(cub::DeviceReduce::Sum(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, m_stream, false));
+    }
+
+
+    template <typename InputIteratorT, typename OutputIteratorT>
+    DeviceReduce& Min(device_buffer<std::byte>& external_buffer,
+                      InputIteratorT            d_in,
+                      OutputIteratorT           d_out,
+                      int                       num_items)
+    {
+        MUDA_CUB_WRAPPER_IMPL(cub::DeviceReduce::Min(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, m_stream, false));
+    }
+
+
+    template <typename InputIteratorT, typename OutputIteratorT>
+    DeviceReduce& ArgMin(device_buffer<std::byte>& external_buffer,
+                         InputIteratorT            d_in,
+                         OutputIteratorT           d_out,
+                         int                       num_items)
+    {
+        MUDA_CUB_WRAPPER_IMPL(cub::DeviceReduce::ArgMin(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, m_stream, false));
+    }
+
+
+    template <typename InputIteratorT, typename OutputIteratorT>
+    DeviceReduce& Max(device_buffer<std::byte>& external_buffer,
+                      InputIteratorT            d_in,
+                      OutputIteratorT           d_out,
+                      int                       num_items)
+    {
+
+        MUDA_CUB_WRAPPER_IMPL(cub::DeviceReduce::Max(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, m_stream, false));
+    }
+
+
+    template <typename InputIteratorT, typename OutputIteratorT>
+    DeviceReduce& ArgMax(device_buffer<std::byte>& external_buffer,
+                         InputIteratorT            d_in,
+                         OutputIteratorT           d_out,
+                         int                       num_items)
+    {
+        MUDA_CUB_WRAPPER_IMPL(cub::DeviceReduce::ArgMax(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, m_stream, false));
+    }
+
+    template <typename KeysInputIteratorT, typename UniqueOutputIteratorT, typename ValuesInputIteratorT, typename AggregatesOutputIteratorT, typename NumRunsOutputIteratorT, typename ReductionOpT>
+    DeviceReduce& ReduceByKey(device_buffer<std::byte>& external_buffer,
+                              KeysInputIteratorT        d_keys_in,
+                              UniqueOutputIteratorT     d_unique_out,
+                              ValuesInputIteratorT      d_values_in,
+                              AggregatesOutputIteratorT d_aggregates_out,
+                              NumRunsOutputIteratorT    d_num_runs_out,
+                              ReductionOpT              reduction_op,
+                              int                       num_items)
+    {
+        MUDA_CUB_WRAPPER_IMPL(cub::DeviceReduce::ReduceByKey(d_temp_storage,
+                                                             temp_storage_bytes,
+                                                             d_keys_in,
+                                                             d_unique_out,
+                                                             d_values_in,
+                                                             d_aggregates_out,
+                                                             d_num_runs_out,
+                                                             reduction_op,
+                                                             num_items));
+    }
+};
+}  // namespace muda

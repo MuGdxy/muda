@@ -8,10 +8,11 @@
 #include <muda/container.h>
 #include <muda/composite/cse.h>
 
-#include <muda/algorithm/device_reduce.h>
-#include <muda/algorithm/device_radix_sort.h>
-#include <muda/algorithm/device_run_length_encode.h>
-#include <muda/algorithm/device_scan.h>
+#include <muda/cub/device/device_reduce.h>
+#include <muda/cub/device/device_radix_sort.h>
+#include <muda/cub/device/device_run_length_encode.h>
+#include <muda/cub/device/device_scan.h>
+
 #include <muda/encode/hash.h>
 #include <muda/encode/morton.h>
 
@@ -165,14 +166,15 @@ class SpatialPartitionCell
 
     friend std::ostream& operator<<(std::ostream& os, const SpatialPartitionCell& cell)
     {
-        os << std::hex << cell.cid << "," << std::dec << cell.oid << "," << std::hex
-           << cell.ctlbit.pass << "," << cell.ctlbit.home << "," << cell.ctlbit.overlap
-           << "," << std::dec << cell.ijk(0) << "," << cell.ijk(1) << "," << cell.ijk(2);
+        os << std::hex << cell.cid << "," << std::dec << cell.oid << ","
+           << std::hex << cell.ctlbit.pass << "," << cell.ctlbit.home << ","
+           << cell.ctlbit.overlap << "," << std::dec << cell.ijk(0) << ","
+           << cell.ijk(1) << "," << cell.ijk(2);
         return os;
     }
 };
 
-template <typename Hash = muda::shift_hash<20, 10, 0>>
+template <typename Hash = muda::morton>
 class SpatialHashConfig
 {
     using real      = float;
@@ -266,9 +268,10 @@ namespace details
         using Cell      = SpatialPartitionCell;
         using hash_type = Hash;
 
-        cudaStream_t    m_stream;
-        int             lightKernelBlockDim;
-        int             heavyKernelBlockDim;
+        cudaStream_t m_stream;
+        int          lightKernelBlockDim;
+        int          heavyKernelBlockDim;
+
         dense1D<sphere> spheres;
 
 
@@ -289,6 +292,7 @@ namespace details
         device_var<int> uniqueKeyCount;
         int             validCellCount;
         int             sum;
+        size_t          pairListOffset = 0;
 
         dvec<int> objCountInCell;
         dvec<int> objCountInCellPrefixSum;
@@ -296,96 +300,53 @@ namespace details
         dvec<int> collisionPairCount;
         dvec<int> collisionPairPrefixSum;
 
+        int level = 0;
+
         //using hash_type = Hash;
         SpatialPartitionField() = default;
 
-        void configLaunch(int lightKernelBlockDim, int heavyKernelBlockDim)
-        {
-            this->lightKernelBlockDim = lightKernelBlockDim;
-            this->heavyKernelBlockDim = heavyKernelBlockDim;
-        }
+        void configLaunch(int lightKernelBlockDim, int heavyKernelBlockDim);
 
-        void configSpatialHash(const Eigen::Vector3f& coordMin, float cellSize = -1.0f)
-        {
-            h_spatialHashConfig.coordMin = coordMin;
-            h_spatialHashConfig.cellSize = cellSize;
-            spatialHashConfig            = h_spatialHashConfig;
-        }
+        void configSpatialHash(const Eigen::Vector3f& coordMin,
+                               int                    level    = 0,
+                               float                  cellSize = -1.0f);
 
         template <typename Pred>
         void beginCreateCollisionPairs(dense1D<sphere> boundingSphereList,
                                        device_buffer<CollisionPair>& collisionPairs,
-                                       Pred&&                        pred)
-        {
-            spheres = boundingSphereList;
-
-            if(h_spatialHashConfig.cellSize <= 0.0f)  // to calculate the bounding sphere
-                beginCalculateCellSize();
-
-            beginSetupHashTable();
-            waitAndCreateTempData();
-
-            beginCountCollisionPairs(std::forward<Pred>(pred));
-            waitAndAllocCollisionPairList(collisionPairs);
-
-            beginSetupCollisionPairList(collisionPairs, std::forward<Pred>(pred));
-        }
+                                       Pred&& pred);
 
         device_buffer<float>     allRadius;
         device_buffer<std::byte> cellSizeBuf;
 
-        void beginSetupHashTable()
-        {
-            beginFillHashCells();
-            beginSortHashCells();
-            beginCountCollisionPerCell();
-        }
+
+        event setupHashTableDone;
+        void  beginSetupHashTable();
 
         void beginCalculateCellSize();
 
         void beginFillHashCells();
 
         device_buffer<std::byte> cellArraySortBuf;
-
         void beginSortHashCells();
 
         device_buffer<std::byte> encodeBuf;
-
         void beginCountCollisionPerCell();
 
         void waitAndCreateTempData();
 
+        device_buffer<std::byte> collisionScanBuf;
+		event countCollisionPairsDone;
         template <typename Pred>
         void beginCountCollisionPairs(Pred&& pred);
-
-        device_buffer<std::byte> collisionScanBuf;
 
         void waitAndAllocCollisionPairList(device_buffer<CollisionPair>& collisionPairs);
 
         template <typename Pred>
         void beginSetupCollisionPairList(device_buffer<CollisionPair>& collisionPairs,
-                                         Pred&&                        pred);
+                                         Pred&& pred);
 
-        void stream(cudaStream_t stream)
-        {
-            m_stream = stream;
-            cellArrayValue.stream(stream);
-
-            cellArrayKey.stream(stream);
-            cellArrayValueSorted.stream(stream);
-            cellArrayKeySorted.stream(stream);
-
-            uniqueKey.stream(stream);
-
-            objCountInCell.stream(stream);
-            objCountInCellPrefixSum.stream(stream);
-
-            collisionPairCount.stream(stream);
-            collisionPairPrefixSum.stream(stream);
-
-            allRadius.stream(stream);
-            cellSizeBuf.stream(stream);
-        }
+        void stream(cudaStream_t stream);
     };
 }  // namespace details
 
@@ -463,9 +424,10 @@ class SpatialPartitionLauncher : public launch_base<SpatialPartitionLauncher<Has
     virtual void init_stream(cudaStream_t s) override { m_field.stream(s); }
 
     SpatialPartitionLauncher& configSpatialHash(const Eigen::Vector3f& coordMin,
+                                                int   level    = 0,
                                                 float cellSize = -1.0f)
     {
-        m_field.configSpatialHash(coordMin, cellSize);
+        m_field.configSpatialHash(coordMin, level, cellSize);
         return *this;
     }
 
@@ -475,7 +437,6 @@ class SpatialPartitionLauncher : public launch_base<SpatialPartitionLauncher<Has
     /// <param name="boundingSphereList"></param>
     /// <param name="collisionPairs"></param>
     /// <returns></returns>
-
     template <typename Pred = DefaultPred>
     SpatialPartitionLauncher& applyCreateCollisionPairs(dense1D<sphere> boundingSphereList,
                                                         device_buffer<CollisionPair>& collisionPairs,
@@ -527,4 +488,4 @@ class SpatialPartitionLauncher : public launch_base<SpatialPartitionLauncher<Has
 };
 }  // namespace muda
 
-#include "spatial_hash.inl"
+#include "impl/spatial_hash.inl"

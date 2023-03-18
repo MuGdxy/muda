@@ -54,6 +54,16 @@ class memory : public launch_base<memory>
         return *this;
     }
 
+    memory& download(void* dst, const void* src, size_t byte_size)
+    {
+        return copy(dst, src, byte_size, cudaMemcpyDeviceToHost);
+    }
+    
+    memory& upload(void* dst, const void* src, size_t byte_size)
+    {
+        copy(dst, src, byte_size, cudaMemcpyHostToDevice);
+        return *this;
+    }
 
     memory& set(void* data, size_t byte_size, char byte = 0)
     {
