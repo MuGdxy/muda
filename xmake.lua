@@ -1,8 +1,9 @@
 set_project("muda")
+
 -- to keep this "xmake.lua" as concise as possible
 -- we put all the options to "options.lua"
 -- and include it here.
-includes("options.lua")
+includes("xmake/options.lua")
 
 -- **********************************
 -- 

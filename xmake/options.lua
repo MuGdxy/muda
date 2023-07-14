@@ -1,4 +1,4 @@
-option("core-only")
+option("core_only")
     set_default(false)
     set_showmenu(true)
     set_category("root menu")
@@ -15,21 +15,21 @@ option("dev")
     set_showmenu(true)
     set_category("root menu/dev")
     set_description("build muda example, playground and test. if you're the developer, you could enable this option.")
-    add_deps("core-only")
+    add_deps("core_only")
     after_check(function(option)
-        if option:dep("core-only"):enabled() then 
+        if option:dep("core_only"):enabled() then 
             option:enable(false)
         end
     end)
 option_end()
 
 function option_dev_core_only_related() 
-    add_deps("core-only", "dev")
+    add_deps("core_only", "dev")
     after_check(function(option)
         if option:dep("dev"):enabled() then
             option:enable(true)
         end
-        if option:dep("core-only"):enabled() then 
+        if option:dep("core_only"):enabled() then 
             option:enable(false)
         end
     end)
