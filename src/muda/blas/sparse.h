@@ -136,7 +136,7 @@ namespace muda
 template <typename T>
 MUDA_INLINE MUDA_HOST auto make_csr(MatrixCSR<T>& m) MUDA_NOEXCEPT
 {
-    return CSR<T>(m.rowPtr(), m.colIdx(), m.values(), m.rows(), m.cols(), m.nnz());
+    return CSRViewer<T>(m.rowPtr(), m.colIdx(), m.values(), m.rows(), m.cols(), m.nnz());
 }
 
 template <typename T>

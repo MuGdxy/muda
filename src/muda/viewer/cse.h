@@ -1,9 +1,99 @@
 #pragma once
 #include "base.h"
 #include "dense.h"
-
+#include "details/cse_check.inl"
 namespace muda
 {
+template <typename T>
+class CCSEViewer : public RWViewer
+{
+    MUDA_VIEWER_COMMON(CCSEViewer);
+    const T* m_data;
+
+    int* m_begin;
+    int* m_count;
+
+    int m_ndata;
+    int m_dim_i;
+
+  public:
+    MUDA_GENERIC CCSEViewer() MUDA_NOEXCEPT : m_data(nullptr),
+                                              m_begin(nullptr),
+                                              m_count(nullptr),
+                                              m_ndata(0),
+                                              m_dim_i(0)
+    {
+    }
+
+    MUDA_GENERIC CCSEViewer(const T* data, int ndata, int* begin, int* count, int dim_i) MUDA_NOEXCEPT
+        : m_data(data),
+          m_begin(begin),
+          m_count(count),
+          m_ndata(ndata),
+          m_dim_i(dim_i)
+    {
+    }
+
+    MUDA_GENERIC const T& operator()(int i, int j) const MUDA_NOEXCEPT
+    {
+        return m_data[cal_global_offset(i, j)];
+    }
+
+    MUDA_GENERIC int dim_i() const MUDA_NOEXCEPT { return m_dim_i; }
+
+    MUDA_GENERIC int dim_j(int i) const MUDA_NOEXCEPT
+    {
+        check_dimi(i);
+        return m_count[i];
+    }
+
+    MUDA_GENERIC int ndata(int i) const MUDA_NOEXCEPT { return m_ndata; }
+
+    // get the i-th row of the sparse 2d data structure
+    MUDA_GENERIC CDense1D<T> operator()(int i) MUDA_NOEXCEPT
+    {
+        check_dimi(i);
+        return CDense1D<T>(m_data + m_begin[i], m_count[i]);
+    }
+
+  private:
+    MUDA_INLINE MUDA_GENERIC void check_data() const MUDA_NOEXCEPT
+    {
+        if constexpr(DEBUG_VIEWER)
+            details::cse_check_data(m_data, this->name());
+    }
+
+    MUDA_INLINE MUDA_GENERIC void check_dimi(int i) const MUDA_NOEXCEPT
+    {
+        if constexpr(DEBUG_VIEWER)
+            details::cse_check_dimi(i, m_dim_i, this->name());
+    }
+
+    MUDA_INLINE MUDA_GENERIC void check_dimj(int i, int j, int dimj) const MUDA_NOEXCEPT
+    {
+        if constexpr(DEBUG_VIEWER)
+            details::cse_check_dimj(i, j, dimj, m_dim_i, this->name());
+    }
+
+    MUDA_INLINE MUDA_GENERIC void check_global_offset(int i, int j, int dimj, int global_offset) const MUDA_NOEXCEPT
+    {
+        if constexpr(DEBUG_VIEWER)
+            details::cse_check_global_offset(
+                i, j, dimj, global_offset, m_dim_i, m_ndata, this->name());
+    }
+
+    MUDA_INLINE MUDA_GENERIC int cal_global_offset(int i, int j) const MUDA_NOEXCEPT
+    {
+        check_dimi(i);
+        auto dimj = m_count[i];
+        check_dimj(i, j, dimj);
+        int global_offset = m_begin[i] + j;
+        check_global_offset(i, j, dimj, global_offset);
+        return global_offset;
+    }
+};
+
+
 /// <summary>
 /// compressed sparse element viewer.
 /// using:
@@ -14,7 +104,7 @@ namespace muda
 /// </summary>
 /// <typeparam name="T"></typeparam>
 template <typename T>
-class CSE : public ViewBase<CSE<T>>
+class CSEViewer : public RWViewer
 {
     T* m_data;
 
@@ -25,21 +115,20 @@ class CSE : public ViewBase<CSE<T>>
     int m_dim_i;
 
   public:
-    MUDA_GENERIC CSE() MUDA_NOEXCEPT
-        : m_data(nullptr)
-        , m_begin(nullptr)
-        , m_count(nullptr)
-        , m_ndata(0)
-        , m_dim_i(0)
+    MUDA_GENERIC CSEViewer() MUDA_NOEXCEPT : m_data(nullptr),
+                                             m_begin(nullptr),
+                                             m_count(nullptr),
+                                             m_ndata(0),
+                                             m_dim_i(0)
     {
     }
 
-    MUDA_GENERIC CSE(T* data, int ndata, int* begin, int* count, int dim_i) MUDA_NOEXCEPT
-        : m_data(data)
-        , m_begin(begin)
-        , m_count(count)
-        , m_ndata(ndata)
-        , m_dim_i(dim_i)
+    MUDA_GENERIC CSEViewer(T* data, int ndata, int* begin, int* count, int dim_i) MUDA_NOEXCEPT
+        : m_data(data),
+          m_begin(begin),
+          m_count(count),
+          m_ndata(ndata),
+          m_dim_i(dim_i)
     {
     }
 
@@ -71,56 +160,32 @@ class CSE : public ViewBase<CSE<T>>
     }
 
   private:
-    MUDA_GENERIC __forceinline__ void check_data() const MUDA_NOEXCEPT
+    MUDA_INLINE MUDA_GENERIC void check_data() const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-        {
-            muda_kernel_assert(m_data != nullptr, "cse[%s]: data is nullptr\n", this->name());
-        }
+            details::cse_check_data(m_data, this->name());
     }
 
-    MUDA_GENERIC __forceinline__ void check_dimi(int i) const MUDA_NOEXCEPT
+    MUDA_INLINE MUDA_GENERIC void check_dimi(int i) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-        {
-            if(i < 0 || i >= m_dim_i)
-                muda_kernel_error(
-                    "cse[%s]: out of range, i=(%d), dim_i=(%d)\n", this->name(), i, m_dim_i);
-        }
-
+            details::cse_check_dimi(i, m_dim_i, this->name());
     }
 
-    MUDA_GENERIC __forceinline__ void check_dimj(int i, int j, int dimj) const MUDA_NOEXCEPT
+    MUDA_INLINE MUDA_GENERIC void check_dimj(int i, int j, int dimj) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-        {
-            if(dimj < 0 || j < 0 || j >= dimj)
-                muda_kernel_error("cse[%s]: out of range, ij=(%d,%d), dim=(%d,%d)\n",
-                                  this->name(),
-                                  i,
-                                  j,
-                                  m_dim_i,
-                                  dimj);
-        }
+            details::cse_check_dimj(i, j, dimj, m_dim_i, this->name());
     }
 
-    MUDA_GENERIC __forceinline__ void check_global_offset(int i, int j, int dimj, int global_offset) const MUDA_NOEXCEPT
+    MUDA_INLINE MUDA_GENERIC void check_global_offset(int i, int j, int dimj, int global_offset) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-        {
-            if(global_offset < 0 || global_offset >= m_ndata)
-                muda_kernel_error("cse[%s]: global_offset out of range, ij=(%d,%d), dim=(%d,%d), offset=(%d), ndata=(%d)\n",
-                                  this->name(),
-                                  i,
-                                  j,
-                                  m_dim_i,
-                                  dimj,
-                                  global_offset,
-                                  m_ndata);
-        }
+            details::cse_check_global_offset(
+                i, j, dimj, global_offset, m_dim_i, m_ndata, this->name());
     }
 
-    MUDA_GENERIC __forceinline__ int cal_global_offset(int i, int j) const MUDA_NOEXCEPT
+    MUDA_INLINE MUDA_GENERIC int cal_global_offset(int i, int j) const MUDA_NOEXCEPT
     {
         check_dimi(i);
         auto dimj = m_count[i];

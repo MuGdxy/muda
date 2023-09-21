@@ -3,44 +3,85 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 #include <Eigen/Core>
-#include "../muda_def.h"
-#include "../tools/debug_log.h"
-#include "../muda_config.h"
-#include "../assert.h"
+#include <muda/muda_def.h>
+#include <muda/tools/debug_log.h>
+#include <muda/muda_config.h>
+#include <muda/assert.h>
 
 namespace muda
 {
-template <typename Derived>
-class ViewBase
+class ViewerBase
 {
-#if !MUDA_CHECK_ON
+#if MUDA_CHECK_ON
     // msvc doesn't allow 0 size array in base class
     char m_name[VIEWER_NAME_MAX];
 #endif
   public:
-    ViewBase()
+    ViewerBase()
     {
-#if !MUDA_CHECK_ON
+#if MUDA_CHECK_ON
         m_name[0] = '\0';
 #endif
     }
-    
+
     MUDA_GENERIC const char* name() const MUDA_NOEXCEPT
     {
-#if !MUDA_CHECK_ON
+#if MUDA_CHECK_ON
         if(m_name[0] != '\0')
             return m_name;
 #endif
-        return "unnamed";
+        return "";
     }
 
-    MUDA_GENERIC Derived& name(const char* n) MUDA_NOEXCEPT
+    // copy ctor
+    MUDA_GENERIC ViewerBase(const ViewerBase& rhs) MUDA_NOEXCEPT
     {
-#if !MUDA_CHECK_ON
+#if MUDA_CHECK_ON
+        copy_name(rhs.m_name);
+#endif
+    }
+
+    // copy assignment
+    MUDA_GENERIC ViewerBase& operator=(const ViewerBase& rhs) MUDA_NOEXCEPT
+    {
+#if MUDA_CHECK_ON
+        if(this == &rhs)
+            return *this;
+        copy_name(rhs.m_name);
+#endif
+        return *this;
+    }
+
+    // move ctor
+    MUDA_GENERIC ViewerBase(ViewerBase&& rhs) MUDA_NOEXCEPT
+    {
+#if MUDA_CHECK_ON
+        copy_name(rhs.m_name);
+        rhs.m_name[0] = '\0';
+#endif
+    }
+
+    // move assignment
+    MUDA_GENERIC ViewerBase& operator=(ViewerBase&& rhs) MUDA_NOEXCEPT
+    {
+#if MUDA_CHECK_ON
+        if(this == &rhs)
+            return *this;
+        copy_name(rhs.m_name);
+        rhs.m_name[0] = '\0';
+#endif
+        return *this;
+    }
+
+
+  protected:
+    MUDA_GENERIC void name(const char* n) MUDA_NOEXCEPT
+    {
+#if MUDA_CHECK_ON
         if(n == nullptr)
         {
             m_name[0] = '\0';
-            return derived();
+            return;
         }
 
         int  i      = 0;
@@ -62,10 +103,61 @@ class ViewBase
             muda_kernel_warn("viewer name [%s] is too long, truncated to [%s]\n", n, name());
         }
 #endif
-        return derived();
     }
 
   private:
-    MUDA_GENERIC Derived& derived() { return (Derived&)(*this); }
+#if MUDA_CHECK_ON
+    MUDA_GENERIC void copy_name(const char* n) MUDA_NOEXCEPT
+    {
+        for(int i = 0; i < VIEWER_NAME_MAX; ++i)
+            this->m_name[i] = n[i];
+    }
+#endif
 };
+
+// Read Write Viewer
+class RWViewer : public ViewerBase
+{
+};
+
+// Read Only Viewer
+class ROViewer : public ViewerBase
+{
+};
+
+
+//#define MUDA_VIEWER_COMMON(viewer_name)                                        \
+//  public:                                                                      \
+//    using this_type = viewer_name;                                             \
+//    this_type&& name(const char* n)&& noexcept                                 \
+//    {                                                                          \
+//        std::move(*this)._set_viewer_name(n);                                  \
+//        return std::move(*this);                                               \
+//    }                                                                          \
+//    this_type& name(const char* n) noexcept                                    \
+//    {                                                                          \
+//        (*this)._set_viewer_name(n);                                           \
+//        return *this;                                                          \
+//    }                                                                          \
+//                                                                               \
+//  private:
+
+#define MUDA_VIEWER_COMMON(viewer_name)                                        \
+  public:                                                                      \
+    using this_type = viewer_name;                                             \
+                                                                               \
+    MUDA_INLINE MUDA_GENERIC this_type& name(const char* n) noexcept           \
+    {                                                                          \
+        ViewerBase::name(n);                                                   \
+        return *this;                                                          \
+    }                                                                          \
+                                                                               \
+    MUDA_INLINE MUDA_GENERIC const char* name() const noexcept                 \
+    {                                                                          \
+        return ViewerBase::name();                                             \
+    }                                                                          \
+                                                                               \
+  private:
+
+
 }  // namespace muda
