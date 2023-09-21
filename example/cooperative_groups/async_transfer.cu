@@ -1,16 +1,15 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
 #include <muda/container.h>
-#include <muda/misc/intellisense.h>
-#include <cooperative_groups.h>
-#include <cooperative_groups/memcpy_async.h>
+#include <muda/cuda/cooperative_groups/memcpy_async.h>
+#include <muda/cuda/cooperative_groups.h>
 
 using namespace muda;
 namespace cg = cooperative_groups;
-void async_transfer(host_vector<int>& res, host_vector<int>& gt)
+void async_transfer(HostVector<int>& res, HostVector<int>& gt)
 {
-    device_vector<int> data(128, 1);
-    launch(2, 64)
+    DeviceVector<int> data(128, 1);
+    Launch(2, 64)
         .apply(
             [data = make_viewer(data)] __device__() mutable
             {
@@ -40,7 +39,7 @@ void async_transfer(host_vector<int>& res, host_vector<int>& gt)
 
 TEST_CASE("async_transfer", "[cooperative_groups]")
 {
-    host_vector<int> res, gt;
+    HostVector<int> res, gt;
     async_transfer(res, gt);
     REQUIRE(res == gt);
 };

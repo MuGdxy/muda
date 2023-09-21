@@ -6,7 +6,7 @@
 #include "../example_common.h"
 using namespace muda;
 
-void vector_add(host_vector<float>& gt_C, host_vector<float>& C)
+void vector_add(HostVector<float>& gt_C, HostVector<float>& C)
 {
     example_desc(
         R"(This is a well known vector_add example:
@@ -15,8 +15,8 @@ https://github.com/NVIDIA/cuda-samples/blob/master/Samples/0_Introduction/vector
 but in muda style.)");
 
     constexpr int        N = 1024;
-    host_vector<float>   hA(N), hB(N);
-    device_vector<float> dA(N), dB(N), dC(N);
+    HostVector<float>   hA(N), hB(N);
+    DeviceVector<float> dA(N), dB(N), dC(N);
 
     // initialize A and B using random numbers
     auto rand = [] { return std::rand() / (float)RAND_MAX; };
@@ -28,7 +28,7 @@ but in muda style.)");
     dB = hB;
 
     // use grid-stride loop to cover all elements
-    parallel_for(2, 256)
+    ParallelFor(2, 256)
         .apply(N,
                [dC = make_viewer(dC),  // | this is a capture list              |
                 dA = make_viewer(dA),  // | map from device_vector to a viewer  |
@@ -51,7 +51,7 @@ but in muda style.)");
 
 TEST_CASE("vector_add", "[quick start]")
 {
-    host_vector<float> gt_C, C;
+    HostVector<float> gt_C, C;
     vector_add(gt_C, C);
     REQUIRE(gt_C == C);
 }

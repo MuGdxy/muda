@@ -20,9 +20,9 @@ void muda_vs_cuda()
     // launch a kernel
 
     {  //muda
-        device_vector<int> dv(64, 1);
-        stream             s;
-        parallel_for(1, 64, 0, s)
+        DeviceVector<int> dv(64, 1);
+        Stream             s;
+        ParallelFor(1, 64, 0, s)
             .apply(64,
                    [dv = make_viewer(dv)] __device__(int i) mutable
                    { dv(i) *= 2; })

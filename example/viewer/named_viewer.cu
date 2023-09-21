@@ -14,7 +14,7 @@ to recover from the error!)");
     try
     {
         on(nullptr)
-            .next<launch>()
+            .next<Launch>()
             .apply(
                 [v = make_dense((int*)nullptr, 1).name("host_set_name")] __device__() mutable
                 {

@@ -17,11 +17,11 @@ void event_record_and_wait()
           B             C)");
 
 
-    stream          s1, s2;
-    event           set_value_done;
-    device_var<int> v = 1;
+    Stream          s1, s2;
+    Event           set_value_done;
+    DeviceVar<int> v = 1;
     on(s1)
-        .next<launch>(1, 1)
+        .next<Launch>(1, 1)
         .apply(
             [v = make_viewer(v)] __device__() mutable
             {
@@ -39,10 +39,10 @@ void event_record_and_wait()
 
     on(s2)
         .when(set_value_done)
-        .next<launch>(1, 1)
+        .next<Launch>(1, 1)
         .apply([v = make_viewer(v)] __device__()
                { print("kernel C on stream 2, get v = %d\n", v); });
-    launch::wait_device();
+    Launch::wait_device();
 }
 
 TEST_CASE("event", "[quick_start]")

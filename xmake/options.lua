@@ -1,10 +1,3 @@
-option("core_only")
-    set_default(false)
-    set_showmenu(true)
-    set_category("root menu")
-    set_description("only include the core functionality of muda.")
-option_end()
-
 -- *******************
 --
 -- development options
@@ -15,22 +8,13 @@ option("dev")
     set_showmenu(true)
     set_category("root menu/dev")
     set_description("build muda example, playground and test. if you're the developer, you could enable this option.")
-    add_deps("core_only")
-    after_check(function(option)
-        if option:dep("core_only"):enabled() then 
-            option:enable(false)
-        end
-    end)
 option_end()
 
-function option_dev_core_only_related() 
-    add_deps("core_only", "dev")
+function option_dev_related() 
+    add_deps("dev")
     after_check(function(option)
         if option:dep("dev"):enabled() then
             option:enable(true)
-        end
-        if option:dep("core_only"):enabled() then 
-            option:enable(false)
         end
     end)
 end
@@ -40,7 +24,7 @@ option("example")
     set_showmenu(true)
     set_category("root menu")
     set_description("build muda examples. if you want to see how to use muda, you could enable this option.")
-    option_dev_core_only_related()
+    option_dev_related()
 option_end()
 
 option("test")
@@ -48,7 +32,7 @@ option("test")
     set_showmenu(true)
     set_description("build muda test. if you're the developer, you should enable this option.")
     set_category("root menu/dev")
-    option_dev_core_only_related()
+    option_dev_related()
 option_end()
 
 option("playground")
@@ -56,45 +40,17 @@ option("playground")
     set_showmenu(true)
     set_description("build muda playground. if you're the developer, you could enable this option.")
     set_category("root menu/dev")
-    option_dev_core_only_related()
+    option_dev_related()
 option_end()
-
-option("with_gui")
-    set_default(false)
-    set_showmenu(true)
-    set_category("root menu/dev")
-    set_description("build for gui gallary. If you're the developer, you could enable this option for more intuitive examples.")
-option_end()
--- *******************
---
--- module options
---
--- *******************
-option("util")
-    set_default(true)
-    set_showmenu(true)
-    set_description("includes <gui> <pba> modules.")
-    set_category("root menu/modules")
-    option_dev_core_only_related()
-option_end()
-
-option("ext")
-    set_default(true)
-    set_showmenu(true)
-    set_description("includes <algorithm> <buffer> <blas> <composite> <thread-only> modules.")
-    set_category("root menu/modules")
-    option_dev_core_only_related()
-option_end()
-
 
 -- *******************
 --
 -- config macro options
 --
 -- *******************
-option("ndebug")
-    set_default(false)
+option("with_check")
+    set_default(true)
     set_showmenu(true)
-    set_description("shut down all muda runtime check.")
+    set_description("turn on all muda runtime check.")
     set_category("root menu/config")
 option_end()

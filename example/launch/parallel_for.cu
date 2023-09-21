@@ -1,15 +1,14 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
-#include <muda/container.h>
-#include <muda/misc/intellisense.h>  // to enable intellisense for cooperative_groups
-#include <cooperative_groups.h>
+#include <muda/cuda/cooperative_groups.h>
 #include "../example_common.h"
+
 using namespace muda;
 namespace cg = cooperative_groups;
 
-void show(device_vector<int>& values)
+void show(DeviceVector<int>& values)
 {
-    host_vector<int> hvalues = values;
+    HostVector<int> hvalues = values;
     std::cout << "values: " << std::endl;
     for(auto&& v : hvalues)
         std::cout << v << " ";
@@ -24,10 +23,10 @@ void grid_stride_vs_dynamic_grid()
         "grid stride loop uses fixed grid dim and block dim,\n"
         "while dynamic grid loop uses dynamic grid dim and block dim.");
 
-    device_vector<int> values(16);
+    DeviceVector<int> values(16);
 
     //grid-stride loop
-    parallel_for(8, 8)
+    ParallelFor(8, 8)
         .apply(values.size(),
                [values = make_viewer(values)] __device__(int i) mutable
                {
@@ -42,7 +41,7 @@ void grid_stride_vs_dynamic_grid()
     show(values);
 
     //dynamic-grid loop
-    parallel_for(8)
+    ParallelFor(8)
         .apply(values.size(),
                [values = make_viewer(values)] __device__(int i) mutable
                {
@@ -56,7 +55,7 @@ void grid_stride_vs_dynamic_grid()
         .wait();
     show(values);
 
-    parallel_for(2)
+    ParallelFor(2)
         .apply(values.size(),
                [values = make_viewer(values)] __device__(int i) mutable
                {

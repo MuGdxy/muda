@@ -1,21 +1,24 @@
 #include <muda/muda.h>
+#include <muda/buffer.h>
 #include <catch2/catch.hpp>
 #include "../example_common.h"
 using namespace muda;
-
 void hello_muda()
 {
     example_desc("say hello in muda");
-    launch(1, 1).apply([] __device__() { print("hello muda!\n"); }).wait();
+
+    Launch(1, 1).apply([] __device__() { print("hello muda!\n"); }).wait();
 }
 
 void quick_overview()
 {
     example_desc("use parallel_for to say hello.");
-    stream s;
+    Stream s;
     on(s)
-        .next(parallel_for(2, 32))
-        .apply(4, [] __device__(int i) { print("hello muda for %d/4 rounds\n", i + 1); })
+        .next(ParallelFor(2, 32))
+        .apply(4,
+               [] __device__(int i)
+               { print("hello muda for %d/4 rounds\n", i + 1); })
         .wait();
 }
 

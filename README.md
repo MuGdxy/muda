@@ -12,7 +12,7 @@ easy launch:
 using namespace muda;
 int main()
 {
-    launch(1, 1)
+    Launch(1, 1)
         .apply(
         [] __device__() 
         {
@@ -29,9 +29,9 @@ muda vs cuda:
 */
 void muda()
 {
-    device_vector<int> dv(64, 1);
+    DeviceVector<int> dv(64, 1);
     stream             s;
-    parallel_for(2, 16, 0, s) // parallel-semantic
+    ParallelFor(2, 16, 0, s) // parallel-semantic
         .apply(64, //automatically cover the range using (gridim=2, blockdim=16)
                [
                    // mapping from the device_vector to a proper viewer
@@ -77,7 +77,9 @@ void muda_vs_cuda()
 }
 ```
 
-## quick start
+## build
+
+### xmake
 
 run example:
 
@@ -96,103 +98,29 @@ play all examples:
 ```shell
 $ xmake run muda_example
 ```
+### cmake
+
+```shell
+$ mkdir CMakeBuild
+$ cd CMakeBuild
+$ cmake -S ..
+$ cmake --build .
+```
+
+### copy header
+
+Because muda is header-only, so just copy the `src/muda/` folder to your project, set the include directory, and then everything is done.
+
+### macro
+
+| Macro                         | Value                                 | Details                                                      |
+| ----------------------------- | ------------------------------------- | ------------------------------------------------------------ |
+| `MUDA_CHECK_ON`               | `1` or `0`                            | `MUDA_CHECK_ON=1` for turn on all muda runtime check(for safety) |
+| `MUDA_VIEWER_NAME_MAX_LENGTH` | `16`(default) or any positive integer | Every muda viewer has a name field(`char name[]`) , which will be passed with the viewer. |
+
 ## tutorial
 
 - [tutorial_zh](./doc/tutorial_zh.md)
-
-## features
-
-### thread_only container
-
-allow you to use STL-like containers and algorithms in one thread.
-
-```cpp
-#include <muda/muda.h>
-#include <muda/thread_only/priority_queue>
-using namespace muda;
-namespace to = muda::thread_only;
-int main()
-{
-    launch(1, 1)
-        .apply(
-            [] __device__() mutable
-            { 
-                to::priority_queue<int> queue;
-                auto& container = queue.get_container();
-                container.reserve(16);
-                queue.push(4);queue.push(5);queue.push(6);
-                queue.push(7);queue.push(8);queue.push(9);
-                while(!queue.empty())
-                {
-                    print("%d ", queue.top());
-                    queue.pop();
-                }
-                //result: 9 8 7 6 5 4
-            })
-        .wait();
-}
-```
-
-### graph support
-
-a friendly way to create cuda graph.
-
-```cpp
-void graph_example()
-{        
-    device_var<int> value = 1;
-    // create a graph
-    auto            graph = graph::create();
-
-    // create kernel as graph node parameters(we switch from .apply to .asNodeParms)
-    auto pA = parallel_for(1).asNodeParms(1, 
-        [] __device__(int i) mutable 
-        { 
-            print("A\n"); 
-        });
-
-    auto pB = parallel_for(1).asNodeParms(1, 
-        [] __device__(int i) mutable 
-        {
-            print("B\n");
-        });
-
-    auto phB = host_call().asNodeParms(
-        [] __host__() 
-        {
-            std::cout << "host" << std::endl; 
-        });
-
-    auto pC = parallel_for(1).asNodeParms(1,
-        [value = make_viewer(value)] __device__(int i) mutable
-        {
-            print("C, value=%d\n", value);
-            value = 2;
-        });
-
-    auto pD = launch(1, 1).asNodeParms(
-        [value = make_viewer(value)] __device__() mutable
-        { 
-            print("D, value=%d\n", value); 
-        });
-	
-    // create nodes and dependencies
-    auto kA = graph->addKernelNode(pA);
-    auto kB = graph->addKernelNode(pB);
-    // hB deps on kA and kB
-    auto hB = graph->addHostNode(phB, {kA, kB});
-    // kC deps on hB
-    auto kC = graph->addKernelNode(pC, {hB});
-    // kD deps on kC
-    auto kD = graph->addKernelNode(pD, {kC});
-    
-	// create instance (or say graphExec)
-    auto instance = graph->instantiate();
-    
-    //launch on the default stream
-    instance->launch();
-}
-```
 
 ## Contribute
 

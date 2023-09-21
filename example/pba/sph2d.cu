@@ -51,7 +51,7 @@ struct ConstData
 // stores density (rho) and pressure values for SPH
 struct Particle
 {
-    Particle(float _x, float _y, int id)
+    MUDA_GENERIC Particle(float _x, float _y, int id)
         : x(_x, _y)
         , v(0.f, 0.f)
         , f(0.f, 0.f)
@@ -60,7 +60,7 @@ struct Particle
         , id(id)
     {
     }
-    Particle()
+    MUDA_GENERIC Particle()
         : x(0, 0)
         , v(0.f, 0.f)
         , f(0.f, 0.f)
@@ -96,7 +96,7 @@ constexpr int BLOCK_DIM = 128;
 
 class SPHSolver
 {
-    device_vector<Particle> particles;
+    DeviceVector<Particle> particles;
     cudaStream_t            stream;
 
   public:
@@ -105,7 +105,10 @@ class SPHSolver
     {
     }
 
-    void SetParticles(const host_vector<Particle>& p) { particles = p; }
+    void SetParticles(const HostVector<Particle>& p) 
+    { 
+        particles = p;
+    }
 
     void Solve()
     {
@@ -114,9 +117,9 @@ class SPHSolver
         Integrate();
     }
 
-    void GetParticles(host_vector<Particle>& p)
+    void GetParticles(HostVector<Particle>& p)
     {
-        launch::wait_device();
+        Launch::wait_device();
         // copy the particles from device to host
         p = particles;
     }
@@ -124,7 +127,7 @@ class SPHSolver
     void Integrate()
     {
         // using dynamic grid size to cover all the particles
-        parallel_for(BLOCK_DIM, 0, stream)
+        ParallelFor(BLOCK_DIM, 0, stream)
             .apply(particles.size(),
                    [BOUND_DAMPING = CONST_DATA.BOUND_DAMPING,
                     EPS           = CONST_DATA.EPS,
@@ -165,7 +168,7 @@ class SPHSolver
     void ComputeForces()
     {
         // using dynamic grid size to cover all the particles
-        parallel_for(BLOCK_DIM, 0, stream)
+        ParallelFor(BLOCK_DIM, 0, stream)
             .apply(particles.size(),
                    [H          = CONST_DATA.H,
                     MASS       = CONST_DATA.MASS,
@@ -207,7 +210,7 @@ class SPHSolver
     void ComputeDensityPressure()
     {
         // using dynamic grid size to cover all the particles
-        parallel_for(BLOCK_DIM, 0, stream)
+        ParallelFor(BLOCK_DIM, 0, stream)
             .apply(particles.size(),
                    [HSQ       = CONST_DATA.HSQ,
                     MASS      = CONST_DATA.MASS,
@@ -235,7 +238,7 @@ class SPHSolver
     }
 };
 
-void InitSPH(host_vector<Particle>& particles)
+void InitSPH(HostVector<Particle>& particles)
 {
     int i = 0;
     for(float y = CONST_DATA.EPS; y < CONST_DATA.VIEW_HEIGHT - CONST_DATA.EPS * 2.f;
@@ -258,7 +261,7 @@ void InitSPH(host_vector<Particle>& particles)
     }
 }
 
-void ExportParticlesToCSV(const std::string& folder, int idx, host_vector<Particle>& particles)
+void ExportParticlesToCSV(const std::string& folder, int idx, HostVector<Particle>& particles)
 {
     std::ofstream f;
     f.open(folder + "/" + std::to_string(idx) + ".csv");
@@ -285,7 +288,7 @@ void sph2d(int particle_count)
         "you could modify the particle count to get better result.\n");
 
     // create particles on host
-    host_vector<Particle> particles;
+    HostVector<Particle> particles;
     CONST_DATA.DAM_PARTICLES = particle_count;
     particles.reserve(CONST_DATA.DAM_PARTICLES);
     // generate particles randomly
@@ -297,7 +300,7 @@ void sph2d(int particle_count)
     std::cout << "particle count =" << CONST_DATA.DAM_PARTICLES << std::endl;
 
     // create a stream (RAII style, no need to destroy manually)
-    stream s;
+    Stream s;
 
     SPHSolver solver(s);
     // set the particles in solver
