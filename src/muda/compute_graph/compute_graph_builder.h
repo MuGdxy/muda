@@ -10,19 +10,24 @@ class ComputeGraphBuilder
 
     static ComputeGraphPhase current_phase();
 
-    template <typename F1, typename F2, typename F3>
-    static void invoke(F1&& none, F2&& building, F3&& updating)
+    static void invoke(const std::function<void()>& none,
+                       const std::function<void()>& building,
+                       const std::function<void()>& updating)
     {
         switch(current_phase())
         {
-            case ComputeGraphPhase::None:
+            case ComputeGraphPhase::None: {
                 none();
-                break;
-            case ComputeGraphPhase::Building:
+            }
+            break;
+            case ComputeGraphPhase::Building: {
                 building();
-                break;
-            case ComputeGraphPhase::Updating:
+            }
+            break;
+            case ComputeGraphPhase::Updating: {
                 updating();
+            }
+            break;
             default:
                 break;
         }

@@ -9,6 +9,18 @@ class DenseND;
 template <typename T, int Dim>
 class CDenseND;
 
+template <typename T, int Dim>
+struct read_only_viewer<DenseND<T, Dim>>
+{
+    using type = CDenseND<T, Dim>;
+};
+
+template <typename T, int Dim>
+struct read_write_viewer<CDenseND<T, Dim>>
+{
+    using type = DenseND<T, Dim>;
+};
+
 template <typename T>
 class CDenseND<T, 0> : public ROViewer
 {
@@ -78,7 +90,10 @@ class DenseND<T, 0> : public RWViewer
         *m_data = rhs;
         return *this;
     }
-
+    MUDA_GENERIC operator CDenseND<T, 0>() const MUDA_NOEXCEPT
+    {
+        return CDenseND<T, 0>(m_data);
+    }
     MUDA_GENERIC T& operator()() MUDA_NOEXCEPT
     {
         check();
@@ -182,6 +197,23 @@ class CDenseND<T, 1> : public ROViewer
 
     MUDA_GENERIC int dim() const MUDA_NOEXCEPT { return m_dim[0]; }
 
+    MUDA_GENERIC this_type sub_view(int offset, int size = -1) MUDA_NOEXCEPT
+    {
+        if(size < 0)
+            size = m_dim[0] - offset;
+        if constexpr(DEBUG_VIEWER)
+        {
+            if(offset < 0 || offset + size > m_dim[0])
+                muda_kernel_error("dense1D[%s:%s]: sub_view out of range, offset=%d size=%d m_dim=(%d)\n",
+                                  this->name(),
+                                  this->kernel_name(),
+                                  offset,
+                                  size,
+                                  m_dim[0]);
+        }
+        return this_type(m_data + offset, size);
+    }
+
   private:
     MUDA_INLINE MUDA_GENERIC void check() const MUDA_NOEXCEPT
     {
@@ -217,6 +249,11 @@ class DenseND<T, 1> : public RWViewer
     {
     }
 
+    MUDA_GENERIC operator CDenseND<T, 1>() const MUDA_NOEXCEPT
+    {
+        return CDenseND<T, 1>(m_data, m_dim);
+    }
+
     MUDA_GENERIC const T& operator()(int x) const MUDA_NOEXCEPT
     {
         check();
@@ -248,6 +285,23 @@ class DenseND<T, 1> : public RWViewer
     MUDA_GENERIC int total_size() const MUDA_NOEXCEPT { return m_dim[0]; }
 
     MUDA_GENERIC int dim() const MUDA_NOEXCEPT { return m_dim[0]; }
+
+    MUDA_GENERIC this_type sub_view(int offset, int size = -1) MUDA_NOEXCEPT
+    {
+        if(size < 0)
+            size = m_dim[0] - offset;
+        if constexpr(DEBUG_VIEWER)
+        {
+            if(offset < 0 || offset + size > m_dim[0])
+                muda_kernel_error("dense1D[%s:%s]: sub_view out of range, offset=%d size=%d m_dim=(%d)\n",
+                                  this->name(),
+                                  this->kernel_name(),
+                                  offset,
+                                  size,
+                                  m_dim[0]);
+        }
+        return this_type(m_data + offset, size);
+    }
 
   private:
     MUDA_INLINE MUDA_GENERIC void check() const MUDA_NOEXCEPT
@@ -356,6 +410,11 @@ class DenseND<T, 2> : public RWViewer
     {
     }
 
+    MUDA_GENERIC operator CDenseND<T, 2>() const MUDA_NOEXCEPT
+    {
+        return CDenseND<T, 2>(m_data, m_dim);
+    }
+
     MUDA_GENERIC const T& operator()(int x, int y) const MUDA_NOEXCEPT
     {
         check();
@@ -407,7 +466,9 @@ class DenseND<T, 2> : public RWViewer
     {
         if constexpr(DEBUG_VIEWER)
             if(m_data == nullptr)
-                muda_kernel_error("dense2D[%s:%s]: m_data is null\n", this->name(), this->kernel_name());
+                muda_kernel_error("dense2D[%s:%s]: m_data is null\n",
+                                  this->name(),
+                                  this->kernel_name());
     }
 };
 
@@ -509,6 +570,11 @@ class DenseND<T, 3> : public RWViewer
         : m_data(p),
           m_dim(dim)
     {
+    }
+
+    MUDA_GENERIC operator CDenseND<T, 3>() const MUDA_NOEXCEPT
+    {
+        return CDenseND<T, 3>(m_data, m_dim);
     }
 
     MUDA_GENERIC const T& operator()(int x, int y, int z) const MUDA_NOEXCEPT

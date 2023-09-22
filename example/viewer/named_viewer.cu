@@ -15,7 +15,7 @@ to recover from the error!)");
     {
         auto v = make_dense((int*)nullptr, 1).name("my_viewer");
         // host access
-        print("v.name()=%s, v.kernel_name()=%s\n", v.name(), v.kernel_name());
+        // print("v.name()=%s, v.kernel_name()=%s\n", v.name(), v.kernel_name());
 
         Launch(1,1)
             .kernel_name("kernel_A")

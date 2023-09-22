@@ -1,7 +1,10 @@
 #pragma once
 #include <memory>
+
+#include <muda/exception.h>
 #include <muda/compute_graph/compute_graph_var.h>
 #include <muda/compute_graph/compute_graph_node.h>
+#include <muda/compute_graph/nodes/compute_graph_kernel_node.h>
 
 namespace muda
 {
@@ -14,7 +17,16 @@ MUDA_INLINE ComputeGraphVar<T>* ComputeGraph::create_var(std::string_view name)
     return ptr;
 }
 template <typename T>
-MUDA_INLINE ComputeGraphVar<T>* ComputeGraph::get_var(std::string_view name)
+inline ComputeGraphVar<T>* ComputeGraph::create_var(std::string_view name, T&& init_value)
+{
+    auto ptr =
+        new ComputeGraphVar<T>(this, name, VarId{m_vars.size()}, std::forward<T>(init_value));
+    m_vars.emplace_back(ptr);
+    m_vars_map.emplace(name, ptr);
+    return ptr;
+}
+template <typename T>
+MUDA_INLINE ComputeGraphVar<T>* ComputeGraph::find_var(std::string_view name)
 {
     auto it = m_vars_map.find(std::string{name});
     if(it == m_vars_map.end())
@@ -41,7 +53,15 @@ MUDA_INLINE void ComputeGraph::build()
     m_graph_exec          = m_graph.instantiate();
     m_current_graph_phase = ComputeGraphPhase::None;
 }
-MUDA_INLINE void ComputeGraph::update()
+
+MUDA_INLINE void ComputeGraph::check_vars_valid()
+{
+    for(auto& var : m_vars)
+        if(!var->is_valid())
+            throw muda::logic_error("var[" + std::string{var->name()} + "] is not valid");
+}
+
+MUDA_INLINE void ComputeGraph::_update()
 {
     if(!m_need_update)
         return;
@@ -54,6 +74,7 @@ MUDA_INLINE void ComputeGraph::update()
         {
             m_current_closure_id = ClosureId{i};
             m_current_node_id    = NodeId{i};
+            m_allow_access_graph = true;
             m_closures[i].second();
             need_update = false;
         }
@@ -61,23 +82,49 @@ MUDA_INLINE void ComputeGraph::update()
     m_current_graph_phase = ComputeGraphPhase::None;
 }
 
+MUDA_INLINE void ComputeGraph::launch(cudaStream_t s)
+{
+    m_allow_node_adding = false;
+    check_vars_valid();
+    build();
+    _update();
+    m_graph_exec->launch(s);
+}
 
-//template <typename T>
-//ComputeGraphNode<T>* ComputeGraph::create_node()
-//{
-//    auto id = current_closure_id().value();
-//    auto closure_name = std::string_view{m_closures[id].first};
-//    auto ptr = new ComputeGraphNode<T>(this, closure_name, NodeId{m_nodes.size()});
-//    m_nodes.emplace_back(ptr);
-//    return ptr;
-//}
+template <typename T>
+MUDA_INLINE void details::ComputeGraphAccessor::add_kernel_node(const S<KernelNodeParms<T>>& parms)
+{
+    access_graph([&](Graph& g) {  // create kernel node
+        const auto& [name, closure] = current_closure();
 
-//MUDA_INLINE ComputeGraph::~ComputeGraph()
-//{
-//    for(auto v : m_vars)
-//        delete v;
-//    for(auto n : m_nodes)
-//        delete n;
-//}
+        auto kernel_node =                    //
+            new ComputeGraphKernelNode(       //
+                &m_cg,                        // compute graph
+                name,                         // node name
+                NodeId{m_cg.m_nodes.size()},  // node id
+                temp_var_usage(),             // var usage
+                g.add_kernel_node(parms));    // kernel node
+        m_cg.m_nodes.emplace_back(kernel_node);
+    });
+}
 
+template <typename T>
+MUDA_INLINE void details::ComputeGraphAccessor::update_kernel_node(const S<KernelNodeParms<T>>& kernelParms)
+{
+    access_graph_exec(
+        [&](GraphExec& g_exec)
+        {
+            const auto& [name, closure] = current_closure();
+            auto node                   = current_node();
+            auto kernel_node = dynamic_cast<ComputeGraphKernelNode*>(node);
+            g_exec.set_kernel_node_parms(kernel_node->m_node, kernelParms);
+        });
+}
+
+MUDA_INLINE void details::ComputeGraphAccessor::set_var_usage(VarId id, ComputeGraphVarUsage usage)
+{
+    auto& dst_usage = m_cg.m_temp_node_info.var_usage[id];
+    if(dst_usage < usage)
+        dst_usage = usage;
+}
 }  // namespace muda

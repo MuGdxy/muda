@@ -9,6 +9,7 @@
 #include <muda/assert.h>
 #include <muda/tools/launch_info_cache.h>
 #include <muda/tools/fuzzy.h>
+#include <muda/type_traits/type_modifier.h>
 namespace muda
 {
 class ViewerBase
@@ -48,7 +49,7 @@ class ViewerBase
     ViewerBase& operator=(ViewerBase&&)      = default;
 
   protected:
-    MUDA_HOST void name(const char* n) MUDA_NOEXCEPT
+    MUDA_INLINE MUDA_HOST void name(const char* n) MUDA_NOEXCEPT
     {
 #ifdef MUDA_CHECK_ON
         m_view_name = details::LaunchInfoCache::view_name(n);
@@ -87,7 +88,7 @@ class ROViewer : public ViewerBase
   public:                                                                      \
     using this_type = viewer_name;                                             \
                                                                                \
-    MUDA_INLINE MUDA_GENERIC this_type& name(const char* n) noexcept           \
+    MUDA_INLINE MUDA_HOST this_type& name(const char* n) noexcept              \
     {                                                                          \
         ViewerBase::name(n);                                                   \
         return *this;                                                          \
