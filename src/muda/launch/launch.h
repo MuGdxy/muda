@@ -36,14 +36,7 @@ class Launch : public LaunchBase<Launch>
     }
 
     template <typename F, typename UserTag = DefaultTag>
-    Launch& apply(F&& f, UserTag tag = {})
-    {
-        using CallableType = raw_type_t<F>;
-        static_assert(std::is_invocable_v<CallableType>, "f:void (void)");
-        details::generic_kernel<CallableType, UserTag>
-            <<<m_gridDim, m_block_dim, m_shared_mem_size, m_stream>>>(f);
-        return finish_kernel_launch();
-    }
+    Launch& apply(F&& f, UserTag tag = {});
 
     template <typename F, typename UserTag = DefaultTag>
     MUDA_NODISCARD auto as_node_parms(F&& f, UserTag tag = {})
@@ -75,3 +68,5 @@ class Launch : public LaunchBase<Launch>
     static void wait_device() { checkCudaErrors(cudaDeviceSynchronize()); }
 };
 }  // namespace muda
+
+#include <muda/launch/details/launch.inl>

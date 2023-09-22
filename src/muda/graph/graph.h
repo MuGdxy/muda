@@ -35,7 +35,7 @@ class Graph
 
     template <typename T>
     S<KernelNode> add_kernel_node(const S<KernelNodeParms<T>>&     kernelParms,
-                                  const std::vector<S<GraphNode>>& deps = {})
+                                  const std::vector<S<GraphNode>>& deps)
     {
         auto                         ret   = std::make_shared<KernelNode>();
         std::vector<cudaGraphNode_t> nodes = map_dependencies(deps);
@@ -45,8 +45,17 @@ class Graph
     }
 
     template <typename T>
+    S<KernelNode> add_kernel_node(const S<KernelNodeParms<T>>& kernelParms)
+    {
+        auto ret = std::make_shared<KernelNode>();
+        checkCudaErrors(cudaGraphAddKernelNode(
+            &ret->m_handle, m_handle, nullptr, 0, kernelParms->handle()));
+        return ret;
+    }
+
+    template <typename T>
     S<HostNode> add_host_node(const S<HostNodeParms<T>>&       hostParms,
-                            const std::vector<S<GraphNode>>& deps = {})
+                              const std::vector<S<GraphNode>>& deps)
     {
         cached.push_back(hostParms);
         auto                         ret   = std::make_shared<HostNode>();
@@ -57,11 +66,22 @@ class Graph
     }
 
     template <typename T>
+    S<HostNode> add_host_node(const S<HostNodeParms<T>>& hostParms)
+    {
+        cached.push_back(hostParms);
+        auto ret = std::make_shared<HostNode>();
+        checkCudaErrors(cudaGraphAddHostNode(
+            &ret->m_handle, m_handle, nullptr, 0, hostParms->handle()));
+        return ret;
+    }
+
+
+    template <typename T>
     auto add_memcpy_node(T*                               dst,
-                       const T*                         src,
-                       size_t                           count,
-                       cudaMemcpyKind                   kind,
-                       const std::vector<S<GraphNode>>& deps = {})
+                         const T*                         src,
+                         size_t                           count,
+                         cudaMemcpyKind                   kind,
+                         const std::vector<S<GraphNode>>& deps)
     {
         auto                         ret   = std::make_shared<memcpyNode>();
         std::vector<cudaGraphNode_t> nodes = map_dependencies(deps);
@@ -70,7 +90,19 @@ class Graph
         return ret;
     }
 
-    auto add_event_record_node(cudaEvent_t e, const std::vector<S<GraphNode>>& deps = {})
+    template <typename T>
+    auto add_memcpy_node(T*                               dst,
+                         const T*                         src,
+                         size_t                           count,
+                         cudaMemcpyKind                   kind)
+    {
+        auto ret = std::make_shared<memcpyNode>();
+        checkCudaErrors(cudaGraphAddMemcpyNode1D(
+            &ret->m_handle, m_handle, nullptr, 0, dst, src, sizeof(T) * count, kind));
+        return ret;
+    }
+
+    auto add_event_record_node(cudaEvent_t e, const std::vector<S<GraphNode>>& deps)
     {
         auto                         ret = std::make_shared<EventRecordNode>();
         std::vector<cudaGraphNode_t> nodes = map_dependencies(deps);
@@ -79,7 +111,22 @@ class Graph
         return ret;
     }
 
-    auto add_event_wait_node(cudaEvent_t e, const std::vector<S<GraphNode>>& deps = {})
+    auto add_event_record_node(cudaEvent_t e)
+    {
+        auto ret = std::make_shared<EventRecordNode>();
+        checkCudaErrors(
+            cudaGraphAddEventRecordNode(&ret->m_handle, m_handle, nullptr, 0, e));
+        return ret;
+    }
+
+    auto add_event_wait_node(cudaEvent_t e)
+    {
+        auto ret = std::make_shared<EventWaitNode>();
+        checkCudaErrors(cudaGraphAddEventWaitNode(&ret->m_handle, m_handle, nullptr, 0, e));
+        return ret;
+    }
+
+    auto add_event_wait_node(cudaEvent_t e, const std::vector<S<GraphNode>>& deps)
     {
         auto                         ret   = std::make_shared<EventWaitNode>();
         std::vector<cudaGraphNode_t> nodes = map_dependencies(deps);
