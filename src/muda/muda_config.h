@@ -9,7 +9,7 @@
 
 namespace muda
 {
-constexpr bool NO_CHECK = MUDA_CHECK_ON;
+constexpr bool NO_CHECK = !MUDA_CHECK_ON;
 namespace config
 {
     constexpr bool on(bool cond = false)

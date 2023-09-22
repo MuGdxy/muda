@@ -1,5 +1,5 @@
 #pragma once
-#include "checkCudaErrors.h"
+#include "check_cuda_errors.h"
 #include <cusolver_common.h>
 
 namespace muda

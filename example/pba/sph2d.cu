@@ -264,10 +264,12 @@ void InitSPH(HostVector<Particle>& particles)
 void ExportParticlesToCSV(const std::string& folder, int idx, HostVector<Particle>& particles)
 {
     std::ofstream f;
+    std::stringstream ss;
     f.open(folder + "/" + std::to_string(idx) + ".csv");
-    Particle::CSVHeader(f);
+    Particle::CSVHeader(ss);
     for(const auto& p : particles)
-        p.ToCSV(f);
+        p.ToCSV(ss);
+    f << ss.str();
     f.close();
 }
 

@@ -7,112 +7,53 @@
 #include <muda/tools/debug_log.h>
 #include <muda/muda_config.h>
 #include <muda/assert.h>
-
+#include <muda/tools/launch_info_cache.h>
+#include <muda/tools/fuzzy.h>
 namespace muda
 {
 class ViewerBase
 {
 #if MUDA_CHECK_ON
-    // msvc doesn't allow 0 size array in base class
-    char m_name[VIEWER_NAME_MAX];
+    details::StringPointer m_view_name;
+    details::StringPointer m_kernel_name;
 #endif
   public:
-    ViewerBase()
+    MUDA_GENERIC ViewerBase()
     {
-#if MUDA_CHECK_ON
-        m_name[0] = '\0';
+#ifndef __CUDA_ARCH__
+        m_kernel_name = details::LaunchInfoCache::current_kernel_name();
 #endif
     }
 
     MUDA_GENERIC const char* name() const MUDA_NOEXCEPT
     {
 #if MUDA_CHECK_ON
-        if(m_name[0] != '\0')
-            return m_name;
+        return m_view_name.auto_select();
 #endif
         return "";
     }
 
-    // copy ctor
-    MUDA_GENERIC ViewerBase(const ViewerBase& rhs) MUDA_NOEXCEPT
+    MUDA_GENERIC const char* kernel_name() const MUDA_NOEXCEPT
     {
 #if MUDA_CHECK_ON
-        copy_name(rhs.m_name);
+        return m_kernel_name.auto_select();
 #endif
+        return "";
     }
 
-    // copy assignment
-    MUDA_GENERIC ViewerBase& operator=(const ViewerBase& rhs) MUDA_NOEXCEPT
-    {
-#if MUDA_CHECK_ON
-        if(this == &rhs)
-            return *this;
-        copy_name(rhs.m_name);
-#endif
-        return *this;
-    }
-
-    // move ctor
-    MUDA_GENERIC ViewerBase(ViewerBase&& rhs) MUDA_NOEXCEPT
-    {
-#if MUDA_CHECK_ON
-        copy_name(rhs.m_name);
-        rhs.m_name[0] = '\0';
-#endif
-    }
-
-    // move assignment
-    MUDA_GENERIC ViewerBase& operator=(ViewerBase&& rhs) MUDA_NOEXCEPT
-    {
-#if MUDA_CHECK_ON
-        if(this == &rhs)
-            return *this;
-        copy_name(rhs.m_name);
-        rhs.m_name[0] = '\0';
-#endif
-        return *this;
-    }
-
+    // default copy / move
+    ViewerBase(const ViewerBase&)            = default;
+    ViewerBase(ViewerBase&&)                 = default;
+    ViewerBase& operator=(const ViewerBase&) = default;
+    ViewerBase& operator=(ViewerBase&&)      = default;
 
   protected:
-    MUDA_GENERIC void name(const char* n) MUDA_NOEXCEPT
+    MUDA_HOST void name(const char* n) MUDA_NOEXCEPT
     {
-#if MUDA_CHECK_ON
-        if(n == nullptr)
-        {
-            m_name[0] = '\0';
-            return;
-        }
-
-        int  i      = 0;
-        bool finish = false;
-        for(; i < VIEWER_NAME_MAX; ++i)
-        {
-            auto c    = n[i];
-            m_name[i] = c;
-            if(c == '\0')
-            {
-                finish = true;
-                break;
-            }
-        }
-
-        if(!finish)
-        {
-            m_name[VIEWER_NAME_MAX - 1] = '\0';
-            muda_kernel_warn("viewer name [%s] is too long, truncated to [%s]\n", n, name());
-        }
+#ifdef MUDA_CHECK_ON
+        m_view_name = details::LaunchInfoCache::view_name(n);
 #endif
     }
-
-  private:
-#if MUDA_CHECK_ON
-    MUDA_GENERIC void copy_name(const char* n) MUDA_NOEXCEPT
-    {
-        for(int i = 0; i < VIEWER_NAME_MAX; ++i)
-            this->m_name[i] = n[i];
-    }
-#endif
 };
 
 // Read Write Viewer

@@ -11,7 +11,7 @@
 #include <nvtx3/nvToolsExt.h>
 #include <nvtx3/nvToolsExtCuda.h>
 
-#include "check/checkCudaErrors.h"
+#include "check/check_cuda_errors.h"
 
 namespace muda
 {

@@ -13,7 +13,9 @@
 #include <nvtx3/nvToolsExt.h>
 #include <nvtx3/nvToolsExtCuda.h>
 #include <muda/type_traits/type_modifier.h>
-#include "../check/checkCudaErrors.h"
+#include <muda/tools/launch_info_cache.h>
+
+#include "../check/check_cuda_errors.h"
 #include "../graph.h"
 #include "../muda_def.h"
 #include "event.h"
@@ -28,7 +30,7 @@ struct DefaultTag
 };
 namespace details
 {
-    inline void streamErrorCallback(cudaStream_t stream, cudaError error, void* userdata)
+    inline void stream_error_callback(cudaStream_t stream, cudaError error, void* userdata)
     {
         auto callback =
             reinterpret_cast<std::function<void(cudaStream_t, cudaError)>*>(userdata);
@@ -136,8 +138,8 @@ class LaunchBase
     Derived& callback(const std::function<void(cudaStream_t, cudaError)>& callback)
     {
         auto userdata = new std::function<void(cudaStream_t, cudaError)>(callback);
-        checkCudaErrors(
-            cudaStreamAddCallback(m_stream, details::streamErrorCallback, userdata, 0));
+        checkCudaErrors(cudaStreamAddCallback(
+            m_stream, details::stream_error_callback, userdata, 0));
         return derived();
     }
 
@@ -156,6 +158,21 @@ class LaunchBase
         Next n(std::forward<Args>(args)...);
         n.init_stream(m_stream);
         return n;
+    }
+
+    auto& kernel_name(std::string_view name)
+    {
+        details::LaunchInfoCache::current_kernel_name(name);
+        return derived();
+    }
+
+    ~LaunchBase() {}
+
+  protected:
+    auto& finish_kernel_launch()
+    {
+        details::LaunchInfoCache::current_kernel_name("");
+        return derived();
     }
 
   private:

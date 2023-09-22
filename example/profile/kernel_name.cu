@@ -22,6 +22,7 @@ void kernel_name()
 
         RangeName r("kernel apply");  // give a name to this scope.
         ParallelFor(32, 32)
+            .kernel_name("my_parallel_for")  // set a kernel name for debugging in kernel
             .apply(vec.size(),
                    [s = make_viewer(vec), v = make_viewer(v)] __device__(int i) mutable
                    {

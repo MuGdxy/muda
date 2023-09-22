@@ -3,7 +3,7 @@
 #include <cublas.h>
 #include <cusparse.h>
 #include <muda/container/vector.h>
-#include <muda/check/checkCusparse.h>
+#include <muda/check/check_cusparse.h>
 #include <muda/viewer.h>
 #include "data_type_map.h"
 #include "mat_view.h"

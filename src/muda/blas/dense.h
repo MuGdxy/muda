@@ -3,7 +3,7 @@
 
 #include <cublas.h>
 #include "data_type_map.h"
-#include <muda/check/checkCublas.h>
+#include <muda/check/check_cublas.h>
 #include <muda/viewer/dense.h>
 #include <muda/buffer/device_buffer.h>
 

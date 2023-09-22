@@ -4,7 +4,7 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
-#include "../check/checkCudaErrors.h"
+#include "../check/check_cuda_errors.h"
 
 namespace muda
 {

@@ -42,7 +42,7 @@ class Launch : public LaunchBase<Launch>
         static_assert(std::is_invocable_v<CallableType>, "f:void (void)");
         details::generic_kernel<CallableType, UserTag>
             <<<m_gridDim, m_block_dim, m_shared_mem_size, m_stream>>>(f);
-        return *this;
+        return finish_kernel_launch();
     }
 
     template <typename F, typename UserTag = DefaultTag>
@@ -58,6 +58,7 @@ class Launch : public LaunchBase<Launch>
         parms->blockDim(m_block_dim);
         parms->sharedMemBytes(m_shared_mem_size);
         parms->parse([](CallableType& p) -> std::vector<void*> { return {&p}; });
+        finish_kernel_launch();
         return parms;
     }
 

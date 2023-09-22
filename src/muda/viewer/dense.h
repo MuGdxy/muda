@@ -53,7 +53,9 @@ class CDenseND<T, 0> : public ROViewer
     {
         if constexpr(DEBUG_VIEWER)
             if(m_data == nullptr)
-                muda_kernel_error("dense[%s]: m_data is null\n", this->name());
+                muda_kernel_error("dense[%s:%s]: m_data is null\n",
+                                  this->name(),
+                                  this->kernel_name());
     }
 };
 
@@ -127,7 +129,9 @@ class DenseND<T, 0> : public RWViewer
     {
         if constexpr(DEBUG_VIEWER)
             if(m_data == nullptr)
-                muda_kernel_error("dense[%s]: m_data is null\n", this->name());
+                muda_kernel_error("dense[%s:%s]: m_data is null\n",
+                                  this->name(),
+                                  this->kernel_name());
     }
 };
 
@@ -164,8 +168,9 @@ class CDenseND<T, 1> : public ROViewer
     {
         if constexpr(DEBUG_VIEWER)
             if(!(x >= 0 && x < m_dim[0]))
-                muda_kernel_error("dense1D[%s]: out of range, index=(%d) m_dim=(%d)\n",
+                muda_kernel_error("dense1D[%s:%s]: out of range, index=(%d) m_dim=(%d)\n",
                                   this->name(),
+                                  this->kernel_name(),
                                   x,
                                   m_dim[0]);
         return x;
@@ -182,7 +187,9 @@ class CDenseND<T, 1> : public ROViewer
     {
         if constexpr(DEBUG_VIEWER)
             if(m_data == nullptr)
-                muda_kernel_error("dense1D[%s]: m_data is null\n", this->name());
+                muda_kernel_error("dense1D[%s:%s]: m_data is null\n",
+                                  this->name(),
+                                  this->kernel_name());
     }
 };
 
@@ -226,8 +233,9 @@ class DenseND<T, 1> : public RWViewer
     {
         if constexpr(DEBUG_VIEWER)
             if(!(x >= 0 && x < m_dim[0]))
-                muda_kernel_error("dense1D[%s]: out of range, index=(%d) m_dim=(%d)\n",
+                muda_kernel_error("dense1D[%s:%s]: out of range, index=(%d) m_dim=(%d)\n",
                                   this->name(),
+                                  this->kernel_name(),
                                   x,
                                   m_dim[0]);
         return x;
@@ -246,7 +254,9 @@ class DenseND<T, 1> : public RWViewer
     {
         if constexpr(DEBUG_VIEWER)
             if(m_data == nullptr)
-                muda_kernel_error("dense1D[%s]: m_data is null\n", this->name());
+                muda_kernel_error("dense1D[%s:%s]: m_data is null\n",
+                                  this->name(),
+                                  this->kernel_name());
     }
 };
 
@@ -288,8 +298,9 @@ class CDenseND<T, 2> : public ROViewer
         if constexpr(DEBUG_VIEWER)
             if(!(x >= 0 && x < m_dim[0] && y >= 0 && y < m_dim[1]))
             {
-                muda_kernel_error("dense2D[%s]: out of range, index=(%d,%d) dim=(%d,%d)\n",
+                muda_kernel_error("dense2D[%s:%s]: out of range, index=(%d,%d) dim=(%d,%d)\n",
                                   this->name(),
+                                  this->kernel_name(),
                                   x,
                                   y,
                                   m_dim[0],
@@ -316,7 +327,9 @@ class CDenseND<T, 2> : public ROViewer
     {
         if constexpr(DEBUG_VIEWER)
             if(m_data == nullptr)
-                muda_kernel_error("dense2D[%s]: m_data is null\n", this->name());
+                muda_kernel_error("dense2D[%s:%s]: m_data is null\n",
+                                  this->name(),
+                                  this->kernel_name());
     }
 };
 
@@ -365,8 +378,9 @@ class DenseND<T, 2> : public RWViewer
         if constexpr(DEBUG_VIEWER)
             if(!(x >= 0 && x < m_dim[0] && y >= 0 && y < m_dim[1]))
             {
-                muda_kernel_error("dense2D[%s]: out of range, index=(%d,%d) dim=(%d,%d)\n",
+                muda_kernel_error("dense2D[%s:%s]: out of range, index=(%d,%d) dim=(%d,%d)\n",
                                   this->name(),
+                                  this->kernel_name(),
                                   x,
                                   y,
                                   m_dim[0],
@@ -393,7 +407,7 @@ class DenseND<T, 2> : public RWViewer
     {
         if constexpr(DEBUG_VIEWER)
             if(m_data == nullptr)
-                muda_kernel_error("dense2D[%s]: m_data is null\n", this->name());
+                muda_kernel_error("dense2D[%s:%s]: m_data is null\n", this->name(), this->kernel_name());
     }
 };
 
@@ -434,8 +448,9 @@ class CDenseND<T, 3> : public ROViewer
     {
         if constexpr(DEBUG_VIEWER)
             if(!(x >= 0 && x < m_dim[0] && y >= 0 && y < m_dim[1] && z >= 0 && z < m_dim[2]))
-                muda_kernel_error("dense3D[%s]: out of range, index=(%d,%d,%d) dim=(%d,%d,%d)\n",
+                muda_kernel_error("dense3D[%s:%s]: out of range, index=(%d,%d,%d) dim=(%d,%d,%d)\n",
                                   this->name(),
+                                  this->kernel_name(),
                                   x,
                                   y,
                                   z,
@@ -466,7 +481,9 @@ class CDenseND<T, 3> : public ROViewer
     {
         if constexpr(DEBUG_VIEWER)
             if(m_data == nullptr)
-                muda_kernel_error("dense3D[%s]: data is null\n", this->name());
+                muda_kernel_error("dense3D[%s:%s]: data is null\n",
+                                  this->name(),
+                                  this->kernel_name());
     }
 };
 
@@ -515,8 +532,9 @@ class DenseND<T, 3> : public RWViewer
     {
         if constexpr(DEBUG_VIEWER)
             if(!(x >= 0 && x < m_dim[0] && y >= 0 && y < m_dim[1] && z >= 0 && z < m_dim[2]))
-                muda_kernel_error("dense3D[%s]: out of range, index=(%d,%d,%d) dim=(%d,%d,%d)\n",
+                muda_kernel_error("dense3D[%s:%s]: out of range, index=(%d,%d,%d) dim=(%d,%d,%d)\n",
                                   this->name(),
+                                  this->kernel_name(),
                                   x,
                                   y,
                                   z,
@@ -547,7 +565,9 @@ class DenseND<T, 3> : public RWViewer
     {
         if constexpr(DEBUG_VIEWER)
             if(m_data == nullptr)
-                muda_kernel_error("dense3D[%s]: data is null\n", this->name());
+                muda_kernel_error("dense3D[%s:%s]: data is null\n",
+                                  this->name(),
+                                  this->kernel_name());
     }
 };
 

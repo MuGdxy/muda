@@ -9,7 +9,7 @@
 #include <memory>
 #include <functional>
 
-#include "../check/checkCudaErrors.h"
+#include "../check/check_cuda_errors.h"
 
 namespace muda
 {

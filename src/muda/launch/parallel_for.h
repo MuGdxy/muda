@@ -118,7 +118,7 @@ class ParallelFor : public LaunchBase<ParallelFor>
             details::grid_stride_loop_kernel<CallableType, UserTag>
                 <<<m_gridDim, m_block_dim, m_shared_mem_size, m_stream>>>(f, count);
         }
-        return *this;
+        return finish_kernel_launch();
     }
 
     template <typename F, typename UserTag = DefaultTag>
@@ -126,7 +126,7 @@ class ParallelFor : public LaunchBase<ParallelFor>
     {
         using CallableType = raw_type_t<F>;
         static_assert(std::is_invocable_v<CallableType, int>, "f:void (int i)");
-        
+
         check_input(count);
 
         auto parms = std::make_shared<KernelNodeParms<KernelData<CallableType>>>(
@@ -149,6 +149,7 @@ class ParallelFor : public LaunchBase<ParallelFor>
             [](KernelData<CallableType>& p) -> std::vector<void*> {
                 return {&p.callable, &p.count};
             });
+        finish_kernel_launch();
         return parms;
     }
 
@@ -161,9 +162,11 @@ class ParallelFor : public LaunchBase<ParallelFor>
     }
 
     void check_input(int count)
-	{
-		if(count < 0) throw std::logic_error("count must be >= 0");
-		if(m_block_dim <= 0) throw std::logic_error("blockDim must be > 0");
-	}
+    {
+        if(count < 0)
+            throw std::logic_error("count must be >= 0");
+        if(m_block_dim <= 0)
+            throw std::logic_error("blockDim must be > 0");
+    }
 };
 }  // namespace muda

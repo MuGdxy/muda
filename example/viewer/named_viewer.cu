@@ -13,17 +13,17 @@ ALERT: this example will ruin the cuda context and it's impossible
 to recover from the error!)");
     try
     {
-        on(nullptr)
-            .next<Launch>()
+        auto v = make_dense((int*)nullptr, 1).name("my_viewer");
+        // host access
+        print("v.name()=%s, v.kernel_name()=%s\n", v.name(), v.kernel_name());
+
+        Launch(1,1)
+            .kernel_name("kernel_A")
             .apply(
-                [v = make_dense((int*)nullptr, 1).name("host_set_name")] __device__() mutable
+                [v = make_dense((int*)nullptr, 1).name("my_viewer")] __device__() mutable
                 {
-                    // test long name
-                    print("v.name()=%s\n", v.name());
-                    v.name("a_very_looooooooooong_name");
-                    v.name("my_viewer");
-                    print("v.name()=%s, v.dim()=%d.\n", v.name(), v.dim());
-                    print("now, we are going to access v(v.dim()).\n");
+                    // device access
+                    print("v.name()=%s, v.kernel_name()=%s\n", v.name(), v.kernel_name());
                     v(v.dim());
                 })
             .wait();

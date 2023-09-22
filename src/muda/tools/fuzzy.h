@@ -5,7 +5,29 @@
 
 namespace muda
 {
-__forceinline__ __host__ __device__ dim3 grid_dim()
+template <typename FHost, typename FDevice>
+MUDA_INLINE MUDA_GENERIC auto invoke(FHost&& host, FDevice&& device) MUDA_NOEXCEPT
+{
+    if constexpr(std::is_same_v<std::invoke_result_t<FHost>, void> && 
+        std::is_same_v<std::invoke_result_t<FDevice>, void>)
+    {
+#ifdef __CUDA_ARCH__
+        device();
+#else
+        host();
+#endif
+    }
+    else
+    {
+#ifdef __CUDA_ARCH__
+        return device();
+#else
+        return host();
+#endif
+    }
+}
+
+MUDA_INLINE MUDA_GENERIC dim3 grid_dim()
 {
 #ifdef __CUDA_ARCH__
     return gridDim;
@@ -14,7 +36,7 @@ __forceinline__ __host__ __device__ dim3 grid_dim()
 #endif
 }
 
-__forceinline__ __host__ __device__ dim3 block_idx()
+MUDA_INLINE MUDA_GENERIC dim3 block_idx()
 {
 #ifdef __CUDA_ARCH__
     return blockIdx;
@@ -23,7 +45,7 @@ __forceinline__ __host__ __device__ dim3 block_idx()
 #endif
 }
 
-__forceinline__ __host__ __device__ dim3 block_dim()
+MUDA_INLINE MUDA_GENERIC dim3 block_dim()
 {
 #ifdef __CUDA_ARCH__
     return blockDim;
@@ -32,7 +54,7 @@ __forceinline__ __host__ __device__ dim3 block_dim()
 #endif
 }
 
-__forceinline__ __host__ __device__ dim3 thread_idx()
+MUDA_INLINE MUDA_GENERIC dim3 thread_idx()
 {
 #ifdef __CUDA_ARCH__
     return threadIdx;
