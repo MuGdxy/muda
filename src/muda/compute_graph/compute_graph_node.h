@@ -60,8 +60,6 @@ class ComputeGraphNodeBase
 
     bool is_valid() const { return m_cuda_node; }
 };
-
-
 }  // namespace muda
 
 #include <muda/compute_graph/details/compute_graph_node.inl>

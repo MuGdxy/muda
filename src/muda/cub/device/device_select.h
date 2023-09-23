@@ -24,7 +24,7 @@ class DeviceSelect : public CubWrapper<DeviceSelect>
                           int                       num_items)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceSelect::Flagged(
-            d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, m_stream, false));
+            d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, this->stream(), false));
     }
 
     template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename SelectOp>
@@ -36,7 +36,7 @@ class DeviceSelect : public CubWrapper<DeviceSelect>
                      SelectOp                  select_op)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceSelect::If(
-            d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op, m_stream, false));
+            d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op, this->stream(), false));
     }
 
     template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT>
@@ -47,7 +47,7 @@ class DeviceSelect : public CubWrapper<DeviceSelect>
                          int                       num_items)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceSelect::Unique(
-            d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, m_stream, false));
+            d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, this->stream(), false));
     }
 #if 0
     template <typename KeyInputIteratorT, typename ValueInputIteratorT, typename KeyOutputIteratorT, typename ValueOutputIteratorT, typename NumSelectedIteratorT>
@@ -67,7 +67,7 @@ class DeviceSelect : public CubWrapper<DeviceSelect>
                                                              d_values_out,
                                                              d_num_selected_out,
                                                              num_items,
-                                                             m_stream,
+                                                             this->stream(),
                                                              false));
     }
 #endif

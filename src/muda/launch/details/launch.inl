@@ -24,7 +24,7 @@ MUDA_INLINE void Launch::invoke(F&& f, UserTag tag)
 {
     using CallableType = raw_type_t<F>;
     details::generic_kernel<CallableType, UserTag>
-        <<<m_gridDim, m_block_dim, m_shared_mem_size, m_stream>>>(f);
+        <<<m_gridDim, m_block_dim, m_shared_mem_size, this->stream()>>>(f);
     finish_kernel_launch();
 }
 

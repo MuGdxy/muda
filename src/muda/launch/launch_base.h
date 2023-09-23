@@ -50,6 +50,8 @@ class LaunchBase
     template <typename T>
     using S = std::shared_ptr<T>;
 
+    cudaStream_t stream() { return m_stream; }
+    cudaStream_t stream() const { return m_stream; }
     cudaStream_t m_stream;
 
   public:
@@ -94,7 +96,7 @@ class LaunchBase
     //  event node when performing stream capture.
     Derived& record(cudaEvent_t e, int flag = cudaEventRecordDefault)
     {
-        checkCudaErrors(cudaEventRecordWithFlags(e, m_stream, flag));
+        checkCudaErrors(cudaEventRecordWithFlags(e, stream(), flag));
 
         return derived();
     }
@@ -112,7 +114,7 @@ class LaunchBase
     //  event node when performing stream capture.
     Derived& when(cudaEvent_t e, int flag = cudaEventRecordDefault)
     {
-        checkCudaErrors(cudaStreamWaitEvent(m_stream, e, flag));
+        checkCudaErrors(cudaStreamWaitEvent(stream(), e, flag));
 
         return derived();
     }
@@ -128,7 +130,7 @@ class LaunchBase
     // let the host wait for the current stream
     Derived& wait()
     {
-        checkCudaErrors(cudaStreamSynchronize(m_stream));
+        checkCudaErrors(cudaStreamSynchronize(stream()));
 
         return derived();
     }
@@ -139,7 +141,7 @@ class LaunchBase
     {
         auto userdata = new std::function<void(cudaStream_t, cudaError)>(callback);
         checkCudaErrors(cudaStreamAddCallback(
-            m_stream, details::stream_error_callback, userdata, 0));
+            stream(), details::stream_error_callback, userdata, 0));
         return derived();
     }
 
@@ -147,7 +149,7 @@ class LaunchBase
     Next next(Next n)
     {
         static_assert(std::is_base_of_v<LaunchBase<Next>, Next>, "not supported");
-        n.init_stream(m_stream);
+        n.init_stream(stream());
         return n;
     }
 
@@ -156,7 +158,7 @@ class LaunchBase
     {
         static_assert(std::is_base_of_v<LaunchBase<Next>, Next>, "not supported");
         Next n(std::forward<Args>(args)...);
-        n.init_stream(m_stream);
+        n.init_stream(stream());
         return n;
     }
 

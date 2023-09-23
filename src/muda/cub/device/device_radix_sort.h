@@ -41,7 +41,7 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
                                                               num_items,
                                                               begin_bit,
                                                               end_bit,
-                                                              m_stream,
+                                                              this->stream(),
                                                               debug_synchronous));
     }
 
@@ -55,7 +55,7 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
                                bool debug_synchronous = false)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceRadixSort::SortPairs(
-            d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, m_stream, debug_synchronous));
+            d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, this->stream(), debug_synchronous));
     }
 
     template <typename KeyT, typename ValueT, typename NumItemsT>
@@ -79,7 +79,7 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
                                                       num_items,
                                                       begin_bit,
                                                       end_bit,
-                                                      m_stream,
+                                                      this->stream(),
                                                       debug_synchronous));
     }
 
@@ -93,7 +93,7 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
                                          bool debug_synchronous = false)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceRadixSort::SortPairsDescending(
-            d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, m_stream, debug_synchronous));
+            d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, this->stream(), debug_synchronous));
     }
 
     template <typename KeyT, typename NumItemsT>
@@ -106,7 +106,7 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
                               bool debug_synchronous = false)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceRadixSort::SortKeys(
-            d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, begin_bit, end_bit, m_stream, debug_synchronous));
+            d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, begin_bit, end_bit, this->stream(), debug_synchronous));
     }
 
     template <typename KeyT, typename NumItemsT>
@@ -118,7 +118,7 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
                               bool debug_synchronous = false)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceRadixSort::SortKeys(
-            d_temp_storage, temp_storage_bytes, d_keys, num_items, begin_bit, end_bit, m_stream, debug_synchronous));
+            d_temp_storage, temp_storage_bytes, d_keys, num_items, begin_bit, end_bit, this->stream(), debug_synchronous));
     }
 
     template <typename KeyT, typename NumItemsT>
@@ -131,7 +131,7 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
                                         bool        debug_synchronous = false)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceRadixSort::SortKeysDescending(
-            d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, begin_bit, end_bit, m_stream, debug_synchronous));
+            d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, begin_bit, end_bit, this->stream(), debug_synchronous));
     }
 
     template <typename KeyT, typename NumItemsT>
@@ -143,7 +143,7 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
                                         bool debug_synchronous = false)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceRadixSort::SortKeysDescending(
-            d_temp_storage, temp_storage_bytes, d_keys, num_items, begin_bit, end_bit, m_stream, debug_synchronous));
+            d_temp_storage, temp_storage_bytes, d_keys, num_items, begin_bit, end_bit, this->stream(), debug_synchronous));
     }
 };
 }  // namespace muda

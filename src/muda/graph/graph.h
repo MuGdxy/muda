@@ -76,26 +76,25 @@ class Graph
     }
 
 
-    template <typename T>
-    auto add_memcpy_node(T*                               dst,
-                         const T*                         src,
-                         size_t                           count,
+
+    auto add_memcpy_node(void*                               dst,
+                         const void*                         src,
+                         size_t                           size_bytes,
                          cudaMemcpyKind                   kind,
                          const std::vector<S<GraphNode>>& deps)
     {
-        auto                         ret   = std::make_shared<memcpyNode>();
+        auto                         ret   = std::make_shared<MemcpyNode>();
         std::vector<cudaGraphNode_t> nodes = map_dependencies(deps);
         checkCudaErrors(cudaGraphAddMemcpyNode1D(
-            &ret->m_handle, m_handle, nodes.data(), nodes.size(), dst, src, sizeof(T) * count, kind));
+            &ret->m_handle, m_handle, nodes.data(), nodes.size(), dst, src, size_bytes, kind));
         return ret;
     }
 
-    template <typename T>
-    auto add_memcpy_node(T* dst, const T* src, size_t count, cudaMemcpyKind kind)
+    auto add_memcpy_node(void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind)
     {
-        auto ret = std::make_shared<memcpyNode>();
+        auto ret = std::make_shared<MemcpyNode>();
         checkCudaErrors(cudaGraphAddMemcpyNode1D(
-            &ret->m_handle, m_handle, nullptr, 0, dst, src, sizeof(T) * count, kind));
+            &ret->m_handle, m_handle, nullptr, 0, dst, src, size_bytes, kind));
         return ret;
     }
 

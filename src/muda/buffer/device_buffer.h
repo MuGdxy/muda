@@ -59,11 +59,11 @@ class DeviceBuffer
     DeviceBuffer(const DeviceBuffer& other) = delete;
 
     DeviceBuffer(DeviceBuffer&& other) MUDA_NOEXCEPT
-        : m_stream(other.m_stream)
-        , m_data(other.m_data)
-        , m_size(other.m_size)
-        , m_capacity(other.m_capacity)
-        , m_init(other.m_init)
+        : m_stream(other.m_stream),
+          m_data(other.m_data),
+          m_size(other.m_size),
+          m_capacity(other.m_capacity),
+          m_init(other.m_init)
     {
         other.m_data = nullptr;
         other.m_size = 0;
@@ -74,7 +74,7 @@ class DeviceBuffer
 
     void stream(cudaStream_t s)
     {
-        m_init   = true;
+        m_init         = true;
         m_stream = s;
     }
 
@@ -118,7 +118,7 @@ class DeviceBuffer
     ~DeviceBuffer()
     {
         if(m_data)
-            Memory(m_stream).free(m_data);
+            Memory(this->stream()).free(m_data);
     }
 
     size_t   size() const { return m_size; }
@@ -153,7 +153,7 @@ class BufferOperator : public LaunchBase<BufferOperator>
     template <typename T>
     BufferOperator& resize(DeviceBuffer<T>& buf, size_t size)
     {
-        details::set_stream_check(buf, m_stream);
+        details::set_stream_check(buf, this->stream());
         buf.resize(size);
         return *this;
     }
@@ -161,7 +161,7 @@ class BufferOperator : public LaunchBase<BufferOperator>
     template <typename T>
     BufferOperator& resize(DeviceBuffer<T>& buf, size_t size, const T& value)
     {
-        details::set_stream_check(buf, m_stream);
+        details::set_stream_check(buf, this->stream());
         buf.resize(size, value, m_block_dim);
         return *this;
     }
@@ -169,7 +169,7 @@ class BufferOperator : public LaunchBase<BufferOperator>
     template <typename T>
     BufferOperator& resize(DeviceBuffer<T>& buf, size_t size, BufferOperation mem_op, char setbyte = 0)
     {
-        details::set_stream_check(buf, m_stream);
+        details::set_stream_check(buf, this->stream());
         buf.resize(size, mem_op, setbyte);
         return *this;
     }
@@ -177,7 +177,7 @@ class BufferOperator : public LaunchBase<BufferOperator>
     template <typename T>
     BufferOperator& shrink_to_fit(DeviceBuffer<T>& buf)
     {
-        details::set_stream_check(buf, m_stream);
+        details::set_stream_check(buf, this->stream());
         buf.shrink_to_fit();
         return *this;
     }
@@ -185,7 +185,7 @@ class BufferOperator : public LaunchBase<BufferOperator>
     template <typename T>
     BufferOperator& set(DeviceBuffer<T>& buf, char setbyte = 0, size_t count = size_t(-1))
     {
-        details::set_stream_check(buf, m_stream);
+        details::set_stream_check(buf, this->stream());
         buf.set(setbyte, count);
         return *this;
     }
@@ -193,7 +193,7 @@ class BufferOperator : public LaunchBase<BufferOperator>
     template <typename T>
     BufferOperator& copy_to(DeviceBuffer<T>& buf, T& val)
     {
-        details::set_stream_check(buf, m_stream);
+        details::set_stream_check(buf, this->stream());
         buf.copy_to(val);
         return *this;
     }
@@ -201,7 +201,7 @@ class BufferOperator : public LaunchBase<BufferOperator>
     template <typename T>
     BufferOperator& copy_to(DeviceBuffer<T>& buf, HostVector<T>& vec)
     {
-        details::set_stream_check(buf, m_stream);
+        details::set_stream_check(buf, this->stream());
         buf.copy_to(vec);
         return *this;
     }
@@ -209,7 +209,7 @@ class BufferOperator : public LaunchBase<BufferOperator>
     template <typename T>
     BufferOperator& copy_to(DeviceBuffer<T>& buf, DeviceVar<T>& var)
     {
-        details::set_stream_check(buf, m_stream);
+        details::set_stream_check(buf, this->stream());
         buf.copy_to(var);
         return *this;
     }
@@ -217,7 +217,7 @@ class BufferOperator : public LaunchBase<BufferOperator>
     template <typename T>
     BufferOperator& copy_to(DeviceBuffer<T>& buf, DeviceVector<T>& vec)
     {
-        details::set_stream_check(buf, m_stream);
+        details::set_stream_check(buf, this->stream());
         buf.copy_to(vec);
         return *this;
     }
@@ -225,7 +225,7 @@ class BufferOperator : public LaunchBase<BufferOperator>
     template <typename T>
     BufferOperator& copy_to(DeviceBuffer<T>& buf, DeviceBuffer<T>& dst)
     {
-        details::set_stream_check(buf, m_stream);
+        details::set_stream_check(buf, this->stream());
         buf.copy_to(dst);
         return *this;
     }
@@ -234,7 +234,7 @@ class BufferOperator : public LaunchBase<BufferOperator>
     template <typename T>
     BufferOperator& copy_from(DeviceBuffer<T>& buf, const T& val)
     {
-        details::set_stream_check(buf, m_stream);
+        details::set_stream_check(buf, this->stream());
         buf.copy_from(val);
         return *this;
     }
@@ -242,7 +242,7 @@ class BufferOperator : public LaunchBase<BufferOperator>
     template <typename T>
     BufferOperator& copy_from(DeviceBuffer<T>& buf, const HostVector<T>& vec)
     {
-        details::set_stream_check(buf, m_stream);
+        details::set_stream_check(buf, this->stream());
         buf.copy_from(vec);
         return *this;
     }
@@ -250,7 +250,7 @@ class BufferOperator : public LaunchBase<BufferOperator>
     template <typename T>
     BufferOperator& copy_from(DeviceBuffer<T>& buf, DeviceVar<T>& var)
     {
-        details::set_stream_check(buf, m_stream);
+        details::set_stream_check(buf, this->stream());
         buf.copy_from(var);
         return *this;
     }
@@ -258,7 +258,7 @@ class BufferOperator : public LaunchBase<BufferOperator>
     template <typename T>
     BufferOperator& copy_from(DeviceBuffer<T>& buf, const DeviceVector<T>& vec)
     {
-        details::set_stream_check(buf, m_stream);
+        details::set_stream_check(buf, this->stream());
         buf.copy_from(vec);
         return *this;
     }
@@ -266,7 +266,7 @@ class BufferOperator : public LaunchBase<BufferOperator>
     template <typename T>
     BufferOperator& copy_from(DeviceBuffer<T>& buf, const DeviceBuffer<T>& vec)
     {
-        details::set_stream_check(buf, m_stream);
+        details::set_stream_check(buf, this->stream());
         buf.copy_from(vec);
         return *this;
     }

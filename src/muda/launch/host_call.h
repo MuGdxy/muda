@@ -36,9 +36,9 @@ class HostCall : public LaunchBase<HostCall>
         static_assert(std::is_invocable_v<CallableType>, "f:void (void)");
         auto userdata = new CallableType(std::forward<F>(f));
         checkCudaErrors(cudaLaunchHostFunc(
-            m_stream, details::generic_host_call<CallableType, UserTag>, userdata));
+            this->stream(), details::generic_host_call<CallableType, UserTag>, userdata));
         checkCudaErrors(cudaLaunchHostFunc(
-            m_stream, details::delete_function_object<CallableType, UserTag>, userdata));
+            this->stream(), details::delete_function_object<CallableType, UserTag>, userdata));
         return *this;
     }
 

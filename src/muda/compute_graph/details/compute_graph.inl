@@ -7,6 +7,7 @@
 #include <muda/compute_graph/compute_graph_node.h>
 #include <muda/compute_graph/nodes/compute_graph_kernel_node.h>
 #include <muda/compute_graph/nodes/compute_graph_catpure_node.h>
+#include <muda/compute_graph/nodes/compute_graph_memory_node.h>
 
 namespace muda
 {
@@ -161,7 +162,7 @@ MUDA_INLINE void ComputeGraph::topo_build()
         m_current_closure_id = ClosureId{i};
         m_allow_access_graph = true;
         m_closures[i].second();
-        if (m_is_capturing)
+        if(m_is_capturing)
             add_capture_node(m_sub_graphs[i]);
     }
 
@@ -370,8 +371,41 @@ MUDA_INLINE void details::ComputeGraphAccessor::update_kernel_node(const S<Kerne
         });
 }
 
+MUDA_INLINE void details::ComputeGraphAccessor::add_memcpy_node(void*       dst,
+                                                                const void* src,
+                                                                size_t size_bytes,
+                                                                cudaMemcpyKind kind)
+{
+    access_graph([&](Graph& g) {  // create memory node
+        ComputeGraphMemcpyNode* memory_node = get_or_create_node<ComputeGraphMemcpyNode>(
+            [&]
+            {
+                const auto& [name, closure] = current_closure();
+                return new ComputeGraphMemcpyNode(  //
+                    &m_cg,                          // compute graph
+                    name,                           // node name
+                    NodeId{m_cg.m_nodes.size()},    // node id
+                    temp_var_usage());
+            });
+        if(ComputeGraphBuilder::current_phase() == ComputeGraphPhase::Building)
+            memory_node->set_node(g.add_memcpy_node(dst, src, size_bytes, kind));
+    });
+}
+
+MUDA_INLINE void details::ComputeGraphAccessor::update_memcpy_node(
+    void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind)
+{
+    access_graph_exec(
+        [&](GraphExec& g_exec)
+        {
+            const auto& [name, closure] = current_closure();
+            auto memory_node = current_node<ComputeGraphMemcpyNode>();
+            g_exec.set_memcpy_node_parms(memory_node->m_node, dst, src, size_bytes, kind);
+        });
+}
+
 template <typename NodeType, typename F>
-inline NodeType* details::ComputeGraphAccessor::get_or_create_node(F&& f)
+MUDA_INLINE NodeType* details::ComputeGraphAccessor::get_or_create_node(F&& f)
 {
     static_assert(std::is_base_of_v<ComputeGraphNodeBase, NodeType>,
                   "NodeType must be derived from ComputeGraphNodeBase");
@@ -403,18 +437,39 @@ MUDA_INLINE void details::ComputeGraphAccessor::set_kernel_node(const S<KernelNo
     }
 }
 
+
+MUDA_INLINE void details::ComputeGraphAccessor::set_memcpy_node(void*       dst,
+                                                                const void* src,
+                                                                size_t size_bytes,
+                                                                cudaMemcpyKind kind)
+{
+    switch(ComputeGraphBuilder::current_phase())
+    {
+        case ComputeGraphPhase::TopoBuilding:
+        case ComputeGraphPhase::Building:
+            add_memcpy_node(dst, src, size_bytes, kind);
+            break;
+        case ComputeGraphPhase::Updating:
+            update_memcpy_node(dst, src, size_bytes, kind);
+            break;
+        default:
+            throw muda::logic_error("invalid phase");
+            break;
+    }
+}
+
 MUDA_INLINE details::ComputeGraphAccessor::ComputeGraphAccessor()
     : m_cg(*ComputeGraphBuilder::current_graph())
 {
 }
 
-inline void details::ComputeGraphAccessor::check_allow_var_eval() const
+MUDA_INLINE void details::ComputeGraphAccessor::check_allow_var_eval() const
 {
     if(m_cg.m_is_in_capture_func)
         throw muda::logic_error("you can't eval a var in ComputeGraph::capture() function");
 }
 
-inline void details::ComputeGraphAccessor::check_allow_node_adding() const
+MUDA_INLINE void details::ComputeGraphAccessor::check_allow_node_adding() const
 {
     if(m_cg.current_graph_phase() != ComputeGraphPhase::None)
         throw muda::logic_error("you are not allowed adding node at this point");

@@ -33,11 +33,10 @@ class GraphExec
             m_handle, node.get()->m_handle, new_parms->handle()));
     }
 
-    template <typename T>
-    void set_memcpy_node_parms(S<MemcpyNode> node, T* dst, const T* src, size_t count, cudaMemcpyKind kind)
+    void set_memcpy_node_parms(S<MemcpyNode> node, void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind)
     {
         checkCudaErrors(cudaGraphExecMemcpyNodeSetParams1D(
-            m_handle, node.get()->m_handle, dst, src, count * sizeof(T), kind));
+            m_handle, node.get()->m_handle, dst, src, size_bytes, kind));
     }
 
     ~GraphExec()

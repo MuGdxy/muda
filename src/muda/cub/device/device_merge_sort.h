@@ -23,7 +23,7 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
                                CompareOpT                compare_op)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceMergeSort::SortPairs(
-            d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, m_stream, false));
+            d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, this->stream(), false));
     }
 
     template <typename KeyInputIteratorT, typename ValueInputIteratorT, typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
@@ -43,7 +43,7 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
                                                                   d_output_items,
                                                                   num_items,
                                                                   compare_op,
-                                                                  m_stream,
+                                                                  this->stream(),
                                                                   false));
     }
 
@@ -54,7 +54,7 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
                               CompareOpT                compare_op)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceMergeSort::SortKeys(
-            d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, m_stream, false));
+            d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, this->stream(), false));
     }
 
     template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT>
@@ -65,7 +65,7 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
                                   CompareOpT                compare_op)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceMergeSort::SortKeysCopy(
-            d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, m_stream, false));
+            d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, this->stream(), false));
     }
 
     template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
@@ -76,7 +76,7 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
                                      CompareOpT                compare_op)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceMergeSort::StableSortPairs(
-            d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, m_stream, false));
+            d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, this->stream(), false));
     }
 
     template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
@@ -86,7 +86,7 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
                                     CompareOpT                compare_op)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceMergeSort::StableSortKeys(
-            d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, m_stream, false));
+            d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, this->stream(), false));
     }
 };
 }  // namespace muda

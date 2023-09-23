@@ -31,7 +31,7 @@ class DeviceScan : public CubWrapper<DeviceScan>
                              int                       num_items)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceScan::ExclusiveSum(
-            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, m_stream, false));
+            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, this->stream(), false));
     }
 
 
@@ -44,7 +44,7 @@ class DeviceScan : public CubWrapper<DeviceScan>
                               int                       num_items)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceScan::ExclusiveScan(
-            d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init_value, num_items, m_stream, false));
+            d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init_value, num_items, this->stream(), false));
     }
 
 
@@ -55,7 +55,7 @@ class DeviceScan : public CubWrapper<DeviceScan>
                              int                       num_items)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceScan::InclusiveSum(
-            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, m_stream, false));
+            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, this->stream(), false));
     }
 
     template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT>
@@ -66,7 +66,7 @@ class DeviceScan : public CubWrapper<DeviceScan>
                               int                       num_items)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceScan::InclusiveScan(
-            d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, num_items, m_stream, false));
+            d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, num_items, this->stream(), false));
     }
 
     template <typename KeysInputIteratorT, typename ValuesInputIteratorT, typename ValuesOutputIteratorT, typename EqualityOpT = cub::Equality>
@@ -78,7 +78,7 @@ class DeviceScan : public CubWrapper<DeviceScan>
                                   EqualityOpT equality_op = EqualityOpT())
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceScan::ExclusiveSumByKey(
-            d_temp_storage, temp_storage_bytes, d_keys_in, d_values_in, d_values_out, num_items, equality_op, m_stream, false));
+            d_temp_storage, temp_storage_bytes, d_keys_in, d_values_in, d_values_out, num_items, equality_op, this->stream(), false));
     }
 
     template <typename KeysInputIteratorT, typename ValuesInputIteratorT, typename ValuesOutputIteratorT, typename ScanOpT, typename InitValueT, typename EqualityOpT = cub::Equality>
@@ -100,7 +100,7 @@ class DeviceScan : public CubWrapper<DeviceScan>
                                                                   init_value,
                                                                   num_items,
                                                                   equality_op,
-                                                                  m_stream,
+                                                                  this->stream(),
                                                                   false));
     }
 
@@ -113,7 +113,7 @@ class DeviceScan : public CubWrapper<DeviceScan>
                                   EqualityOpT equality_op = EqualityOpT())
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceScan::InclusiveSumByKey(
-            d_temp_storage, temp_storage_bytes, d_keys_in, d_values_in, d_values_out, num_items, equality_op, m_stream, false));
+            d_temp_storage, temp_storage_bytes, d_keys_in, d_values_in, d_values_out, num_items, equality_op, this->stream(), false));
     }
 
     template <typename KeysInputIteratorT, typename ValuesInputIteratorT, typename ValuesOutputIteratorT, typename ScanOpT, typename EqualityOpT = cub::Equality>
@@ -133,7 +133,7 @@ class DeviceScan : public CubWrapper<DeviceScan>
                                                                   scan_op,
                                                                   num_items,
                                                                   equality_op,
-                                                                  m_stream,
+                                                                  this->stream(),
                                                                   false));
     }
 };

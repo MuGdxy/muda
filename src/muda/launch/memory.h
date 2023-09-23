@@ -16,7 +16,7 @@ class Memory : public LaunchBase<Memory>
 
 #ifdef MUDA_WITH_ASYNC_MEMORY_ALLOC_FREE
         if(async)
-            checkCudaErrors(cudaMallocAsync(ptr, byte_size, m_stream));
+            checkCudaErrors(cudaMallocAsync(ptr, byte_size, stream()));
         else
             checkCudaErrors(cudaMalloc(ptr, byte_size));
 #else
@@ -29,7 +29,7 @@ class Memory : public LaunchBase<Memory>
     {
 #ifdef MUDA_WITH_ASYNC_MEMORY_ALLOC_FREE
         if(async)
-            checkCudaErrors(cudaFreeAsync(ptr, m_stream));
+            checkCudaErrors(cudaFreeAsync(ptr, stream()));
         else
             checkCudaErrors(cudaFree(ptr));
 #else
@@ -38,13 +38,9 @@ class Memory : public LaunchBase<Memory>
         return *this;
     }
 
-    Memory& copy(void* dst, const void* src, size_t byte_size, cudaMemcpyKind kind)
-    {
-        checkCudaErrors(cudaMemcpyAsync(dst, src, byte_size, kind, m_stream));
-        return *this;
-    }
+    Memory& copy(void* dst, const void* src, size_t byte_size, cudaMemcpyKind kind);
 
-    Memory& trasfer(void* dst, const void* src, size_t byte_size)
+    Memory& transfer(void* dst, const void* src, size_t byte_size)
     {
         return copy(dst, src, byte_size, cudaMemcpyDeviceToDevice);
     }
@@ -62,8 +58,10 @@ class Memory : public LaunchBase<Memory>
 
     Memory& set(void* data, size_t byte_size, char byte = 0)
     {
-        checkCudaErrors(cudaMemsetAsync(data, (int)byte, byte_size, m_stream));
+        checkCudaErrors(cudaMemsetAsync(data, (int)byte, byte_size, stream()));
         return *this;
     }
 };
 }  // namespace muda
+
+#include <muda/launch/details/memory.inl>

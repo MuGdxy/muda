@@ -263,6 +263,8 @@ class ComputeGraphAccessor
     template <typename T>
     void set_kernel_node(const S<KernelNodeParms<T>>& kernelParms);
 
+    void set_memcpy_node(void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind);
+
     cudaStream_t current_stream() const { return m_cg.m_current_single_stream; }
 
     void check_allow_var_eval() const;
@@ -280,6 +282,11 @@ class ComputeGraphAccessor
 
     template <typename T>
     void update_kernel_node(const S<KernelNodeParms<T>>& kernelParms);
+
+    void add_memcpy_node(void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind);
+
+
+    void update_memcpy_node(void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind);
 
     template <typename F>
     void access_graph(F&& f)

@@ -36,7 +36,7 @@ class DeviceSpmv : public CubWrapper<DeviceSpmv>
                                                      num_rows,
                                                      num_cols,
                                                      num_nonzeros,
-                                                     m_stream,
+                                                     this->stream(),
                                                      false));
     }
 };
