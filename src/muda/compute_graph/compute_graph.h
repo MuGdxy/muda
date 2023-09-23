@@ -11,8 +11,6 @@
 #include <muda/compute_graph/compute_graph_var_id.h>
 #include <muda/compute_graph/compute_graph_var_usage.h>
 
-#include <muda/compute_graph/graphviz.h>
-
 namespace muda::details
 {
 class ComputeGraphAccessor;
@@ -149,7 +147,7 @@ class ComputeGraph
     * 
     ***************************************************************/
 
-    cudaStream_t capture_stream();
+    void capture(std::function<void(cudaStream_t)>&& f);
 
     /**************************************************************
     * 
@@ -160,9 +158,13 @@ class ComputeGraph
     void graphviz(std::ostream& o, const ComputeGraphGraphvizOptions& options = {});
 
   private:  // internal method
+    void topo_build();
+
     void build();
 
     void build_deps();
+
+    void topo_build_deps();
 
     void serial_launch();
 
@@ -205,6 +207,10 @@ class ComputeGraph
     TempNodeInfo      m_temp_node_info;
     cudaStream_t      m_current_single_stream = nullptr;
     bool              m_is_capturing          = false;
+    // in capture func, we don't allow any var eval()
+    bool m_is_in_capture_func = false;
+    // if we have already built the topo, we don't do that again
+    bool m_is_topo_built = false;
 };
 }  // namespace muda
 
@@ -214,6 +220,7 @@ namespace muda::details
 // allow devlopers to access some internal function
 class ComputeGraphAccessor
 {
+    friend class ComputeGraph;
     ComputeGraph& m_cg;
     template <typename T>
     using S = std::shared_ptr<T>;
@@ -237,6 +244,12 @@ class ComputeGraphAccessor
 
     auto current_node() { return m_cg.m_nodes[m_cg.current_node_id().value()]; }
 
+    template <typename T>
+    auto current_node()
+    {
+        return dynamic_cast<T*>(current_node());
+    }
+
     const auto current_node() const
     {
         return m_cg.m_nodes[m_cg.current_node_id().value()];
@@ -251,6 +264,12 @@ class ComputeGraphAccessor
     void set_kernel_node(const S<KernelNodeParms<T>>& kernelParms);
 
     cudaStream_t current_stream() const { return m_cg.m_current_single_stream; }
+
+    void check_allow_var_eval() const;
+
+    void check_allow_node_adding() const;
+
+    bool is_topo_built() const { return m_cg.m_is_topo_built; }
 
   private:
     friend class ComputeGraphVarBase;
@@ -286,6 +305,9 @@ class ComputeGraphAccessor
     {
         return std::move(m_cg.m_temp_node_info.var_usage);
     }
+
+    template <typename NodeType, typename F>
+    NodeType* get_or_create_node(F&& f);
 };
 }  // namespace muda::details
 

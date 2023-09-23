@@ -15,11 +15,14 @@ class ComputeGraphCaptureNode : public ComputeGraphNodeBase
     ComputeGraphCaptureNode(ComputeGraph*                           graph,
                             std::string_view                        name,
                             NodeId                                  node_id,
-                            std::map<VarId, ComputeGraphVarUsage>&& usages,
-                            cudaGraphNode_t                         node)
+                            std::map<VarId, ComputeGraphVarUsage>&& usages)
         : ComputeGraphNodeBase(
-            graph, name, node_id, ComputeGraphNodeType::CaptureNode, std::move(usages), node)
+            graph, name, node_id, ComputeGraphNodeType::CaptureNode, std::move(usages))
     {
     }
+
+    void set_node(cudaGraphNode_t node) { set_handle(node); }
+
+    virtual ~ComputeGraphCaptureNode() = default;
 };
 }  // namespace muda

@@ -1,7 +1,6 @@
 #pragma once
 #include <muda/compute_graph/compute_graph.h>
 #include <muda/compute_graph/compute_graph_node.h>
-#include "compute_graph_var.h"
 
 namespace muda
 {
@@ -52,22 +51,26 @@ MUDA_INLINE ComputeGraphVar<T>::RWViewer ComputeGraphVar<T>::eval()
             throw std::logic_error("ComputeGraphVar.eval() is not allowed outside Graph Closure");
         }
         break;
+        case ComputeGraphPhase::TopoBuilding:
         case ComputeGraphPhase::Building: {
-            if constexpr(std::is_same_v<T, read_only_viewer_t<T>>)
+            auto acc = details::ComputeGraphAccessor();
+            acc.check_allow_var_eval();
+            if (!acc.is_topo_built())
             {
-                // they are all read only(e.g. host float/int ...)
-                this->base_building_eval_const();
-            }
-            else
-            {
-                this->base_building_eval();
+                if constexpr(std::is_same_v<T, read_only_viewer_t<T>>)
+                {
+                    // they are all read only(e.g. host float/int ...)
+                    this->base_building_eval_const();
+                }
+                else
+                {
+                    this->base_building_eval();
+                }
             }
         }
         break;
-        case ComputeGraphPhase::Updating: {
-            // nothing to do
-        }
-        default:
+        case ComputeGraphPhase::Updating:
+        default:  // nothing to do
             break;
     }
     return m_value;
@@ -83,6 +86,7 @@ MUDA_INLINE ComputeGraphVar<T>::ROViewer ComputeGraphVar<T>::ceval() const
             throw std::logic_error("ComputeGraphVar.eval() is not allowed outside Graph Closure");
         }
         break;
+        case ComputeGraphPhase::TopoBuilding:
         case ComputeGraphPhase::Building: {
             this->base_building_eval_const();
         }

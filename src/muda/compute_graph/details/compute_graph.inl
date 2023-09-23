@@ -58,8 +58,7 @@ MUDA_INLINE ComputeGraphVar<T>& ComputeGraph::create_var(std::string_view name)
 template <typename T>
 MUDA_INLINE ComputeGraphVar<T>& ComputeGraph::create_var(std::string_view name, T init_value)
 {
-    auto ptr =
-        new ComputeGraphVar<T>(this, name, VarId{m_vars.size()}, init_value);
+    auto ptr = new ComputeGraphVar<T>(this, name, VarId{m_vars.size()}, init_value);
     m_vars.emplace_back(ptr);
     m_vars_map.emplace(name, ptr);
     return *ptr;
@@ -73,29 +72,38 @@ MUDA_INLINE ComputeGraphVar<T>* ComputeGraph::find_var(std::string_view name)
     return dynamic_cast<ComputeGraphVar<T>*>(it->second);
 };
 
-MUDA_INLINE cudaStream_t ComputeGraph::capture_stream()
+MUDA_INLINE void ComputeGraph::capture(std::function<void(cudaStream_t)>&& f)
 {
+    m_is_in_capture_func = true;
     switch(current_graph_phase())
     {
-        case ComputeGraphPhase::SerialLaunching:
-            return m_current_single_stream;
+        case ComputeGraphPhase::TopoBuilding:
+            // if this is called in topo building phase, we do nothing
             break;
+        case ComputeGraphPhase::SerialLaunching: {
+            // simply call it
+            f(m_current_single_stream);
+        }
+        break;
         case ComputeGraphPhase::Updating:
         case ComputeGraphPhase::Building: {
             auto& s = shared_capture_stream();
+            // begin capture and pass the stream to f
             s.begin_capture();
             m_is_capturing = true;
-            return s;
+            f(s);
         }
         break;
         default:
-            throw muda::logic_error("invoking capture_stream() outside Graph Closure is not allowed");
+            throw muda::logic_error("invoking capture() outside Graph Closure is not allowed");
             break;
     }
+    m_is_in_capture_func = false;
 }
 
 MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraphvizOptions& options)
 {
+    topo_build();
     o << "digraph G {\n";
     if(options.show_vars)
     {
@@ -141,6 +149,25 @@ MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraph
     o << "}\n";
 }
 
+MUDA_INLINE void ComputeGraph::topo_build()
+{
+    if(m_is_topo_built)
+        return;
+
+    GraphPhaseGuard guard(*this, ComputeGraphPhase::TopoBuilding);
+    for(size_t i = 0; i < m_closures.size(); ++i)
+    {
+        m_current_node_id    = NodeId{i};
+        m_current_closure_id = ClosureId{i};
+        m_allow_access_graph = true;
+        m_closures[i].second();
+        if (m_is_capturing)
+            add_capture_node(m_sub_graphs[i]);
+    }
+
+    topo_build_deps();
+}
+
 MUDA_INLINE void ComputeGraph::build()
 {
     if(m_graph_exec)
@@ -154,16 +181,12 @@ MUDA_INLINE void ComputeGraph::build()
         m_current_node_id    = NodeId{i};
         m_current_closure_id = ClosureId{i};
         m_allow_access_graph = true;
-        auto& sub_graph      = m_sub_graphs[i];
         m_closures[i].second();
         if(m_is_capturing)
-        {
-            shared_capture_stream().end_capture(&sub_graph);
-            add_capture_node(sub_graph);
-        }
-        m_is_capturing = false;
+            add_capture_node(m_sub_graphs[i]);
     }
-    build_deps();
+    if(!m_is_topo_built)
+        build_deps();
 
     m_graph_exec = m_graph.instantiate();
 }
@@ -178,6 +201,8 @@ MUDA_INLINE void ComputeGraph::serial_launch()
         m_current_closure_id = ClosureId{i};
         m_allow_access_graph = false;  // no need to access graph
         m_closures[i].second();
+        if(m_is_capturing)
+            update_capture_node(m_sub_graphs[i]);
     }
 }
 
@@ -191,6 +216,7 @@ MUDA_INLINE void ComputeGraph::check_vars_valid()
 
 MUDA_INLINE ComputeGraph& ComputeGraph::add_node(std::string&& name, const Closure& f)
 {
+    details::ComputeGraphAccessor(this).check_allow_node_adding();
     if(!m_allow_node_adding)
         throw muda::logic_error(  //
             "This graph is built or updated, so you can't add new nodes any more.");
@@ -221,16 +247,24 @@ MUDA_INLINE Stream& ComputeGraph::shared_capture_stream()
 
 MUDA_INLINE void ComputeGraph::add_capture_node(cudaGraph_t sub_graph)
 {
-    const auto& [name, closure] = m_closures[current_closure_id().value()];
-    cudaGraphNode_t node;
-    checkCudaErrors(cudaGraphAddChildGraphNode(&node, m_graph.handle(), nullptr, 0, sub_graph));
-    auto capture_node = new ComputeGraphCaptureNode{this,
-                                                    name,
-                                                    NodeId{m_nodes.size()},  // node id
-                                                    std::move(m_temp_node_info.var_usage),
-                                                    node};
+    auto capture_node = details::ComputeGraphAccessor(this).get_or_create_node<ComputeGraphCaptureNode>(
+        [&]
+        {
+            const auto& [name, closure] = m_closures[current_closure_id().value()];
+            return new ComputeGraphCaptureNode{this,
+                                               name,
+                                               NodeId{m_nodes.size()},  // node id
+                                               std::move(m_temp_node_info.var_usage)};
+        });
+    if(ComputeGraphBuilder::is_building())
+    {
 
-    m_nodes.emplace_back(capture_node);
+        shared_capture_stream().end_capture(&sub_graph);
+        cudaGraphNode_t node;
+        checkCudaErrors(cudaGraphAddChildGraphNode(&node, m_graph.handle(), nullptr, 0, sub_graph));
+        capture_node->set_node(node);
+    }
+    m_is_capturing = false;
 }
 
 MUDA_INLINE void ComputeGraph::update_capture_node(cudaGraph_t sub_graph)
@@ -240,6 +274,7 @@ MUDA_INLINE void ComputeGraph::update_capture_node(cudaGraph_t sub_graph)
     auto capture_node           = dynamic_cast<ComputeGraphCaptureNode*>(node);
     auto cuda_node              = capture_node->handle();
     checkCudaErrors(cudaGraphExecChildGraphNodeSetParams(m_graph_exec->handle(), cuda_node, sub_graph));
+    m_is_capturing = false;
 }
 
 MUDA_INLINE ComputeGraphPhase ComputeGraph::current_graph_phase() const
@@ -308,15 +343,18 @@ template <typename T>
 MUDA_INLINE void details::ComputeGraphAccessor::add_kernel_node(const S<KernelNodeParms<T>>& parms)
 {
     access_graph([&](Graph& g) {  // create kernel node
-        const auto& [name, closure] = current_closure();
-        auto kernel_node            =         //
-            new ComputeGraphKernelNode(       //
-                &m_cg,                        // compute graph
-                name,                         // node name
-                NodeId{m_cg.m_nodes.size()},  // node id
-                temp_var_usage(),             // var usage
-                g.add_kernel_node(parms));    // kernel node
-        m_cg.m_nodes.emplace_back(kernel_node);
+        ComputeGraphKernelNode* kernel_node = get_or_create_node<ComputeGraphKernelNode>(
+            [&]
+            {
+                const auto& [name, closure] = current_closure();
+                return new ComputeGraphKernelNode(  //
+                    &m_cg,                          // compute graph
+                    name,                           // node name
+                    NodeId{m_cg.m_nodes.size()},    // node id
+                    temp_var_usage());              // kernel node
+            });
+        if(ComputeGraphBuilder::current_phase() == ComputeGraphPhase::Building)
+            kernel_node->set_node(g.add_kernel_node(parms));
     });
 }
 
@@ -327,26 +365,59 @@ MUDA_INLINE void details::ComputeGraphAccessor::update_kernel_node(const S<Kerne
         [&](GraphExec& g_exec)
         {
             const auto& [name, closure] = current_closure();
-            auto node                   = current_node();
-            auto kernel_node = dynamic_cast<ComputeGraphKernelNode*>(node);
+            auto kernel_node = current_node<ComputeGraphKernelNode>();
             g_exec.set_kernel_node_parms(kernel_node->m_node, kernelParms);
         });
+}
+
+template <typename NodeType, typename F>
+inline NodeType* details::ComputeGraphAccessor::get_or_create_node(F&& f)
+{
+    static_assert(std::is_base_of_v<ComputeGraphNodeBase, NodeType>,
+                  "NodeType must be derived from ComputeGraphNodeBase");
+    if(!m_cg.m_is_topo_built)
+    {
+        NodeType* ptr = f();
+        m_cg.m_nodes.emplace_back(ptr);
+        return ptr;
+    }
+    else
+        return current_node<NodeType>();
 }
 
 template <typename T>
 MUDA_INLINE void details::ComputeGraphAccessor::set_kernel_node(const S<KernelNodeParms<T>>& kernelParms)
 {
-    if(ComputeGraphBuilder::current_phase() == ComputeGraphPhase::Building)
-        add_kernel_node(kernelParms);
-    else if(ComputeGraphBuilder::current_phase() == ComputeGraphPhase::Updating)
-        update_kernel_node(kernelParms);
-    else
-        throw muda::logic_error("invalid phase");
+    switch(ComputeGraphBuilder::current_phase())
+    {
+        case ComputeGraphPhase::TopoBuilding:
+        case ComputeGraphPhase::Building:
+            add_kernel_node(kernelParms);
+            break;
+        case ComputeGraphPhase::Updating:
+            update_kernel_node(kernelParms);
+            break;
+        default:
+            throw muda::logic_error("invalid phase");
+            break;
+    }
 }
 
 MUDA_INLINE details::ComputeGraphAccessor::ComputeGraphAccessor()
     : m_cg(*ComputeGraphBuilder::current_graph())
 {
+}
+
+inline void details::ComputeGraphAccessor::check_allow_var_eval() const
+{
+    if(m_cg.m_is_in_capture_func)
+        throw muda::logic_error("you can't eval a var in ComputeGraph::capture() function");
+}
+
+inline void details::ComputeGraphAccessor::check_allow_node_adding() const
+{
+    if(m_cg.current_graph_phase() != ComputeGraphPhase::None)
+        throw muda::logic_error("you are not allowed adding node at this point");
 }
 
 MUDA_INLINE void details::ComputeGraphAccessor::set_var_usage(VarId id, ComputeGraphVarUsage usage)
@@ -442,20 +513,7 @@ namespace details
 
 MUDA_INLINE void ComputeGraph::build_deps()
 {
-    m_deps.clear();
-    // map: var_id -> node_id, uint64_t{-1} means no write node yet
-    auto last_write_nodes = std::vector<NodeId>(m_vars.size());
-    // map: var_id -> node_id, uint64_t{-1} means no read node yet
-    auto last_read_nodes = std::vector<NodeId>(m_vars.size());
-
-    // process all nodes
-    for(size_t i = 0u; i < m_nodes.size(); i++)
-    {
-        size_t dep_begin, dep_count;
-        details::process_node(
-            m_deps, last_read_nodes, last_write_nodes, m_vars, m_nodes, NodeId{i}, dep_begin, dep_count);
-        m_nodes[i]->set_deps_range(dep_begin, dep_count);
-    }
+    topo_build_deps();
 
     std::vector<cudaGraphNode_t> from;
     from.reserve(m_deps.size());
@@ -472,5 +530,25 @@ MUDA_INLINE void ComputeGraph::build_deps()
 
     checkCudaErrors(cudaGraphAddDependencies(
         m_graph.handle(), from.data(), to.data(), m_deps.size()));
+}
+
+MUDA_INLINE void ComputeGraph::topo_build_deps()
+{
+    m_deps.clear();
+    // map: var_id -> node_id, uint64_t{-1} means no write node yet
+    auto last_write_nodes = std::vector<NodeId>(m_vars.size());
+    // map: var_id -> node_id, uint64_t{-1} means no read node yet
+    auto last_read_nodes = std::vector<NodeId>(m_vars.size());
+
+    // process all nodes
+    for(size_t i = 0u; i < m_nodes.size(); i++)
+    {
+        size_t dep_begin, dep_count;
+        details::process_node(
+            m_deps, last_read_nodes, last_write_nodes, m_vars, m_nodes, NodeId{i}, dep_begin, dep_count);
+        m_nodes[i]->set_deps_range(dep_begin, dep_count);
+    }
+
+    m_is_topo_built = true;
 }
 }  // namespace muda

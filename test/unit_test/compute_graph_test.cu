@@ -26,38 +26,43 @@ void compute_graph_test()
     // define graph nodes
     graph.create_node("cal_v") << [&]
     {
-        ParallelFor(256).apply(var_N,
-                               [v = var_v.eval(), dt = var_dt.eval()] __device__(int i) mutable
-                               {
-                                   // simple set
-                                   v(i) = Vector3::Ones() * dt * dt;
-                               });
+        ParallelFor(256)  //
+            .apply(var_N,
+                   [v = var_v.eval(), dt = var_dt.eval()] __device__(int i) mutable
+                   {
+                       // simple set
+                       v(i) = Vector3::Ones() * dt * dt;
+                   });
     };
 
     graph.create_node("cd") << [&]
     {
-        ParallelFor(256).apply(var_N,
-                               [x = var_x.ceval()] __device__(int i) mutable
-                               {
-                                   // collision detection
-                               });
+        ParallelFor(256)  //
+            .apply(var_N,
+                   [x   = var_x.ceval(),
+                    v   = var_v.ceval(),
+                    dt  = var_dt.eval(),
+                    toi = var_toi.ceval()] __device__(int i) mutable
+                   {
+                       // collision detection
+                   });
     };
 
     graph.create_node("cal_x") << [&]
     {
-        // print("current phase: %d\n", (int)ComputeGraphBuilder::current_phase());
-        ParallelFor(256).apply(
-            var_N.eval(),
-            [x = var_x.eval(), v = var_v.ceval(), dt = var_dt.eval()] __device__(int i) mutable
-            {
-                // integrate
-                x(i) += v(i) * dt;
-            });
+        print("current phase: %d\n", (int)ComputeGraphBuilder::current_phase());
+        ParallelFor(256).apply(var_N.eval(),
+                               [x   = var_x.eval(),
+                                v   = var_v.ceval(),
+                                dt  = var_dt.eval(),
+                                toi = var_toi.ceval()] __device__(int i) mutable
+                               {
+                                   // integrate
+                                   x(i) += v(i) * toi * dt;
+                               });
     };
-
-    // launch graph
-    graph.launch();
     graph.graphviz(std::cout);
+
     graph.launch(true);
     graph.launch();
 }

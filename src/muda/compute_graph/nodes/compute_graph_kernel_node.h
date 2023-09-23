@@ -16,14 +16,19 @@ class ComputeGraphKernelNode : public ComputeGraphNodeBase
     ComputeGraphKernelNode(ComputeGraph*                           graph,
                            std::string_view                        name,
                            NodeId                                  node_id,
-                           std::map<VarId, ComputeGraphVarUsage>&& usages,
-                           S<KernelNode>                           node)
+                           std::map<VarId, ComputeGraphVarUsage>&& usages)
         : ComputeGraphNodeBase(
-            graph, name, node_id, ComputeGraphNodeType::KernelNode, std::move(usages), node->handle())
-        , m_node(node)
+            graph, name, node_id, ComputeGraphNodeType::KernelNode, std::move(usages))
     {
     }
 
     S<KernelNode> m_node;
+    void          set_node(S<KernelNode> node)
+    {
+        m_node = node;
+        set_handle(m_node->handle());
+    }
+
+    virtual ~ComputeGraphKernelNode() = default;
 };
 }  // namespace muda

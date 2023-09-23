@@ -31,14 +31,12 @@ class ComputeGraphNodeBase
                          std::string_view                        name,
                          NodeId                                  node_id,
                          ComputeGraphNodeType                    type,
-                         std::map<VarId, ComputeGraphVarUsage>&& usages,
-                         cudaGraphNode_t                         handle)
+                         std::map<VarId, ComputeGraphVarUsage>&& usages)
         : m_node_id(node_id)
         , m_graph(graph)
         , m_name(name)
         , m_type(type)
         , m_var_usages(std::move(usages))
-        , m_cuda_node(handle)
     {
     }
     std::map<VarId, ComputeGraphVarUsage> m_var_usages;
@@ -48,7 +46,7 @@ class ComputeGraphNodeBase
     ComputeGraphNodeType                  m_type;
     size_t                                m_deps_begin = 0;
     size_t                                m_deps_count = 0;
-    cudaGraphNode_t                       m_cuda_node;
+    cudaGraphNode_t                       m_cuda_node  = nullptr;
 
     void set_deps_range(size_t begin, size_t count)
     {
@@ -57,6 +55,10 @@ class ComputeGraphNodeBase
     }
 
     cudaGraphNode_t handle() const { return m_cuda_node; }
+
+    void set_handle(cudaGraphNode_t handle) { m_cuda_node = handle; }
+
+    bool is_valid() const { return m_cuda_node; }
 };
 
 

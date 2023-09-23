@@ -1,3 +1,4 @@
+#include "compute_graph_builder.h"
 #pragma once
 
 namespace muda
@@ -19,6 +20,16 @@ MUDA_INLINE bool ComputeGraphBuilder::is_phase_none()
 MUDA_INLINE bool ComputeGraphBuilder::is_phase_serial_launching()
 {
     return current_phase() == ComputeGraphPhase::SerialLaunching;
+}
+
+MUDA_INLINE bool ComputeGraphBuilder::is_topo_building()
+{
+    return current_phase() == ComputeGraphPhase::TopoBuilding;
+}
+
+inline bool ComputeGraphBuilder::is_building()
+{
+    return current_phase() == ComputeGraphPhase::Building;
 }
 
 MUDA_INLINE bool ComputeGraphBuilder::is_direct_launching()

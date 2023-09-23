@@ -18,6 +18,8 @@ class ComputeGraphBuilder
     static Phase current_phase();
     static bool  is_phase_none();
     static bool  is_phase_serial_launching();
+    static bool  is_topo_building();
+    static bool  is_building();
 
     // no graph building or the graph is in serial launching mode
     static bool is_direct_launching();
