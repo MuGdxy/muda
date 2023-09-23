@@ -17,9 +17,10 @@ class ComputeGraphKernelNode : public ComputeGraphNodeBase
                            std::string_view                        name,
                            NodeId                                  node_id,
                            std::map<VarId, ComputeGraphVarUsage>&& usages,
-                           S<KernelNode>                           m_node)
-        : ComputeGraphNodeBase(graph, name, node_id, ComputeGraphNodeType::KernelNode, std::move(usages))
-        , m_node(m_node)
+                           S<KernelNode>                           node)
+        : ComputeGraphNodeBase(
+            graph, name, node_id, ComputeGraphNodeType::KernelNode, std::move(usages), node->handle())
+        , m_node(node)
     {
     }
 

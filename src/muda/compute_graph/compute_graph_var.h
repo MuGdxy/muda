@@ -18,6 +18,8 @@ class ComputeGraphVarBase
     std::string_view name() const { return m_name; }
     VarId            var_id() const { return m_var_id; }
     bool             is_valid() const { return m_is_valid; }
+    void             graphviz_def(std::ostream& os) const;
+    void             graphviz_id(std::ostream& os) const;
 
   protected:
     friend class ComputeGraph;
@@ -84,6 +86,9 @@ class ComputeGraphVar : public ComputeGraphVarBase
 
     void update(const RWViewer& view);
 
+    operator ROViewer() const { return ceval(); }
+
+    operator RWViewer() { return eval(); }
   private:
     RWViewer m_value;
 };

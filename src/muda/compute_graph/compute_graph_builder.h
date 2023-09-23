@@ -1,55 +1,38 @@
 #pragma once
+#include <muda/compute_graph/compute_graph.h>
 #include <muda/compute_graph/compute_graph_phase.h>
+
+namespace muda::details
+{
+class ComputeGraphAccessor;
+}
 namespace muda
 {
 class ComputeGraph;
 class ComputeGraphBuilder
 {
+    static ComputeGraphBuilder& instance();
+    using Phase = ComputeGraphPhase;
+
   public:
-    static auto current_graph() { return instance().m_current_graph; }
+    static Phase current_phase();
+    static bool  is_phase_none();
+    static bool  is_phase_serial_launching();
 
-    static ComputeGraphPhase current_phase();
-
-    static void invoke(const std::function<void()>& none,
-                       const std::function<void()>& building,
-                       const std::function<void()>& updating)
-    {
-        switch(current_phase())
-        {
-            case ComputeGraphPhase::None: {
-                none();
-            }
-            break;
-            case ComputeGraphPhase::Building: {
-                building();
-            }
-            break;
-            case ComputeGraphPhase::Updating: {
-                updating();
-            }
-            break;
-            default:
-                break;
-        }
-    }
+    // no graph building or the graph is in serial launching mode
+    static bool is_direct_launching();
 
   private:
     friend class ComputeGraph;
-    static auto current_graph(ComputeGraph* graph)
-    {
-        return instance().m_current_graph = graph;
-    }
+
+    static auto current_graph(ComputeGraph* graph);
+    friend class details::ComputeGraphAccessor;
+    static auto current_graph() { return instance().m_current_graph; }
 
     ComputeGraphBuilder()  = default;
     ~ComputeGraphBuilder() = default;
 
     ComputeGraph* m_current_graph = nullptr;
-
-    static ComputeGraphBuilder& instance()
-    {
-        thread_local static ComputeGraphBuilder builder;
-        return builder;
-    }
 };
 }  // namespace muda
 

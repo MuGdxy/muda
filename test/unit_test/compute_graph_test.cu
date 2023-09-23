@@ -5,38 +5,61 @@
 #include <muda/compute_graph/compute_graph.h>
 
 using namespace muda;
-
+using Vector3 = Eigen::Vector3f;
 void compute_graph_test()
 {
+    // resources
+    size_t                N = 10;
+    DeviceVector<Vector3> x(N);
+    DeviceVector<Vector3> v(N);
+    DeviceVector<Vector3> dt(N);
+    DeviceVar<float>      toi;
 
-    DeviceVector<float> a(10);
-
-    auto view = make_viewer(a).name("view");
-
+    // define graph vars
     ComputeGraph graph;
+    auto& var_x   = graph.create_var<Dense1D<Vector3>>("x", make_viewer(x));
+    auto& var_v   = graph.create_var<Dense1D<Vector3>>("v", make_viewer(v));
+    auto& var_toi = graph.create_var<Dense<float>>("toi", make_viewer(toi));
+    auto& var_dt  = graph.create_var<float>("dt", 0.1);
+    auto& var_N   = graph.create_var<size_t>("N", N);
 
-    auto var_view = graph.create_var<Dense1D<float>>("var_view");
+    // define graph nodes
+    graph.create_node("cal_v") << [&]
+    {
+        ParallelFor(256).apply(var_N,
+                               [v = var_v.eval(), dt = var_dt.eval()] __device__(int i) mutable
+                               {
+                                   // simple set
+                                   v(i) = Vector3::Ones() * dt * dt;
+                               });
+    };
 
-    graph.add_node("set",
-                   [&]
-                   {
-                       print("current phase: %d\n", (int)graph.current_graph_phase());
-                       Launch(1, 1).apply(  //
-                           [view = var_view->eval(), cview = var_view->ceval()] __device__() mutable
-                           {
-                               view(0) = cview(0) + 1;
-                           });
-                   });
-    var_view->update(view);
+    graph.create_node("cd") << [&]
+    {
+        ParallelFor(256).apply(var_N,
+                               [x = var_x.ceval()] __device__(int i) mutable
+                               {
+                                   // collision detection
+                               });
+    };
+
+    graph.create_node("cal_x") << [&]
+    {
+        // print("current phase: %d\n", (int)ComputeGraphBuilder::current_phase());
+        ParallelFor(256).apply(
+            var_N.eval(),
+            [x = var_x.eval(), v = var_v.ceval(), dt = var_dt.eval()] __device__(int i) mutable
+            {
+                // integrate
+                x(i) += v(i) * dt;
+            });
+    };
+
+    // launch graph
     graph.launch();
-    var_view->update(view.sub_view(1));
+    graph.graphviz(std::cout);
+    graph.launch(true);
     graph.launch();
-
-    HostVector<float> h(10);
-    h = a;
-    for(auto v : h)
-        std::cout << v << " ";
-    std::cout << std::endl;
 }
 
 TEST_CASE("compute_graph_test", "[default]")

@@ -39,21 +39,7 @@ class Launch : public LaunchBase<Launch>
     Launch& apply(F&& f, UserTag tag = {});
 
     template <typename F, typename UserTag = DefaultTag>
-    MUDA_NODISCARD auto as_node_parms(F&& f, UserTag tag = {})
-    {
-        using CallableType = raw_type_t<F>;
-        static_assert(std::is_invocable_v<CallableType>, "f:void (void)");
-        auto parms =
-            std::make_shared<KernelNodeParms<CallableType>>(std::forward<F>(f));
-
-        parms->func((void*)details::generic_kernel<CallableType, UserTag>);
-        parms->gridDim(m_gridDim);
-        parms->blockDim(m_block_dim);
-        parms->sharedMemBytes(m_shared_mem_size);
-        parms->parse([](CallableType& p) -> std::vector<void*> { return {&p}; });
-        finish_kernel_launch();
-        return parms;
-    }
+    MUDA_NODISCARD S<KernelNodeParms<raw_type_t<F>>> as_node_parms(F&& f, UserTag tag = {});
 
     static void wait_event(cudaEvent_t event)
     {
@@ -66,6 +52,10 @@ class Launch : public LaunchBase<Launch>
     }
 
     static void wait_device() { checkCudaErrors(cudaDeviceSynchronize()); }
+
+  private:
+    template <typename F, typename UserTag = DefaultTag>
+    void invoke(F&& f, UserTag tag = {});
 };
 }  // namespace muda
 

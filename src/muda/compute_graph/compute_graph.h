@@ -2,7 +2,7 @@
 #include <map>
 #include <functional>
 #include <muda/graph/graph.h>
-#include <muda/compute_graph/compute_graph_builder.h>
+#include <muda/launch/stream.h>
 #include <muda/compute_graph/compute_graph_phase.h>
 
 #include <muda/compute_graph/compute_graph_node_type.h>
@@ -10,6 +10,8 @@
 #include <muda/compute_graph/compute_graph_closure_id.h>
 #include <muda/compute_graph/compute_graph_var_id.h>
 #include <muda/compute_graph/compute_graph_var_usage.h>
+
+#include <muda/compute_graph/graphviz.h>
 
 namespace muda::details
 {
@@ -27,9 +29,58 @@ class ComputeGraphVar;
 template <typename T>
 class ComputeGraphNode;
 
+class ComputeGraphGraphvizOptions
+{
+  public:
+    bool show_vars  = true;
+    bool show_nodes = true;
+};
+
 class ComputeGraph
 {
+  public:
     using Closure = std::function<void()>;
+    class AddNodeProxy
+    {
+        ComputeGraph& m_cg;
+        std::string   m_node_name;
+
+      public:
+        AddNodeProxy(ComputeGraph& cg, std::string_view node_name);
+        ComputeGraph& operator<<(ComputeGraph::Closure&& f) &&;
+    };
+    class Dependency
+    {
+      public:
+        NodeId src;
+        NodeId dst;
+    };
+
+    class DenpencySpan
+    {
+        const ComputeGraph& m_cg;
+        size_t              m_begin;
+        size_t              m_count;
+
+      public:
+        DenpencySpan(const ComputeGraph& cg, size_t begin, size_t count);
+
+        const auto& operator[](size_t i) const;
+
+        size_t count() const { return m_count; }
+        size_t begin() const { return m_begin; }
+    };
+
+    class GraphPhaseGuard
+    {
+        ComputeGraph& m_cg;
+
+      public:
+        GraphPhaseGuard(ComputeGraph& cg, ComputeGraphPhase phase);
+        ~GraphPhaseGuard();
+    };
+
+  private:
     class TempNodeInfo
     {
       public:
@@ -42,80 +93,125 @@ class ComputeGraph
 
     friend class ComputeGraphVarBase;
 
+    Graph        m_graph;
+    S<GraphExec> m_graph_exec{nullptr};
+
+    std::unordered_map<NodeId::type, cudaGraph_t> m_sub_graphs;
+
     std::vector<std::pair<std::string, Closure>>          m_closures;
     std::unordered_map<std::string, ComputeGraphVarBase*> m_vars_map;
     std::vector<ComputeGraphVarBase*>                     m_vars;
-    std::vector<ComputeGraphNodeBase*>                    m_nodes;
-    std::vector<int>                                      m_closure_need_update;
+
+    std::vector<ComputeGraphNodeBase*> m_nodes;
+    std::vector<Dependency>            m_deps;
+
+    std::vector<int> m_closure_need_update;
 
   public:
+    /**************************************************************
+    * 
+    * GraphVar API
+    * 
+    ***************************************************************/
     template <typename T>
-    ComputeGraphVar<T>* create_var(std::string_view name);
+    ComputeGraphVar<T>& create_var(std::string_view name);
 
     template <typename T>
-    ComputeGraphVar<T>* create_var(std::string_view name, T&& init_value);
+    ComputeGraphVar<T>& create_var(std::string_view name, T init_value);
 
     template <typename T>
     ComputeGraphVar<T>* find_var(std::string_view name);
 
-    ComputeGraph& add_node(const Closure& f)
-    {
-        return add_node(std::string{"node"} + std::to_string(m_closures.size()), f);
-    }
+    /**************************************************************
+    * 
+    * GraphNode API
+    * 
+    ***************************************************************/
 
-    ComputeGraph& add_node(std::string_view name, const Closure& f)
-    {
-        if(!m_allow_node_adding)
-            throw muda::logic_error(  //
-                "This graph is built or updated, so you can't add new nodes any more.");
-        m_closures.emplace_back(name, f);
-        return *this;
-    }
+    AddNodeProxy create_node(std::string_view node_name);
 
-    void update()
-    {
-        m_allow_node_adding = false;
-        check_vars_valid();
-        _update();
-    }
 
-    void launch(cudaStream_t s = nullptr);
+    /**************************************************************
+    * 
+    * Graph Launch API
+    * 
+    ***************************************************************/
 
+    void update();
+
+    void launch(bool single_stream, cudaStream_t s = nullptr);
+
+    void launch(cudaStream_t s = nullptr) { launch(false, s); }
+
+    /**************************************************************
+    * 
+    * Graph Closure Capture Node API
+    * 
+    ***************************************************************/
+
+    cudaStream_t capture_stream();
+
+    /**************************************************************
+    * 
+    * Graph Visualization API
+    * 
+    ***************************************************************/
+
+    void graphviz(std::ostream& o, const ComputeGraphGraphvizOptions& options = {});
+
+  private:  // internal method
+    void build();
+
+    void build_deps();
+
+    void serial_launch();
+
+    void _update();
+
+    void check_vars_valid();
+
+    friend class AddNodeProxy;
+    ComputeGraph& add_node(std::string&& name, const Closure& f);
+
+    friend class ComputeGraphNodeBase;
+    DenpencySpan dep_span(size_t begin, size_t count) const;
+
+    void set_current_graph_as_this();
+
+    static void clear_current_graph();
+
+    static Stream& shared_capture_stream();
+
+    void add_capture_node(cudaGraph_t sub_graph);
+
+    void update_capture_node(cudaGraph_t sub_graph);
+
+    friend class ComputeGraphBuilder;
     ClosureId current_closure_id() const { return m_current_closure_id; };
 
     NodeId current_node_id() const { return m_current_node_id; };
 
-    ComputeGraphPhase current_graph_phase() const
-    {
-        return m_current_graph_phase;
-    }
+    ComputeGraphPhase current_graph_phase() const;
 
-    //~ComputeGraph();
-  private:
-    void build();
-    void _update();
-    void check_vars_valid();
-
-  private:
+  private:  // internal data
     friend class muda::details::ComputeGraphAccessor;
 
-
-    bool                                  m_need_update = false;
-    ClosureId                             m_current_closure_id;
-    NodeId                                m_current_node_id;
+    bool              m_need_update = false;
+    ClosureId         m_current_closure_id;
+    NodeId            m_current_node_id;
     ComputeGraphPhase m_current_graph_phase = ComputeGraphPhase::None;
     bool              m_allow_access_graph  = false;
     bool              m_allow_node_adding   = true;
     TempNodeInfo      m_temp_node_info;
-
-    Graph        m_graph;
-    S<GraphExec> m_graph_exec{nullptr};
+    cudaStream_t      m_current_single_stream = nullptr;
+    bool              m_is_capturing          = false;
 };
 }  // namespace muda
 
+
 namespace muda::details
 {
-// to prevent user access some internal function
+// allow devlopers to access some internal function
 class ComputeGraphAccessor
 {
     ComputeGraph& m_cg;
@@ -123,10 +219,7 @@ class ComputeGraphAccessor
     using S = std::shared_ptr<T>;
 
   public:
-    ComputeGraphAccessor()
-        : m_cg(*ComputeGraphBuilder::current_graph())
-    {
-    }
+    ComputeGraphAccessor();
 
     ComputeGraphAccessor(ComputeGraph& graph)
         : m_cg(graph)
@@ -149,15 +242,26 @@ class ComputeGraphAccessor
         return m_cg.m_nodes[m_cg.current_node_id().value()];
     }
 
+    /// <summary>
+    /// automatically add or update kernel node by kernelParms (distincted by ComputeGraphPhase)
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="kernelParms"></param>
+    template <typename T>
+    void set_kernel_node(const S<KernelNodeParms<T>>& kernelParms);
+
+    cudaStream_t current_stream() const { return m_cg.m_current_single_stream; }
+
+  private:
+    friend class ComputeGraphVarBase;
+    void set_var_usage(VarId id, ComputeGraphVarUsage usage);
+
     template <typename T>
     void add_kernel_node(const S<KernelNodeParms<T>>& kernelParms);
 
     template <typename T>
     void update_kernel_node(const S<KernelNodeParms<T>>& kernelParms);
 
-    void set_var_usage(VarId id, ComputeGraphVarUsage usage);
-
-  private:
     template <typename F>
     void access_graph(F&& f)
     {
@@ -178,7 +282,10 @@ class ComputeGraphAccessor
         m_cg.m_allow_access_graph = false;
     }
 
-    auto&& temp_var_usage() { return std::move(m_cg.m_temp_node_info.var_usage); }
+    auto&& temp_var_usage()
+    {
+        return std::move(m_cg.m_temp_node_info.var_usage);
+    }
 };
 }  // namespace muda::details
 

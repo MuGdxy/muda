@@ -45,7 +45,8 @@ class GraphExec
         if(m_handle)
             checkCudaErrors(cudaGraphExecDestroy(m_handle));
     }
-    //cudaGraphExec_t getRaw() const { return handle; }
+    
+    cudaGraphExec_t handle() const { return m_handle; }
   private:
     // keep the ref count > 0 for those whose data should be kept alive for the graph life.
     std::list<S<NodeParms>> cached;

@@ -1,6 +1,8 @@
 #pragma once
 #include <muda/compute_graph/compute_graph.h>
 #include <muda/compute_graph/compute_graph_node.h>
+#include "compute_graph_var.h"
+
 namespace muda
 {
 MUDA_INLINE void ComputeGraphVarBase::base_update()
@@ -20,12 +22,25 @@ MUDA_INLINE void ComputeGraphVarBase::base_building_eval_const() const
     _building_eval(ComputeGraphVarUsage::Read);
 }
 
-inline void ComputeGraphVarBase::_building_eval(ComputeGraphVarUsage usage) const
+MUDA_INLINE void ComputeGraphVarBase::_building_eval(ComputeGraphVarUsage usage) const
 {
     m_closure_ids.insert(m_graph->current_closure_id());
     details::ComputeGraphAccessor().set_var_usage(var_id(), usage);
 }
 
+MUDA_INLINE void ComputeGraphVarBase::graphviz_def(std::ostream& o) const
+{
+    graphviz_id(o);
+    o << "[shape=rectangle,";
+    if(!name().empty())
+        o << "label=\"" << name() << "\",";
+    o << "]";
+}
+
+MUDA_INLINE void ComputeGraphVarBase::graphviz_id(std::ostream& o) const
+{
+    o << "var" << var_id();
+}
 
 template <typename T>
 MUDA_INLINE ComputeGraphVar<T>::RWViewer ComputeGraphVar<T>::eval()
@@ -38,7 +53,15 @@ MUDA_INLINE ComputeGraphVar<T>::RWViewer ComputeGraphVar<T>::eval()
         }
         break;
         case ComputeGraphPhase::Building: {
-            this->base_building_eval();
+            if constexpr(std::is_same_v<T, read_only_viewer_t<T>>)
+            {
+                // they are all read only(e.g. host float/int ...)
+                this->base_building_eval_const();
+            }
+            else
+            {
+                this->base_building_eval();
+            }
         }
         break;
         case ComputeGraphPhase::Updating: {

@@ -4,27 +4,45 @@
 namespace muda
 {
 template <typename F, typename UserTag>
+MUDA_INLINE Launch::S<KernelNodeParms<raw_type_t<F>>> Launch::as_node_parms(F&& f, UserTag tag)
+{
+    using CallableType = raw_type_t<F>;
+    static_assert(std::is_invocable_v<CallableType>, "f:void (void)");
+    auto parms = std::make_shared<KernelNodeParms<CallableType>>(std::forward<F>(f));
+
+    parms->func((void*)details::generic_kernel<CallableType, UserTag>);
+    parms->gridDim(m_gridDim);
+    parms->blockDim(m_block_dim);
+    parms->sharedMemBytes(m_shared_mem_size);
+    parms->parse([](CallableType& p) -> std::vector<void*> { return {&p}; });
+    finish_kernel_launch();
+    return parms;
+}
+
+template <typename F, typename UserTag>
+MUDA_INLINE void Launch::invoke(F&& f, UserTag tag)
+{
+    using CallableType = raw_type_t<F>;
+    details::generic_kernel<CallableType, UserTag>
+        <<<m_gridDim, m_block_dim, m_shared_mem_size, m_stream>>>(f);
+    finish_kernel_launch();
+}
+
+template <typename F, typename UserTag>
 MUDA_INLINE Launch& Launch::apply(F&& f, UserTag tag)
 {
-    ComputeGraphBuilder::invoke(
-        [&]  // none
-        {
-            using CallableType = raw_type_t<F>;
-            static_assert(std::is_invocable_v<CallableType>, "f:void (void)");
-            details::generic_kernel<CallableType, UserTag>
-                <<<m_gridDim, m_block_dim, m_shared_mem_size, m_stream>>>(f);
-            finish_kernel_launch();
-        },
-        [&]  // building
-        {
-            auto parms = this->as_node_parms(std::forward<F>(f), tag);
-            details::ComputeGraphAccessor().add_kernel_node(parms);
-        },
-        [&]  // updating
-        {
-            auto parms = this->as_node_parms(std::forward<F>(f), tag);
-            details::ComputeGraphAccessor().update_kernel_node(parms);
-        });
+    using CallableType = raw_type_t<F>;
+    static_assert(std::is_invocable_v<CallableType>, "f:void (void)");
+
+    if(ComputeGraphBuilder::is_direct_launching())
+    {
+        invoke(std::forward<F>(f), tag);
+    }
+    else
+    {
+        auto parms = this->as_node_parms(std::forward<F>(f), tag);
+        details::ComputeGraphAccessor().set_kernel_node(parms);
+    }
     return *this;
 }
 }  // namespace muda

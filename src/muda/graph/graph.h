@@ -91,10 +91,7 @@ class Graph
     }
 
     template <typename T>
-    auto add_memcpy_node(T*                               dst,
-                         const T*                         src,
-                         size_t                           count,
-                         cudaMemcpyKind                   kind)
+    auto add_memcpy_node(T* dst, const T* src, size_t count, cudaMemcpyKind kind)
     {
         auto ret = std::make_shared<memcpyNode>();
         checkCudaErrors(cudaGraphAddMemcpyNode1D(
@@ -141,10 +138,12 @@ class Graph
             cudaGraphAddDependencies(m_handle, &(from->m_handle), &(to->m_handle), 1));
     }
 
+    cudaGraph_t handle() const { return m_handle; }
+    cudaGraph_t handle() { return m_handle; }
+
     ~Graph() { checkCudaErrors(cudaGraphDestroy(m_handle)); }
 
     static auto create() { return std::make_shared<Graph>(); }
-
   private:
     // keep the ref count > 0 for those whose data should be kept alive for the graph life.
     std::list<S<NodeParms>> cached;

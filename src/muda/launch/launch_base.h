@@ -47,13 +47,13 @@ class LaunchBase
     friend class launch_base;
 
   protected:
+    template <typename T>
+    using S = std::shared_ptr<T>;
+
     cudaStream_t m_stream;
 
   public:
-    LaunchBase(cudaStream_t stream)
-        : m_stream(stream)
-    {
-    }
+    LaunchBase(cudaStream_t stream);
 
     virtual void init_stream(cudaStream_t s) { m_stream = s; }
 
@@ -199,3 +199,5 @@ inline Empty on()
 }
 
 }  // namespace muda
+
+#include <muda/launch/details/launch_base.inl>

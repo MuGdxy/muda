@@ -96,77 +96,20 @@ class ParallelFor : public LaunchBase<ParallelFor>
     }
 
     template <typename F, typename UserTag = DefaultTag>
-    ParallelFor& apply(int count, F&& f, UserTag tag = {})
-    {
-        using CallableType = raw_type_t<F>;
-        static_assert(std::is_invocable_v<CallableType, int>, "f:void (int i)");
-
-        check_input(count);
-
-        if(m_gridDim <= 0)  // ParallelFor
-        {
-            if(count > 0)
-            {
-                // calculate the blocks we need
-                auto n_blocks = calculate_grid_dim(count);
-                details::parallel_for_kernel<CallableType, UserTag>
-                    <<<n_blocks, m_block_dim, m_shared_mem_size, m_stream>>>(f, count);
-            }
-        }
-        else  // grid stride loop
-        {
-            details::grid_stride_loop_kernel<CallableType, UserTag>
-                <<<m_gridDim, m_block_dim, m_shared_mem_size, m_stream>>>(f, count);
-        }
-        return finish_kernel_launch();
-    }
+    ParallelFor& apply(int count, F&& f, UserTag tag = {});
 
     template <typename F, typename UserTag = DefaultTag>
     MUDA_NODISCARD auto as_node_parms(int count, F&& f, UserTag tag = {})
-    {
-        using CallableType = raw_type_t<F>;
-        static_assert(std::is_invocable_v<CallableType, int>, "f:void (int i)");
-
-        check_input(count);
-
-        auto parms = std::make_shared<KernelNodeParms<KernelData<CallableType>>>(
-            count, std::forward<F>(f));
-        if(m_gridDim <= 0)  // dynamic grid dim
-        {
-            auto n_blocks = calculate_grid_dim(count);
-            parms->func((void*)details::parallel_for_kernel<CallableType, UserTag>);
-            parms->gridDim(n_blocks);
-        }
-        else  // grid-stride loop
-        {
-            parms->func((void*)details::grid_stride_loop_kernel<CallableType, UserTag>);
-            parms->gridDim(m_gridDim);
-        }
-
-        parms->blockDim(m_block_dim);
-        parms->sharedMemBytes(m_shared_mem_size);
-        parms->parse(
-            [](KernelData<CallableType>& p) -> std::vector<void*> {
-                return {&p.callable, &p.count};
-            });
-        finish_kernel_launch();
-        return parms;
-    }
+        -> S<KernelNodeParms<KernelData<raw_type_t<F>>>>;
 
   private:
-    int calculate_grid_dim(int count)
-    {
-        auto nMinthread = count;
-        auto nMinblocks = (nMinthread + m_block_dim - 1) / m_block_dim;
-        return nMinblocks;
-    }
+    template <typename F, typename UserTag = DefaultTag>
+    void invoke(int count, F&& f, UserTag tag = {});
 
-    void check_input(int count)
-    {
-        if(count < 0)
-            throw std::logic_error("count must be >= 0");
-        if(m_block_dim <= 0)
-            throw std::logic_error("blockDim must be > 0");
-    }
+    int calculate_grid_dim(int count) const;
+
+    void check_input(int count) const;
 };
 }  // namespace muda
+
+#include <muda/launch/details/parallel_for.inl>

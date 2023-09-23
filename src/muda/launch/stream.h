@@ -28,7 +28,7 @@ class Stream
 
     ~Stream() { checkCudaErrors(cudaStreamDestroy(m_handle)); }
 
-    operator cudaStream_t() { return m_handle; }
+    operator cudaStream_t() const { return m_handle; }
 
     // delete copy constructor and copy assignment operator
     Stream(const Stream&)            = delete;
@@ -37,5 +37,17 @@ class Stream
     // allow move constructor and move assignment operator
     Stream(Stream&&)            = default;
     Stream& operator=(Stream&&) = default;
+
+    void wait() const { checkCudaErrors(cudaStreamSynchronize(m_handle)); }
+
+    void begin_capture(cudaStreamCaptureMode mode = cudaStreamCaptureModeThreadLocal) const
+    {
+        checkCudaErrors(cudaStreamBeginCapture(m_handle, mode));
+    }
+
+    void end_capture(cudaGraph_t* graph) const
+    {
+        checkCudaErrors(cudaStreamEndCapture(m_handle, graph));
+    }
 };
 }  // namespace muda
