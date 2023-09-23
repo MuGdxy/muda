@@ -81,7 +81,7 @@ void muda_vs_cuda()
 
 ### auto compute graph
 
-**muda** can generate `cudaGraph` nodes and dependencies from your `eval()` call. And the cuda `graphExec` will be automatically updated (minimally) if you update a `muda::ComputeGraphVar`. 
+**muda** can generate `cudaGraph` nodes and dependencies from your `eval()` call. And the `cudaGraphExec` will be automatically updated (minimally) if you update a `muda::ComputeGraphVar`. 
 
 ```c++
 void compute_graph_example()
