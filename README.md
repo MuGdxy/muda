@@ -1,7 +1,7 @@
 # muda
 MUDA is **μ-CUDA**, yet another painless CUDA programming **paradigm**.
 
-> stop bothering yourself using raw CUDA, just stay elegant and clear-minded.
+> stop bothering yourself using raw CUDA. Just stay elegant and clear-minded.
 
 ## overview
 
@@ -31,8 +31,8 @@ muda vs cuda:
 */
 void muda()
 {
-    DeviceVector<int> dv(64, 1);
-    stream             s;
+    DeviceVector<int>  dv(64, 1);
+    Stream             s;
     ParallelFor(2, 16, 0, s) // parallel-semantic
         .apply(64, //automatically cover the range using (gridim=2, blockdim=16)
                [
@@ -202,18 +202,17 @@ $ cmake --build .
 
 ### copy header
 
-Because muda is header-only, so just copy the `src/muda/` folder to your project, set the include directory, and then everything is done.
+Because **muda** is header-only, just copy the `src/muda/` folder to your project, set the include directory, and then everything is done.
 
 ### macro
 
-| Macro                         | Value                                 | Details                                                      |
-| ----------------------------- | ------------------------------------- | ------------------------------------------------------------ |
-| `MUDA_CHECK_ON`               | `1` or `0`                            | `MUDA_CHECK_ON=1` for turn on all muda runtime check(for safety) |
-| `MUDA_VIEWER_NAME_MAX_LENGTH` | `16`(default) or any positive integer | Every muda viewer has a name field(`char name[]`) , which will be passed with the viewer. |
+| Macro           | Value               | Details                                                      |
+| --------------- | ------------------- | ------------------------------------------------------------ |
+| `MUDA_CHECK_ON` | `1`(default) or `0` | `MUDA_CHECK_ON=1` for turn on all muda runtime check(for safety) |
 
 ## tutorial
 
-- [tutorial_zh](./doc/tutorial_zh.md)
+- [tutorial_zh](./doc/tutorial_zh.md)(may be out of date)
 
 ## Contribute
 
