@@ -30,10 +30,10 @@ MUDA_INLINE void ComputeGraphVarBase::_building_eval(ComputeGraphVarUsage usage)
 MUDA_INLINE void ComputeGraphVarBase::graphviz_def(std::ostream& o) const
 {
     graphviz_id(o);
-    o << "[shape=rectangle,";
+    o << "[";
     if(!name().empty())
         o << "label=\"" << name() << "\",";
-    o << "]";
+    o << R"(shape="rectangle", color="#F08705", style="filled,rounded", fillcolor="#F5AF58"])";
 }
 
 MUDA_INLINE void ComputeGraphVarBase::graphviz_id(std::ostream& o) const

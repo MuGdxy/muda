@@ -16,7 +16,7 @@
 namespace muda
 {
 template <typename F>
-MUDA_HOST double ProfileHost(F&& f)
+MUDA_HOST double profile_host(F&& f)
 {
     using namespace std::chrono;
     auto start = high_resolution_clock::now();

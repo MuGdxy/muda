@@ -30,13 +30,13 @@ class GraphExec
     void set_kernel_node_parms(S<KernelNode> node, const S<KernelNodeParms<T>>& new_parms)
     {
         checkCudaErrors(cudaGraphExecKernelNodeSetParams(
-            m_handle, node.get()->m_handle, new_parms->handle()));
+            m_handle, node->m_handle, new_parms->handle()));
     }
 
     void set_memcpy_node_parms(S<MemcpyNode> node, void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind)
     {
         checkCudaErrors(cudaGraphExecMemcpyNodeSetParams1D(
-            m_handle, node.get()->m_handle, dst, src, size_bytes, kind));
+            m_handle, node->m_handle, dst, src, size_bytes, kind));
     }
 
     ~GraphExec()

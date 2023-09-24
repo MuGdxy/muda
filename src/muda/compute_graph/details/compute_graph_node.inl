@@ -12,7 +12,7 @@ MUDA_INLINE void ComputeGraphNodeBase::graphviz_def(std::ostream& o) const
     o << "[";
     if(!name().empty())
         o << "label=\"" << name() << "\", ";
-    o << "]";
+    o << R"(shape="egg", color="#82B366", style="filled", fillcolor="#D5E8D4"])";
 }
 MUDA_INLINE void ComputeGraphNodeBase::graphviz_var_usages(std::ostream& o) const
 {
@@ -23,9 +23,9 @@ MUDA_INLINE void ComputeGraphNodeBase::graphviz_var_usages(std::ostream& o) cons
         o << "->";
         graphviz_id(o);
         if(usage == ComputeGraphVarUsage::ReadWrite)
-            o << "[color=red, arrowhead = diamond, ]";
+            o << R"([color="#F08E81", arrowhead = diamond, ])";
         else
-            o << "[color=green, arrowhead = dot, ]";
+            o << R"([color="#64BBE2", arrowhead = dot, ])";
         o << "\n";
     }
 }

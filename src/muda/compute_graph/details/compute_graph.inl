@@ -105,7 +105,8 @@ MUDA_INLINE void ComputeGraph::capture(std::function<void(cudaStream_t)>&& f)
 MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraphvizOptions& options)
 {
     topo_build();
-    o << "digraph G {\n";
+    o << "digraph G {\n"
+        "beautify=true";
     if(options.show_vars)
     {
         o << "// vars: \n";
@@ -144,7 +145,7 @@ MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraph
             dst->graphviz_id(o);
             o << "->";
             src->graphviz_id(o);
-            o << "\n";
+            o << R"([color="#82B366"])" "\n";
         }
     }
     o << "}\n";
@@ -155,6 +156,8 @@ MUDA_INLINE void ComputeGraph::topo_build()
     if(m_is_topo_built)
         return;
 
+    m_closure_need_update.clear();
+    m_closure_need_update.resize(m_closures.size(), false);
     GraphPhaseGuard guard(*this, ComputeGraphPhase::TopoBuilding);
     for(size_t i = 0; i < m_closures.size(); ++i)
     {
@@ -166,7 +169,7 @@ MUDA_INLINE void ComputeGraph::topo_build()
             add_capture_node(m_sub_graphs[i]);
     }
 
-    topo_build_deps();
+    build_deps();
 }
 
 MUDA_INLINE void ComputeGraph::build()
@@ -175,8 +178,11 @@ MUDA_INLINE void ComputeGraph::build()
         return;
 
     GraphPhaseGuard guard(*this, ComputeGraphPhase::Building);
-    m_closure_need_update.clear();
-    m_closure_need_update.resize(m_closures.size(), false);
+    if(!m_is_topo_built)
+    {
+        m_closure_need_update.clear();
+        m_closure_need_update.resize(m_closures.size(), false);
+    }
     for(size_t i = 0; i < m_closures.size(); ++i)
     {
         m_current_node_id    = NodeId{i};
@@ -188,6 +194,7 @@ MUDA_INLINE void ComputeGraph::build()
     }
     if(!m_is_topo_built)
         build_deps();
+    cuda_graph_add_deps();
 
     m_graph_exec = m_graph.instantiate();
 }
@@ -202,8 +209,7 @@ MUDA_INLINE void ComputeGraph::serial_launch()
         m_current_closure_id = ClosureId{i};
         m_allow_access_graph = false;  // no need to access graph
         m_closures[i].second();
-        if(m_is_capturing)
-            update_capture_node(m_sub_graphs[i]);
+        m_is_capturing = false;
     }
 }
 
@@ -298,13 +304,9 @@ MUDA_INLINE void ComputeGraph::_update()
             m_current_closure_id = ClosureId{i};
             m_current_node_id    = NodeId{i};
             m_allow_access_graph = true;
-            m_closures[i].second();
-            auto& sub_graph = m_sub_graphs[i];
+            m_closures[i].second();  
             if(m_is_capturing)
-            {
-                shared_capture_stream().end_capture(&sub_graph);
-                update_capture_node(sub_graph);
-            }
+                update_capture_node(m_sub_graphs[i]);
             m_is_capturing = false;
             need_update    = false;
         }
@@ -325,6 +327,7 @@ MUDA_INLINE void ComputeGraph::update()
 
 MUDA_INLINE void ComputeGraph::launch(bool single_stream, cudaStream_t s)
 {
+    m_allow_node_adding = false;
     if(single_stream)
     {
         m_current_single_stream = s;
@@ -332,7 +335,6 @@ MUDA_INLINE void ComputeGraph::launch(bool single_stream, cudaStream_t s)
     }
     else
     {
-        m_allow_node_adding = false;
         check_vars_valid();
         build();
         _update();
@@ -566,10 +568,8 @@ namespace details
     }
 }  // namespace details
 
-MUDA_INLINE void ComputeGraph::build_deps()
+MUDA_INLINE void ComputeGraph::cuda_graph_add_deps()
 {
-    topo_build_deps();
-
     std::vector<cudaGraphNode_t> from;
     from.reserve(m_deps.size());
     std::vector<cudaGraphNode_t> to;
@@ -587,7 +587,7 @@ MUDA_INLINE void ComputeGraph::build_deps()
         m_graph.handle(), from.data(), to.data(), m_deps.size()));
 }
 
-MUDA_INLINE void ComputeGraph::topo_build_deps()
+MUDA_INLINE void ComputeGraph::build_deps()
 {
     m_deps.clear();
     // map: var_id -> node_id, uint64_t{-1} means no write node yet

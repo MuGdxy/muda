@@ -162,9 +162,9 @@ class ComputeGraph
 
     void build();
 
-    void build_deps();
+    void cuda_graph_add_deps();
 
-    void topo_build_deps();
+    void build_deps();
 
     void serial_launch();
 

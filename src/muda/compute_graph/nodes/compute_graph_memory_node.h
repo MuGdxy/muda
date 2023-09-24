@@ -19,7 +19,7 @@ class ComputeGraphMemcpyNode : public ComputeGraphNodeBase
                            NodeId                                  node_id,
                            std::map<VarId, ComputeGraphVarUsage>&& usages)
         : ComputeGraphNodeBase(
-            graph, name, node_id, ComputeGraphNodeType::KernelNode, std::move(usages))
+            graph, name, node_id, ComputeGraphNodeType::MemcpyNode, std::move(usages))
     {
     }
 
