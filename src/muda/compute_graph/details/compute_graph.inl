@@ -53,6 +53,8 @@ MUDA_INLINE ComputeGraphVar<T>& ComputeGraph::create_var(std::string_view name)
 {
     auto ptr = new ComputeGraphVar<T>(this, name, VarId{m_vars.size()});
     m_vars.emplace_back(ptr);
+    if(m_vars_map.find(std::string{name}) != m_vars_map.end())
+        MUDA_ERROR_WITH_LOCATION("var[%s] already exists", name.data());
     m_vars_map.emplace(name, ptr);
     return *ptr;
 }
@@ -96,7 +98,7 @@ MUDA_INLINE void ComputeGraph::capture(std::function<void(cudaStream_t)>&& f)
         }
         break;
         default:
-            throw muda::logic_error("invoking capture() outside Graph Closure is not allowed");
+            MUDA_ERROR_WITH_LOCATION("invoking capture() outside Graph Closure is not allowed");
             break;
     }
     m_is_in_capture_func = false;
@@ -106,7 +108,7 @@ MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraph
 {
     topo_build();
     o << "digraph G {\n"
-        "beautify=true";
+         "beautify=true";
     if(options.show_vars)
     {
         o << "// vars: \n";
@@ -145,7 +147,8 @@ MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraph
             dst->graphviz_id(o);
             o << "->";
             src->graphviz_id(o);
-            o << R"([color="#82B366"])" "\n";
+            o << R"([color="#82B366"])"
+                 "\n";
         }
     }
     o << "}\n";
@@ -217,16 +220,17 @@ MUDA_INLINE void ComputeGraph::check_vars_valid()
 {
     for(auto& var : m_vars)
         if(!var->is_valid())
-            throw muda::logic_error("var[" + std::string{var->name()} + "] is not valid, "
-                "you need update the var before launch this graph");
+            MUDA_ERROR_WITH_LOCATION(
+                "var[%s] is not valid, "
+                "you need update the var before launch this graph",
+                var->name().data());
 }
 
 MUDA_INLINE ComputeGraph& ComputeGraph::add_node(std::string&& name, const Closure& f)
 {
     details::ComputeGraphAccessor(this).check_allow_node_adding();
     if(!m_allow_node_adding)
-        throw muda::logic_error(  //
-            "This graph is built or updated, so you can't add new nodes any more.");
+        MUDA_ERROR_WITH_LOCATION("This graph is built or updated, so you can't add new nodes any more.");
     m_closures.emplace_back(std::move(name), f);
     return *this;
 }
@@ -304,7 +308,7 @@ MUDA_INLINE void ComputeGraph::_update()
             m_current_closure_id = ClosureId{i};
             m_current_node_id    = NodeId{i};
             m_allow_access_graph = true;
-            m_closures[i].second();  
+            m_closures[i].second();
             if(m_is_capturing)
                 update_capture_node(m_sub_graphs[i]);
             m_is_capturing = false;
@@ -434,7 +438,7 @@ MUDA_INLINE void details::ComputeGraphAccessor::set_kernel_node(const S<KernelNo
             update_kernel_node(kernelParms);
             break;
         default:
-            throw muda::logic_error("invalid phase");
+            MUDA_ERROR_WITH_LOCATION("invalid phase");
             break;
     }
 }
@@ -455,7 +459,7 @@ MUDA_INLINE void details::ComputeGraphAccessor::set_memcpy_node(void*       dst,
             update_memcpy_node(dst, src, size_bytes, kind);
             break;
         default:
-            throw muda::logic_error("invalid phase");
+            MUDA_ERROR_WITH_LOCATION("invalid phase");
             break;
     }
 }
@@ -468,13 +472,13 @@ MUDA_INLINE details::ComputeGraphAccessor::ComputeGraphAccessor()
 MUDA_INLINE void details::ComputeGraphAccessor::check_allow_var_eval() const
 {
     if(m_cg.m_is_in_capture_func)
-        throw muda::logic_error("you can't eval a var in ComputeGraph::capture() function");
+        MUDA_ERROR_WITH_LOCATION("you can't eval a var in ComputeGraph::capture() function");
 }
 
 MUDA_INLINE void details::ComputeGraphAccessor::check_allow_node_adding() const
 {
     if(m_cg.current_graph_phase() != ComputeGraphPhase::None)
-        throw muda::logic_error("you are not allowed adding node at this point");
+        MUDA_ERROR_WITH_LOCATION("you are not allowed adding node at this point");
 }
 
 MUDA_INLINE void details::ComputeGraphAccessor::set_var_usage(VarId id, ComputeGraphVarUsage usage)

@@ -81,94 +81,77 @@ void muda_vs_cuda()
 
 ### auto compute graph
 
-**muda** can generate `cudaGraph` nodes and dependencies from your `eval()` call. And the `cudaGraphExec` will be automatically updated (minimally) if you update a `muda::ComputeGraphVar`. 
+**muda** can generate `cudaGraph` nodes and dependencies from your `eval()` call. And the `cudaGraphExec` will be automatically updated (minimally) if you update a `muda::ComputeGraphVar`, more details in [zhihu_ZH](https://zhuanlan.zhihu.com/p/658080362).
+
+define a muda compute graph:
 
 ```c++
-void compute_graph_example()
-{    
-	// resources
-    size_t                N = 10;
-    DeviceVector<Vector3> x_0(N);
-    DeviceVector<Vector3> x(N);
-    DeviceVector<Vector3> v(N);
-    DeviceVector<Vector3> dt(N);
-    DeviceVar<float>      toi;
-    HostVector<Vector3>   h_x(N);
-
-    // define graph vars
+void compute_graph_simple()
+{
     ComputeGraph graph;
 
-    auto& var_x_0 = graph.create_var<Dense1D<Vector3>>("x_0", make_viewer(x_0));
-    auto& var_h_x = graph.create_var<Dense1D<Vector3>>("h_x", make_viewer(h_x));
-    auto& var_x   = graph.create_var<Dense1D<Vector3>>("x", make_viewer(x));
-    auto& var_v   = graph.create_var<Dense1D<Vector3>>("v", make_viewer(v));
-    auto& var_toi = graph.create_var<Dense<float>>("toi", make_viewer(toi));
-    auto& var_dt  = graph.create_var<float>("dt", 0.1);
-    auto& var_N   = graph.create_var<size_t>("N", N);
+    // 1) define graph vars
+    auto&        N   = graph.create_var<size_t>("N");
+    auto&        x_0 = graph.create_var<Dense1D<Vector3>>("x_0");
+    auto&        x   = graph.create_var<Dense1D<Vector3>>("x");
+    auto&        y   = graph.create_var<Dense1D<Vector3>>("y");
+    
 
-    // define graph nodes
-    graph.create_node("cal_v") << [&]
+    // 2) define graph nodes
+    graph.create_node("cal_x_0") << [&]
     {
-        ParallelFor(256)  //
-            .apply(var_N,
-                   [v = var_v.eval(), dt = var_dt.eval()] __device__(int i) mutable
-                   {
-                       // simple set
-                       v(i) = Vector3::Ones() * dt * dt;
-                   });
-    };
-
-    graph.create_node("cd") << [&]
-    {
-        ParallelFor(256)  //
-            .apply(var_N,
-                   [x   = var_x.ceval(),
-                    v   = var_v.ceval(),
-                    dt  = var_dt.eval(),
-                    toi = var_toi.ceval()] __device__(int i) mutable
-                   {
-                       // maybe some collision detection
-                   });
-    };
-
-    graph.create_node("cal_x") << [&]
-    {
-        ParallelFor(256).apply(var_N.eval(),
-                               [x   = var_x.eval(),
-                                v   = var_v.ceval(),
-                                dt  = var_dt.eval(),
-                                toi = var_toi.ceval()] __device__(int i) mutable
+        ParallelFor(256).apply(N.eval(),
+                               [x_0 = x_0.eval()] __device__(int i) mutable
                                {
-                                   // integrate
-                                   x(i) += v(i) * toi * dt;
+                                   // simple set
+                                   x_0(i) = Vector3::Ones();
                                });
     };
 
-    graph.create_node("transfer") << [&]
+    graph.create_node("copy_to_x") << [&]
     {
-        Memory().transfer(var_x_0.eval().data(), var_x.ceval().data(), N * sizeof(Vector3));
+        Memory().transfer(x.eval().data(), x_0.ceval().data(), N * sizeof(Vector3));
     };
 
-    graph.create_node("download") << [&]
+    graph.create_node("copy_to_y") << [&]
     {
-        Memory().download(var_h_x.eval().data(), var_x.ceval().data(), N * sizeof(Vector3));
+        Memory().transfer(y.eval().data(), x_0.ceval().data(), N * sizeof(Vector3));
     };
-	
-    // print graphviz to visualize the compute graph
+
+    graph.create_node("print_x_y") << [&]
+    {
+        ParallelFor(256).apply(
+            N.eval(),
+            [x = x.ceval(), y = y.ceval()] __device__(int i) mutable
+            {
+                printf("[%d] x = (%f,%f,%f) y = (%f,%f,%f) \n", 
+                    i, 
+                    x(i).x(), x(i).y(), x(i).z(),
+                    y(i).x(), y(i).y(), y(i).z()
+                );
+            });
+    };
+
+    // 3) graphvization
     graph.graphviz(std::cout);
-    
-    // launch all nones of this graph in one stream (rollback to launch kernels on a single stream)
-    // it is useful to debug or profile the graph.
-    graph.launch(true);
-    
-    // update graph var
-    var_N.update(5);
-    // before launch, all related graph nodes will be updated
-    graph.launch();
 }
 ```
 
 ![graphviz](README.assets/graphviz.svg)
+
+launch a muda compute graph:
+
+```c++
+void compute_graph_simple()
+{
+    // ...
+    Stream stream;
+    // sync graph on stream
+    graph.launch(stream);
+    // launch all nodes on a single stream (fallback to origin cuda kernel launch)
+    graph.launch(true, stream);
+}
+```
 
 ## build
 
@@ -200,7 +183,7 @@ $ cmake -S ..
 $ cmake --build .
 ```
 
-### copy header
+### copy headers
 
 Because **muda** is header-only, just copy the `src/muda/` folder to your project, set the include directory, and then everything is done.
 

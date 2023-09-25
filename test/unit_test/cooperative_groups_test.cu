@@ -8,6 +8,8 @@
 #include <muda/cuda/cooperative_groups.h>
 #include <muda/cuda/cooperative_groups/memcpy_async.h>
 
+
+
 using namespace muda;
 namespace cg = cooperative_groups;
 void async_transfer(HostVector<int>& res, HostVector<int>& ground_thruth)

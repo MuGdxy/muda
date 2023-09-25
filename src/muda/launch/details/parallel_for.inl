@@ -11,17 +11,13 @@ MUDA_INLINE ParallelFor& ParallelFor::apply(int count, F&& f, UserTag tag)
 
     check_input(count);
 
-    if(ComputeGraphBuilder::is_direct_launching())
-    {
-        // direct invoke kernel
-        invoke(count, std::forward<F>(f), tag);
-    }
-    else
-    {
-        // work with compute graph
-        auto parms = as_node_parms(count, std::forward<F>(f), tag);
-        details::ComputeGraphAccessor().set_kernel_node(parms);
-    }
+    ComputeGraphBuilder::invoke_phase_actions(
+        [&] { invoke(count, std::forward<F>(f), tag); },
+        [&]
+        {
+            auto parms = as_node_parms(count, std::forward<F>(f), tag);
+            details::ComputeGraphAccessor().set_kernel_node(parms);
+        });
     return *this;
 }
 

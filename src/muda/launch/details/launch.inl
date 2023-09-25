@@ -34,15 +34,13 @@ MUDA_INLINE Launch& Launch::apply(F&& f, UserTag tag)
     using CallableType = raw_type_t<F>;
     static_assert(std::is_invocable_v<CallableType>, "f:void (void)");
 
-    if(ComputeGraphBuilder::is_direct_launching())
-    {
-        invoke(std::forward<F>(f), tag);
-    }
-    else
-    {
-        auto parms = this->as_node_parms(std::forward<F>(f), tag);
-        details::ComputeGraphAccessor().set_kernel_node(parms);
-    }
+    ComputeGraphBuilder::invoke_phase_actions(
+        [&] { invoke(std::forward<F>(f), tag); },
+        [&]
+        {
+            auto parms = this->as_node_parms(std::forward<F>(f), tag);
+            details::ComputeGraphAccessor().set_kernel_node(parms);
+        });
     return *this;
 }
 }  // namespace muda

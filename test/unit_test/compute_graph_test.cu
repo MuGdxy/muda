@@ -57,6 +57,8 @@ void compute_graph_simple()
 
     graph.graphviz(std::cout);
 
+    Stream s;
+
     auto N_value    = 10;
     auto x_0_buffer = DeviceVector<Vector3>(N_value);
     auto x_buffer   = DeviceVector<Vector3>(N_value);
@@ -72,7 +74,7 @@ void compute_graph_simple()
     Launch::wait_device();
 
     // update: change N
-    auto f = [&](int new_N)
+    auto f = [&](int new_N, int times)
     {
         N_value = new_N;
         x_0_buffer.resize(N_value);
@@ -89,25 +91,26 @@ void compute_graph_simple()
         auto t1 = profile_host(
             [&]
             {
-                graph.launch();
+                for(int i = 0; i < times; ++i)
+                    graph.launch(s);
                 Launch::wait_device();
             });
         auto t2 = profile_host(
             [&]
             {
-                graph.launch(true);
+                for(int i = 0; i < times; ++i)
+                    graph.launch(s);
                 Launch::wait_device();
             });
 
         std::cout << "N = " << N_value << std::endl;
+        std::cout << "times = " << times << std::endl;
         std::cout << "graph launch time: " << t1 << "ms" << std::endl;
         std::cout << "single stream launch time: " << t2 << "ms" << std::endl
                   << std::endl;
     };
 
-    f(1M);
-    f(10M);
-    f(100M);
+    f(20, 1M);
 }
 
 void compute_graph_test()

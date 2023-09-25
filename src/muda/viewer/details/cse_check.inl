@@ -31,14 +31,14 @@ namespace details
     MUDA_INLINE MUDA_GENERIC void cse_check_dimi(int i, int m_dim_i, const char* m_name, const char* m_kernel_name) MUDA_NOEXCEPT
     {
         if(i < 0 || i >= m_dim_i)
-            muda_kernel_error("cse[%s:%s]: out of range, i=(%d), dim_i=(%d)\n", m_name, m_kernel_name, i, m_dim_i);
+            MUDA_KERNEL_ERROR("cse[%s:%s]: out of range, i=(%d), dim_i=(%d)\n", m_name, m_kernel_name, i, m_dim_i);
     }
 
     MUDA_INLINE MUDA_GENERIC void cse_check_dimj(int i, int j, int dimj, int m_dim_i, const char* m_name, const char* m_kernel_name) MUDA_NOEXCEPT
     {
 
         if(dimj < 0 || j < 0 || j >= dimj)
-            muda_kernel_error(
+            MUDA_KERNEL_ERROR(
                 "cse[%s:%s]: out of range, ij=(%d,%d), dim=(%d,%d)\n", m_name, m_kernel_name, i, j, m_dim_i, dimj);
     }
 
@@ -47,7 +47,7 @@ namespace details
     {
 
         if(global_offset < 0 || global_offset >= m_ndata)
-            muda_kernel_error("cse[%s:%s]: global_offset out of range, ij=(%d,%d), dim=(%d,%d), offset=(%d), ndata=(%d)\n",
+            MUDA_KERNEL_ERROR("cse[%s:%s]: global_offset out of range, ij=(%d,%d), dim=(%d,%d), offset=(%d), ndata=(%d)\n",
                               m_name, m_kernel_name,
                               i,
                               j,

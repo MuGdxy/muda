@@ -13,6 +13,7 @@ class ComputeGraphBuilder
 {
     static ComputeGraphBuilder& instance();
     using Phase = ComputeGraphPhase;
+    using PhaseAction = std::function<void()>;
 
   public:
     static Phase current_phase();
@@ -20,9 +21,10 @@ class ComputeGraphBuilder
     static bool  is_phase_serial_launching();
     static bool  is_topo_building();
     static bool  is_building();
-
     // no graph building or the graph is in serial launching mode
     static bool is_direct_launching();
+
+    static void invoke_phase_actions(PhaseAction&& do_when_direct_launching, PhaseAction do_when_set_node);
 
   private:
     friend class ComputeGraph;
@@ -35,6 +37,8 @@ class ComputeGraphBuilder
     ~ComputeGraphBuilder() = default;
 
     ComputeGraph* m_current_graph = nullptr;
+
+
 };
 }  // namespace muda
 

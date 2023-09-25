@@ -37,6 +37,19 @@ MUDA_INLINE bool ComputeGraphBuilder::is_direct_launching()
     return is_phase_serial_launching() || is_phase_none();
 }
 
+MUDA_INLINE void ComputeGraphBuilder::invoke_phase_actions(PhaseAction&& do_when_direct_launching,
+                                                           PhaseAction do_when_set_node)
+{
+    if(is_direct_launching())
+    {
+        do_when_direct_launching();
+    }
+    else
+    {
+        do_when_set_node();
+    }
+}
+
 MUDA_INLINE auto ComputeGraphBuilder::current_graph(ComputeGraph* graph)
 {
     return instance().m_current_graph = graph;

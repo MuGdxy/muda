@@ -10,8 +10,8 @@ LaunchBase<T>::LaunchBase(cudaStream_t stream)
 {
     if(ComputeGraphBuilder::is_phase_serial_launching())
     {
-        if(stream != nullptr)
-            throw muda::logic_error("LaunchBase: stream must be nullptr(default) in serial launching phase");
+        MUDA_ASSERT(stream == nullptr,
+                    "LaunchBase: stream must be nullptr(default) in serial launching phase");
         init_stream(details::ComputeGraphAccessor().current_stream());
     }
 }

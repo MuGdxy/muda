@@ -1,7 +1,7 @@
 #pragma once
+#include <cstdlib>
 #include <cassert>
 #include <thread>
-
 #include "fuzzy.h"
 #include "../assert.h"
 #include "../print.h"
@@ -9,7 +9,7 @@
 #include "../muda_def.h"
 
 #ifdef __CUDA_ARCH__
-#define muda_kernel_printf(fmt, ...)                                           \
+#define MUDA_KERNEL_PRINT(fmt, ...)                                            \
     ::muda::print("(%d|%d,%d|%d,%d|%d)-(%d|%d,%d|%d,%d|%d):" fmt,              \
                   muda::block_idx().x,                                         \
                   muda::grid_dim().x,                                          \
@@ -25,74 +25,91 @@
                   muda::block_dim().z,                                         \
                   ##__VA_ARGS__)
 #else
-#define muda_kernel_printf(fmt, ...) ::muda::print("(host):" fmt, ##__VA_ARGS__)
+#define MUDA_KERNEL_PRINT(fmt, ...) ::muda::print("(host):" fmt, ##__VA_ARGS__)
 #endif
 
 //when muda::TRAP_ON_ERROR == true trap the device
-#define muda_debug_trap()                                                      \
+#define MUDA_DEBUG_TRAP()                                                      \
     if constexpr(::muda::TRAP_ON_ERROR)                                        \
         ::muda::trap();
 
 // check whether (res == true), if not, print the error info (when muda::TRAP_ON_ERROR == true
 // trap the device)
-#define muda_kernel_assert(res, fmt, ...)                                      \
+#define MUDA_KERNEL_ASSERT(res, fmt, ...)                                      \
     if constexpr(!::muda::NO_CHECK)                                            \
     {                                                                          \
         if(!(res))                                                             \
         {                                                                      \
-            muda_kernel_printf("%s(%d): %s <assert> " #res " failed." fmt,     \
-                               __FILE__,                                       \
-                               __LINE__,                                       \
-                               MUDA_FUNCTION_SIG,                              \
-                               ##__VA_ARGS__);                                 \
-            muda_debug_trap();                                                 \
+            MUDA_KERNEL_PRINT("%s(%d): %s <assert> " #res " failed." fmt,      \
+                              __FILE__,                                        \
+                              __LINE__,                                        \
+                              MUDA_FUNCTION_SIG,                               \
+                              ##__VA_ARGS__);                                  \
+            MUDA_DEBUG_TRAP();                                                 \
         }                                                                      \
     }
 
 // check whether (res == true), if not, print the error info(never trap the device)
-#define muda_kernel_check(res, fmt, ...)                                       \
+#define MUDA_KERNEL_CHECK(res, fmt, ...)                                       \
     if constexpr(!::muda::NO_CHECK)                                            \
     {                                                                          \
         if(!(res))                                                             \
         {                                                                      \
-            muda_kernel_printf("%s(%d): %s <check> " #res " failed." fmt,      \
-                               __FILE__,                                       \
-                               __LINE__,                                       \
-                               MUDA_FUNCTION_SIG,                              \
-                               ##__VA_ARGS__);                                 \
+            MUDA_KERNEL_PRINT("%s(%d): %s <check> " #res " failed." fmt,       \
+                              __FILE__,                                        \
+                              __LINE__,                                        \
+                              MUDA_FUNCTION_SIG,                               \
+                              ##__VA_ARGS__);                                  \
         }                                                                      \
     }
 
 // print error info, and call muda_debug_trap()
-#define muda_kernel_error(fmt, ...)                                            \
+#define MUDA_KERNEL_ERROR(fmt, ...)                                            \
     {                                                                          \
-        muda_kernel_printf("<error> " fmt, ##__VA_ARGS__);                     \
-        muda_debug_trap();                                                     \
+        MUDA_KERNEL_PRINT("<error> " fmt, ##__VA_ARGS__);                      \
+        MUDA_DEBUG_TRAP();                                                     \
+    }
+
+#define MUDA_KERNEL_ERROR_WITH_LOCATION(fmt, ...)                                                           \
+    {                                                                                                       \
+        MUDA_KERNEL_PRINT("%s(%d): %s <error> " fmt, __FILE__, __LINE__, MUDA_FUNCTION_SIG, ##__VA_ARGS__); \
+        MUDA_DEBUG_TRAP();                                                                                  \
     }
 
 // print warn info
-#define muda_kernel_warn(fmt, ...)                                             \
+#define MUDA_KERNEL_WARN(fmt, ...)                                             \
     {                                                                          \
-        muda_kernel_printf("<warn> " fmt, ##__VA_ARGS__);                      \
+        MUDA_KERNEL_PRINT("<warn> " fmt, ##__VA_ARGS__);                       \
     }
 
-// if certain debugOption == true, print the debug info
-#define muda_kernel_debug_info(debugOption, fmt, ...)                          \
-    if constexpr((debugOption))                                                \
+#define MUDA_KERNEL_WARN_WITH_LOCATION(fmt, ...)                                                           \
+    {                                                                                                      \
+        MUDA_KERNEL_PRINT("%s(%d): %s <warn> " fmt, __FILE__, __LINE__, MUDA_FUNCTION_SIG, ##__VA_ARGS__); \
+    }
+
+
+#define MUDA_ASSERT(res, fmt, ...)                                             \
+    if constexpr(!::muda::NO_CHECK)                                            \
     {                                                                          \
-        ::muda::print("(%d|%d,%d|%d,%d|%d)-(%d|%d,%d|%d,%d|%d):" fmt           \
-                      "(" #debugOption " = true)\n",                           \
-                      ::muda::block_idx().x,                                   \
-                      ::muda::grid_dim().x,                                    \
-                      ::muda::block_idx().y,                                   \
-                      ::muda::grid_dim().y,                                    \
-                      ::muda::block_idx().z,                                   \
-                      ::muda::grid_dim().z,                                    \
-                      ::muda::thread_idx().x,                                  \
-                      ::muda::block_dim().x,                                   \
-                      ::muda::thread_idx().y,                                  \
-                      ::muda::block_dim().y,                                   \
-                      ::muda::thread_idx().z,                                  \
-                      ::muda::block_dim().z,                                   \
-                      ##__VA_ARGS__);                                          \
+        if(!(res))                                                             \
+        {                                                                      \
+            ::muda::print("%s(%d): %s <assert> " #res " failed." fmt,          \
+                          __FILE__,                                            \
+                          __LINE__,                                            \
+                          MUDA_FUNCTION_SIG,                                   \
+                          ##__VA_ARGS__);                                      \
+            std::abort();                                                      \
+        }                                                                      \
+    }
+
+#define MUDA_ERROR(fmt, ...)                                                   \
+    {                                                                          \
+        ::muda::print("<error> " fmt, ##__VA_ARGS__);                          \
+        std::abort();                                                          \
+    }
+
+#define MUDA_ERROR_WITH_LOCATION(fmt, ...)                                                              \
+    {                                                                                                   \
+        ::muda::print("%s(%d): %s <error> " fmt, __FILE__, __LINE__, MUDA_FUNCTION_SIG, ##__VA_ARGS__); \
+        std::abort();                                                                                   \
     }
