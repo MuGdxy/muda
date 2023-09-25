@@ -579,13 +579,11 @@ MUDA_INLINE void ComputeGraph::cuda_graph_add_deps()
     std::vector<cudaGraphNode_t> to;
     to.reserve(m_deps.size());
 
-    std::for_each(m_deps.begin(),
-                  m_deps.end(),
-                  [&](const Dependency& dep)
-                  {
-                      from.emplace_back(m_nodes[dep.dst.value()]->handle());
-                      to.emplace_back(m_nodes[dep.src.value()]->handle());
-                  });
+    for(auto dep : m_deps)
+    {
+        from.emplace_back(m_nodes[dep.dst.value()]->handle());
+        to.emplace_back(m_nodes[dep.src.value()]->handle());
+    };
 
     checkCudaErrors(cudaGraphAddDependencies(
         m_graph.handle(), from.data(), to.data(), m_deps.size()));
