@@ -222,14 +222,7 @@ Empty DeviceBuffer<T>::copy_to(DeviceBuffer<value_type>& vec) const
     Memory(m_stream).copy(vec.data(), m_data, m_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
     return Empty(m_stream);
 }
-template <typename T>
-Empty DeviceBuffer<T>::copy_from(const host_var<value_type>& var)
-{
-    m_init = true;
-    resize(1);
-    Memory(m_stream).copy(m_data, muda::data(var), m_size * sizeof(value_type), cudaMemcpyHostToDevice);
-    return Empty(m_stream);
-}
+
 template <typename T>
 Empty DeviceBuffer<T>::copy_from(const value_type& var)
 {
@@ -238,6 +231,7 @@ Empty DeviceBuffer<T>::copy_from(const value_type& var)
     Memory(m_stream).copy(m_data, std::addressof(var), m_size * sizeof(value_type), cudaMemcpyHostToDevice);
     return Empty(m_stream);
 }
+
 template <typename T>
 Empty DeviceBuffer<T>::copy_from(const HostVector<value_type>& vec)
 {
@@ -246,6 +240,7 @@ Empty DeviceBuffer<T>::copy_from(const HostVector<value_type>& vec)
     Memory(m_stream).copy(m_data, muda::data(vec), m_size * sizeof(value_type), cudaMemcpyHostToDevice);
     return Empty(m_stream);
 }
+
 template <typename T>
 Empty DeviceBuffer<T>::copy_from(const DeviceVar<value_type>& var)
 {

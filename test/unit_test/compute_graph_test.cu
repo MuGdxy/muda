@@ -12,6 +12,9 @@ void compute_graph_simple()
     // define graph vars
     ComputeGraph graph;
 
+
+    DeviceVar<int> d;
+
     auto& N   = graph.create_var<size_t>("N");
     auto& x_0 = graph.create_var<Dense1D<Vector3>>("x_0");
     auto& x   = graph.create_var<Dense1D<Vector3>>("x");
@@ -64,10 +67,11 @@ void compute_graph_simple()
     auto x_buffer   = DeviceVector<Vector3>(N_value);
     auto y_buffer   = DeviceVector<Vector3>(N_value);
 
-    x_0.update(make_viewer(x_0_buffer));
-    x.update(make_viewer(x_buffer));
-    y.update(make_viewer(y_buffer));
     N.update(N_value);
+    x_0.update(x_0_buffer.viewer());
+    x.update(x_buffer.viewer());
+    y.update(y_buffer.viewer());
+
 
     graph.launch();
     graph.launch(true);
@@ -82,9 +86,9 @@ void compute_graph_simple()
         y_buffer.resize(N_value);
 
         N.update(N_value);
-        x_0.update(make_viewer(x_0_buffer));
-        x.update(make_viewer(x_buffer));
-        y.update(make_viewer(y_buffer));
+        x_0.update(x_0_buffer.viewer());
+        x.update(x_buffer.viewer());
+        y.update(y_buffer.viewer());
 
         graph.update();
 

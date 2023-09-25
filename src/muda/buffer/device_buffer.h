@@ -103,8 +103,6 @@ class DeviceBuffer
 
     Empty copy_to(DeviceBuffer<value_type>& vec) const;
 
-    Empty copy_from(const host_var<value_type>& var);
-
     Empty copy_from(const value_type& var);
 
     Empty copy_from(const HostVector<value_type>& vec);

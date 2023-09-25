@@ -134,9 +134,9 @@ TEST_CASE("set_graphExec_node_parms", "[graph]")
 
 void host_call_graph(int& ground_thruth, int& res)
 {
-    host_var<int> v = 0;
+    int v = 0;
 
-    auto hp = HostCall().as_node_parms([v = make_viewer(v)] __host__() mutable
+    auto hp = HostCall().as_node_parms([&v] __host__() mutable
                                       { for(int i = 0; i < 5; ++i) v++; });
 
     auto g = Graph::create();
