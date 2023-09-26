@@ -51,7 +51,7 @@ class ViewerBase
   protected:
     MUDA_INLINE MUDA_HOST void name(const char* n) MUDA_NOEXCEPT
     {
-#ifdef MUDA_CHECK_ON
+#if MUDA_CHECK_ON
         m_view_name = details::LaunchInfoCache::view_name(n);
 #endif
     }
