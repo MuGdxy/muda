@@ -42,7 +42,7 @@ MUDA_INLINE void ComputeGraphVarBase::graphviz_id(std::ostream& o) const
 }
 
 template <typename T>
-MUDA_INLINE ComputeGraphVar<T>::RWViewer ComputeGraphVar<T>::eval()
+MUDA_INLINE typename ComputeGraphVar<T>::RWViewer ComputeGraphVar<T>::eval()
 {
     auto phase = ComputeGraphBuilder::current_phase();
     switch(phase)
@@ -77,7 +77,7 @@ MUDA_INLINE ComputeGraphVar<T>::RWViewer ComputeGraphVar<T>::eval()
 }
 
 template <typename T>
-MUDA_INLINE ComputeGraphVar<T>::ROViewer ComputeGraphVar<T>::ceval() const
+MUDA_INLINE typename ComputeGraphVar<T>::ROViewer ComputeGraphVar<T>::ceval() const
 {
     auto phase = ComputeGraphBuilder::current_phase();
     switch(phase)
