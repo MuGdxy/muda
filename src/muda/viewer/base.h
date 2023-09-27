@@ -22,7 +22,9 @@ class ViewerBase
     MUDA_GENERIC ViewerBase()
     {
 #ifndef __CUDA_ARCH__
+#if MUDA_CHECK_ON
         m_kernel_name = details::LaunchInfoCache::current_kernel_name();
+#endif
 #endif
     }
 
