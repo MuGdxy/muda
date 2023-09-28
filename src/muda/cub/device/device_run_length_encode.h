@@ -16,7 +16,7 @@ class DeviceRunLengthEncode : public CubWrapper<DeviceRunLengthEncode>
     }
 
     template <typename InputIteratorT, typename UniqueOutputIteratorT, typename LengthsOutputIteratorT, typename NumRunsOutputIteratorT>
-    DeviceRunLengthEncode& Encode(DeviceBuffer<std::byte>& external_buffer,
+    DeviceRunLengthEncode& Encode(DeviceVector<std::byte>& external_buffer,
                                   InputIteratorT            d_in,
                                   UniqueOutputIteratorT     d_unique_out,
                                   LengthsOutputIteratorT    d_counts_out,
@@ -28,7 +28,7 @@ class DeviceRunLengthEncode : public CubWrapper<DeviceRunLengthEncode>
     }
 
     template <typename InputIteratorT, typename OffsetsOutputIteratorT, typename LengthsOutputIteratorT, typename NumRunsOutputIteratorT>
-    DeviceRunLengthEncode& NonTrivialRuns(DeviceBuffer<std::byte>& external_buffer,
+    DeviceRunLengthEncode& NonTrivialRuns(DeviceVector<std::byte>& external_buffer,
                                           InputIteratorT         d_in,
                                           OffsetsOutputIteratorT d_offsets_out,
                                           LengthsOutputIteratorT d_lengths_out,

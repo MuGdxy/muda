@@ -18,7 +18,7 @@ class DeviceHistogram : public CubWrapper<DeviceHistogram>
 
     // HistogramEven (single channel, 1D input)
     template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-    DeviceHistogram& HistogramEven(DeviceBuffer<std::byte>& external_buffer,
+    DeviceHistogram& HistogramEven(DeviceVector<std::byte>& external_buffer,
                                    SampleIteratorT           d_samples,
                                    CounterT*                 d_histogram,
                                    int                       num_levels,
@@ -40,7 +40,7 @@ class DeviceHistogram : public CubWrapper<DeviceHistogram>
 
     // HistogramEven (single channel, 2D input)
     template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-    DeviceHistogram& HistogramEven(DeviceBuffer<std::byte>& external_buffer,
+    DeviceHistogram& HistogramEven(DeviceVector<std::byte>& external_buffer,
                                    SampleIteratorT           d_samples,
                                    CounterT*                 d_histogram,
                                    int                       num_levels,
@@ -66,7 +66,7 @@ class DeviceHistogram : public CubWrapper<DeviceHistogram>
 
     // MultiHistogramEven (multiple channels, 1D input)
     template <int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-    DeviceHistogram& MultiHistogramEven(DeviceBuffer<std::byte>& external_buffer,
+    DeviceHistogram& MultiHistogramEven(DeviceVector<std::byte>& external_buffer,
                                         SampleIteratorT d_samples,
                                         CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
                                         int    num_levels[NUM_ACTIVE_CHANNELS],
@@ -80,7 +80,7 @@ class DeviceHistogram : public CubWrapper<DeviceHistogram>
 
     // MultiHistogramEven (multiple channels, 2D input)
     template <int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-    DeviceHistogram& MultiHistogramEven(DeviceBuffer<std::byte>& external_buffer,
+    DeviceHistogram& MultiHistogramEven(DeviceVector<std::byte>& external_buffer,
                                         SampleIteratorT d_samples,
                                         CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
                                         int    num_levels[NUM_ACTIVE_CHANNELS],
@@ -107,7 +107,7 @@ class DeviceHistogram : public CubWrapper<DeviceHistogram>
 
     // HistogramRange (single channel, 1D input)
     template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-    DeviceHistogram& HistogramRange(DeviceBuffer<std::byte>& external_buffer,
+    DeviceHistogram& HistogramRange(DeviceVector<std::byte>& external_buffer,
                                     SampleIteratorT           d_samples,
                                     CounterT*                 d_histogram,
                                     int                       num_levels,
@@ -120,7 +120,7 @@ class DeviceHistogram : public CubWrapper<DeviceHistogram>
 
     // HistogramRange (single channel, 2D input)
     template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-    DeviceHistogram& HistogramRange(DeviceBuffer<std::byte>& external_buffer,
+    DeviceHistogram& HistogramRange(DeviceVector<std::byte>& external_buffer,
                                     SampleIteratorT           d_samples,
                                     CounterT*                 d_histogram,
                                     int                       num_levels,
@@ -144,7 +144,7 @@ class DeviceHistogram : public CubWrapper<DeviceHistogram>
 
     // MultiHistogramRange (multiple channels, 1D input)
     template <int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-    DeviceHistogram& MultiHistogramRange(DeviceBuffer<std::byte>& external_buffer,
+    DeviceHistogram& MultiHistogramRange(DeviceVector<std::byte>& external_buffer,
                                          SampleIteratorT d_samples,
                                          CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
                                          int num_levels[NUM_ACTIVE_CHANNELS],
@@ -157,7 +157,7 @@ class DeviceHistogram : public CubWrapper<DeviceHistogram>
 
     // MultiHistogramRange (multiple channels, 2D input)
     template <int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-    DeviceHistogram& MultiHistogramRange(DeviceBuffer<std::byte>& external_buffer,
+    DeviceHistogram& MultiHistogramRange(DeviceVector<std::byte>& external_buffer,
                                          SampleIteratorT d_samples,
                                          CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
                                          int num_levels[NUM_ACTIVE_CHANNELS],

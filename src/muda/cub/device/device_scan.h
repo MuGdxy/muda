@@ -25,7 +25,7 @@ class DeviceScan : public CubWrapper<DeviceScan>
     }
 
     template <typename InputIteratorT, typename OutputIteratorT>
-    DeviceScan& ExclusiveSum(DeviceBuffer<std::byte>& external_buffer,
+    DeviceScan& ExclusiveSum(DeviceVector<std::byte>& external_buffer,
                              InputIteratorT            d_in,
                              OutputIteratorT           d_out,
                              int                       num_items)
@@ -36,7 +36,7 @@ class DeviceScan : public CubWrapper<DeviceScan>
 
 
     template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT>
-    DeviceScan& ExclusiveScan(DeviceBuffer<std::byte>& external_buffer,
+    DeviceScan& ExclusiveScan(DeviceVector<std::byte>& external_buffer,
                               InputIteratorT            d_in,
                               OutputIteratorT           d_out,
                               ScanOpT                   scan_op,
@@ -49,7 +49,7 @@ class DeviceScan : public CubWrapper<DeviceScan>
 
 
     template <typename InputIteratorT, typename OutputIteratorT>
-    DeviceScan& InclusiveSum(DeviceBuffer<std::byte>& external_buffer,
+    DeviceScan& InclusiveSum(DeviceVector<std::byte>& external_buffer,
                              InputIteratorT            d_in,
                              OutputIteratorT           d_out,
                              int                       num_items)
@@ -59,7 +59,7 @@ class DeviceScan : public CubWrapper<DeviceScan>
     }
 
     template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT>
-    DeviceScan& InclusiveScan(DeviceBuffer<std::byte>& external_buffer,
+    DeviceScan& InclusiveScan(DeviceVector<std::byte>& external_buffer,
                               InputIteratorT            d_in,
                               OutputIteratorT           d_out,
                               ScanOpT                   scan_op,
@@ -70,7 +70,7 @@ class DeviceScan : public CubWrapper<DeviceScan>
     }
 
     template <typename KeysInputIteratorT, typename ValuesInputIteratorT, typename ValuesOutputIteratorT, typename EqualityOpT = cub::Equality>
-    DeviceScan& ExclusiveSumByKey(DeviceBuffer<std::byte>& external_buffer,
+    DeviceScan& ExclusiveSumByKey(DeviceVector<std::byte>& external_buffer,
                                   KeysInputIteratorT        d_keys_in,
                                   ValuesInputIteratorT      d_values_in,
                                   ValuesOutputIteratorT     d_values_out,
@@ -82,7 +82,7 @@ class DeviceScan : public CubWrapper<DeviceScan>
     }
 
     template <typename KeysInputIteratorT, typename ValuesInputIteratorT, typename ValuesOutputIteratorT, typename ScanOpT, typename InitValueT, typename EqualityOpT = cub::Equality>
-    DeviceScan& ExclusiveScanByKey(DeviceBuffer<std::byte>& external_buffer,
+    DeviceScan& ExclusiveScanByKey(DeviceVector<std::byte>& external_buffer,
                                    KeysInputIteratorT        d_keys_in,
                                    ValuesInputIteratorT      d_values_in,
                                    ValuesOutputIteratorT     d_values_out,
@@ -105,7 +105,7 @@ class DeviceScan : public CubWrapper<DeviceScan>
     }
 
     template <typename KeysInputIteratorT, typename ValuesInputIteratorT, typename ValuesOutputIteratorT, typename EqualityOpT = cub::Equality>
-    DeviceScan& InclusiveSumByKey(DeviceBuffer<std::byte>& external_buffer,
+    DeviceScan& InclusiveSumByKey(DeviceVector<std::byte>& external_buffer,
                                   KeysInputIteratorT        d_keys_in,
                                   ValuesInputIteratorT      d_values_in,
                                   ValuesOutputIteratorT     d_values_out,
@@ -117,7 +117,7 @@ class DeviceScan : public CubWrapper<DeviceScan>
     }
 
     template <typename KeysInputIteratorT, typename ValuesInputIteratorT, typename ValuesOutputIteratorT, typename ScanOpT, typename EqualityOpT = cub::Equality>
-    DeviceScan& InclusiveScanByKey(DeviceBuffer<std::byte>& external_buffer,
+    DeviceScan& InclusiveScanByKey(DeviceVector<std::byte>& external_buffer,
                                    KeysInputIteratorT        d_keys_in,
                                    ValuesInputIteratorT      d_values_in,
                                    ValuesOutputIteratorT     d_values_out,

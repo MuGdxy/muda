@@ -16,7 +16,7 @@ class DeviceSelect : public CubWrapper<DeviceSelect>
     }
 
     template <typename InputIteratorT, typename FlagIterator, typename OutputIteratorT, typename NumSelectedIteratorT>
-    DeviceSelect& Flagged(DeviceBuffer<std::byte>& external_buffer,
+    DeviceSelect& Flagged(DeviceVector<std::byte>& external_buffer,
                           InputIteratorT            d_in,
                           FlagIterator              d_flags,
                           OutputIteratorT           d_out,
@@ -28,7 +28,7 @@ class DeviceSelect : public CubWrapper<DeviceSelect>
     }
 
     template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename SelectOp>
-    DeviceSelect& If(DeviceBuffer<std::byte>& external_buffer,
+    DeviceSelect& If(DeviceVector<std::byte>& external_buffer,
                      InputIteratorT            d_in,
                      OutputIteratorT           d_out,
                      NumSelectedIteratorT      d_num_selected_out,
@@ -40,7 +40,7 @@ class DeviceSelect : public CubWrapper<DeviceSelect>
     }
 
     template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT>
-    DeviceSelect& Unique(DeviceBuffer<std::byte>& external_buffer,
+    DeviceSelect& Unique(DeviceVector<std::byte>& external_buffer,
                          InputIteratorT            d_in,
                          OutputIteratorT           d_out,
                          NumSelectedIteratorT      d_num_selected_out,
@@ -51,7 +51,7 @@ class DeviceSelect : public CubWrapper<DeviceSelect>
     }
 #if 0
     template <typename KeyInputIteratorT, typename ValueInputIteratorT, typename KeyOutputIteratorT, typename ValueOutputIteratorT, typename NumSelectedIteratorT>
-    DeviceSelect& UniqueByKey(device_buffer<std::byte>& external_buffer,
+    DeviceSelect& UniqueByKey(DeviceVector<std::byte>& external_buffer,
                               KeyInputIteratorT         d_keys_in,
                               ValueInputIteratorT       d_values_in,
                               KeyOutputIteratorT        d_keys_out,

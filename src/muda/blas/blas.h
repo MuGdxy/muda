@@ -5,6 +5,7 @@
 #include <muda/check/check_cublas.h>
 #include <muda/check/check_cuda_errors.h>
 #include <muda/launch/launch_base.h>
+#include <muda/container/vector.h>
 
 #include <cublas.h>
 #include <cusparse.h>
@@ -129,7 +130,7 @@ class Blas : public LaunchBase<Blas>
                DenseVector<typename raw_type_t<MatView>::value_type>& x_in,
                ScalarValueOrPointer                                 beta,
                DenseVector<typename raw_type_t<MatView>::value_type>& y_inout,
-               DeviceBuffer<std::byte>& external_buffer,
+               DeviceVector<std::byte>& external_buffer,
                cusparseSpMVAlg_t         alg = static_cast<cusparseSpMVAlg_t>(0))
     {
 
@@ -153,7 +154,7 @@ class Blas : public LaunchBase<Blas>
                                                 alg,
                                                 &bufferSize));
 
-        details::set_stream_check(external_buffer, m_ctx);
+        // details::set_stream_check(external_buffer, m_ctx);
         external_buffer.resize(bufferSize);
 
         checkCudaErrors(cusparseSpMV(m_ctx,
@@ -196,7 +197,7 @@ class Blas : public LaunchBase<Blas>
     Blas& spmv(MatView&&                                            matA,
                DenseVector<typename raw_type_t<MatView>::value_type>& x_in,
                DenseVector<typename raw_type_t<MatView>::value_type>& y_inout,
-               DeviceBuffer<std::byte>& external_buffer,
+               DeviceVector<std::byte>& external_buffer,
                cusparseSpMVAlg_t         alg = static_cast<cusparseSpMVAlg_t>(0))
     {
         using value_type = typename raw_type_t<MatView>::value_type;

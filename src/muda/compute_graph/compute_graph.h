@@ -285,7 +285,6 @@ class ComputeGraphAccessor
 
     void add_memcpy_node(void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind);
 
-
     void update_memcpy_node(void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind);
 
     template <typename F>

@@ -16,7 +16,7 @@ class DevicePartition : public CubWrapper<DevicePartition>
     }
 
     template <typename InputIteratorT, typename FlagIterator, typename OutputIteratorT, typename NumSelectedIteratorT>
-    DevicePartition& Flagged(DeviceBuffer<std::byte>& external_buffer,
+    DevicePartition& Flagged(DeviceVector<std::byte>& external_buffer,
                              InputIteratorT            d_in,
                              FlagIterator              d_flags,
                              OutputIteratorT           d_out,
@@ -28,7 +28,7 @@ class DevicePartition : public CubWrapper<DevicePartition>
     }
 
     template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename SelectOp>
-    DevicePartition& If(DeviceBuffer<std::byte>& external_buffer,
+    DevicePartition& If(DeviceVector<std::byte>& external_buffer,
                         InputIteratorT            d_in,
                         OutputIteratorT           d_out,
                         NumSelectedIteratorT      d_num_selected_out,
@@ -40,7 +40,7 @@ class DevicePartition : public CubWrapper<DevicePartition>
     }
 
     template <typename InputIteratorT, typename FirstOutputIteratorT, typename SecondOutputIteratorT, typename UnselectedOutputIteratorT, typename NumSelectedIteratorT, typename SelectFirstPartOp, typename SelectSecondPartOp>
-    DevicePartition& If(DeviceBuffer<std::byte>& external_buffer,
+    DevicePartition& If(DeviceVector<std::byte>& external_buffer,
                         InputIteratorT            d_in,
                         FirstOutputIteratorT      d_first_part_out,
                         SecondOutputIteratorT     d_second_part_out,

@@ -16,7 +16,7 @@ class DeviceReduce : public CubWrapper<DeviceReduce>
     }
 
     template <typename InputIteratorT, typename OutputIteratorT, typename ReductionOpT, typename T>
-    DeviceReduce& Reduce(DeviceBuffer<std::byte>& external_buffer,
+    DeviceReduce& Reduce(DeviceVector<std::byte>& external_buffer,
                          InputIteratorT            d_in,
                          OutputIteratorT           d_out,
                          int                       num_items,
@@ -29,7 +29,7 @@ class DeviceReduce : public CubWrapper<DeviceReduce>
 
 
     template <typename InputIteratorT, typename OutputIteratorT>
-    DeviceReduce& Sum(DeviceBuffer<std::byte>& external_buffer,
+    DeviceReduce& Sum(DeviceVector<std::byte>& external_buffer,
                       InputIteratorT            d_in,
                       OutputIteratorT           d_out,
                       int                       num_items)
@@ -40,7 +40,7 @@ class DeviceReduce : public CubWrapper<DeviceReduce>
 
 
     template <typename InputIteratorT, typename OutputIteratorT>
-    DeviceReduce& Min(DeviceBuffer<std::byte>& external_buffer,
+    DeviceReduce& Min(DeviceVector<std::byte>& external_buffer,
                       InputIteratorT            d_in,
                       OutputIteratorT           d_out,
                       int                       num_items)
@@ -51,7 +51,7 @@ class DeviceReduce : public CubWrapper<DeviceReduce>
 
 
     template <typename InputIteratorT, typename OutputIteratorT>
-    DeviceReduce& ArgMin(DeviceBuffer<std::byte>& external_buffer,
+    DeviceReduce& ArgMin(DeviceVector<std::byte>& external_buffer,
                          InputIteratorT            d_in,
                          OutputIteratorT           d_out,
                          int                       num_items)
@@ -62,7 +62,7 @@ class DeviceReduce : public CubWrapper<DeviceReduce>
 
 
     template <typename InputIteratorT, typename OutputIteratorT>
-    DeviceReduce& Max(DeviceBuffer<std::byte>& external_buffer,
+    DeviceReduce& Max(DeviceVector<std::byte>& external_buffer,
                       InputIteratorT            d_in,
                       OutputIteratorT           d_out,
                       int                       num_items)
@@ -74,7 +74,7 @@ class DeviceReduce : public CubWrapper<DeviceReduce>
 
 
     template <typename InputIteratorT, typename OutputIteratorT>
-    DeviceReduce& ArgMax(DeviceBuffer<std::byte>& external_buffer,
+    DeviceReduce& ArgMax(DeviceVector<std::byte>& external_buffer,
                          InputIteratorT            d_in,
                          OutputIteratorT           d_out,
                          int                       num_items)
@@ -84,7 +84,7 @@ class DeviceReduce : public CubWrapper<DeviceReduce>
     }
 
     template <typename KeysInputIteratorT, typename UniqueOutputIteratorT, typename ValuesInputIteratorT, typename AggregatesOutputIteratorT, typename NumRunsOutputIteratorT, typename ReductionOpT>
-    DeviceReduce& ReduceByKey(DeviceBuffer<std::byte>& external_buffer,
+    DeviceReduce& ReduceByKey(DeviceVector<std::byte>& external_buffer,
                               KeysInputIteratorT        d_keys_in,
                               UniqueOutputIteratorT     d_unique_out,
                               ValuesInputIteratorT      d_values_in,

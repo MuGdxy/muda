@@ -54,9 +54,9 @@ inline __host__ auto make_viewer(DenseVector<T>& v)
     return make_dense(v);
 }
 
-template <typename T>
-inline __host__ auto make_dense_vec(DeviceBuffer<T>& buf)
-{
-    return DenseVector<T>(buf.data(), buf.size());
-}
+//template <typename T>
+//inline __host__ auto make_dense_vec(DeviceBuffer<T>& buf)
+//{
+//    return DenseVector<T>(buf.data(), buf.size());
+//}
 }  // namespace muda

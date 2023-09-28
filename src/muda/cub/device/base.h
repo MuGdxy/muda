@@ -8,9 +8,9 @@ template <typename Derive>
 class CubWrapper : public LaunchBase<Derive>
 {
   protected:
-    void prepareBuffer(DeviceBuffer<std::byte>& buf, size_t reqSize)
+    void prepareBuffer(DeviceVector<std::byte>& buf, size_t reqSize)
     {
-        details::set_stream_check(buf, this->stream());
+        // details::set_stream_check(buf, this->stream());
         buf.resize(reqSize);
     }
 

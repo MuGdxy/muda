@@ -13,17 +13,17 @@ void dense_viewer(HostVector<int>& ground_truth, HostVector<int>& res)
     // thrust device_vector
     DeviceVector<int> vector(32, 1);
     // muda device_buffer
-    DeviceBuffer<int> buffer;
-    buffer.resize(32, 1);
+    DeviceVector<int> result;
+    result.resize(32, 1);
 
     ParallelFor(32 /*blockDim*/)
         .apply(32 /*count*/,
                [scalar = make_viewer(scalar),  // the same as scalar = make_dense(scalar)
                 vector = make_viewer(vector),  // the same as vector = make_dense(vector)
-                buffer = make_viewer(buffer)]  // the same as buffer = make_dense(buffer)
+                buffer = make_viewer(result)]  // the same as buffer = make_dense(buffer)
                __device__(int i) mutable { buffer(i) = scalar * vector(i); })
         .wait();
-    buffer.copy_to(res).wait();
+    res = result;
     ground_truth.resize(32, 2);
 }
 

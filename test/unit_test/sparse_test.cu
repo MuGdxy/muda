@@ -15,24 +15,24 @@ void spmv_test(size_t n, const HostVector<float>& in, HostVector<float>& out)
 
     size_t rows   = 16;
     size_t cols   = rows;
-    auto   rowPtr = DeviceBuffer<int>(s, rows + 1);
+    auto   rowPtr = DeviceVector<int>(rows + 1);
     // diagonal sparse matrix
     size_t nnz    = rows;
-    auto   colIdx = DeviceBuffer<int>(s, nnz);
-    auto   values = DeviceBuffer<float>(s, nnz);
+    auto   colIdx = DeviceVector<int>(nnz);
+    auto   values = DeviceVector<float>(nnz);
 
-    auto x_buffer = DeviceBuffer<float>(s, cols);
-    x_buffer.copy_from(in);
-    auto x = DenseVector<float>(x_buffer.data(), x_buffer.size());
+    auto x_buffer = DeviceVector<float>(cols);
+    x_buffer      = in;
+    auto x        = DenseVector<float>(x_buffer.data(), x_buffer.size());
 
-    auto y_buffer = DeviceBuffer<float>(s, cols);
+    auto y_buffer = DeviceVector<float>(cols);
     auto y        = DenseVector<float>(y_buffer.data(), y_buffer.size());
 
     //raii
-    auto M = MatrixCSR<float>(
-        rows, cols, nnz, rowPtr.data(), colIdx.data(), values.data());
+    auto M =
+        MatrixCSR<float>(rows, cols, nnz, rowPtr.data(), colIdx.data(), values.data());
 
-    DeviceBuffer<std::byte> buf(s);
+    DeviceVector<std::byte> buf;
 
     on(s)
         .next<ParallelFor>(32, 32)
@@ -54,15 +54,14 @@ void spmv_test(size_t n, const HostVector<float>& in, HostVector<float>& out)
         .next<Blas>(ctx)
         .spmv(M, x, y, buf)
         .wait();
-
-    y_buffer.copy_to(out);
+    out = y_buffer;
 }
 
 
 TEST_CASE("spmv_test", "[sparse]")
 {
     HostVector<float> in, out;
-    size_t             size = 16;
+    size_t            size = 16;
     in.resize(size, 1);
     spmv_test(size, in, out);
     HostVector<float> ground_thruth = in;

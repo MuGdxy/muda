@@ -14,55 +14,55 @@ template <typename FlagBitsType>
 MUDA_CONSTEXPR bool is_flag_type_v = is_flag_type<FlagBitsType>::value;
 
 template <typename BitType>
-class flags
+class Flags
 {
   public:
     using bit_type = BitType;
-	using mask_type = typename std::underlying_type<bit_type>::type;
+	using mask_type = typename ::std::underlying_type<bit_type>::type;
 	
     // constructors
-    MUDA_CONSTEXPR flags() MUDA_NOEXCEPT : m_mask(0) {}
+    MUDA_CONSTEXPR Flags() MUDA_NOEXCEPT : m_mask(0) {}
 
-    MUDA_CONSTEXPR flags(BitType bit) MUDA_NOEXCEPT
+    MUDA_CONSTEXPR Flags(BitType bit) MUDA_NOEXCEPT
         : m_mask(static_cast<mask_type>(bit))
     {
     }
 
-    MUDA_CONSTEXPR flags(flags<BitType> const& rhs) MUDA_NOEXCEPT = default;
+    MUDA_CONSTEXPR Flags(Flags<BitType> const& rhs) MUDA_NOEXCEPT = default;
 
-    MUDA_CONSTEXPR explicit flags(mask_type flags) MUDA_NOEXCEPT : m_mask(flags)
+    MUDA_CONSTEXPR explicit Flags(mask_type flags) MUDA_NOEXCEPT : m_mask(flags)
     {
     }
 
     // relational operators
     // auto operator<=>(Flags<BitType> const&) const = default;
 
-    MUDA_CONSTEXPR bool operator<(flags<BitType> const& rhs) const MUDA_NOEXCEPT
+    MUDA_CONSTEXPR bool operator<(Flags<BitType> const& rhs) const MUDA_NOEXCEPT
     {
         return m_mask < rhs.m_mask;
     }
 
-    MUDA_CONSTEXPR bool operator<=(flags<BitType> const& rhs) const MUDA_NOEXCEPT
+    MUDA_CONSTEXPR bool operator<=(Flags<BitType> const& rhs) const MUDA_NOEXCEPT
     {
         return m_mask <= rhs.m_mask;
     }
 
-    MUDA_CONSTEXPR bool operator>(flags<BitType> const& rhs) const MUDA_NOEXCEPT
+    MUDA_CONSTEXPR bool operator>(Flags<BitType> const& rhs) const MUDA_NOEXCEPT
     {
         return m_mask > rhs.m_mask;
     }
 
-    MUDA_CONSTEXPR bool operator>=(flags<BitType> const& rhs) const MUDA_NOEXCEPT
+    MUDA_CONSTEXPR bool operator>=(Flags<BitType> const& rhs) const MUDA_NOEXCEPT
     {
         return m_mask >= rhs.m_mask;
     }
 
-    MUDA_CONSTEXPR bool operator==(flags<BitType> const& rhs) const MUDA_NOEXCEPT
+    MUDA_CONSTEXPR bool operator==(Flags<BitType> const& rhs) const MUDA_NOEXCEPT
     {
         return m_mask == rhs.m_mask;
     }
 
-    MUDA_CONSTEXPR bool operator!=(flags<BitType> const& rhs) const MUDA_NOEXCEPT
+    MUDA_CONSTEXPR bool operator!=(Flags<BitType> const& rhs) const MUDA_NOEXCEPT
     {
         return m_mask != rhs.m_mask;
     }
@@ -75,42 +75,42 @@ class flags
     }
 
     // bitwise operators
-    MUDA_CONSTEXPR flags<BitType> operator&(flags<BitType> const& rhs) const MUDA_NOEXCEPT
+    MUDA_CONSTEXPR Flags<BitType> operator&(Flags<BitType> const& rhs) const MUDA_NOEXCEPT
     {
-        return flags<BitType>(m_mask & rhs.m_mask);
+        return Flags<BitType>(m_mask & rhs.m_mask);
     }
 
-    MUDA_CONSTEXPR flags<BitType> operator|(flags<BitType> const& rhs) const MUDA_NOEXCEPT
+    MUDA_CONSTEXPR Flags<BitType> operator|(Flags<BitType> const& rhs) const MUDA_NOEXCEPT
     {
-        return flags<BitType>(m_mask | rhs.m_mask);
+        return Flags<BitType>(m_mask | rhs.m_mask);
     }
 
-    MUDA_CONSTEXPR flags<BitType> operator^(flags<BitType> const& rhs) const MUDA_NOEXCEPT
+    MUDA_CONSTEXPR Flags<BitType> operator^(Flags<BitType> const& rhs) const MUDA_NOEXCEPT
     {
-        return flags<BitType>(m_mask ^ rhs.m_mask);
+        return Flags<BitType>(m_mask ^ rhs.m_mask);
     }
 
-    MUDA_CONSTEXPR flags<BitType> operator~() const MUDA_NOEXCEPT
+    MUDA_CONSTEXPR Flags<BitType> operator~() const MUDA_NOEXCEPT
     {
-        return flags<BitType>(m_mask ^ is_flag_type<BitType>::allFlags.m_mask);
+        return Flags<BitType>(m_mask ^ is_flag_type<BitType>::allFlags.m_mask);
     }
 
     // assignment operators
-    MUDA_CONSTEXPR flags<BitType>& operator=(flags<BitType> const& rhs) MUDA_NOEXCEPT = default;
+    MUDA_CONSTEXPR Flags<BitType>& operator=(Flags<BitType> const& rhs) MUDA_NOEXCEPT = default;
 
-    MUDA_CONSTEXPR flags<BitType>& operator|=(flags<BitType> const& rhs) MUDA_NOEXCEPT
+    MUDA_CONSTEXPR Flags<BitType>& operator|=(Flags<BitType> const& rhs) MUDA_NOEXCEPT
     {
         m_mask |= rhs.m_mask;
         return *this;
     }
 
-    MUDA_CONSTEXPR flags<BitType>& operator&=(flags<BitType> const& rhs) MUDA_NOEXCEPT
+    MUDA_CONSTEXPR Flags<BitType>& operator&=(Flags<BitType> const& rhs) MUDA_NOEXCEPT
     {
         m_mask &= rhs.m_mask;
         return *this;
     }
 
-    MUDA_CONSTEXPR flags<BitType>& operator^=(flags<BitType> const& rhs) MUDA_NOEXCEPT
+    MUDA_CONSTEXPR Flags<BitType>& operator^=(Flags<BitType> const& rhs) MUDA_NOEXCEPT
     {
         m_mask ^= rhs.m_mask;
         return *this;
@@ -171,46 +171,46 @@ class flags
 
 // bitwise operators
 template <typename BitType>
-MUDA_INLINE MUDA_CONSTEXPR flags<BitType> operator&(BitType bit, flags<BitType> const& flags) MUDA_NOEXCEPT
+MUDA_INLINE MUDA_CONSTEXPR Flags<BitType> operator&(BitType bit, Flags<BitType> const& flags) MUDA_NOEXCEPT
 {
     return flags.operator&(bit);
 }
 
 template <typename BitType>
-MUDA_INLINE MUDA_CONSTEXPR flags<BitType> operator|(BitType bit, flags<BitType> const& flags) MUDA_NOEXCEPT
+MUDA_INLINE MUDA_CONSTEXPR Flags<BitType> operator|(BitType bit, Flags<BitType> const& flags) MUDA_NOEXCEPT
 {
     return flags.operator|(bit);
 }
 
 template <typename BitType>
-MUDA_INLINE MUDA_CONSTEXPR flags<BitType> operator^(BitType bit, flags<BitType> const& flags) MUDA_NOEXCEPT
+MUDA_INLINE MUDA_CONSTEXPR Flags<BitType> operator^(BitType bit, Flags<BitType> const& flags) MUDA_NOEXCEPT
 {
     return flags.operator^(bit);
 }
 
 // bitwise operators on BitType
-template <typename BitType, typename std::enable_if<is_flag_type<BitType>::isBitmask, bool>::type = true>
-MUDA_INLINE MUDA_CONSTEXPR flags<BitType> operator&(BitType lhs, BitType rhs) MUDA_NOEXCEPT
+template <typename BitType, typename ::std::enable_if<is_flag_type<BitType>::isBitmask, bool>::type = true>
+MUDA_INLINE MUDA_CONSTEXPR Flags<BitType> operator&(BitType lhs, BitType rhs) MUDA_NOEXCEPT
 {
-    return flags<BitType>(lhs) & rhs;
+    return Flags<BitType>(lhs) & rhs;
 }
 
-template <typename BitType, typename std::enable_if<is_flag_type<BitType>::isBitmask, bool>::type = true>
-MUDA_INLINE MUDA_CONSTEXPR flags<BitType> operator|(BitType lhs, BitType rhs) MUDA_NOEXCEPT
+template <typename BitType, typename ::std::enable_if<is_flag_type<BitType>::isBitmask, bool>::type = true>
+MUDA_INLINE MUDA_CONSTEXPR Flags<BitType> operator|(BitType lhs, BitType rhs) MUDA_NOEXCEPT
 {
-    return flags<BitType>(lhs) | rhs;
+    return Flags<BitType>(lhs) | rhs;
 }
 
-template <typename BitType, typename std::enable_if<is_flag_type<BitType>::isBitmask, bool>::type = true>
-MUDA_INLINE MUDA_CONSTEXPR flags<BitType> operator^(BitType lhs, BitType rhs) MUDA_NOEXCEPT
+template <typename BitType, typename ::std::enable_if<is_flag_type<BitType>::isBitmask, bool>::type = true>
+MUDA_INLINE MUDA_CONSTEXPR Flags<BitType> operator^(BitType lhs, BitType rhs) MUDA_NOEXCEPT
 {
-    return flags<BitType>(lhs) ^ rhs;
+    return Flags<BitType>(lhs) ^ rhs;
 }
 
-template <typename BitType, typename std::enable_if<is_flag_type<BitType>::isBitmask, bool>::type = true>
-MUDA_INLINE MUDA_CONSTEXPR flags<BitType> operator~(BitType bit) MUDA_NOEXCEPT
+template <typename BitType, typename ::std::enable_if<is_flag_type<BitType>::isBitmask, bool>::type = true>
+MUDA_INLINE MUDA_CONSTEXPR Flags<BitType> operator~(BitType bit) MUDA_NOEXCEPT
 {
-    return ~(flags<BitType>(bit));
+    return ~(Flags<BitType>(bit));
 }
 }
 

@@ -56,11 +56,7 @@ class Memory : public LaunchBase<Memory>
         return *this;
     }
 
-    Memory& set(void* data, size_t byte_size, char byte = 0)
-    {
-        checkCudaErrors(cudaMemsetAsync(data, (int)byte, byte_size, stream()));
-        return *this;
-    }
+    Memory& set(void* data, size_t byte_size, char byte = 0);
 };
 }  // namespace muda
 

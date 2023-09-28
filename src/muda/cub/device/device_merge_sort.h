@@ -16,7 +16,7 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
     }
 
     template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
-    DeviceMergeSort& SortPairs(DeviceBuffer<std::byte>& external_buffer,
+    DeviceMergeSort& SortPairs(DeviceVector<std::byte>& external_buffer,
                                KeyIteratorT              d_keys,
                                ValueIteratorT            d_items,
                                OffsetT                   num_items,
@@ -27,7 +27,7 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
     }
 
     template <typename KeyInputIteratorT, typename ValueInputIteratorT, typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
-    DeviceMergeSort& SortPairsCopy(DeviceBuffer<std::byte>& external_buffer,
+    DeviceMergeSort& SortPairsCopy(DeviceVector<std::byte>& external_buffer,
                                    KeyInputIteratorT         d_input_keys,
                                    ValueInputIteratorT       d_input_items,
                                    KeyIteratorT              d_output_keys,
@@ -48,7 +48,7 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
     }
 
     template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
-    DeviceMergeSort& SortKeys(DeviceBuffer<std::byte>& external_buffer,
+    DeviceMergeSort& SortKeys(DeviceVector<std::byte>& external_buffer,
                               KeyIteratorT              d_keys,
                               OffsetT                   num_items,
                               CompareOpT                compare_op)
@@ -58,7 +58,7 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
     }
 
     template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT>
-    DeviceMergeSort& SortKeysCopy(DeviceBuffer<std::byte>& external_buffer,
+    DeviceMergeSort& SortKeysCopy(DeviceVector<std::byte>& external_buffer,
                                   KeyInputIteratorT         d_input_keys,
                                   KeyIteratorT              d_output_keys,
                                   OffsetT                   num_items,
@@ -69,7 +69,7 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
     }
 
     template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
-    DeviceMergeSort& StableSortPairs(DeviceBuffer<std::byte>& external_buffer,
+    DeviceMergeSort& StableSortPairs(DeviceVector<std::byte>& external_buffer,
                                      KeyIteratorT              d_keys,
                                      ValueIteratorT            d_items,
                                      OffsetT                   num_items,
@@ -80,7 +80,7 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
     }
 
     template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
-    DeviceMergeSort& StableSortKeys(DeviceBuffer<std::byte>& external_buffer,
+    DeviceMergeSort& StableSortKeys(DeviceVector<std::byte>& external_buffer,
                                     KeyIteratorT              d_keys,
                                     OffsetT                   num_items,
                                     CompareOpT                compare_op)

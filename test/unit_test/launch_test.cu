@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
 #include <muda/container.h>
-
+#include <source_location>
 using namespace muda;
 
 void launch_test(DeviceVar<int>& res, DeviceVar<int>& res2)

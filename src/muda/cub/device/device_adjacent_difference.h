@@ -22,7 +22,7 @@ class DeviceAdjacentDifference : public CubWrapper<DeviceAdjacentDifference>
     }
 
     template <typename InputIteratorT, typename OutputIteratorT, typename DifferenceOpT = cub::Difference>
-    DeviceAdjacentDifference& SubtractLeftCopy(device_buffer<std::byte>& external_buffer,
+    DeviceAdjacentDifference& SubtractLeftCopy(DeviceVector<std::byte>& external_buffer,
                                                InputIteratorT  d_in,
                                                OutputIteratorT d_out,
                                                int             num_items,
@@ -34,7 +34,7 @@ class DeviceAdjacentDifference : public CubWrapper<DeviceAdjacentDifference>
     }
 
     template <typename RandomAccessIteratorT, typename DifferenceOpT = cub::Difference>
-    DeviceAdjacentDifference& SubtractLeft(device_buffer<std::byte>& external_buffer,
+    DeviceAdjacentDifference& SubtractLeft(DeviceVector<std::byte>& external_buffer,
                                            RandomAccessIteratorT d_in,
                                            int                   num_items,
                                            DifferenceOpT difference_op = {},
@@ -45,7 +45,7 @@ class DeviceAdjacentDifference : public CubWrapper<DeviceAdjacentDifference>
     }
 
     template <typename InputIteratorT, typename OutputIteratorT, typename DifferenceOpT = cub::Difference>
-    DeviceAdjacentDifference& SubtractRightCopy(device_buffer<std::byte>& external_buffer,
+    DeviceAdjacentDifference& SubtractRightCopy(DeviceVector<std::byte>& external_buffer,
                                                 InputIteratorT  d_in,
                                                 OutputIteratorT d_out,
                                                 int             num_items,
@@ -57,7 +57,7 @@ class DeviceAdjacentDifference : public CubWrapper<DeviceAdjacentDifference>
     }
 
     template <typename RandomAccessIteratorT, typename DifferenceOpT = cub::Difference>
-    DeviceAdjacentDifference& SubtractRight(device_buffer<std::byte>& external_buffer,
+    DeviceAdjacentDifference& SubtractRight(DeviceVector<std::byte>& external_buffer,
                                             RandomAccessIteratorT d_in,
                                             int                   num_items,
                                             DifferenceOpT difference_op = {},

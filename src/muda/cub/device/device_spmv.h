@@ -16,7 +16,7 @@ class DeviceSpmv : public CubWrapper<DeviceSpmv>
     }
 
     template <typename ValueT>
-    DeviceSpmv& CsrMV(DeviceBuffer<std::byte>& external_buffer,
+    DeviceSpmv& CsrMV(DeviceVector<std::byte>& external_buffer,
                       const ValueT*             d_values,
                       const int*                d_row_offsets,
                       const int*                d_column_indices,
