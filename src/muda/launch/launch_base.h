@@ -164,7 +164,9 @@ class LaunchBase
 
     auto& kernel_name(std::string_view name)
     {
+#if MUDA_CHECK_ON
         details::LaunchInfoCache::current_kernel_name(name);
+#endif
         return derived();
     }
 
@@ -173,7 +175,9 @@ class LaunchBase
   protected:
     auto& finish_kernel_launch()
     {
+#if MUDA_CHECK_ON
         details::LaunchInfoCache::current_kernel_name("");
+#endif
         return derived();
     }
 
