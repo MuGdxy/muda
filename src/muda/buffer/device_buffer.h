@@ -131,7 +131,7 @@ namespace details
     void set_stream_check(DeviceBuffer<T>& buf, cudaStream_t s)
     {
         if(buf.already_init() && s != buf.stream())
-            throw std::logic_error("buffer is already initialized, please manually set the buffer's stream to s");
+            MUDA_ERROR_WITH_LOCATION("buffer is already initialized, please manually set the buffer's stream to s");
         buf.stream(s);  // buffer isn't initialized yet, allows any setting.
     }
 }  // namespace details

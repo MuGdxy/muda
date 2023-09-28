@@ -27,8 +27,8 @@ class HostDeviceStringCache
     class StringLocation
     {
       public:
-        size_t buffer_index;
-        size_t offset;
+        size_t buffer_index = ~0;
+        size_t offset       = ~0;
     };
 
     std::unordered_map<std::string, StringLocation> m_string_map;
@@ -36,11 +36,15 @@ class HostDeviceStringCache
     std::vector<char*> m_device_string_buffers;
     std::vector<char*> m_host_string_buffers;
 
-    size_t m_current_buffer_offset = 0;
+    size_t m_current_buffer_offset;
     size_t m_buffer_size;
 
+    StringPointer m_empty_string_pointer{};
+
   public:
-    HostDeviceStringCache(size_t buffer_size = 4M) : m_buffer_size(buffer_size)
+    HostDeviceStringCache(size_t buffer_size = 4M)
+        : m_buffer_size(buffer_size)
+        , m_current_buffer_offset(0)
     {
         m_device_string_buffers.reserve(32);
         m_host_string_buffers.reserve(32);
@@ -49,6 +53,8 @@ class HostDeviceStringCache
         checkCudaErrors(cudaMalloc(&s, m_buffer_size * sizeof(char)));
         m_device_string_buffers.emplace_back(s);
         m_host_string_buffers.emplace_back(new char[m_buffer_size]);
+
+        m_empty_string_pointer = get_string_pointer("");  // insert empty string
     }
     ~HostDeviceStringCache()
     {
@@ -65,6 +71,14 @@ class HostDeviceStringCache
     HostDeviceStringCache& operator=(HostDeviceStringCache&&) = default;
 
     StringPointer operator[](std::string_view s)
+    {
+        if(s.empty() || s == "")
+            return m_empty_string_pointer;
+        return get_string_pointer(s);
+    }
+
+  private:
+    StringPointer get_string_pointer(std::string_view s)
     {
         auto str = std::string{s};
         auto it  = m_string_map.find(str);

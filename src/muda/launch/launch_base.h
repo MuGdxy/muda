@@ -55,7 +55,7 @@ class LaunchBase
     cudaStream_t m_stream;
 
   public:
-    LaunchBase(cudaStream_t stream);
+    LaunchBase(cudaStream_t stream) MUDA_NOEXCEPT;
 
     virtual void init_stream(cudaStream_t s) { m_stream = s; }
 

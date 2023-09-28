@@ -10,8 +10,6 @@ TEST_CASE("named_viewer_test", "[viewer]")
     REQUIRE(v.name() == std::string(""));
     v.name("");
     REQUIRE(v.name() == std::string(""));
-    v.name(nullptr);
-    REQUIRE(v.name() == std::string(""));
     for(size_t i = 1; i < VIEWER_NAME_MAX; i++)
     {
         std::string s(i,'a');

@@ -26,7 +26,7 @@ MUDA_INLINE void ParallelFor::invoke(int count, F&& f, UserTag tag)
 {
     using CallableType = raw_type_t<F>;
 
-    if(m_gridDim <= 0)  // ParallelFor
+    if(m_gridDim <= 0)  // parallel for
     {
         if(count > 0)
         {
@@ -76,18 +76,18 @@ MUDA_INLINE auto ParallelFor::as_node_parms(int count, F&& f, UserTag tag)
     finish_kernel_launch();
     return parms;
 }
-MUDA_INLINE int ParallelFor::calculate_grid_dim(int count) const
+
+MUDA_INLINE int ParallelFor::calculate_grid_dim(int count) const MUDA_NOEXCEPT
 {
     auto min_threads = count;
     auto min_blocks  = (min_threads + m_block_dim - 1) / m_block_dim;
     return min_blocks;
 }
-inline void muda::ParallelFor::check_input(int count) const
+
+MUDA_INLINE void muda::ParallelFor::check_input(int count) const MUDA_NOEXCEPT
 {
-    if(count < 0)
-        throw std::logic_error("count must be >= 0");
-    if(m_block_dim <= 0)
-        throw std::logic_error("blockDim must be > 0");
+    MUDA_ASSERT(count >= 0, "count must be >= 0");
+    MUDA_ASSERT(m_block_dim > 0, "blockDim must be > 0");
 }
 
 }  // namespace muda

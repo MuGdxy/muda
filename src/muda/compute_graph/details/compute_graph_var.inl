@@ -48,7 +48,7 @@ MUDA_INLINE typename ComputeGraphVar<T>::RWViewer ComputeGraphVar<T>::eval()
     switch(phase)
     {
         case ComputeGraphPhase::None: {
-            throw std::logic_error("ComputeGraphVar.eval() is not allowed outside Graph Closure");
+            MUDA_ERROR_WITH_LOCATION("ComputeGraphVar.eval() is not allowed outside Graph Closure");
         }
         break;
         case ComputeGraphPhase::TopoBuilding:
@@ -83,7 +83,7 @@ MUDA_INLINE typename ComputeGraphVar<T>::ROViewer ComputeGraphVar<T>::ceval() co
     switch(phase)
     {
         case ComputeGraphPhase::None: {
-            throw std::logic_error("ComputeGraphVar.eval() is not allowed outside Graph Closure");
+            MUDA_ERROR_WITH_LOCATION("ComputeGraphVar.eval() is not allowed outside Graph Closure");
         }
         break;
         case ComputeGraphPhase::TopoBuilding:

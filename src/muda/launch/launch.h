@@ -19,7 +19,7 @@ class Launch : public LaunchBase<Launch>
     size_t m_shared_mem_size;
 
   public:
-    Launch(dim3 gridDim, dim3 blockDim, size_t sharedMemSize = 0, cudaStream_t stream = nullptr)
+    Launch(dim3 gridDim, dim3 blockDim, size_t sharedMemSize = 0, cudaStream_t stream = nullptr) MUDA_NOEXCEPT
         : LaunchBase(stream)
         , m_gridDim(gridDim)
         , m_block_dim(blockDim)
@@ -27,7 +27,7 @@ class Launch : public LaunchBase<Launch>
     {
     }
 
-    Launch(int gridDim = 1, int blockDim = 1, size_t sharedMemSize = 0, cudaStream_t stream = nullptr)
+    Launch(int gridDim = 1, int blockDim = 1, size_t sharedMemSize = 0, cudaStream_t stream = nullptr) MUDA_NOEXCEPT
         : LaunchBase(stream)
         , m_gridDim(gridDim)
         , m_block_dim(blockDim)

@@ -184,7 +184,7 @@ template <typename T>
 Empty DeviceBuffer<T>::copy_to(value_type& var) const
 {
     if(m_size != 1)
-        throw std::logic_error("buffer size larger than 1, cannot copy to host_var");
+        MUDA_ERROR_WITH_LOCATION("buffer size larger than 1, cannot copy to host_var");
     m_init = true;
     Memory(m_stream).copy(std::addressof(var), m_data, m_size * sizeof(value_type), cudaMemcpyDeviceToHost);
     return Empty(m_stream);
@@ -201,7 +201,7 @@ template <typename T>
 Empty DeviceBuffer<T>::copy_to(DeviceVar<value_type>& var) const
 {
     if(m_size != 1)
-        throw std::logic_error("buffer size larger than 1, cannot copy to device_var");
+        MUDA_ERROR_WITH_LOCATION("buffer size larger than 1, cannot copy to device_var");
     m_init = true;
     Memory(m_stream).copy(muda::data(var), m_data, m_size * sizeof(value_type), cudaMemcpyDeviceToDevice);
     return Empty(m_stream);

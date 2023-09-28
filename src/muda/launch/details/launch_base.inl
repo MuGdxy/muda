@@ -5,7 +5,7 @@
 namespace muda
 {
 template <typename T>
-LaunchBase<T>::LaunchBase(cudaStream_t stream)
+LaunchBase<T>::LaunchBase(cudaStream_t stream) MUDA_NOEXCEPT
     : m_stream(stream)
 {
     if(ComputeGraphBuilder::is_phase_serial_launching())

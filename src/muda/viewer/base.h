@@ -23,6 +23,7 @@ class ViewerBase
     {
 #ifndef __CUDA_ARCH__
         m_kernel_name = details::LaunchInfoCache::current_kernel_name();
+        m_view_name   = details::LaunchInfoCache::view_name("");
 #endif
     }
 

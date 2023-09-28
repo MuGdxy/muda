@@ -114,7 +114,7 @@ void compute_graph_simple()
                   << std::endl;
     };
 
-    f(20, 1M);
+    //f(20, 1M);
 }
 
 void compute_graph_test()

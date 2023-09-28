@@ -59,9 +59,9 @@ class ParallelFor : public LaunchBase<ParallelFor>
         int count;
         F   callable;
         template <typename U>
-        KernelData(int count, U&& callable)
-            : count(count)
-            , callable(std::forward<U>(callable))
+        KernelData(int count, U&& callable) MUDA_NOEXCEPT
+            : count(count),
+              callable(std::forward<U>(callable))
         {
         }
     };
@@ -72,11 +72,11 @@ class ParallelFor : public LaunchBase<ParallelFor>
     /// <param name="blockDim">block dim to use</param>
     /// <param name="sharedMemSize"></param>
     /// <param name="stream"></param>
-    ParallelFor(int blockDim, size_t shared_mem_size = 0, cudaStream_t stream = nullptr)
-        : LaunchBase(stream)
-        , m_gridDim(0)
-        , m_block_dim(blockDim)
-        , m_shared_mem_size(shared_mem_size)
+    ParallelFor(int blockDim, size_t shared_mem_size = 0, cudaStream_t stream = nullptr) MUDA_NOEXCEPT
+        : LaunchBase(stream),
+          m_gridDim(0),
+          m_block_dim(blockDim),
+          m_shared_mem_size(shared_mem_size)
     {
     }
 
@@ -87,11 +87,11 @@ class ParallelFor : public LaunchBase<ParallelFor>
     /// <param name="gridDim"></param>
     /// <param name="sharedMemSize"></param>
     /// <param name="stream"></param>
-    ParallelFor(int gridDim, int blockDim, size_t shared_mem_size = 0, cudaStream_t stream = nullptr)
-        : LaunchBase(stream)
-        , m_gridDim(gridDim)
-        , m_block_dim(blockDim)
-        , m_shared_mem_size(shared_mem_size)
+    ParallelFor(int gridDim, int blockDim, size_t shared_mem_size = 0, cudaStream_t stream = nullptr) MUDA_NOEXCEPT
+        : LaunchBase(stream),
+          m_gridDim(gridDim),
+          m_block_dim(blockDim),
+          m_shared_mem_size(shared_mem_size)
     {
     }
 
@@ -106,9 +106,9 @@ class ParallelFor : public LaunchBase<ParallelFor>
     template <typename F, typename UserTag = DefaultTag>
     void invoke(int count, F&& f, UserTag tag = {});
 
-    int calculate_grid_dim(int count) const;
+    int calculate_grid_dim(int count) const MUDA_NOEXCEPT;
 
-    void check_input(int count) const;
+    void check_input(int count) const MUDA_NOEXCEPT;
 };
 }  // namespace muda
 

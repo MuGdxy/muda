@@ -32,7 +32,7 @@ endif()
 
 project(muda LANGUAGES CXX CUDA)
 
-find_package(CUDAToolKit REQUIRED)
+find_package(CUDAToolkit REQUIRED)
 
 enable_language(CUDA)
 set(CMAKE_CXX_STANDARD 17)
