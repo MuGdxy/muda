@@ -10,11 +10,10 @@ cmake_minimum_required(VERSION 3.20)
 
 # build targets:
 option(MUDA_BUILD_EXAMPLE "build muda examples. if you want to see how to use muda, you could enable this option." ON)
-option(MUDA_PLAYGROUND "build muda playground. if you're the developer, you could enable this option." OFF)
 option(MUDA_BUILD_UNIT_TEST "build muda test. if you're the developer, you could enable this option." OFF)
 
 # short cut
-option(MUDA_DEV "build muda example, playground and test. if you're the developer, you could enable this option." OFF)
+option(MUDA_DEV "build muda example and unit test. if you're the developer, you could enable this option." OFF)
 option(MUDA_WITH_CHECK "turn on muda runtime check" ON)
 
 

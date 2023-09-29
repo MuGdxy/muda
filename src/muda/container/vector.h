@@ -96,14 +96,14 @@ MUDA_INLINE MUDA_HOST auto make_dense2D(details::vector_base<T, Allocator>& v, i
 
 template <typename T, typename Allocator>
 MUDA_INLINE MUDA_HOST auto make_dense2D(details::vector_base<T, Allocator>& v,
-                                        const ::Eigen::Vector2i& dim) MUDA_NOEXCEPT
+                                        const int2& dim) MUDA_NOEXCEPT
 {
-    MUDA_ASSERT(dim.x() * dim.y() <= v.size(),
-                "dim.x()=%d, dim.y()=%d, v.size()=%d\n",
-                dim.x(),
-                dim.y(),
+    MUDA_ASSERT(dim.x * dim.y <= v.size(),
+                "dim.x=%d, dim.y=%d, v.size()=%d\n",
+                dim.x,
+                dim.y,
                 v.size());
-    return make_dense2D(::muda::data(v), dim.x(), dim.y());
+    return make_dense2D(::muda::data(v), dim.x, dim.y);
 }
 
 template <typename T, typename Allocator>
@@ -116,14 +116,15 @@ MUDA_INLINE MUDA_HOST auto make_dense3D(details::vector_base<T, Allocator>& v, i
 
 template <typename T, typename Allocator>
 MUDA_INLINE MUDA_HOST auto make_dense3D(details::vector_base<T, Allocator>& v,
-                                        const ::Eigen::Vector2i dimyz) MUDA_NOEXCEPT
+                                        const int2& dimyz) MUDA_NOEXCEPT
 {
-    MUDA_KERNEL_ASSERT(dimyz(0) * dimyz(1) <= v.size(),
+    MUDA_KERNEL_ASSERT(dimyz.x * dimyz.y <= v.size(),
                        "dimy=%d, dimz=%d, v.size()=%d\n",
-                       dimyz(0),
-                       dimyz(1),
+                       dimyz.x,
+                       dimyz.y,
                        v.size());
-    return make_dense3D(::muda::data(v), v.size() / (dimyz(0) * dimyz(1)), dimyz(0), dimyz(1));
+    return make_dense3D(
+        ::muda::data(v), v.size() / (dimyz.x * dimyz.y), dimyz.x, dimyz.y);
 }
 
 template <typename T, typename Allocator>
@@ -143,15 +144,15 @@ MUDA_INLINE MUDA_HOST auto make_dense3D(details::vector_base<T, Allocator>& v,
 
 template <typename T, typename Allocator>
 MUDA_INLINE MUDA_HOST auto make_dense3D(details::vector_base<T, Allocator>& v,
-                                        const ::Eigen::Vector3i& dim) MUDA_NOEXCEPT
+                                        const int3& dim) MUDA_NOEXCEPT
 {
-    MUDA_KERNEL_ASSERT(dim.x() * dim.y() * dim.z() <= v.size(),
-                       "dim.x()=%d, dim.y()=%d, dim.z()=%d, v.size()=%d\n",
-                       dim.x(),
-                       dim.y(),
-                       dim.z(),
+    MUDA_KERNEL_ASSERT(dim.x * dim.y * dim.z <= v.size(),
+                       "dim.x=%d, dim.y=%d, dim.z=%d, v.size()=%d\n",
+                       dim.x,
+                       dim.y,
+                       dim.z,
                        v.size());
-    return make_dense3D(::muda::data(v), dim.x(), dim.y(), dim.z());
+    return make_dense3D(::muda::data(v), dim.x, dim.y, dim.z);
 }
 }  // namespace muda
 #include <string>

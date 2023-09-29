@@ -21,7 +21,7 @@ target("muda")
         add_defines("MUDA_CHECK_ON=1", {public = true})
     end
     add_packages("cuda", {public = true})
-    add_packages("eigen", {public = true})
+    -- add_packages("eigen", {public = true})
     add_cuflags("--extended-lambda", {public = true}) -- must be set for muda
     add_cuflags("--expt-relaxed-constexpr", {public = true}) -- must be set for muda
 target_end()

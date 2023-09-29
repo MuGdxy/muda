@@ -154,22 +154,15 @@ template <typename T>
 class CDenseND<T, 1> : public ROViewer
 {
     MUDA_VIEWER_COMMON(CDenseND);
-    const T*              m_data;
-    Eigen::Vector<int, 1> m_dim;
+    const T* m_data;
+    int      m_dim;
 
   public:
     using value_type = T;
 
     MUDA_GENERIC CDenseND() MUDA_NOEXCEPT : m_data(nullptr) {}
 
-    MUDA_GENERIC CDenseND(const T* p, int dimx) MUDA_NOEXCEPT
-        : CDenseND(p, Eigen::Vector<int, 1>(dimx))
-    {
-    }
-
-    MUDA_GENERIC CDenseND(const T* p, const Eigen::Vector<int, 1>& dim) MUDA_NOEXCEPT
-        : m_data(p),
-          m_dim(dim)
+    MUDA_GENERIC CDenseND(const T* p, int dim) MUDA_NOEXCEPT : m_data(p), m_dim(dim)
     {
     }
 
@@ -182,34 +175,34 @@ class CDenseND<T, 1> : public ROViewer
     MUDA_GENERIC int map(int x) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            if(!(x >= 0 && x < m_dim[0]))
+            if(!(x >= 0 && x < m_dim))
                 MUDA_KERNEL_ERROR("dense1D[%s:%s]: out of range, index=(%d) m_dim=(%d)\n",
                                   this->name(),
                                   this->kernel_name(),
                                   x,
-                                  m_dim[0]);
+                                  m_dim);
         return x;
     }
 
     MUDA_GENERIC const T* data() const MUDA_NOEXCEPT { return m_data; }
 
-    MUDA_GENERIC int total_size() const MUDA_NOEXCEPT { return m_dim[0]; }
+    MUDA_GENERIC int total_size() const MUDA_NOEXCEPT { return m_dim; }
 
-    MUDA_GENERIC int dim() const MUDA_NOEXCEPT { return m_dim[0]; }
+    MUDA_GENERIC int dim() const MUDA_NOEXCEPT { return m_dim; }
 
     MUDA_GENERIC this_type sub_view(int offset, int size = -1) MUDA_NOEXCEPT
     {
         if(size < 0)
-            size = m_dim[0] - offset;
+            size = m_dim - offset;
         if constexpr(DEBUG_VIEWER)
         {
-            if(offset < 0 || offset + size > m_dim[0])
+            if(offset < 0 || offset + size > m_dim)
                 MUDA_KERNEL_ERROR("dense1D[%s:%s]: sub_view out of range, offset=%d size=%d m_dim=(%d)\n",
                                   this->name(),
                                   this->kernel_name(),
                                   offset,
                                   size,
-                                  m_dim[0]);
+                                  m_dim);
         }
         return this_type(m_data + offset, size);
     }
@@ -230,24 +223,15 @@ template <typename T>
 class DenseND<T, 1> : public RWViewer
 {
     MUDA_VIEWER_COMMON(DenseND);
-    T*                    m_data;
-    Eigen::Vector<int, 1> m_dim;
+    T*  m_data;
+    int m_dim;
 
   public:
     using value_type = T;
 
     MUDA_GENERIC DenseND() MUDA_NOEXCEPT : m_data(nullptr) {}
 
-    MUDA_GENERIC DenseND(T* p, int dimx) MUDA_NOEXCEPT
-        : DenseND(p, Eigen::Vector<int, 1>(dimx))
-    {
-    }
-
-    MUDA_GENERIC DenseND(T* p, const Eigen::Vector<int, 1>& dim) MUDA_NOEXCEPT
-        : m_data(p),
-          m_dim(dim)
-    {
-    }
+    MUDA_GENERIC DenseND(T* p, int dim) MUDA_NOEXCEPT : m_data(p), m_dim(dim) {}
 
     MUDA_GENERIC operator CDenseND<T, 1>() const MUDA_NOEXCEPT
     {
@@ -269,12 +253,12 @@ class DenseND<T, 1> : public RWViewer
     MUDA_GENERIC int map(int x) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            if(!(x >= 0 && x < m_dim[0]))
+            if(!(x >= 0 && x < m_dim))
                 MUDA_KERNEL_ERROR("dense1D[%s:%s]: out of range, index=(%d) m_dim=(%d)\n",
                                   this->name(),
                                   this->kernel_name(),
                                   x,
-                                  m_dim[0]);
+                                  m_dim);
         return x;
     }
 
@@ -282,23 +266,23 @@ class DenseND<T, 1> : public RWViewer
 
     MUDA_GENERIC const T* data() const MUDA_NOEXCEPT { return m_data; }
 
-    MUDA_GENERIC int total_size() const MUDA_NOEXCEPT { return m_dim[0]; }
+    MUDA_GENERIC int total_size() const MUDA_NOEXCEPT { return m_dim; }
 
-    MUDA_GENERIC int dim() const MUDA_NOEXCEPT { return m_dim[0]; }
+    MUDA_GENERIC int dim() const MUDA_NOEXCEPT { return m_dim; }
 
     MUDA_GENERIC this_type sub_view(int offset, int size = -1) MUDA_NOEXCEPT
     {
         if(size < 0)
-            size = m_dim[0] - offset;
+            size = m_dim - offset;
         if constexpr(DEBUG_VIEWER)
         {
-            if(offset < 0 || offset + size > m_dim[0])
+            if(offset < 0 || offset + size > m_dim)
                 MUDA_KERNEL_ERROR("dense1D[%s:%s]: sub_view out of range, offset=%d size=%d m_dim=(%d)\n",
                                   this->name(),
                                   this->kernel_name(),
                                   offset,
                                   size,
-                                  m_dim[0]);
+                                  m_dim);
         }
         return this_type(m_data + offset, size);
     }
@@ -319,8 +303,8 @@ template <typename T>
 class CDenseND<T, 2> : public ROViewer
 {
     MUDA_VIEWER_COMMON(CDenseND);
-    const T*              m_data;
-    Eigen::Vector<int, 2> m_dim;
+    const T* m_data;
+    int2     m_dim;
 
   public:
     using value_type = T;
@@ -328,13 +312,12 @@ class CDenseND<T, 2> : public ROViewer
     MUDA_GENERIC CDenseND() MUDA_NOEXCEPT : m_data(nullptr) {}
 
     MUDA_GENERIC CDenseND(const T* p, int dimx, int dimy) MUDA_NOEXCEPT
-        : CDenseND(p, Eigen::Vector<int, 2>(dimx, dimy))
+        : CDenseND(p, make_int2(dimx, dimy))
     {
     }
 
-    MUDA_GENERIC CDenseND(const T* p, const Eigen::Vector<int, 2>& dim) MUDA_NOEXCEPT
-        : m_data((T*)p),
-          m_dim(dim)
+    MUDA_GENERIC CDenseND(const T* p, const int2& dim) MUDA_NOEXCEPT : m_data((T*)p),
+                                                                       m_dim(dim)
     {
     }
 
@@ -350,31 +333,26 @@ class CDenseND<T, 2> : public ROViewer
     MUDA_GENERIC int map(int x, int y) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            if(!(x >= 0 && x < m_dim[0] && y >= 0 && y < m_dim[1]))
+            if(!(x >= 0 && x < m_dim.x && y >= 0 && y < m_dim.y))
             {
                 MUDA_KERNEL_ERROR("dense2D[%s:%s]: out of range, index=(%d,%d) dim=(%d,%d)\n",
                                   this->name(),
                                   this->kernel_name(),
                                   x,
                                   y,
-                                  m_dim[0],
-                                  m_dim[1]);
+                                  m_dim.x,
+                                  m_dim.y);
             }
-        return x * m_dim[1] + y;
+        return x * m_dim.y + y;
     }
     MUDA_GENERIC int total_size() const MUDA_NOEXCEPT
     {
-        return m_dim[0] * m_dim[1];
+        return m_dim.x * m_dim.y;
     }
 
     MUDA_GENERIC int area() const MUDA_NOEXCEPT { return total_size(); }
 
-    template <int i>
-    MUDA_GENERIC int dim() const MUDA_NOEXCEPT
-    {
-        static_assert(i >= 0 && i <= 2, "dense2D: dim index out of range");
-        return m_dim[i];
-    }
+    MUDA_GENERIC auto dim() const MUDA_NOEXCEPT { return m_dim; }
 
   private:
     MUDA_INLINE MUDA_GENERIC void check() const MUDA_NOEXCEPT
@@ -391,8 +369,8 @@ template <typename T>
 class DenseND<T, 2> : public RWViewer
 {
     MUDA_VIEWER_COMMON(DenseND);
-    T*                    m_data;
-    Eigen::Vector<int, 2> m_dim;
+    T*   m_data;
+    int2 m_dim;
 
   public:
     using value_type = T;
@@ -400,13 +378,11 @@ class DenseND<T, 2> : public RWViewer
     MUDA_GENERIC DenseND() MUDA_NOEXCEPT : m_data(nullptr) {}
 
     MUDA_GENERIC DenseND(T* p, int dimx, int dimy) MUDA_NOEXCEPT
-        : DenseND(p, Eigen::Vector<int, 2>(dimx, dimy))
+        : DenseND(p, make_int2(dimx, dimy))
     {
     }
 
-    MUDA_GENERIC DenseND(T* p, const Eigen::Vector<int, 2>& dim) MUDA_NOEXCEPT
-        : m_data((T*)p),
-          m_dim(dim)
+    MUDA_GENERIC DenseND(T* p, const int2& dim) MUDA_NOEXCEPT : m_data((T*)p), m_dim(dim)
     {
     }
 
@@ -435,31 +411,26 @@ class DenseND<T, 2> : public RWViewer
     MUDA_GENERIC int map(int x, int y) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            if(!(x >= 0 && x < m_dim[0] && y >= 0 && y < m_dim[1]))
+            if(!(x >= 0 && x < m_dim.x && y >= 0 && y < m_dim.y))
             {
                 MUDA_KERNEL_ERROR("dense2D[%s:%s]: out of range, index=(%d,%d) dim=(%d,%d)\n",
                                   this->name(),
                                   this->kernel_name(),
                                   x,
                                   y,
-                                  m_dim[0],
-                                  m_dim[1]);
+                                  m_dim.x,
+                                  m_dim.y);
             }
-        return x * m_dim[1] + y;
+        return x * m_dim.y + y;
     }
     MUDA_GENERIC int total_size() const MUDA_NOEXCEPT
     {
-        return m_dim[0] * m_dim[1];
+        return m_dim.x * m_dim.y;
     }
 
     MUDA_GENERIC int area() const MUDA_NOEXCEPT { return total_size(); }
 
-    template <int i>
-    MUDA_GENERIC int dim() const MUDA_NOEXCEPT
-    {
-        static_assert(i >= 0 && i <= 2, "dense2D: dim index out of range");
-        return m_dim[i];
-    }
+    MUDA_GENERIC auto dim() const MUDA_NOEXCEPT { return m_dim; }
 
   private:
     MUDA_INLINE MUDA_GENERIC void check() const MUDA_NOEXCEPT
@@ -476,9 +447,9 @@ template <typename T>
 class CDenseND<T, 3> : public ROViewer
 {
     MUDA_VIEWER_COMMON(CDenseND);
-    const T*              m_data;
-    Eigen::Vector<int, 3> m_dim;
-    int                   m_area;
+    const T* m_data;
+    int3     m_dim;
+    int      m_area;
 
   public:
     using value_type = T;
@@ -486,13 +457,12 @@ class CDenseND<T, 3> : public ROViewer
     MUDA_GENERIC CDenseND() MUDA_NOEXCEPT : m_data(nullptr){};
 
     MUDA_GENERIC CDenseND(const T* p, int dimx, int dimy, int dimz) MUDA_NOEXCEPT
-        : CDenseND(p, Eigen::Vector<int, 3>(dimx, dimy, dimz))
+        : CDenseND(p, make_int3(dimx, dimy, dimz))
     {
     }
 
-    MUDA_GENERIC CDenseND(const T* p, const Eigen::Vector<int, 3>& dim) MUDA_NOEXCEPT
-        : m_data(p),
-          m_dim(dim)
+    MUDA_GENERIC CDenseND(const T* p, const int3& dim) MUDA_NOEXCEPT : m_data(p),
+                                                                       m_dim(dim)
     {
     }
 
@@ -508,31 +478,27 @@ class CDenseND<T, 3> : public ROViewer
     MUDA_GENERIC int map(int x, int y, int z) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            if(!(x >= 0 && x < m_dim[0] && y >= 0 && y < m_dim[1] && z >= 0 && z < m_dim[2]))
+            if(!(x >= 0 && x < m_dim.x && y >= 0 && y < m_dim.y && z >= 0
+                 && z < m_dim.z))
                 MUDA_KERNEL_ERROR("dense3D[%s:%s]: out of range, index=(%d,%d,%d) dim=(%d,%d,%d)\n",
                                   this->name(),
                                   this->kernel_name(),
                                   x,
                                   y,
                                   z,
-                                  m_dim[0],
-                                  m_dim[1],
-                                  m_dim[2]);
-        return x * m_area + y * m_dim[2] + z;
+                                  m_dim.x,
+                                  m_dim.y,
+                                  m_dim.z);
+        return x * m_area + y * m_dim.z + z;
     }
 
-    template <int i>
-    MUDA_GENERIC int dim() const MUDA_NOEXCEPT
-    {
-        static_assert(i >= 0 && i <= 2, "dense3D: dim index out of range");
-        return m_dim[i];
-    }
+    MUDA_GENERIC auto dim() const MUDA_NOEXCEPT { return m_dim; }
 
     MUDA_GENERIC int area() const MUDA_NOEXCEPT { return m_area; }
 
     MUDA_GENERIC int total_size() const MUDA_NOEXCEPT
     {
-        return m_dim[0] * m_area;
+        return m_dim.x * m_area;
     }
 
     MUDA_GENERIC int volume() const MUDA_NOEXCEPT { return total_size(); }
@@ -552,9 +518,9 @@ template <typename T>
 class DenseND<T, 3> : public RWViewer
 {
     MUDA_VIEWER_COMMON(DenseND);
-    T*                    m_data;
-    Eigen::Vector<int, 3> m_dim;
-    int                   m_area;
+    T*   m_data;
+    int3 m_dim;
+    int  m_area;
 
   public:
     using value_type = T;
@@ -562,13 +528,11 @@ class DenseND<T, 3> : public RWViewer
     MUDA_GENERIC DenseND() MUDA_NOEXCEPT : m_data(nullptr){};
 
     MUDA_GENERIC DenseND(T* p, int dimx, int dimy, int dimz) MUDA_NOEXCEPT
-        : DenseND(p, Eigen::Vector<int, 3>(dimx, dimy, dimz))
+        : DenseND(p, make_int3(dimx, dimy, dimz))
     {
     }
 
-    MUDA_GENERIC DenseND(T* p, const Eigen::Vector<int, 3>& dim) MUDA_NOEXCEPT
-        : m_data(p),
-          m_dim(dim)
+    MUDA_GENERIC DenseND(T* p, const int3& dim) MUDA_NOEXCEPT : m_data(p), m_dim(dim)
     {
     }
 
@@ -597,31 +561,27 @@ class DenseND<T, 3> : public RWViewer
     MUDA_GENERIC int map(int x, int y, int z) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            if(!(x >= 0 && x < m_dim[0] && y >= 0 && y < m_dim[1] && z >= 0 && z < m_dim[2]))
+            if(!(x >= 0 && x < m_dim.x && y >= 0 && y < m_dim.y && z >= 0
+                 && z < m_dim.z))
                 MUDA_KERNEL_ERROR("dense3D[%s:%s]: out of range, index=(%d,%d,%d) dim=(%d,%d,%d)\n",
                                   this->name(),
                                   this->kernel_name(),
                                   x,
                                   y,
                                   z,
-                                  m_dim[0],
-                                  m_dim[1],
-                                  m_dim[2]);
-        return x * m_area + y * m_dim[2] + z;
+                                  m_dim.x,
+                                  m_dim.y,
+                                  m_dim.z);
+        return x * m_area + y * m_dim.z + z;
     }
 
-    template <int i>
-    MUDA_GENERIC int dim() const MUDA_NOEXCEPT
-    {
-        static_assert(i >= 0 && i <= 2, "dense3D: dim index out of range");
-        return m_dim[i];
-    }
+    MUDA_GENERIC auto dim() const MUDA_NOEXCEPT { return m_dim; }
 
     MUDA_GENERIC int area() const MUDA_NOEXCEPT { return m_area; }
 
     MUDA_GENERIC int total_size() const MUDA_NOEXCEPT
     {
-        return m_dim[0] * m_area;
+        return m_dim.x * m_area;
     }
 
     MUDA_GENERIC int volume() const MUDA_NOEXCEPT { return total_size(); }
@@ -703,13 +663,13 @@ MUDA_INLINE MUDA_GENERIC auto make_dense2D(T* data, int dimx, int dimy) MUDA_NOE
 }
 
 template <typename T>
-MUDA_INLINE MUDA_GENERIC auto make_cdense2D(const T* data, const Eigen::Vector2i& dim) MUDA_NOEXCEPT
+MUDA_INLINE MUDA_GENERIC auto make_cdense2D(const T* data, const int2& dim) MUDA_NOEXCEPT
 {
     return CDense2D<T>(data, dim);
 }
 
 template <typename T>
-MUDA_INLINE MUDA_GENERIC auto make_dense2D(T* data, const Eigen::Vector2i& dim) MUDA_NOEXCEPT
+MUDA_INLINE MUDA_GENERIC auto make_dense2D(T* data, const int2& dim) MUDA_NOEXCEPT
 {
     return Dense2D<T>(data, dim);
 }
@@ -727,13 +687,13 @@ MUDA_INLINE MUDA_GENERIC auto make_dense3D(T* data, int dimx, int dimy, int dimz
 }
 
 template <typename T>
-MUDA_INLINE MUDA_GENERIC auto make_cdense3D(const T* data, const Eigen::Vector3i& dim) MUDA_NOEXCEPT
+MUDA_INLINE MUDA_GENERIC auto make_cdense3D(const T* data, const int3& dim) MUDA_NOEXCEPT
 {
     return CDense3D<T>(data, dim);
 }
 
 template <typename T>
-MUDA_INLINE MUDA_GENERIC auto make_dense3D(T* data, const Eigen::Vector3i& dim) MUDA_NOEXCEPT
+MUDA_INLINE MUDA_GENERIC auto make_dense3D(T* data, const int3& dim) MUDA_NOEXCEPT
 {
     return Dense3D<T>(data, dim);
 }
@@ -763,15 +723,15 @@ MUDA_INLINE MUDA_GENERIC auto make_dense(T* data, int dimx, int dimy) MUDA_NOEXC
 }
 
 template <typename T>
-MUDA_INLINE MUDA_GENERIC auto make_cdense(const T* data, const Eigen::Vector2i& dim) MUDA_NOEXCEPT
+MUDA_INLINE MUDA_GENERIC auto make_cdense(const T* data, const int2& dim) MUDA_NOEXCEPT
 {
-    return make_cdense2D(data, dim.x(), dim.y());
+    return make_cdense2D(data, dim.x, dim.y);
 }
 
 template <typename T>
-MUDA_INLINE MUDA_GENERIC auto make_dense(T* data, const Eigen::Vector2i& dim) MUDA_NOEXCEPT
+MUDA_INLINE MUDA_GENERIC auto make_dense(T* data, const int2& dim) MUDA_NOEXCEPT
 {
-    return make_dense2D(data, dim.x(), dim.y());
+    return make_dense2D(data, dim.x, dim.y);
 }
 
 template <typename T>
@@ -787,13 +747,13 @@ MUDA_INLINE MUDA_GENERIC auto make_dense(T* data, int dimx, int dimy, int dimz) 
 }
 
 template <typename T>
-MUDA_INLINE MUDA_GENERIC auto make_cdense(const T* data, const Eigen::Vector3i& dim) noexcept
+MUDA_INLINE MUDA_GENERIC auto make_cdense(const T* data, const int3& dim) noexcept
 {
     return make_cdense3D(data, dim);
 }
 
 template <typename T>
-MUDA_INLINE MUDA_GENERIC auto make_dense(T* data, const Eigen::Vector3i& dim) noexcept
+MUDA_INLINE MUDA_GENERIC auto make_dense(T* data, const int3& dim) noexcept
 {
     return make_dense3D(data, dim);
 }

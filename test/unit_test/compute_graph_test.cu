@@ -3,6 +3,7 @@
 #include <muda/container.h>
 #include <muda/compute_graph/compute_graph_builder.h>
 #include <muda/compute_graph/compute_graph.h>
+#include <Eigen/Core>
 
 using namespace muda;
 using Vector3 = Eigen::Vector3f;

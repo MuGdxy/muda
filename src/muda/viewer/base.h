@@ -2,7 +2,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
-#include <Eigen/Core>
+
 #include <muda/muda_def.h>
 #include <muda/tools/debug_log.h>
 #include <muda/muda_config.h>

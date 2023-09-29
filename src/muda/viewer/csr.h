@@ -37,11 +37,8 @@ class CCSRViewer : public ROViewer
         {
             return csr_.m_values[m_global_offset];
         }
-        Eigen::Vector<int, 2> pos() const MUDA_NOEXCEPT
-        {
-            return Eigen::Vector<int, 2>(m_row, m_col);
-        }
-        int global_offset() const MUDA_NOEXCEPT { return m_global_offset; }
+        int2 pos() const MUDA_NOEXCEPT { return make_int2(m_row, m_col); }
+        int  global_offset() const MUDA_NOEXCEPT { return m_global_offset; }
     };
 
     MUDA_GENERIC CCSRViewer() MUDA_NOEXCEPT : m_values(nullptr),
@@ -110,25 +107,27 @@ class CCSRViewer : public ROViewer
     MUDA_INLINE MUDA_GENERIC void check_range(int row, int col) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            details::csr_check_range(row, col, m_rows, m_cols, this->name(),this->kernel_name());
+            details::csr_check_range(row, col, m_rows, m_cols, this->name(), this->kernel_name());
     }
 
     MUDA_INLINE MUDA_GENERIC void check_row(int row) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            details::csr_check_row(row, m_rows, this->name(),this->kernel_name());
+            details::csr_check_row(row, m_rows, this->name(), this->kernel_name());
     }
 
     MUDA_INLINE MUDA_GENERIC void check_local_offset(int row, int offset) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            details::csr_check_local_offset(row, offset, m_rows, m_rowPtr, this->name(),this->kernel_name());
+            details::csr_check_local_offset(
+                row, offset, m_rows, m_rowPtr, this->name(), this->kernel_name());
     }
 
     MUDA_INLINE MUDA_GENERIC void check_global_offset(int globalOffset) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            details::csr_check_global_offset(globalOffset, m_nnz, this->name(),this->kernel_name());
+            details::csr_check_global_offset(
+                globalOffset, m_nnz, this->name(), this->kernel_name());
     }
 
     MUDA_INLINE MUDA_GENERIC void check_all(int row, int local_offset, int& global_offset) const MUDA_NOEXCEPT
@@ -179,11 +178,8 @@ class CSRViewer : public RWViewer
         {
             return csr_.m_values[m_global_offset];
         }
-        Eigen::Vector<int, 2> pos() const MUDA_NOEXCEPT
-        {
-            return Eigen::Vector<int, 2>(m_row, m_col);
-        }
-        int global_offset() const MUDA_NOEXCEPT { return m_global_offset; }
+        int2 pos() const MUDA_NOEXCEPT { return make_int2(m_row, m_col); }
+        int  global_offset() const MUDA_NOEXCEPT { return m_global_offset; }
 
         MUDA_GENERIC T& operator=(const T& v) MUDA_NOEXCEPT
         {
@@ -216,11 +212,8 @@ class CSRViewer : public RWViewer
         {
             return csr_.m_values[m_global_offset];
         }
-        Eigen::Vector<int, 2> pos() const MUDA_NOEXCEPT
-        {
-            return Eigen::Vector<int, 2>(m_row, m_col);
-        }
-        int global_offset() const MUDA_NOEXCEPT { return m_global_offset; }
+        int2 pos() const MUDA_NOEXCEPT { return make_int2(m_row, m_col); }
+        int  global_offset() const MUDA_NOEXCEPT { return m_global_offset; }
     };
 
     MUDA_GENERIC CSRViewer() MUDA_NOEXCEPT : m_values(nullptr),
@@ -326,25 +319,27 @@ class CSRViewer : public RWViewer
     MUDA_INLINE MUDA_GENERIC void check_range(int row, int col) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            details::csr_check_range(row, col, m_rows, m_cols, this->name(),this->kernel_name());
+            details::csr_check_range(row, col, m_rows, m_cols, this->name(), this->kernel_name());
     }
 
     MUDA_INLINE MUDA_GENERIC void check_row(int row) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            details::csr_check_row(row, m_rows, this->name(),this->kernel_name());
+            details::csr_check_row(row, m_rows, this->name(), this->kernel_name());
     }
 
     MUDA_INLINE MUDA_GENERIC void check_local_offset(int row, int offset) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            details::csr_check_local_offset(row, offset, m_rows, m_rowPtr, this->name(),this->kernel_name());
+            details::csr_check_local_offset(
+                row, offset, m_rows, m_rowPtr, this->name(), this->kernel_name());
     }
 
     MUDA_INLINE MUDA_GENERIC void check_global_offset(int globalOffset) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            details::csr_check_global_offset(globalOffset, m_nnz, this->name(),this->kernel_name());
+            details::csr_check_global_offset(
+                globalOffset, m_nnz, this->name(), this->kernel_name());
     }
 
     MUDA_INLINE MUDA_GENERIC void check_all(int row, int local_offset, int& global_offset) const MUDA_NOEXCEPT

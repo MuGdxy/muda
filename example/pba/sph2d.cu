@@ -1,4 +1,4 @@
-
+#include <Eigen/Core>
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
 #include <muda/container.h>
