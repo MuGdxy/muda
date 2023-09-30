@@ -504,7 +504,7 @@ namespace details
         auto is_read_only = [](ComputeGraphVarUsage usage)
         { return usage == ComputeGraphVarUsage::Read; };
 
-        std::unordered_set<VarId::type> unique_deps;
+        std::unordered_set<VarId::value_type> unique_deps;
         auto                            node = nodes[current_node_id.value()];
 
         for(auto& [arg_id, usage] : node->var_usages())

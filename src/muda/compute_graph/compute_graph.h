@@ -94,7 +94,7 @@ class ComputeGraph
     Graph        m_graph;
     S<GraphExec> m_graph_exec{nullptr};
 
-    std::unordered_map<NodeId::type, cudaGraph_t> m_sub_graphs;
+    std::unordered_map<NodeId::value_type, cudaGraph_t> m_sub_graphs;
 
     std::vector<std::pair<std::string, Closure>>          m_closures;
     std::unordered_map<std::string, ComputeGraphVarBase*> m_vars_map;
