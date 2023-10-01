@@ -643,10 +643,22 @@ MUDA_INLINE MUDA_GENERIC auto make_cdense1D(const T* data, int dimx) MUDA_NOEXCE
     return CDense1D<T>(data, dimx);
 }
 
+template <typename T, int N>
+MUDA_INLINE MUDA_GENERIC auto make_cdense1D(const T (&data)[N]) MUDA_NOEXCEPT
+{
+    return CDense1D<T>(data, N);
+}
+
 template <typename T>
 MUDA_INLINE MUDA_GENERIC auto make_dense1D(T* data, int dimx) MUDA_NOEXCEPT
 {
     return Dense1D<T>(data, dimx);
+}
+
+template <typename T, int N>
+MUDA_INLINE MUDA_GENERIC auto make_dense1D(T(&data)[N]) MUDA_NOEXCEPT
+{
+    return Dense1D<T>(data, N);
 }
 
 template <typename T>
