@@ -8,8 +8,8 @@ MUDA_INLINE ParallelFor& ParallelFor::apply(int count, F&& f, UserTag tag)
 {
     using CallableType = raw_type_t<F>;
     static_assert(std::is_invocable_v<CallableType, int>
-                      || std::is_invocable_v<CallableType, int, ParallelForDetails>,
-                  "f must be void (int) or void (int, ParallelForDetails)");
+                      || std::is_invocable_v<CallableType, ParallelForDetails>,
+                  "f must be void (int) or void (ParallelForDetails)");
 
     check_input(count);
 
@@ -34,38 +34,17 @@ MUDA_INLINE void ParallelFor::invoke(int count, F&& f, UserTag tag)
         {
             // calculate the blocks we need
             auto n_blocks = calculate_grid_dim(count);
-            if constexpr(std::is_invocable_v<CallableType, int>)
-            {
-                details::parallel_for_kernel<CallableType, UserTag>
-                    <<<n_blocks, m_block_dim, m_shared_mem_size, this->stream()>>>(f, count);
-            }
-            else if constexpr(std::is_invocable_v<CallableType, int, ParallelForDetails>)
-            {
-                details::parallel_for_kernel_with_details<CallableType, UserTag>
-                    <<<n_blocks, m_block_dim, m_shared_mem_size, this->stream()>>>(f, count);
-            }
-            else
-            {
-                static_assert("f must be void (int) or void (int, ParallelForDetails)");
-            }
+            details::parallel_for_kernel_with_details<CallableType, UserTag>
+                <<<n_blocks, m_block_dim, m_shared_mem_size, this->stream()>>>(f, count);
         }
     }
     else  // grid stride loop
     {
-        if constexpr(std::is_invocable_v<CallableType, int>)
-        {
-            details::grid_stride_loop_kernel<CallableType, UserTag>
-                <<<m_gridDim, m_block_dim, m_shared_mem_size, this->stream()>>>(f, count);
-        }
-        else if constexpr(std::is_invocable_v<CallableType, int, ParallelForDetails>)
-        {
-            details::grid_stride_loop_kernel_with_details<CallableType, UserTag>
-                <<<m_gridDim, m_block_dim, m_shared_mem_size, this->stream()>>>(f, count);
-        }
-        else
-        {
-            static_assert("f must be void (int) or void (int, ParallelForDetails)");
-        }
+
+        // calculate the blocks we need
+        auto n_blocks = calculate_grid_dim(count);
+        details::grid_stride_loop_kernel_with_details<CallableType, UserTag>
+            <<<n_blocks, m_block_dim, m_shared_mem_size, this->stream()>>>(f, count);
     }
     finish_kernel_launch();
 }
@@ -76,8 +55,8 @@ MUDA_INLINE auto ParallelFor::as_node_parms(int count, F&& f, UserTag tag)
 {
     using CallableType = raw_type_t<F>;
     static_assert(std::is_invocable_v<CallableType, int>
-                      || std::is_invocable_v<CallableType, int, ParallelForDetails>,
-                  "f must be void (int) or void (int, ParallelForDetails)");
+                      || std::is_invocable_v<CallableType, ParallelForDetails>,
+                  "f must be void (int) or void (ParallelForDetails)");
 
     check_input(count);
 
@@ -85,39 +64,15 @@ MUDA_INLINE auto ParallelFor::as_node_parms(int count, F&& f, UserTag tag)
         count, std::forward<F>(f));
     if(m_gridDim <= 0)  // dynamic grid dim
     {
-        if constexpr(std::is_invocable_v<CallableType, int>)
-        {
-            auto n_blocks = calculate_grid_dim(count);
-            parms->func((void*)details::parallel_for_kernel<CallableType, UserTag>);
-            parms->gridDim(n_blocks);
-        }
-        else if constexpr(std::is_invocable_v<CallableType, int, ParallelForDetails>)
-        {
-            auto n_blocks = calculate_grid_dim(count);
-            parms->func((void*)details::parallel_for_kernel_with_details<CallableType, UserTag>);
-            parms->gridDim(n_blocks);
-        }
-        else
-        {
-            static_assert("f must be void (int) or void (int, ParallelForDetails)");
-        }
+
+        auto n_blocks = calculate_grid_dim(count);
+        parms->func((void*)details::parallel_for_kernel_with_details<CallableType, UserTag>);
+        parms->gridDim(n_blocks);
     }
     else  // grid-stride loop
     {
-        if constexpr(std::is_invocable_v<CallableType, int>)
-        {
-            parms->func((void*)details::grid_stride_loop_kernel<CallableType, UserTag>);
-            parms->gridDim(m_gridDim);
-        }
-        else if constexpr(std::is_invocable_v<CallableType, int, ParallelForDetails>)
-        {
-            parms->func((void*)details::grid_stride_loop_kernel_with_details<CallableType, UserTag>);
-            parms->gridDim(m_gridDim);
-        }
-        else
-        {
-            static_assert("f must be void (int) or void (int, ParallelForDetails)");
-        }
+        parms->func((void*)details::grid_stride_loop_kernel_with_details<CallableType, UserTag>);
+        parms->gridDim(m_gridDim);
     }
 
     parms->blockDim(m_block_dim);
@@ -143,7 +98,7 @@ MUDA_INLINE void ParallelFor::check_input(int count) const MUDA_NOEXCEPT
     MUDA_ASSERT(m_block_dim > 0, "blockDim must be > 0");
 }
 
-MUDA_INLINE int ParallelForDetails::active_num_in_block() const MUDA_NOEXCEPT
+MUDA_INLINE MUDA_DEVICE int ParallelForDetails::active_num_in_block() const MUDA_NOEXCEPT
 {
     if(m_type == ParallelForType::DynamicBlocks)
     {
@@ -161,7 +116,7 @@ MUDA_INLINE int ParallelForDetails::active_num_in_block() const MUDA_NOEXCEPT
     }
 }
 
-MUDA_INLINE bool ParallelForDetails::is_final_block() const MUDA_NOEXCEPT
+MUDA_INLINE MUDA_DEVICE bool ParallelForDetails::is_final_block() const MUDA_NOEXCEPT
 {
     if(m_type == ParallelForType::DynamicBlocks)
     {

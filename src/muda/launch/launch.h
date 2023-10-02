@@ -49,7 +49,6 @@ class Launch : public LaunchBase<Launch>
     }
 
     static void wait_device() { checkCudaErrors(cudaDeviceSynchronize()); }
-
   private:
     template <typename F, typename UserTag = DefaultTag>
     void invoke(F&& f, UserTag tag = {});

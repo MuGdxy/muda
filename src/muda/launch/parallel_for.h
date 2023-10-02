@@ -34,6 +34,15 @@ class ParallelForDetails
     {
         return m_total_num;
     }
+    MUDA_NODISCARD MUDA_DEVICE operator int() const MUDA_NOEXCEPT
+    {
+        return m_current_i;
+    }
+
+    MUDA_NODISCARD MUDA_DEVICE int i() const MUDA_NOEXCEPT
+    {
+        return m_current_i;
+    }
 
   private:
     template <typename F, typename UserTag>
@@ -42,9 +51,10 @@ class ParallelForDetails
     template <typename F, typename UserTag>
     friend MUDA_GLOBAL void details::grid_stride_loop_kernel_with_details(F f, int count);
 
-    MUDA_DEVICE ParallelForDetails(ParallelForType type, int total_num) MUDA_NOEXCEPT
+    MUDA_DEVICE ParallelForDetails(ParallelForType type, int i, int total_num) MUDA_NOEXCEPT
         : m_type(type),
-          m_total_num(total_num)
+          m_total_num(total_num),
+          m_current_i(i)
     {
     }
 
@@ -53,6 +63,7 @@ class ParallelForDetails
     int             m_total_round         = 1;
     int             m_current_round       = 0;
     int             m_active_num_in_block = 0;
+    int             m_current_i           = 0;
 };
 
 namespace details
@@ -72,7 +83,9 @@ namespace details
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         auto i   = tid;
         if(i < count)
+        {
             f(i);
+        }
     }
 
     template <typename F, typename UserTag>
@@ -83,14 +96,11 @@ namespace details
 
         if(i < count)
         {
-            ParallelForDetails details{ParallelForType::DynamicBlocks, count};
-            f(i, details);
+            ParallelForDetails details{ParallelForType::DynamicBlocks, i, count};
+            f(details);
         }
     }
 
-    /// <summary>
-    ///
-    /// </summary>
     template <typename F, typename UserTag>
     MUDA_GLOBAL void grid_stride_loop_kernel(F f, int count)
     {
@@ -111,14 +121,14 @@ namespace details
         auto round      = (count + grid_size - 1) / grid_size;
         for(int j = 0; i < count; i += grid_size, ++j)
         {
-            ParallelForDetails details{ParallelForType::GridStrideLoop, count};
+            ParallelForDetails details{ParallelForType::GridStrideLoop, i, count};
             details.m_total_round   = round;
             details.m_current_round = j;
             if(i + block_size > count)  // the block may be incomplete in the last round
                 details.m_active_num_in_block = count - j * grid_size;
             else
                 details.m_active_num_in_block = block_size;
-            f(i, details);
+            f(details);
         }
     }
 }  // namespace details
@@ -185,6 +195,11 @@ class ParallelFor : public LaunchBase<ParallelFor>
     template <typename F, typename UserTag = DefaultTag>
     MUDA_NODISCARD auto as_node_parms(int count, F&& f, UserTag tag = {})
         -> S<KernelNodeParms<KernelData<raw_type_t<F>>>>;
+
+    static int round_up_blocks(int count, int block_dim) MUDA_NOEXCEPT
+    {
+        return (count + block_dim - 1) / block_dim;
+    }
 
   private:
     template <typename F, typename UserTag = DefaultTag>
