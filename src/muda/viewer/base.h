@@ -5,11 +5,13 @@
 
 #include <muda/muda_def.h>
 #include <muda/tools/debug_log.h>
+#include <muda/debug.h>
 #include <muda/muda_config.h>
 #include <muda/assert.h>
 #include <muda/tools/launch_info_cache.h>
 #include <muda/tools/fuzzy.h>
 #include <muda/type_traits/type_modifier.h>
+
 namespace muda
 {
 class ViewerBase
@@ -69,23 +71,6 @@ class RWViewer : public ViewerBase
 class ROViewer : public ViewerBase
 {
 };
-
-
-//#define MUDA_VIEWER_COMMON(viewer_name)                                        \
-//  public:                                                                      \
-//    using this_type = viewer_name;                                             \
-//    this_type&& name(const char* n)&& noexcept                                 \
-//    {                                                                          \
-//        std::move(*this)._set_viewer_name(n);                                  \
-//        return std::move(*this);                                               \
-//    }                                                                          \
-//    this_type& name(const char* n) noexcept                                    \
-//    {                                                                          \
-//        (*this)._set_viewer_name(n);                                           \
-//        return *this;                                                          \
-//    }                                                                          \
-//                                                                               \
-//  private:
 
 #define MUDA_VIEWER_COMMON(viewer_name)                                        \
   public:                                                                      \

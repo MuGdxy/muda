@@ -170,7 +170,7 @@ class LaunchBase
         return derived();
     }
 
-    ~LaunchBase() {}
+    ~LaunchBase() MUDA_NOEXCEPT;
 
   protected:
     auto& finish_kernel_launch()
@@ -182,7 +182,7 @@ class LaunchBase
     }
 
   private:
-    Derived& derived() { return *(Derived*)(this); }
+    Derived& derived() MUDA_NOEXCEPT { return *(Derived*)(this); }
 };
 
 class Empty : public LaunchBase<Empty>

@@ -8,6 +8,7 @@
 #include <muda/compute_graph/nodes/compute_graph_kernel_node.h>
 #include <muda/compute_graph/nodes/compute_graph_catpure_node.h>
 #include <muda/compute_graph/nodes/compute_graph_memory_node.h>
+#include <muda/debug.h>
 
 namespace muda
 {
@@ -343,6 +344,10 @@ MUDA_INLINE void ComputeGraph::launch(bool single_stream, cudaStream_t s)
         build();
         _update();
         m_graph_exec->launch(s);
+#if MUDA_CHECK_ON
+        if(Debug::is_debug_sync_all())
+            checkCudaErrors(cudaStreamSynchronize(s));
+#endif
     }
 }
 
@@ -505,7 +510,7 @@ namespace details
         { return usage == ComputeGraphVarUsage::Read; };
 
         std::unordered_set<VarId::value_type> unique_deps;
-        auto                            node = nodes[current_node_id.value()];
+        auto node = nodes[current_node_id.value()];
 
         for(auto& [arg_id, usage] : node->var_usages())
         {
