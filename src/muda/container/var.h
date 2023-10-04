@@ -69,6 +69,7 @@ class DeviceVar : public details::VarBase<T, thrust::device_allocator<T>>
     T*       data() { return thrust::raw_pointer_cast(Base::data()); }
 
     auto viewer() { return Dense<T>(this->data()); }
+    auto cviewer() const { return CDense<T>(this->data()); }
 };
 }  // namespace muda
 

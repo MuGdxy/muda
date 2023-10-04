@@ -38,9 +38,9 @@ class DeviceVector : public thrust::device_vector<T, thrust::device_allocator<T>
         return muda::DenseND<T, 1>(this->data(), this->size());
     }
 
-    auto cviewer() MUDA_NOEXCEPT
+    auto cviewer() const MUDA_NOEXCEPT
     {
-        return muda::CDenseND<const T, 1>(this->data(), this->size());
+        return muda::CDenseND<T, 1>(this->data(), this->size());
     }
 };
 
@@ -56,9 +56,9 @@ class HostVector : public thrust::host_vector<T, std::allocator<T>>
         return muda::DenseND<T, 1>(this->data(), this->size());
     }
 
-    auto cviewer() MUDA_NOEXCEPT
+    auto cviewer() const MUDA_NOEXCEPT
     {
-        return muda::CDenseND<const T, 1>(this->data(), this->size());
+        return muda::CDenseND<T, 1>(this->data(), this->size());
     }
 };
 }  // namespace muda
