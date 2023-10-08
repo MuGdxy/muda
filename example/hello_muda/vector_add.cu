@@ -14,7 +14,7 @@ We will do C = A + B, where A B C are all vectors, like the cuda-sample:
 https://github.com/NVIDIA/cuda-samples/blob/master/Samples/0_Introduction/vectorAdd/vectorAdd.cu
 but in muda style.)");
 
-    constexpr int        N = 1024;
+    constexpr int       N = 1024;
     HostVector<float>   hA(N), hB(N);
     DeviceVector<float> dA(N), dB(N), dC(N);
 
@@ -29,10 +29,11 @@ but in muda style.)");
 
     // use grid-stride loop to cover all elements
     ParallelFor(2, 256)
+        .kernel_name(__FUNCTION__)
         .apply(N,
-               [dC = make_viewer(dC),  // | this is a capture list              |
-                dA = make_viewer(dA),  // | map from device_vector to a viewer  |
-                dB = make_viewer(dB)]  // | which is the most muda-style part!  |
+               [dC = dC.viewer().name("dC"),  // | this is a capture list              |
+                dA = dA.cviewer().name("dA"),  // | map from device_vector to a viewer  |
+                dB = dB.cviewer().name("dC")]  // | which is the most muda-style part!  |
                __device__(int i) mutable  // place "mutable" to make dC modifiable
                {
                    // safe parallel_for will cover the rang [0, N)

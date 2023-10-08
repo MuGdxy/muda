@@ -40,11 +40,8 @@ MUDA_INLINE void ParallelFor::invoke(int count, F&& f, UserTag tag)
     }
     else  // grid stride loop
     {
-
-        // calculate the blocks we need
-        auto n_blocks = calculate_grid_dim(count);
         details::grid_stride_loop_kernel_with_details<CallableType, UserTag>
-            <<<n_blocks, m_block_dim, m_shared_mem_size, this->stream()>>>(f, count);
+            <<<m_gridDim, m_block_dim, m_shared_mem_size, this->stream()>>>(f, count);
     }
     finish_kernel_launch();
 }

@@ -23,30 +23,31 @@ class ViewerBase
     details::StringPointer m_kernel_name;
 #endif
   public:
-    MUDA_GENERIC ViewerBase()
-    {
+    MUDA_GENERIC ViewerBase(){
 #ifndef __CUDA_ARCH__
-#if MUDA_CHECK_ON
         m_kernel_name = details::LaunchInfoCache::current_kernel_name();
-        m_view_name   = details::LaunchInfoCache::view_name("");
-#endif
 #endif
     }
 
     MUDA_GENERIC const char* name() const MUDA_NOEXCEPT
     {
 #if MUDA_CHECK_ON
-        return m_view_name.auto_select();
+
+        auto n = m_view_name.auto_select();
+        if(n)
+            return n;
 #endif
-        return "";
+        return "~";
     }
 
     MUDA_GENERIC const char* kernel_name() const MUDA_NOEXCEPT
     {
 #if MUDA_CHECK_ON
-        return m_kernel_name.auto_select();
+        auto n = m_kernel_name.auto_select();
+        if(n)
+            return n;
 #endif
-        return "";
+        return "~";
     }
 
     // default copy / move
