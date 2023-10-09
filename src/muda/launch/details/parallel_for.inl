@@ -11,14 +11,20 @@ MUDA_INLINE ParallelFor& ParallelFor::apply(int count, F&& f, UserTag tag)
                       || std::is_invocable_v<CallableType, ParallelForDetails>,
                   "f must be void (int) or void (ParallelForDetails)");
 
-    check_input(count);
-
     ComputeGraphBuilder::invoke_phase_actions(
-        [&] { invoke(count, std::forward<F>(f), tag); },
+        [&] {  // direct invoke
+            invoke(count, std::forward<F>(f), tag);
+        },
         [&]
         {
+            // as node parms
             auto parms = as_node_parms(count, std::forward<F>(f), tag);
             details::ComputeGraphAccessor().set_kernel_node(parms);
+        },
+        [&]
+        {
+            // topo build
+            details::ComputeGraphAccessor().set_kernel_node<KernelData<raw_type_t<F>>>(nullptr);
         });
     return *this;
 }
@@ -27,6 +33,8 @@ template <typename F, typename UserTag>
 MUDA_INLINE void ParallelFor::invoke(int count, F&& f, UserTag tag)
 {
     using CallableType = raw_type_t<F>;
+
+    check_input(count);
 
     if(m_gridDim <= 0)  // parallel for
     {

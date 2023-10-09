@@ -1,6 +1,7 @@
 #pragma once
 #include <map>
 #include <functional>
+#include <set>
 #include <muda/graph/graph.h>
 #include <muda/launch/stream.h>
 #include <muda/compute_graph/compute_graph_phase.h>
@@ -20,6 +21,7 @@ namespace muda
 {
 class ComputeGraphVarBase;
 class ComputeGraphNodeBase;
+class ComputeGraphVarManager;
 
 template <typename T>
 class ComputeGraphVar;
@@ -96,29 +98,22 @@ class ComputeGraph
 
     std::unordered_map<NodeId::value_type, cudaGraph_t> m_sub_graphs;
 
-    std::vector<std::pair<std::string, Closure>>          m_closures;
-    std::unordered_map<std::string, ComputeGraphVarBase*> m_vars_map;
-    std::vector<ComputeGraphVarBase*>                     m_vars;
+    std::vector<std::pair<std::string, Closure>> m_closures;
+    std::set<ComputeGraphVarBase*>               m_related_vars;
 
     std::vector<ComputeGraphNodeBase*> m_nodes;
     std::vector<Dependency>            m_deps;
 
-    std::vector<int> m_closure_need_update;
+    std::vector<int>        m_closure_need_update;
+    ComputeGraphVarManager* m_var_manager = nullptr;
 
   public:
-    /**************************************************************
-    * 
-    * GraphVar API
-    * 
-    ***************************************************************/
-    template <typename T>
-    ComputeGraphVar<T>& create_var(std::string_view name);
+    ComputeGraph(ComputeGraphVarManager& manager)
+        : m_var_manager(&manager)
+    {
+    }
 
-    template <typename T>
-    ComputeGraphVar<T>& create_var(std::string_view name, T init_value);
-
-    template <typename T>
-    ComputeGraphVar<T>* find_var(std::string_view name);
+    ~ComputeGraph();
 
     /**************************************************************
     * 

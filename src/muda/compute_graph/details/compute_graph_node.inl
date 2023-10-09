@@ -1,4 +1,4 @@
-#pragma once
+#include <muda/compute_graph/compute_graph_var_manager.h>
 
 namespace muda
 {
@@ -18,7 +18,7 @@ MUDA_INLINE void ComputeGraphNodeBase::graphviz_var_usages(std::ostream& o) cons
 {
     for(auto&& [var_id, usage] : var_usages())
     {
-        auto var = m_graph->m_vars[var_id.value()];
+        auto var = m_graph->m_var_manager->m_vars[var_id.value()];
         var->graphviz_id(o);
         o << "->";
         graphviz_id(o);

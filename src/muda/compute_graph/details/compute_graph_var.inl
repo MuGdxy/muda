@@ -6,9 +6,12 @@ namespace muda
 {
 MUDA_INLINE void ComputeGraphVarBase::base_update()
 {
-    m_graph->m_need_update = true;
-    for(auto& id : m_closure_ids)
-        m_graph->m_closure_need_update[id.value()] = true;
+    for(auto& [graph, info] : m_related_closure_infos)
+    {
+        graph->m_need_update = true;
+        for(auto& id : info.closure_ids)
+            graph->m_closure_need_update[id.value()] = true;
+    }
     m_is_valid = true;
 }
 MUDA_INLINE void ComputeGraphVarBase::base_building_eval()
@@ -23,8 +26,20 @@ MUDA_INLINE void ComputeGraphVarBase::base_building_eval_const() const
 
 MUDA_INLINE void ComputeGraphVarBase::_building_eval(ComputeGraphVarUsage usage) const
 {
-    m_closure_ids.insert(m_graph->current_closure_id());
-    details::ComputeGraphAccessor().set_var_usage(var_id(), usage);
+    auto acc   = details::ComputeGraphAccessor();
+    auto graph = ComputeGraphBuilder::instance().current_graph();
+    m_related_closure_infos[graph].closure_ids.insert(graph->current_closure_id());
+    graph->m_related_vars.emplace(const_cast<ComputeGraphVarBase*>(this));
+    acc.set_var_usage(var_id(), usage);
+}
+
+MUDA_INLINE void ComputeGraphVarBase::remove_related_closure_infos(ComputeGraph* graph)
+{
+    auto iter = m_related_closure_infos.find(graph);
+    if(iter != m_related_closure_infos.end())
+    {
+        m_related_closure_infos.erase(iter);
+    }
 }
 
 MUDA_INLINE void ComputeGraphVarBase::graphviz_def(std::ostream& o) const
@@ -55,7 +70,7 @@ MUDA_INLINE typename ComputeGraphVar<T>::RWViewer ComputeGraphVar<T>::eval()
         case ComputeGraphPhase::Building: {
             auto acc = details::ComputeGraphAccessor();
             acc.check_allow_var_eval();
-            if (!acc.is_topo_built())
+            if(!acc.is_topo_built())
             {
                 if constexpr(std::is_same_v<T, read_only_viewer_t<T>>)
                 {

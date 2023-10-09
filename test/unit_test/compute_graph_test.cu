@@ -3,6 +3,7 @@
 #include <muda/container.h>
 #include <muda/compute_graph/compute_graph_builder.h>
 #include <muda/compute_graph/compute_graph.h>
+#include <muda/compute_graph/compute_graph_var_manager.h>
 #include <Eigen/Core>
 
 using namespace muda;
@@ -10,26 +11,23 @@ using Vector3 = Eigen::Vector3f;
 
 void compute_graph_simple()
 {
+    ComputeGraphVarManager manager;
     // define graph vars
-    ComputeGraph graph;
+    ComputeGraph graph{manager};
 
 
     DeviceVar<int> d;
 
-    auto& N   = graph.create_var<size_t>("N");
-    auto& x_0 = graph.create_var<Dense1D<Vector3>>("x_0");
-    auto& x   = graph.create_var<Dense1D<Vector3>>("x");
-    auto& y   = graph.create_var<Dense1D<Vector3>>("y");
-
+    auto& N   = manager.create_var<size_t>("N");
+    auto& x_0 = manager.create_var<Dense1D<Vector3>>("x_0");
+    auto& x   = manager.create_var<Dense1D<Vector3>>("x");
+    auto& y   = manager.create_var<Dense1D<Vector3>>("y");
 
     graph.create_node("cal_x_0") << [&]
     {
         ParallelFor(256).apply(N.eval(),
                                [x_0 = x_0.eval()] __device__(int i) mutable
-                               {
-                                   // simple set
-                                   x_0(i) = Vector3::Ones();
-                               });
+                               { x_0(i) = Vector3::Ones(); });
     };
 
     graph.create_node("copy_to_x") << [&]
@@ -59,11 +57,11 @@ void compute_graph_simple()
                                });
     };
 
-    graph.graphviz(std::cout);
+    // graph.graphviz(std::cout);
 
     Stream s;
 
-    auto N_value    = 10;
+    auto N_value    = 4;
     auto x_0_buffer = DeviceVector<Vector3>(N_value);
     auto x_buffer   = DeviceVector<Vector3>(N_value);
     auto y_buffer   = DeviceVector<Vector3>(N_value);
@@ -118,7 +116,7 @@ void compute_graph_simple()
     //f(20, 1M);
 }
 
-void compute_graph_test()
+void compute_graph_graphviz()
 {
     // resources
     size_t                N = 10;
@@ -130,15 +128,16 @@ void compute_graph_test()
     HostVector<Vector3>   h_x(N);
 
     // define graph vars
-    ComputeGraph graph;
+    ComputeGraphVarManager manager;
+    ComputeGraph           graph{manager};
 
-    auto& var_x_0 = graph.create_var("x_0", make_viewer(x_0));
-    auto& var_h_x = graph.create_var("h_x", make_viewer(h_x));
-    auto& var_x   = graph.create_var("x", make_viewer(x));
-    auto& var_v   = graph.create_var("v", make_viewer(v));
-    auto& var_toi = graph.create_var("toi", make_viewer(toi));
-    auto& var_dt  = graph.create_var("dt", 0.1);
-    auto& var_N   = graph.create_var("N", N);
+    auto& var_x_0 = manager.create_var("x_0", make_viewer(x_0));
+    auto& var_h_x = manager.create_var("h_x", make_viewer(h_x));
+    auto& var_x   = manager.create_var("x", make_viewer(x));
+    auto& var_v   = manager.create_var("v", make_viewer(v));
+    auto& var_toi = manager.create_var("toi", make_viewer(toi));
+    auto& var_dt  = manager.create_var("dt", 0.1);
+    auto& var_N   = manager.create_var("N", N);
 
     // define graph nodes
     graph.create_node("cal_v") << [&]
@@ -189,12 +188,159 @@ void compute_graph_test()
     };
 
     graph.graphviz(std::cout);
-    //graph.launch(true);
-    //graph.launch();
 }
 
-TEST_CASE("compute_graph_test", "[default]")
+void compute_graph_multi_graph()
+{
+    ComputeGraphVarManager manager;
+    // define graph vars
+    ComputeGraph graph1{manager};
+
+    ComputeGraph graph2{manager};
+
+
+    DeviceVar<int> d;
+
+    auto& N   = manager.create_var<size_t>("N");
+    auto& x_0 = manager.create_var<Dense1D<Vector3>>("x_0");
+    auto& x   = manager.create_var<Dense1D<Vector3>>("x");
+    auto& y   = manager.create_var<Dense1D<Vector3>>("y");
+
+    graph1.create_node("cal_x_0") << [&]
+    {
+        ParallelFor(256).apply(N.eval(),
+                               [x_0 = x_0.eval()] __device__(int i) mutable
+                               { x_0(i) = Vector3::Ones(); });
+    };
+
+    graph1.create_node("copy_to_x") << [&]
+    {
+        Memory().transfer(x.eval().data(), x_0.ceval().data(), N * sizeof(Vector3));
+    };
+
+    graph1.create_node("copy_to_y") << [&]
+    {
+        Memory().transfer(y.eval().data(), x_0.ceval().data(), N * sizeof(Vector3));
+    };
+
+    graph1.create_node("print_x_y") << [&]
+    {
+        ParallelFor(256).apply(N.eval(),
+                               [x = x.ceval(), y = y.ceval(), N = N.eval()] __device__(int i) mutable
+                               {
+                               });
+    };
+
+    graph2.create_node("cal_x_0") << [&]
+    {
+        ParallelFor(256).apply(N.eval(),
+                               [x_0 = x_0.eval()] __device__(int i) mutable
+                               { x_0(i) = Vector3::Ones(); });
+    };
+
+    //std::cout << "graph 1=\n";
+    //graph1.graphviz(std::cout);
+    //std::cout << "graph 2=\n";
+    //graph2.graphviz(std::cout);
+
+    Stream s;
+
+    auto N_value    = 4;
+    auto x_0_buffer = DeviceVector<Vector3>(N_value);
+    auto x_buffer   = DeviceVector<Vector3>(N_value);
+    auto y_buffer   = DeviceVector<Vector3>(N_value);
+
+    N.update(N_value);
+    x_0.update(x_0_buffer.viewer());
+    x.update(x_buffer.viewer());
+    y.update(y_buffer.viewer());
+
+
+    graph1.launch();
+    graph2.launch();
+    Launch::wait_device();
+}
+
+void compute_graph_update()
+{
+    ComputeGraphVarManager manager;
+    // define graph vars
+    ComputeGraph graph{manager};
+
+
+    DeviceVar<int> d;
+
+    auto& N   = manager.create_var<size_t>("N");
+    auto& x_0 = manager.create_var<Dense1D<Vector3>>("x_0");
+    auto& x   = manager.create_var<Dense1D<Vector3>>("x");
+    auto& y   = manager.create_var<Dense1D<Vector3>>("y");
+
+    graph.create_node("cal_x_0") << [&]
+    {
+        ParallelFor(256).apply(N.eval(),
+                               [x_0 = x_0.eval()] __device__(int i) mutable
+                               { x_0(i) = Vector3::Ones(); });
+    };
+
+    graph.create_node("copy_to_x") << [&]
+    {
+        Memory().transfer(x.eval().data(), x_0.ceval().data(), N * sizeof(Vector3));
+    };
+
+    graph.create_node("copy_to_y") << [&]
+    {
+        Memory().transfer(y.eval().data(), x_0.ceval().data(), N * sizeof(Vector3));
+    };
+
+    graph.create_node("print_x_y") << [&]
+    {
+        ParallelFor(256).apply(N.eval(),
+                               [x = x.ceval(), y = y.ceval(), N = N.eval()] __device__(
+                                   int i) mutable {});
+    };
+
+    // graph.graphviz(std::cout);
+
+    Stream s;
+
+    auto N_value    = 10;
+    auto x_0_buffer = DeviceVector<Vector3>(N_value);
+    auto x_buffer   = DeviceVector<Vector3>(N_value);
+    auto y_buffer   = DeviceVector<Vector3>(N_value);
+
+    N.update(N_value);
+    x_0.update(x_0_buffer.viewer());
+    x.update(x_buffer.viewer());
+    y.update(y_buffer.viewer());
+
+
+    graph.launch();
+
+    N.update(N_value);
+    x_0.update(x_0_buffer.viewer());
+    x.update(x_buffer.viewer());
+    y.update(y_buffer.viewer());
+
+    graph.launch();
+}
+
+
+TEST_CASE("compute_graph_test_simple", "[compute_graph]")
 {
     compute_graph_simple();
-    compute_graph_test();
+}
+
+TEST_CASE("compute_graph_test_graphviz", "[compute_graph]")
+{
+	compute_graph_graphviz();
+}
+
+TEST_CASE("compute_graph_test_multi_graph", "[compute_graph]")
+{
+	compute_graph_multi_graph();
+}
+
+TEST_CASE("compute_graph_test_update", "[compute_graph]")
+{
+	compute_graph_update();
 }

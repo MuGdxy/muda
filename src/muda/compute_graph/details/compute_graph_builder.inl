@@ -1,5 +1,5 @@
-#include "compute_graph_builder.h"
 #pragma once
+#include "compute_graph_builder.h"
 
 namespace muda
 {
@@ -38,15 +38,25 @@ MUDA_INLINE bool ComputeGraphBuilder::is_direct_launching()
 }
 
 MUDA_INLINE void ComputeGraphBuilder::invoke_phase_actions(PhaseAction&& do_when_direct_launching,
-                                                           PhaseAction do_when_set_node)
+                                                           PhaseAction&& do_when_set_node,
+                                                           PhaseAction&& do_when_topo_building)
 {
     if(is_direct_launching())
     {
+        MUDA_ASSERT(do_when_direct_launching, "do_when_direct_launching is null");
         do_when_direct_launching();
     }
-    else
+    else if(is_building())
     {
+        MUDA_ASSERT(do_when_set_node, "do_when_set_node is null");
         do_when_set_node();
+    }
+    else if(is_topo_building())
+    {
+        if(do_when_topo_building)
+            do_when_topo_building();
+        else
+            do_when_set_node();
     }
 }
 
@@ -58,6 +68,6 @@ MUDA_INLINE auto ComputeGraphBuilder::current_graph(ComputeGraph* graph)
 MUDA_INLINE ComputeGraphBuilder& muda::ComputeGraphBuilder::instance()
 {
     thread_local static ComputeGraphBuilder builder;
-    return builder;
+    return (builder);
 }
 }  // namespace muda

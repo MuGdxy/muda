@@ -44,6 +44,16 @@ class ParallelForDetails
         return m_current_i;
     }
 
+    MUDA_NODISCARD MUDA_DEVICE int batch_i() const MUDA_NOEXCEPT
+    {
+        return m_batch_i;
+    }
+
+    MUDA_NODISCARD MUDA_DEVICE int total_batch() const MUDA_NOEXCEPT
+    {
+        return m_total_batch;
+    }
+
   private:
     template <typename F, typename UserTag>
     friend MUDA_GLOBAL void details::parallel_for_kernel_with_details(F f, int count);
@@ -60,8 +70,8 @@ class ParallelForDetails
 
     ParallelForType m_type;
     int             m_total_num;
-    int             m_total_round         = 1;
-    int             m_current_round       = 0;
+    int             m_total_batch         = 1;
+    int             m_batch_i             = 0;
     int             m_active_num_in_block = 0;
     int             m_current_i           = 0;
 };
@@ -91,12 +101,11 @@ namespace details
     template <typename F, typename UserTag>
     MUDA_GLOBAL void parallel_for_kernel_with_details(F f, int count)
     {
-        auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-        auto i   = tid;
-
-        if(i < count)
+        ParallelForDetails details{ParallelForType::DynamicBlocks,
+                                   blockIdx.x * blockDim.x + threadIdx.x,
+                                   count};
+        if(details.i() < count)
         {
-            ParallelForDetails details{ParallelForType::DynamicBlocks, i, count};
             f(details);
         }
     }
@@ -122,8 +131,8 @@ namespace details
         for(int j = 0; i < count; i += grid_size, ++j)
         {
             ParallelForDetails details{ParallelForType::GridStrideLoop, i, count};
-            details.m_total_round   = round;
-            details.m_current_round = j;
+            details.m_total_batch = round;
+            details.m_batch_i     = j;
             if(i + block_size > count)  // the block may be incomplete in the last round
                 details.m_active_num_in_block = count - j * grid_size;
             else

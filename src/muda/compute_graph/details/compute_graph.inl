@@ -4,11 +4,13 @@
 #include <muda/exception.h>
 #include <muda/compute_graph/compute_graph_builder.h>
 #include <muda/compute_graph/compute_graph_var.h>
+#include <muda/compute_graph/compute_graph_var_manager.h>
 #include <muda/compute_graph/compute_graph_node.h>
 #include <muda/compute_graph/nodes/compute_graph_kernel_node.h>
 #include <muda/compute_graph/nodes/compute_graph_catpure_node.h>
 #include <muda/compute_graph/nodes/compute_graph_memory_node.h>
 #include <muda/debug.h>
+
 
 namespace muda
 {
@@ -49,33 +51,6 @@ MUDA_INLINE ComputeGraph& ComputeGraph::AddNodeProxy::operator<<(ComputeGraph::C
     return m_cg;
 }
 
-template <typename T>
-MUDA_INLINE ComputeGraphVar<T>& ComputeGraph::create_var(std::string_view name)
-{
-    auto ptr = new ComputeGraphVar<T>(this, name, VarId{m_vars.size()});
-    m_vars.emplace_back(ptr);
-    if(m_vars_map.find(std::string{name}) != m_vars_map.end())
-        MUDA_ERROR_WITH_LOCATION("var[%s] already exists", name.data());
-    m_vars_map.emplace(name, ptr);
-    return *ptr;
-}
-template <typename T>
-MUDA_INLINE ComputeGraphVar<T>& ComputeGraph::create_var(std::string_view name, T init_value)
-{
-    auto ptr = new ComputeGraphVar<T>(this, name, VarId{m_vars.size()}, init_value);
-    m_vars.emplace_back(ptr);
-    m_vars_map.emplace(name, ptr);
-    return *ptr;
-}
-template <typename T>
-MUDA_INLINE ComputeGraphVar<T>* ComputeGraph::find_var(std::string_view name)
-{
-    auto it = m_vars_map.find(std::string{name});
-    if(it == m_vars_map.end())
-        return nullptr;
-    return dynamic_cast<ComputeGraphVar<T>*>(it->second);
-};
-
 MUDA_INLINE void ComputeGraph::capture(std::function<void(cudaStream_t)>&& f)
 {
     m_is_in_capture_func = true;
@@ -109,11 +84,11 @@ MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraph
 {
     topo_build();
     o << "digraph G {\n"
-         "beautify=true";
+         "beautify=true\n";
     if(options.show_vars)
     {
         o << "// vars: \n";
-        for(auto&& var : m_vars)
+        for(auto&& var : m_related_vars)
         {
             var->graphviz_def(o);
             o << "\n";
@@ -219,7 +194,7 @@ MUDA_INLINE void ComputeGraph::serial_launch()
 
 MUDA_INLINE void ComputeGraph::check_vars_valid()
 {
-    for(auto& var : m_vars)
+    for(auto& var : m_related_vars)
         if(!var->is_valid())
             MUDA_ERROR_WITH_LOCATION(
                 "var[%s] is not valid, "
@@ -316,6 +291,15 @@ MUDA_INLINE void ComputeGraph::_update()
             need_update    = false;
         }
     }
+}
+
+MUDA_INLINE ComputeGraph::~ComputeGraph()
+{
+    for(auto var : m_related_vars)
+        var->remove_related_closure_infos(this);
+
+    for(auto node : m_nodes)
+        delete node;
 }
 
 MUDA_INLINE ComputeGraph::AddNodeProxy ComputeGraph::create_node(std::string_view node_name)
@@ -597,17 +581,18 @@ MUDA_INLINE void ComputeGraph::cuda_graph_add_deps()
 MUDA_INLINE void ComputeGraph::build_deps()
 {
     m_deps.clear();
+    auto& vars = m_var_manager->m_vars;
     // map: var_id -> node_id, uint64_t{-1} means no write node yet
-    auto last_write_nodes = std::vector<NodeId>(m_vars.size());
+    auto last_write_nodes = std::vector<NodeId>(vars.size());
     // map: var_id -> node_id, uint64_t{-1} means no read node yet
-    auto last_read_nodes = std::vector<NodeId>(m_vars.size());
+    auto last_read_nodes = std::vector<NodeId>(vars.size());
 
     // process all nodes
     for(size_t i = 0u; i < m_nodes.size(); i++)
     {
         size_t dep_begin, dep_count;
         details::process_node(
-            m_deps, last_read_nodes, last_write_nodes, m_vars, m_nodes, NodeId{i}, dep_begin, dep_count);
+            m_deps, last_read_nodes, last_write_nodes, vars, m_nodes, NodeId{i}, dep_begin, dep_count);
         m_nodes[i]->set_deps_range(dep_begin, dep_count);
     }
 
