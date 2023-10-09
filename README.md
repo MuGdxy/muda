@@ -88,15 +88,15 @@ define a muda compute graph:
 ```c++
 void compute_graph_simple()
 {
-    ComputeGraph graph;
+    ComputeGraphVarManager manager;
+    ComputeGraph graph{manager};
 
     // 1) define graph vars
-    auto&        N   = graph.create_var<size_t>("N");
-    auto&        x_0 = graph.create_var<Dense1D<Vector3>>("x_0");
-    auto&        x   = graph.create_var<Dense1D<Vector3>>("x");
-    auto&        y   = graph.create_var<Dense1D<Vector3>>("y");
+    auto& N   = manager.create_var<size_t>("N");
+    auto& x_0 = manager.create_var<Dense1D<Vector3>>("x_0");
+    auto& x   = manager.create_var<Dense1D<Vector3>>("x");
+    auto& y   = manager.create_var<Dense1D<Vector3>>("y");
     
-
     // 2) define graph nodes
     graph.create_node("cal_x_0") << [&]
     {
@@ -144,7 +144,18 @@ launch a muda compute graph:
 ```c++
 void compute_graph_simple()
 {
-    // ...
+    // resources
+    auto N_value    = 4;
+    auto x_0_buffer = DeviceVector<Vector3>(N_value);
+    auto x_buffer   = DeviceVector<Vector3>(N_value);
+    auto y_buffer   = DeviceVector<Vector3>(N_value);
+
+    N.update(N_value);
+    x_0.update(x_0_buffer.viewer());
+    x.update(x_buffer.viewer());
+    y.update(y_buffer.viewer());
+    
+    // create stream
     Stream stream;
     // sync graph on stream
     graph.launch(stream);

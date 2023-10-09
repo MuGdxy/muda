@@ -103,6 +103,8 @@ class ComputeGraphVar : public ComputeGraphVarBase
 
     void update(const RWViewer& view);
 
+    void update();
+
     operator ROViewer() const { return ceval(); }
 
     operator RWViewer() { return eval(); }

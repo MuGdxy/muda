@@ -27,7 +27,7 @@ MUDA_INLINE bool ComputeGraphBuilder::is_topo_building()
     return current_phase() == ComputeGraphPhase::TopoBuilding;
 }
 
-inline bool ComputeGraphBuilder::is_building()
+MUDA_INLINE bool ComputeGraphBuilder::is_building()
 {
     return current_phase() == ComputeGraphPhase::Building;
 }
@@ -68,6 +68,6 @@ MUDA_INLINE auto ComputeGraphBuilder::current_graph(ComputeGraph* graph)
 MUDA_INLINE ComputeGraphBuilder& muda::ComputeGraphBuilder::instance()
 {
     thread_local static ComputeGraphBuilder builder;
-    return (builder);
+    return builder;
 }
 }  // namespace muda

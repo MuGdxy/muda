@@ -12,12 +12,13 @@ using Vector3 = Eigen::Vector3f;
 void compute_graph_simple()
 {
     ComputeGraphVarManager manager;
-    // define graph vars
+    
     ComputeGraph graph{manager};
 
 
     DeviceVar<int> d;
 
+    // define graph vars
     auto& N   = manager.create_var<size_t>("N");
     auto& x_0 = manager.create_var<Dense1D<Vector3>>("x_0");
     auto& x   = manager.create_var<Dense1D<Vector3>>("x");

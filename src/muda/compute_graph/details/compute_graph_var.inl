@@ -1,4 +1,3 @@
-#pragma once
 #include <muda/compute_graph/compute_graph.h>
 #include <muda/compute_graph/compute_graph_node.h>
 
@@ -114,10 +113,17 @@ MUDA_INLINE typename ComputeGraphVar<T>::ROViewer ComputeGraphVar<T>::ceval() co
     }
     return m_value;
 }
+
 template <typename T>
 MUDA_INLINE void muda::ComputeGraphVar<T>::update(const RWViewer& view)
 {
-    this->base_update();
+    update();
     m_value = view;
+}
+
+template <typename T>
+MUDA_INLINE void muda::ComputeGraphVar<T>::update()
+{
+    this->base_update();
 }
 }  // namespace muda
