@@ -23,9 +23,12 @@ class ViewerBase
     details::StringPointer m_kernel_name;
 #endif
   public:
-    MUDA_GENERIC ViewerBase(){
+    MUDA_GENERIC ViewerBase()
+    {
+#if MUDA_CHECK_ON
 #ifndef __CUDA_ARCH__
         m_kernel_name = details::LaunchInfoCache::current_kernel_name();
+#endif
 #endif
     }
 

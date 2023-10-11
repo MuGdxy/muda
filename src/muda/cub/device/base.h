@@ -1,5 +1,6 @@
 #pragma once
 #include <muda/buffer.h>
+#include <muda/container.h>
 #include <muda/launch/launch_base.h>
 
 namespace muda
@@ -11,6 +12,12 @@ class CubWrapper : public LaunchBase<Derive>
     void prepareBuffer(DeviceVector<std::byte>& buf, size_t reqSize)
     {
         // details::set_stream_check(buf, this->stream());
+        buf.resize(reqSize);
+    }
+
+    void prepareBuffer(DeviceBuffer<std::byte>& buf, size_t reqSize)
+    {
+        details::set_stream_check(buf, this->stream());
         buf.resize(reqSize);
     }
 
