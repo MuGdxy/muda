@@ -15,9 +15,9 @@
 #include <muda/type_traits/type_modifier.h>
 #include <muda/tools/launch_info_cache.h>
 
-#include "../check/check_cuda_errors.h"
-#include "../graph.h"
-#include "../muda_def.h"
+#include <muda/check/check_cuda_errors.h>
+#include <muda/graph.h>
+#include <muda/muda_def.h>
 #include "event.h"
 
 namespace muda

@@ -2,7 +2,6 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
-#include <optional>
 #include <vector>
 #include <muda/container/vector.h>
 #include <muda/container/var.h>
@@ -24,37 +23,27 @@ template <typename T = std::byte>
 class DeviceBuffer
 {
   private:
-    mutable bool m_init;
-    cudaStream_t m_stream;
-    size_t       m_size;
-    size_t       m_capacity;
-    T*           m_data;
+    friend class BufferLaunch;
+    size_t m_size;
+    size_t m_capacity;
+    T*     m_data;
 
   public:
     using value_type = T;
 
-    DeviceBuffer(size_t n, cudaStream_t s = nullptr)
-        : m_stream(s)
-        , m_init(true)
+    DeviceBuffer(size_t n)
+        : m_init(true)
     {
-        Memory(m_stream).alloc(&m_data, n * sizeof(value_type));
+        Memory().alloc(&m_data, n * sizeof(value_type));
         m_size     = n;
         m_capacity = n;
+        Launch::wait_stream();
     }
 
     DeviceBuffer()
-        : m_stream(nullptr)
-        , m_data(nullptr)
+        : m_data(nullptr)
         , m_size(0)
-        , m_capacity(0)
-        , m_init(false){};
-
-    explicit DeviceBuffer(cudaStream_t s)
-        : m_stream(s)
-        , m_data(nullptr)
-        , m_size(0)
-        , m_capacity(0)
-        , m_init(true){};
+        , m_capacity(0){};
 
     DeviceBuffer(const DeviceBuffer& other) { copy_from(other).wait(); }
 
@@ -125,70 +114,6 @@ class DeviceBuffer
     const T* data() const { return m_data; }
     bool     already_init() const { return m_init; }
 };
-
-template <typename T>
-class DeviceBufferVar
-{
-  private:
-    mutable bool m_init;
-    cudaStream_t m_stream;
-    T*           m_data;
-
-  public:
-    using value_type = T;
-
-    DeviceBufferVar(cudaStream_t s)
-        : m_stream(s)
-        , m_init(true)
-    {
-        Memory(m_stream).alloc(&m_data, sizeof(value_type)).wait();
-    }
-
-    DeviceBufferVar()
-        : m_stream(nullptr)
-        , m_init(true)
-    {
-        Memory(m_stream).alloc(&m_data, sizeof(value_type)).wait();
-    };
-
-    DeviceBufferVar(const DeviceBufferVar& other) { copy_from(other).wait(); }
-
-    DeviceBufferVar(DeviceBufferVar&& other) MUDA_NOEXCEPT : m_stream(other.m_stream),
-                                                             m_data(other.m_data),
-                                                             m_init(other.m_init)
-    {
-        other.m_data = nullptr;
-        other.m_init = false;
-    }
-
-    DeviceBufferVar& operator=(const DeviceBufferVar<value_type>& other);
-    DeviceBufferVar& operator=(const DeviceVar<value_type>& other);
-    DeviceBufferVar& operator=(const value_type& other);
-
-    Empty copy_from(const value_type& var);
-    Empty copy_to(value_type& var) const;
-
-    Empty copy_from(const DeviceVar<value_type>& var);
-    Empty copy_to(DeviceVar<value_type>& var) const;
-
-    Empty copy_from(const DeviceBufferVar<value_type>& var);
-    Empty copy_to(DeviceBufferVar<value_type>& var) const;
-
-    operator T() const
-    {
-        T val;
-        copy_to(val).wait();
-        return val;
-    }
-
-    T*       data() { return m_data; }
-    const T* data() const { return m_data; }
-    bool     already_init() const { return m_init; }
-
-    Dense<T>  viewer();
-    CDense<T> cviewer() const;
-};
-
 
 namespace details
 {
@@ -371,4 +296,4 @@ namespace details
 //}
 //}  // namespace muda
 
-#include "device_buffer.inl"
+#include "details/device_buffer.inl"
