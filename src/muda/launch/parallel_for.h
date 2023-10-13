@@ -102,7 +102,8 @@ namespace details
     MUDA_GLOBAL void parallel_for_kernel_with_details(F f, int count)
     {
         ParallelForDetails details{ParallelForType::DynamicBlocks,
-                                   blockIdx.x * blockDim.x + threadIdx.x,
+                                   static_cast<int>(blockIdx.x * blockDim.x
+                                                    + threadIdx.x),
                                    count};
         if(details.i() < count)
         {
@@ -130,7 +131,7 @@ namespace details
         auto round      = (count + grid_size - 1) / grid_size;
         for(int j = 0; i < count; i += grid_size, ++j)
         {
-            ParallelForDetails details{ParallelForType::GridStrideLoop, i, count};
+            ParallelForDetails details{ParallelForType::GridStrideLoop, static_cast<int>(i), count};
             details.m_total_batch = round;
             details.m_batch_i     = j;
             if(i + block_size > count)  // the block may be incomplete in the last round

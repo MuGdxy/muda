@@ -13,7 +13,7 @@
     {                                                                          \
         if(muda::block_dim().y == 1 && muda::block_dim().z == 1)               \
         {                                                                      \
-            ::muda::print("(%d|%d)-(%d|%d):" fmt,                              \
+            ::muda::print("(%d|%d)-(%d|%d):" fmt "\n",                         \
                           muda::block_idx().x,                                 \
                           muda::grid_dim().x,                                  \
                           muda::thread_idx().x,                                \
@@ -22,7 +22,7 @@
         }                                                                      \
         else if(muda::block_dim().z == 1)                                      \
         {                                                                      \
-            ::muda::print("(%d|%d,%d|%d)-(%d|%d,%d|%d):" fmt,                  \
+            ::muda::print("(%d|%d,%d|%d)-(%d|%d,%d|%d):" fmt "\n",             \
                           muda::block_idx().x,                                 \
                           muda::grid_dim().x,                                  \
                           muda::block_idx().y,                                 \
@@ -35,7 +35,7 @@
         }                                                                      \
         else                                                                   \
         {                                                                      \
-            ::muda::print("(%d|%d,%d|%d,%d|%d)-(%d|%d,%d|%d,%d|%d):" fmt,      \
+            ::muda::print("(%d|%d,%d|%d,%d|%d)-(%d|%d,%d|%d,%d|%d):" fmt "\n", \
                           muda::block_idx().x,                                 \
                           muda::grid_dim().x,                                  \
                           muda::block_idx().y,                                 \
@@ -120,23 +120,23 @@
     {                                                                          \
         if(!(res))                                                             \
         {                                                                      \
-            ::muda::print("%s(%d): %s <assert> " #res " failed." fmt,          \
-                          __FILE__,                                            \
-                          __LINE__,                                            \
-                          MUDA_FUNCTION_SIG,                                   \
-                          ##__VA_ARGS__);                                      \
+            MUDA_KERNEL_PRINT("%s(%d): %s <assert> " #res " failed." fmt,      \
+                              __FILE__,                                        \
+                              __LINE__,                                        \
+                              MUDA_FUNCTION_SIG,                               \
+                              ##__VA_ARGS__);                                  \
             std::abort();                                                      \
         }                                                                      \
     }
 
 #define MUDA_ERROR(fmt, ...)                                                   \
     {                                                                          \
-        ::muda::print("<error> " fmt, ##__VA_ARGS__);                          \
+        MUDA_KERNEL_PRINT("<error> " fmt, ##__VA_ARGS__);                      \
         std::abort();                                                          \
     }
 
-#define MUDA_ERROR_WITH_LOCATION(fmt, ...)                                                              \
-    {                                                                                                   \
-        ::muda::print("%s(%d): %s <error> " fmt, __FILE__, __LINE__, MUDA_FUNCTION_SIG, ##__VA_ARGS__); \
-        std::abort();                                                                                   \
+#define MUDA_ERROR_WITH_LOCATION(fmt, ...)                                                                  \
+    {                                                                                                       \
+        MUDA_KERNEL_PRINT("%s(%d): %s <error> " fmt, __FILE__, __LINE__, MUDA_FUNCTION_SIG, ##__VA_ARGS__); \
+        std::abort();                                                                                       \
     }

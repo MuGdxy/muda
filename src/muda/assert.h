@@ -11,7 +11,7 @@
 
 namespace muda
 {
-MUDA_INLINE MUDA_GENERIC void trap() MUDA_NOEXCEPT
+MUDA_INLINE MUDA_GENERIC void trap()
 {
 #ifdef __CUDA_ARCH__
     __trap();
