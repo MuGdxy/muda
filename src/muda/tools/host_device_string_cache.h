@@ -42,7 +42,7 @@ class HostDeviceStringCache
     StringPointer m_empty_string_pointer{};
 
   public:
-    HostDeviceStringCache(size_t buffer_size = 4M)
+    HostDeviceStringCache(size_t buffer_size = 4_M)
         : m_buffer_size(buffer_size)
         , m_current_buffer_offset(0)
     {

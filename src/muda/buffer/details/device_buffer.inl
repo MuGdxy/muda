@@ -11,7 +11,10 @@ DeviceBufferView<T> DeviceBufferView<T>::subview(size_t offset, size_t size) con
 {
     if(size == ~0)
         size = m_size - offset;
-    MUDA_ASSERT(offset + size <= m_size);
+    MUDA_ASSERT(offset + size <= m_size,
+                "DeviceBufferView out of range, size = %d, yours = %d",
+                m_size,
+                offset + size);
     return DeviceBufferView(m_data, m_offset + offset, size);
 }
 
