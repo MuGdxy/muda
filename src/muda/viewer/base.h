@@ -12,8 +12,6 @@
 #include <muda/tools/fuzzy.h>
 #include <muda/type_traits/type_modifier.h>
 
-#define $def(viewer, from) viewer = (from).name(#viewer)
-
 namespace muda
 {
 class ViewerBase
