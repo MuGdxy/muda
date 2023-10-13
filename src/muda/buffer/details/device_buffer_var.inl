@@ -1,3 +1,5 @@
+#include <muda/buffer/buffer_launch.h>
+
 namespace muda
 {
 template <typename T>
@@ -6,68 +8,60 @@ DeviceBufferVar<T>::DeviceBufferVar()
     Memory().alloc(&m_data, sizeof(value_type)).wait();
 };
 
+template <typename T>
+DeviceBufferVar<T>::DeviceBufferVar(const DeviceBufferVar& other)
+{
+    Memory().alloc(&m_data, sizeof(value_type)).wait();
+    BufferLaunch()
+        .copy(*this, other)  //
+        .wait();
+}
 
-template <typename T>
-Empty DeviceBufferVar<T>::copy_from(const value_type& var)
-{
-    m_init = true;
-    Memory(m_stream).copy(m_data, std::addressof(var), sizeof(value_type), cudaMemcpyHostToDevice);
-    return Empty(m_stream);
-}
-template <typename T>
-Empty DeviceBufferVar<T>::copy_to(value_type& var) const
-{
-    m_init = true;
-    Memory(m_stream).copy(std::addressof(var), m_data, sizeof(value_type), cudaMemcpyDeviceToHost);
-    return Empty(m_stream);
-}
-template <typename T>
-Empty DeviceBufferVar<T>::copy_from(const DeviceVar<value_type>& var)
-{
-    m_init = true;
-    Memory(m_stream).copy(m_data, var.data(), sizeof(value_type), cudaMemcpyDeviceToDevice);
-    return Empty(m_stream);
-}
-template <typename T>
-Empty DeviceBufferVar<T>::copy_to(DeviceVar<value_type>& var) const
-{
-    m_init = true;
-    Memory(m_stream).copy(var.data(), m_data, sizeof(value_type), cudaMemcpyDeviceToDevice);
-    return Empty(m_stream);
-}
-template <typename T>
-Empty DeviceBufferVar<T>::copy_from(const DeviceBufferVar<value_type>& var)
-{
-    m_init = true;
-    Memory(m_stream).copy(m_data, var.data(), sizeof(value_type), cudaMemcpyDeviceToDevice);
-    return Empty(m_stream);
-}
-template <typename T>
-Empty DeviceBufferVar<T>::copy_to(DeviceBufferVar<value_type>& var) const
-{
-    m_init = true;
-    Memory(m_stream).copy(var.data(), m_data, sizeof(value_type), cudaMemcpyDeviceToDevice);
-    return Empty(m_stream);
-}
 template <typename T>
 DeviceBufferVar<T>& DeviceBufferVar<T>::operator=(const DeviceBufferVar<value_type>& other)
 {
-    if(&other == this)
+    if(this == &other)
         return *this;
-    copy_from(other).wait();
+
+    BufferLaunch()
+        .copy(*this, other)  //
+        .wait();
     return *this;
 }
+
 template <typename T>
 DeviceBufferVar<T>& DeviceBufferVar<T>::operator=(const DeviceVar<value_type>& other)
 {
-    copy_from(other).wait();
+    BufferLaunch()
+        .copy(*this, other)  //
+        .wait();
     return *this;
 }
+
 template <typename T>
-DeviceBufferVar<T>& DeviceBufferVar<T>::operator=(const value_type& other)
+DeviceBufferVar<T>& DeviceBufferVar<T>::operator=(const value_type& val)
 {
-    copy_from(other).wait();
+    BufferLaunch()
+        .fill(*this, val)  //
+        .wait();
     return *this;
+}
+
+template <typename T>
+DeviceBufferVar<T>::DeviceBufferVar(DeviceBufferVar&& other) MUDA_NOEXCEPT
+    : m_data(other.m_data)
+{
+    other.m_data = nullptr;
+}
+
+template <typename T>
+DeviceBufferVar<T>::operator T() const
+{
+    T var;
+    BufferLaunch()
+        .copy(&var, *this)  //
+        .wait();
+    return var;
 }
 
 template <typename T>

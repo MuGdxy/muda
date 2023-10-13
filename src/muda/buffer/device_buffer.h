@@ -3,297 +3,103 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 #include <vector>
-#include <muda/container/vector.h>
-#include <muda/container/var.h>
-#include <muda/launch/launch_base.h>
-#include <muda/launch/memory.h>
-#include <muda/launch/parallel_for.h>
+#include <muda/viewer/dense.h>
 
 namespace muda
 {
-enum class BufferOperation : unsigned
+template <typename T>
+class DeviceVector;
+
+template <typename T>
+class HostVector;
+
+
+template <typename T>
+class DeviceBufferView
 {
-    ignore,
-    keep     = 1 << 0,
-    set      = 1 << 1,
-    keep_set = keep | set
+
+    template <typename T>
+    friend class DeviceBuffer;
+    T*     m_data   = nullptr;
+    size_t m_offset = ~0;
+    size_t m_size   = ~0;
+
+  public:
+    DeviceBufferView(T* data, size_t offset, size_t size)
+        : m_data(data)
+        , m_offset(offset)
+        , m_size(size)
+    {
+    }
+
+    DeviceBufferView(T* data, size_t size)
+        : m_data(data)
+        , m_offset(0)
+        , m_size(size)
+    {
+    }
+
+    size_t   size() const { return m_size; }
+    T*       data() { return m_data + m_offset; }
+    const T* data() const { return m_data + m_offset; }
+    T*       origin_data() { return m_data; }
+    const T* origin_data() const { return m_data; }
+    size_t   offset() const { return m_offset; }
+
+    DeviceBufferView subview(size_t offset = 0, size_t size = ~0) const;
+
+    void fill(const T& v);
+    void copy_from(const DeviceBufferView<T>& other);
+    void copy_from(T* host);
+    void copy_to(T* host) const;
+
+    Dense1D<T>  viewer();
+    CDense1D<T> cviewer() const;
 };
 
-template <typename T = std::byte>
+template <typename T>
 class DeviceBuffer
 {
   private:
     friend class BufferLaunch;
-    size_t m_size;
-    size_t m_capacity;
-    T*     m_data;
+    size_t m_size     = 0;
+    size_t m_capacity = 0;
+    T*     m_data     = nullptr;
 
   public:
     using value_type = T;
 
-    DeviceBuffer(size_t n)
-        : m_init(true)
-    {
-        Memory().alloc(&m_data, n * sizeof(value_type));
-        m_size     = n;
-        m_capacity = n;
-        Launch::wait_stream();
-    }
-
-    DeviceBuffer()
-        : m_data(nullptr)
-        , m_size(0)
-        , m_capacity(0){};
-
-    DeviceBuffer(const DeviceBuffer& other) { copy_from(other).wait(); }
-
-    DeviceBuffer(DeviceBuffer&& other) MUDA_NOEXCEPT : m_stream(other.m_stream),
-                                                       m_data(other.m_data),
-                                                       m_size(other.m_size),
-                                                       m_capacity(other.m_capacity),
-                                                       m_init(other.m_init)
-    {
-        other.m_data = nullptr;
-        other.m_size = 0;
-        other.m_init = false;
-    }
+    DeviceBuffer(size_t n);
+    DeviceBuffer();
+    DeviceBuffer(const DeviceBuffer<T>& other);
+    DeviceBuffer(DeviceBuffer&& other) MUDA_NOEXCEPT;
 
     DeviceBuffer& operator=(const DeviceBuffer<value_type>& other);
     DeviceBuffer& operator=(const DeviceVector<value_type>& other);
     DeviceBuffer& operator=(const HostVector<value_type>& other);
     DeviceBuffer& operator=(const std::vector<value_type>& other);
 
-    void stream(cudaStream_t s)
-    {
-        m_init   = true;
-        m_stream = s;
-    }
+    void copy_to(T* host) const;
+    void copy_to(std::vector<T>& host) const;
 
-    cudaStream_t stream() { return m_stream; }
-
-    Empty resize(size_t new_size, BufferOperation mem_op, char setbyte = 0);
-
-    Empty resize(size_t new_size);
-
-    Empty resize(size_t new_size, const value_type& value, int blockDim = LIGHT_WORKLOAD_BLOCK_SIZE);
-
-    Empty shrink_to_fit();
-
-    Empty set(char setbyte = 0, size_t count = size_t(-1));
-
-    Empty fill(const T& v, size_t count = size_t(-1), int blockDim = LIGHT_WORKLOAD_BLOCK_SIZE);
-
-    // copy to/from
-    Empty copy_to(HostVector<value_type>& vec) const;
-
-    Empty copy_to(DeviceVector<value_type>& vec) const;
-
-    Empty copy_to(DeviceBuffer<value_type>& vec) const;
-
-    Empty copy_to(std::vector<value_type>& vec) const;
-
-    Empty copy_from(const HostVector<value_type>& vec);
-
-    Empty copy_from(const DeviceVector<value_type>& vec);
-
-    Empty copy_from(const DeviceBuffer<value_type>& vec);
-
-    Empty copy_from(const std::vector<value_type>& vec);
+    void resize(size_t new_size);
+    void resize(size_t new_size, const value_type& value);
+    void clear();
+    void shrink_to_fit();
+    void fill(const T& v);
 
     Dense1D<T>  viewer();
     CDense1D<T> cviewer() const;
 
-    ~DeviceBuffer()
-    {
-        if(m_data)
-            Memory(this->stream()).free(m_data);
-    }
+    DeviceBufferView<T> view(size_t offset, size_t size = ~0) const;
+    DeviceBufferView<T> view() const;
+
+    ~DeviceBuffer();
 
     size_t   size() const { return m_size; }
     T*       data() { return m_data; }
     const T* data() const { return m_data; }
-    bool     already_init() const { return m_init; }
 };
-
-namespace details
-{
-    template <typename T = std::byte>
-    void set_stream_check(DeviceBuffer<T>& buf, cudaStream_t s)
-    {
-        if(buf.already_init() && s != buf.stream())
-            MUDA_ERROR_WITH_LOCATION("buffer is already initialized, please manually set the buffer's stream to s");
-        buf.stream(s);  // buffer isn't initialized yet, allows any setting.
-    }
-}  // namespace details
-
-
-//class BufferOperator : public LaunchBase<BufferOperator>
-//{
-//    int m_block_dim;
-//
-//  public:
-//    BufferOperator(int blockDim = LIGHT_WORKLOAD_BLOCK_SIZE, cudaStream_t stream = nullptr)
-//        : LaunchBase(stream)
-//        , m_block_dim(blockDim)
-//    {
-//    }
-//
-//    template <typename T>
-//    BufferOperator& resize(DeviceBuffer<T>& buf, size_t size)
-//    {
-//        details::set_stream_check(buf, this->stream());
-//        buf.resize(size);
-//        return *this;
-//    }
-//
-//    template <typename T>
-//    BufferOperator& resize(DeviceBuffer<T>& buf, size_t size, const T& value)
-//    {
-//        details::set_stream_check(buf, this->stream());
-//        buf.resize(size, value, m_block_dim);
-//        return *this;
-//    }
-//
-//    template <typename T>
-//    BufferOperator& resize(DeviceBuffer<T>& buf, size_t size, BufferOperation mem_op, char setbyte = 0)
-//    {
-//        details::set_stream_check(buf, this->stream());
-//        buf.resize(size, mem_op, setbyte);
-//        return *this;
-//    }
-//
-//    template <typename T>
-//    BufferOperator& shrink_to_fit(DeviceBuffer<T>& buf)
-//    {
-//        details::set_stream_check(buf, this->stream());
-//        buf.shrink_to_fit();
-//        return *this;
-//    }
-//
-//    template <typename T>
-//    BufferOperator& set(DeviceBuffer<T>& buf, char setbyte = 0, size_t count = size_t(-1))
-//    {
-//        details::set_stream_check(buf, this->stream());
-//        buf.set(setbyte, count);
-//        return *this;
-//    }
-//
-//    template <typename T>
-//    BufferOperator& copy_to(DeviceBuffer<T>& buf, T& val)
-//    {
-//        details::set_stream_check(buf, this->stream());
-//        buf.copy_to(val);
-//        return *this;
-//    }
-//
-//    template <typename T>
-//    BufferOperator& copy_to(DeviceBuffer<T>& buf, HostVector<T>& vec)
-//    {
-//        details::set_stream_check(buf, this->stream());
-//        buf.copy_to(vec);
-//        return *this;
-//    }
-//
-//    template <typename T>
-//    BufferOperator& copy_to(DeviceBuffer<T>& buf, DeviceVar<T>& var)
-//    {
-//        details::set_stream_check(buf, this->stream());
-//        buf.copy_to(var);
-//        return *this;
-//    }
-//
-//    template <typename T>
-//    BufferOperator& copy_to(DeviceBuffer<T>& buf, DeviceVector<T>& vec)
-//    {
-//        details::set_stream_check(buf, this->stream());
-//        buf.copy_to(vec);
-//        return *this;
-//    }
-//
-//    template <typename T>
-//    BufferOperator& copy_to(DeviceBuffer<T>& buf, DeviceBuffer<T>& dst)
-//    {
-//        details::set_stream_check(buf, this->stream());
-//        buf.copy_to(dst);
-//        return *this;
-//    }
-//
-//
-//    template <typename T>
-//    BufferOperator& copy_from(DeviceBuffer<T>& buf, const T& val)
-//    {
-//        details::set_stream_check(buf, this->stream());
-//        buf.copy_from(val);
-//        return *this;
-//    }
-//
-//    template <typename T>
-//    BufferOperator& copy_from(DeviceBuffer<T>& buf, const HostVector<T>& vec)
-//    {
-//        details::set_stream_check(buf, this->stream());
-//        buf.copy_from(vec);
-//        return *this;
-//    }
-//
-//    template <typename T>
-//    BufferOperator& copy_from(DeviceBuffer<T>& buf, DeviceVar<T>& var)
-//    {
-//        details::set_stream_check(buf, this->stream());
-//        buf.copy_from(var);
-//        return *this;
-//    }
-//
-//    template <typename T>
-//    BufferOperator& copy_from(DeviceBuffer<T>& buf, const DeviceVector<T>& vec)
-//    {
-//        details::set_stream_check(buf, this->stream());
-//        buf.copy_from(vec);
-//        return *this;
-//    }
-//
-//    template <typename T>
-//    BufferOperator& copy_from(DeviceBuffer<T>& buf, const DeviceBuffer<T>& vec)
-//    {
-//        details::set_stream_check(buf, this->stream());
-//        buf.copy_from(vec);
-//        return *this;
-//    }
-//};
 }  // namespace muda
-
-//namespace muda
-//{
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto data(DeviceBuffer<T>& buf) MUDA_NOEXCEPT
-//{
-//    return buf.data();
-//}
-//
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_dense(DeviceBuffer<T>& buf) MUDA_NOEXCEPT
-//{
-//    return Dense1D<T>(buf.data(), buf.size());
-//}
-//
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_dense2D(DeviceBuffer<T>& buf, uint32_t dimx, uint32_t dimy) MUDA_NOEXCEPT
-//{
-//    assert(dimx * dimy <= buf.size());
-//    return Dense2D<T>(buf.data(), dimx, dimy);
-//}
-//
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_dense3D(DeviceBuffer<T>& buf, uint32_t dimx, uint32_t dimy, uint32_t dimz) MUDA_NOEXCEPT
-//{
-//    assert(dimx * dimy * dimz <= buf.size());
-//    return Dense3D<T>(buf.data(), dimx, dimy, dimz);
-//}
-//
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_viewer(DeviceBuffer<T>& buf) MUDA_NOEXCEPT
-//{
-//    return make_dense(buf);
-//}
-//}  // namespace muda
 
 #include "details/device_buffer.inl"
