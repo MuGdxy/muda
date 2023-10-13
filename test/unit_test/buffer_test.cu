@@ -122,4 +122,27 @@ TEST_CASE("buffer_test", "[buffer]")
         buffer.copy_to(h_res);
         REQUIRE(h_res == gt);
     }
+
+    SECTION("buffer_view_test")
+    {
+        DeviceBuffer<float> buffer(10);
+        DeviceVector<float> vec(10);
+        buffer = vec;  // via buffer view
+        REQUIRE(buffer.size() == vec.size());
+
+        buffer = vec.view();  // via buffer view
+        REQUIRE(buffer.size() == vec.size());
+
+        vec = buffer;  // via buffer view
+
+        DeviceVar<float> buffer_var;
+        buffer_var = 1;
+        DeviceVar<float> var;
+        var = buffer_var;  // direct
+        REQUIRE(var == buffer_var);
+
+        buffer_var = 2;
+        var        = buffer_var.view();  // via buffer view
+        REQUIRE(var == buffer_var);
+    }
 }

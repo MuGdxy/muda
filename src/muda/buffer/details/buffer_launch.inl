@@ -1,5 +1,5 @@
 #include <muda/buffer/device_buffer.h>
-#include <muda/buffer/device_buffer_var.h>
+#include <muda/buffer/device_var.h>
 
 namespace muda::details
 {
@@ -82,7 +82,7 @@ BufferLaunch& BufferLaunch::clear(DeviceBuffer<T>& buffer)
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::alloc(DeviceBuffer<T>& buffer)
+BufferLaunch& BufferLaunch::alloc(DeviceBuffer<T>& buffer, size_t n)
 {
     MUDA_ASSERT(!buffer.m_data, "The buffer is already allocated");
     BufferLaunch().resize(buffer, n);
@@ -128,8 +128,9 @@ BufferLaunch& BufferLaunch::shrink_to_fit(DeviceBuffer<T>& buffer)
     return *this;
 }
 
+
 template <typename T>
-BufferLaunch& BufferLaunch::copy(DeviceBufferView<T>& dst, const DeviceBufferView<T>& src)
+BufferLaunch& BufferLaunch::copy(BufferView<T>& dst, const BufferView<T>& src)
 {
     MUDA_ASSERT(dst.size() == src.size(), "BufferView should have the same size");
     if constexpr(std::is_trivially_copyable_v<T>)
@@ -141,21 +142,22 @@ BufferLaunch& BufferLaunch::copy(DeviceBufferView<T>& dst, const DeviceBufferVie
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(T* dst, const DeviceBufferView<T>& src)
+BufferLaunch& BufferLaunch::copy(T* dst, const BufferView<T>& src)
 {
     Memory(m_stream).download(dst, src.data(), src.size() * sizeof(T));
     return *this;
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(DeviceBufferView<T>& dst, const T* src)
+BufferLaunch& BufferLaunch::copy(BufferView<T>& dst, const T* src)
 {
     Memory(m_stream).upload(dst.data(), src, dst.size() * sizeof(T));
     return *this;
 }
 
+
 template <typename T>
-BufferLaunch& BufferLaunch::copy(DeviceBufferVar<T>& dst, const DeviceBufferVar<T>& src)
+BufferLaunch& BufferLaunch::copy(VarView<T>& dst, const VarView<T>& src)
 {
     if constexpr(std::is_trivially_copyable_v<T>)
         Memory(m_stream).transfer(dst.data(), src.data(), sizeof(T));
@@ -165,37 +167,22 @@ BufferLaunch& BufferLaunch::copy(DeviceBufferVar<T>& dst, const DeviceBufferVar<
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(T* dst, const DeviceBufferVar<T>& src)
+BufferLaunch& BufferLaunch::copy(T* dst, const VarView<T>& src)
 {
     Memory(m_stream).download(dst, src.data(), sizeof(T));
     return *this;
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(DeviceBufferVar<T>& dst, const T* src)
+BufferLaunch& BufferLaunch::copy(VarView<T>& dst, const T* src)
 {
     Memory(m_stream).upload(dst.data(), src, sizeof(T));
     return *this;
 }
 
-template <typename T>
-BufferLaunch& BufferLaunch::copy(DeviceBufferVar<T>& dst, const DeviceBufferView<T>& src)
-{
-    MUDA_ASSERT(src.size() == 1, "To copy to DeviceBufferVar, BufferView should have the size of 1");
-    Memory(m_stream).transfer(dst.data(), src.data(), sizeof(T));
-    return *this;
-}
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(DeviceBufferView<T>& dst, const DeviceBufferVar<T>& src)
-{
-    MUDA_ASSERT(dst.size() == 1, "To copy from DeviceBufferVar, BufferView should have the size of 1");
-    Memory(m_stream).transfer(dst.data(), src.data(), sizeof(T));
-    return *this;
-}
-
-template <typename T>
-BufferLaunch& BufferLaunch::fill(DeviceBufferView<T>& buffer, const T& val)
+BufferLaunch& BufferLaunch::fill(BufferView<T>& buffer, const T& val)
 {
     ParallelFor(m_grid_dim, m_block_dim, 0, m_stream)
         .apply(buffer.size(),
@@ -204,7 +191,7 @@ BufferLaunch& BufferLaunch::fill(DeviceBufferView<T>& buffer, const T& val)
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::fill(DeviceBufferVar<T>& buffer, const T& val)
+BufferLaunch& BufferLaunch::fill(VarView<T>& buffer, const T& val)
 {
     if constexpr(std::is_trivially_copyable_v<T>)
     {

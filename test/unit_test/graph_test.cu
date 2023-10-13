@@ -28,7 +28,7 @@ void mem_realloc(int first, int last, int& outfirst, int& outlast)
     auto var = DeviceVar<int>(0);
 
     // create kernel
-    kernelA a(make_viewer(s), make_viewer(var));
+    kernelA a(make_viewer(s), var.viewer());
 
     // create graph
     auto graph = Graph::create();

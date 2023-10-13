@@ -22,7 +22,7 @@ __host__ __device__ bool operator==(const Reducable& lhs, const Reducable& rhs)
 void device_reduce_reduce(Reducable& h_output, Reducable& gt_output)
 {
     DeviceVector<std::byte> buffer;
-    size_t       size = 100;
+    size_t                  size = 100;
 
     HostVector<Reducable> gt_input(size);
 
@@ -38,10 +38,10 @@ void device_reduce_reduce(Reducable& h_output, Reducable& gt_output)
         .next<DeviceReduce>()
         .Reduce(
             buffer,
-            data(input),
-            data(output),
+            input.data(),
+            output.data(),
             size,
-            [] __host__ __device__ (const Reducable& l, const Reducable& r) -> Reducable
+            [] __host__ __device__(const Reducable& l, const Reducable& r) -> Reducable
             { return l.id > r.id ? l : r; },
             Reducable{})
         .wait();
@@ -58,7 +58,7 @@ void device_reduce_reduce(Reducable& h_output, Reducable& gt_output)
 void device_reduce_min(float& h_output, float& gt_output)
 {
     DeviceVector<std::byte> buffer;
-    size_t       size = 100;
+    size_t                  size = 100;
 
     HostVector<float> gt_input(size);
 
@@ -69,7 +69,7 @@ void device_reduce_min(float& h_output, float& gt_output)
         gt_input.begin(), gt_input.end(), [](float& r) { r = std::rand(); });
     input = gt_input;
 
-    on().next<DeviceReduce>().Min(buffer, data(input), data(output), size).wait();
+    on().next<DeviceReduce>().Min(buffer, input.data(), output.data(), size).wait();
 
     gt_output = *std::min_element(gt_input.begin(), gt_input.end());
 
@@ -79,7 +79,7 @@ void device_reduce_min(float& h_output, float& gt_output)
 void device_reduce_max(float& h_output, float& gt_output)
 {
     DeviceVector<std::byte> buffer;
-    size_t       size = 100;
+    size_t                  size = 100;
 
     HostVector<float> gt_input(size);
 
@@ -90,7 +90,7 @@ void device_reduce_max(float& h_output, float& gt_output)
         gt_input.begin(), gt_input.end(), [](float& r) { r = std::rand(); });
     input = gt_input;
 
-    on().next<DeviceReduce>().Max(buffer, data(input), data(output), size).wait();
+    on().next<DeviceReduce>().Max(buffer, input.data(), output.data(), size).wait();
 
     gt_output = *std::max_element(gt_input.begin(), gt_input.end());
 
@@ -101,7 +101,7 @@ void device_reduce_max(float& h_output, float& gt_output)
 void device_reduce_sum(float& h_output, float& gt_output)
 {
     DeviceVector<std::byte> buffer;
-    size_t       size = 100;
+    size_t                  size = 100;
 
     HostVector<float> gt_input(size);
 
@@ -112,7 +112,7 @@ void device_reduce_sum(float& h_output, float& gt_output)
         gt_input.begin(), gt_input.end(), [](float& r) { r = std::rand(); });
     input = gt_input;
 
-    on().next<DeviceReduce>().Sum(buffer, data(input), data(output), size).wait();
+    on().next<DeviceReduce>().Sum(buffer, input.data(), output.data(), size).wait();
 
     gt_output = std::accumulate(gt_input.begin(), gt_input.end(), 0.0f);
 
@@ -123,7 +123,7 @@ void device_reduce_argmin(int& h_output, int& gt_output)
 {
     using KVP = cub::KeyValuePair<int, float>;
     DeviceVector<std::byte> buffer;
-    size_t       size = 100;
+    size_t                  size = 100;
 
     HostVector<float>   gt_input(size);
     DeviceVector<float> input;
@@ -139,7 +139,7 @@ void device_reduce_argmin(int& h_output, int& gt_output)
     gt_output = std::min_element(gt_input.begin(), gt_input.end()) - gt_input.begin();
 
 
-    on().next<DeviceReduce>().ArgMin(buffer, data(input), data(output), size).wait();
+    on().next<DeviceReduce>().ArgMin(buffer, input.data(), output.data(), size).wait();
 
     h_output_kvp = output;
     h_output     = h_output_kvp.key;
@@ -149,7 +149,7 @@ void device_reduce_argmax(int& h_output, int& gt_output)
 {
     using KVP = cub::KeyValuePair<int, float>;
     DeviceVector<std::byte> buffer;
-    size_t       size = 100;
+    size_t                  size = 100;
 
     HostVector<float>   gt_input(size);
     DeviceVector<float> input;
@@ -164,7 +164,7 @@ void device_reduce_argmax(int& h_output, int& gt_output)
     gt_output = std::max_element(gt_input.begin(), gt_input.end()) - gt_input.begin();
 
 
-    on().next<DeviceReduce>().ArgMax(buffer, data(input), data(output), size).wait();
+    on().next<DeviceReduce>().ArgMax(buffer, input.data(), output.data(), size).wait();
 
     h_output_kvp = output;
     h_output     = h_output_kvp.key;
@@ -188,7 +188,7 @@ void device_reduce_reduce_by_key(HostVector<int>& h_unique_out,
                                  int&             gt_num_runs_out)
 {
     DeviceVector<std::byte> buffer;
-    size_t       size = 100;
+    size_t                  size = 100;
 
     HostVector<float>   gt_input(size);
     DeviceVector<float> input;
@@ -207,11 +207,11 @@ void device_reduce_reduce_by_key(HostVector<int>& h_unique_out,
 
     on().next<DeviceReduce>()
         .ReduceByKey(buffer,
-                     data(d_keys_in),
-                     data(d_unique_out),
-                     data(d_values_in),
-                     data(d_aggregates_out),
-                     data(d_num_runs_out),
+                     d_keys_in.data(),
+                     d_unique_out.data(),
+                     d_values_in.data(),
+                     d_aggregates_out.data(),
+                     d_num_runs_out.data(),
                      reduction_op,
                      num_items)
         .wait();
@@ -297,7 +297,7 @@ TEST_CASE("device_reduce", "[cub]")
 void device_scan_inclusive_sum(HostVector<float>& h_output, HostVector<float>& gt_output)
 {
     DeviceVector<std::byte> buffer;
-    size_t       size = 100;
+    size_t                  size = 100;
 
     HostVector<float> gt_input(size);
     gt_output.resize(size);
@@ -312,7 +312,7 @@ void device_scan_inclusive_sum(HostVector<float>& h_output, HostVector<float>& g
     std::partial_sum(gt_input.begin(), gt_input.end(), gt_output.begin());
 
     on().next<DeviceScan>()
-        .InclusiveSum(buffer, data(input), data(output), size)
+        .InclusiveSum(buffer, input.data(), output.data(), size)
         .wait();
 
     h_output = output;
@@ -321,7 +321,7 @@ void device_scan_inclusive_sum(HostVector<float>& h_output, HostVector<float>& g
 void device_scan_exclusive_sum(HostVector<float>& h_output, HostVector<float>& gt_output)
 {
     DeviceVector<std::byte> buffer;
-    size_t       size = 100;
+    size_t                  size = 100;
 
     HostVector<float> gt_input(size);
     gt_output.resize(size);
@@ -337,7 +337,7 @@ void device_scan_exclusive_sum(HostVector<float>& h_output, HostVector<float>& g
     std::partial_sum(gt_input.begin(), gt_input.end() - 1, gt_output.begin() + 1);
 
     on().next<DeviceScan>()
-        .ExclusiveSum(buffer, data(input), data(output), size)
+        .ExclusiveSum(buffer, input.data(), output.data(), size)
         .wait();
 
     h_output = output;
@@ -346,7 +346,7 @@ void device_scan_exclusive_sum(HostVector<float>& h_output, HostVector<float>& g
 void device_scan_inclusive_scan(HostVector<float>& h_output, HostVector<float>& gt_output)
 {
     DeviceVector<std::byte> buffer;
-    size_t       size = 100;
+    size_t                  size = 100;
 
     HostVector<float> gt_input(size);
     gt_output.resize(size);
@@ -363,9 +363,10 @@ void device_scan_inclusive_scan(HostVector<float>& h_output, HostVector<float>& 
     on().next<DeviceScan>()
         .InclusiveScan(
             buffer,
-            data(input),
-            data(output),
-            [] __host__ __device__(const float& a, const float& b) { return a + b; },
+            input.data(),
+            output.data(),
+            [] __host__ __device__(const float& a, const float& b)
+            { return a + b; },
             size)
         .wait();
 
@@ -375,7 +376,7 @@ void device_scan_inclusive_scan(HostVector<float>& h_output, HostVector<float>& 
 void device_scan_exclusive_scan(HostVector<float>& h_output, HostVector<float>& gt_output)
 {
     DeviceVector<std::byte> buffer;
-    size_t       size = 100;
+    size_t                  size = 100;
 
     HostVector<float> gt_input(size);
     gt_output.resize(size);
@@ -393,9 +394,10 @@ void device_scan_exclusive_scan(HostVector<float>& h_output, HostVector<float>& 
     on().next<DeviceScan>()
         .ExclusiveScan(
             buffer,
-            data(input),
-            data(output),
-            [] __host__ __device__(const float& a, const float& b) { return a + b; },
+            input.data(),
+            output.data(),
+            [] __host__ __device__(const float& a, const float& b)
+            { return a + b; },
             0.0f,
             size)
         .wait();
@@ -407,7 +409,7 @@ void device_scan_exclusive_scan(HostVector<float>& h_output, HostVector<float>& 
 void device_scan_exclusive_sum_by_key(HostVector<int>& h_values_out, HostVector<int>& gt_values_out)
 {
     DeviceVector<std::byte> buffer;
-    size_t       size = 8;
+    size_t                  size = 8;
 
     HostVector<int> h_keys_in   = std::vector{0, 2, 2, 9, 5, 5, 5, 8};
     HostVector<int> h_values_in = std::vector{0, 7, 1, 6, 2, 5, 3, 4};
@@ -419,7 +421,8 @@ void device_scan_exclusive_sum_by_key(HostVector<int>& h_values_out, HostVector<
     DeviceVector<int> d_values_out(size);
 
     on().next<DeviceScan>()
-        .ExclusiveSumByKey(buffer, data(d_keys_in), data(d_values_in), data(d_values_out), size)
+        .ExclusiveSumByKey(
+            buffer, d_keys_in.data(), d_values_in.data(), d_values_out.data(), size)
         .wait();
     h_values_out = d_values_out;
 }
@@ -428,7 +431,7 @@ void device_scan_exclusive_sum_by_key(HostVector<int>& h_values_out, HostVector<
 void device_scan_inclusive_sum_by_key(HostVector<int>& h_values_out, HostVector<int>& gt_values_out)
 {
     DeviceVector<std::byte> buffer;
-    size_t       size = 8;
+    size_t                  size = 8;
 
     HostVector<int> h_keys_in   = std::vector{0, 2, 2, 9, 5, 5, 5, 8};
     HostVector<int> h_values_in = std::vector{0, 7, 1, 6, 2, 5, 3, 4};
@@ -440,7 +443,8 @@ void device_scan_inclusive_sum_by_key(HostVector<int>& h_values_out, HostVector<
     DeviceVector<int> d_values_out(size);
 
     on().next<DeviceScan>()
-        .InclusiveSumByKey(buffer, data(d_keys_in), data(d_values_in), data(d_values_out), size)
+        .InclusiveSumByKey(
+            buffer, d_keys_in.data(), d_values_in.data(), d_values_out.data(), size)
         .wait();
 
     h_values_out = d_values_out;
@@ -451,7 +455,7 @@ void device_scan_exclusive_scan_by_key(HostVector<int>& h_values_out,
                                        HostVector<int>& gt_values_out)
 {
     DeviceVector<std::byte> buffer;
-    size_t       size = 8;
+    size_t                  size = 8;
 
     HostVector<int> h_keys_in   = std::vector{0, 2, 2, 9, 5, 5, 5, 8};
     HostVector<int> h_values_in = std::vector{0, 7, 1, 6, 2, 5, 3, 4};
@@ -465,10 +469,11 @@ void device_scan_exclusive_scan_by_key(HostVector<int>& h_values_out,
     on().next<DeviceScan>()
         .ExclusiveScanByKey(
             buffer,
-            data(d_keys_in),
-            data(d_values_in),
-            data(d_values_out),
-            [] __host__ __device__(const int& a, const int& b) -> int { return a + b; },
+            d_keys_in.data(),
+            d_values_in.data(),
+            d_values_out.data(),
+            [] __host__ __device__(const int& a, const int& b) -> int
+            { return a + b; },
             0,
             size)
         .wait();
@@ -481,7 +486,7 @@ void device_scan_inclusive_scan_by_key(HostVector<int>& h_values_out,
                                        HostVector<int>& gt_values_out)
 {
     DeviceVector<std::byte> buffer;
-    size_t       size = 8;
+    size_t                  size = 8;
 
     HostVector<int> h_keys_in   = std::vector{0, 2, 2, 9, 5, 5, 5, 8};
     HostVector<int> h_values_in = std::vector{0, 7, 1, 6, 2, 5, 3, 4};
@@ -496,9 +501,9 @@ void device_scan_inclusive_scan_by_key(HostVector<int>& h_values_out,
     on().next<DeviceScan>()
         .InclusiveScanByKey(
             buffer,
-            data(d_keys_in),
-            data(d_values_in),
-            data(d_values_out),
+            d_keys_in.data(),
+            d_values_in.data(),
+            d_values_out.data(),
             [] __host__ __device__(const int& a, const int& b) { return a + b; },
             size)
         .wait();
@@ -576,7 +581,7 @@ void device_run_length_encode_encode(HostVector<int>& h_unique_out,
                                      int&             gt_num_runs_out)
 {
     DeviceVector<std::byte> buffer;
-    size_t       size = 8;
+    size_t                  size = 8;
 
     HostVector<int> h_input = std::vector{0, 2, 2, 9, 5, 5, 5, 8};
     gt_unique_out           = std::vector{0, 2, 9, 5, 8};
@@ -589,7 +594,12 @@ void device_run_length_encode_encode(HostVector<int>& h_unique_out,
     DeviceVar<int>    d_num_runs_out;
 
     on().next<DeviceRunLengthEncode>()
-        .Encode(buffer, data(d_input), data(d_unique_out), data(d_counts_out), data(d_num_runs_out), size)
+        .Encode(buffer,
+                d_input.data(),
+                d_unique_out.data(),
+                d_counts_out.data(),
+                d_num_runs_out.data(),
+                size)
         .wait();
 
     d_unique_out.resize(d_num_runs_out);
@@ -608,7 +618,7 @@ void device_run_length_encode_non_trivial_runs(HostVector<int>& h_offsets_out,
                                                int&             gt_num_runs_out)
 {
     DeviceVector<std::byte> buffer;
-    size_t       size = 8;
+    size_t                  size = 8;
 
     HostVector<int> h_input = std::vector{0, 2, 2, 9, 5, 5, 5, 8};
     gt_offsets_out          = std::vector{1, 4};
@@ -621,8 +631,12 @@ void device_run_length_encode_non_trivial_runs(HostVector<int>& h_offsets_out,
     DeviceVar<int>    d_num_runs_out;
 
     on().next<DeviceRunLengthEncode>()
-        .NonTrivialRuns(
-            buffer, data(d_input), data(d_offsets_out), data(d_counts_out), data(d_num_runs_out), size)
+        .NonTrivialRuns(buffer,
+                        d_input.data(),
+                        d_offsets_out.data(),
+                        d_counts_out.data(),
+                        d_num_runs_out.data(),
+                        size)
         .wait();
 
     d_offsets_out.resize(d_num_runs_out);
@@ -689,14 +703,19 @@ void device_radix_sort_sort_pairs(HostVector<int>&   h_keys_out,
     }
 
     // Sort input data using DeviceRadixSort::SortPairs
-    DeviceVector<int>   d_keys_in   = h_keys_in;
-    DeviceVector<float> d_values_in = h_values_in;
-    DeviceVector<int>   d_keys_out(size);
-    DeviceVector<float> d_values_out(size);
-    DeviceVector<std::byte>        buffer;
+    DeviceVector<int>       d_keys_in   = h_keys_in;
+    DeviceVector<float>     d_values_in = h_values_in;
+    DeviceVector<int>       d_keys_out(size);
+    DeviceVector<float>     d_values_out(size);
+    DeviceVector<std::byte> buffer;
 
     on().next<DeviceRadixSort>()
-        .SortPairs(buffer, data(d_keys_in), data(d_keys_out), data(d_values_in), data(d_values_out), size)
+        .SortPairs(buffer,
+                   d_keys_in.data(),
+                   d_keys_out.data(),
+                   d_values_in.data(),
+                   d_values_out.data(),
+                   size)
         .wait();
 
     // Copy results from device to host
@@ -736,15 +755,19 @@ void device_radix_sort_sort_pairs_descending(HostVector<int>&   h_keys_out,
     }
 
     // Sort input data using DeviceRadixSort::SortPairsDescending
-    DeviceVector<int>   d_keys_in   = h_keys_in;
-    DeviceVector<float> d_values_in = h_values_in;
-    DeviceVector<int>   d_keys_out(size);
-    DeviceVector<float> d_values_out(size);
-    DeviceVector<std::byte>        buffer;
+    DeviceVector<int>       d_keys_in   = h_keys_in;
+    DeviceVector<float>     d_values_in = h_values_in;
+    DeviceVector<int>       d_keys_out(size);
+    DeviceVector<float>     d_values_out(size);
+    DeviceVector<std::byte> buffer;
 
     on().next<DeviceRadixSort>()
-        .SortPairsDescending(
-            buffer, data(d_keys_in), data(d_keys_out), data(d_values_in), data(d_values_out), size)
+        .SortPairsDescending(buffer,
+                             d_keys_in.data(),
+                             d_keys_out.data(),
+                             d_values_in.data(),
+                             d_values_out.data(),
+                             size)
         .wait();
 
     // Copy results from device to host
@@ -767,12 +790,12 @@ void device_radix_sort_sort_keys(HostVector<int>& h_keys_out, HostVector<int>& g
     std::sort(gt_keys_out.begin(), gt_keys_out.end());
 
     // Sort input data using DeviceRadixSort::SortKeys
-    DeviceVector<int> d_keys_in = h_keys_in;
-    DeviceVector<int> d_keys_out(size);
-    DeviceVector<std::byte>      buffer;
+    DeviceVector<int>       d_keys_in = h_keys_in;
+    DeviceVector<int>       d_keys_out(size);
+    DeviceVector<std::byte> buffer;
 
     on().next<DeviceRadixSort>()
-        .SortKeys(buffer, data(d_keys_in), data(d_keys_out), size)
+        .SortKeys(buffer, d_keys_in.data(), d_keys_out.data(), size)
         .wait();
 
     // Copy results from device to host
@@ -795,12 +818,12 @@ void device_radix_sort_sort_keys_descending(HostVector<int>& h_keys_out,
     std::sort(gt_keys_out.begin(), gt_keys_out.end(), std::greater<int>());
 
     // Sort input data using DeviceRadixSort::SortKeysDescending
-    DeviceVector<int> d_keys_in = h_keys_in;
-    DeviceVector<int> d_keys_out(size);
-    DeviceVector<std::byte>      buffer;
+    DeviceVector<int>       d_keys_in = h_keys_in;
+    DeviceVector<int>       d_keys_out(size);
+    DeviceVector<std::byte> buffer;
 
     on().next<DeviceRadixSort>()
-        .SortKeysDescending(buffer, data(d_keys_in), data(d_keys_out), size)
+        .SortKeysDescending(buffer, d_keys_in.data(), d_keys_out.data(), size)
         .wait();
 
     // Copy results from device to host
@@ -883,14 +906,14 @@ void device_merge_sort_sort_pairs(HostVector<int>&   h_keys_out,
     }
 
     // Sort input data using DeviceMergeSort::SortPairs
-    DeviceVector<int>   d_keys   = h_keys_in;
-    DeviceVector<float> d_values = h_values_in;
-    DeviceVector<std::byte>        buffer;
+    DeviceVector<int>       d_keys   = h_keys_in;
+    DeviceVector<float>     d_values = h_values_in;
+    DeviceVector<std::byte> buffer;
 
     on().next<DeviceMergeSort>()
         .SortPairs(buffer,
-                   data(d_keys),
-                   data(d_values),
+                   d_keys.data(),
+                   d_values.data(),
                    size,
                    [] __host__ __device__(int l, int r) { return l < r; })
         .wait();
@@ -932,18 +955,18 @@ void device_merge_sort_sort_pairs_copy(HostVector<int>&   h_keys_out,
     }
 
     // Sort input data using DeviceMergeSort::SortPairsCopy
-    DeviceVector<int>   d_keys_in   = h_keys_in;
-    DeviceVector<float> d_values_in = h_values_in;
-    DeviceVector<int>   d_keys_out(size);
-    DeviceVector<float> d_values_out(size);
-    DeviceVector<std::byte>        buffer;
+    DeviceVector<int>       d_keys_in   = h_keys_in;
+    DeviceVector<float>     d_values_in = h_values_in;
+    DeviceVector<int>       d_keys_out(size);
+    DeviceVector<float>     d_values_out(size);
+    DeviceVector<std::byte> buffer;
 
     on().next<DeviceMergeSort>()
         .SortPairsCopy(buffer,
-                       data(d_keys_in),
-                       data(d_values_in),
-                       data(d_keys_out),
-                       data(d_values_out),
+                       d_keys_in.data(),
+                       d_values_in.data(),
+                       d_keys_out.data(),
+                       d_values_out.data(),
                        size,
                        [] __host__ __device__(int l, int r) { return l < r; })
         .wait();
@@ -967,12 +990,12 @@ void device_merge_sort_sort_keys(HostVector<int>& h_keys_out, HostVector<int>& g
     std::sort(gt_keys_out.begin(), gt_keys_out.end());
 
     // Sort input data using DeviceMergeSort::SortKeys
-    DeviceVector<int> d_keys = h_keys_in;
-    DeviceVector<std::byte>      buffer;
+    DeviceVector<int>       d_keys = h_keys_in;
+    DeviceVector<std::byte> buffer;
 
     on().next<DeviceMergeSort>()
         .SortKeys(buffer,
-                  data(d_keys),
+                  d_keys.data(),
                   size,
                   [] __host__ __device__(int l, int r) { return l < r; })
         .wait();
@@ -995,14 +1018,14 @@ void device_merge_sort_sort_keys_copy(HostVector<int>& h_keys_out, HostVector<in
     std::sort(gt_keys_out.begin(), gt_keys_out.end());
 
     // Sort input data using DeviceMergeSort::SortKeysCopy
-    DeviceVector<int> d_keys_in = h_keys_in;
-    DeviceVector<int> d_keys_out(size);
-    DeviceVector<std::byte>      buffer;
+    DeviceVector<int>       d_keys_in = h_keys_in;
+    DeviceVector<int>       d_keys_out(size);
+    DeviceVector<std::byte> buffer;
 
     on().next<DeviceMergeSort>()
         .SortKeysCopy(buffer,
-                      data(d_keys_in),
-                      data(d_keys_out),
+                      d_keys_in.data(),
+                      d_keys_out.data(),
                       size,
                       [] __host__ __device__(int l, int r) { return l < r; })
         .wait();
@@ -1043,14 +1066,14 @@ void device_merge_sort_stable_sort_pairs(HostVector<int>&   h_keys_out,
     }
 
     // Sort input data using DeviceMergeSort::StableSortPairs
-    DeviceVector<int>   d_keys   = h_keys_in;
-    DeviceVector<float> d_values = h_values_in;
-    DeviceVector<std::byte>        buffer;
+    DeviceVector<int>       d_keys   = h_keys_in;
+    DeviceVector<float>     d_values = h_values_in;
+    DeviceVector<std::byte> buffer;
 
     on().next<DeviceMergeSort>()
         .StableSortPairs(buffer,
-                         data(d_keys),
-                         data(d_values),
+                         d_keys.data(),
+                         d_values.data(),
                          size,
                          [] __host__ __device__(int l, int r) { return l < r; })
         .wait();
@@ -1074,12 +1097,12 @@ void device_merge_sort_stable_sort_keys(HostVector<int>& h_keys_out, HostVector<
     std::stable_sort(gt_keys_out.begin(), gt_keys_out.end());
 
     // Sort input data using DeviceMergeSort::StableSortKeys
-    DeviceVector<int> d_keys = h_keys_in;
-    DeviceVector<std::byte>      buffer;
+    DeviceVector<int>       d_keys = h_keys_in;
+    DeviceVector<std::byte> buffer;
 
     on().next<DeviceMergeSort>()
         .StableSortKeys(buffer,
-                        data(d_keys),
+                        d_keys.data(),
                         size,
                         [] __host__ __device__(int l, int r) { return l < r; })
         .wait();
@@ -1177,14 +1200,19 @@ void device_select_flagged(HostVector<int>& h_keys_out, HostVector<int>& gt_keys
                  [&](auto key) { return h_flags[idx++]; });
 
     // Filter input data using DeviceSelect::Flagged
-    DeviceVector<int>  d_keys_in = h_keys_in;
-    DeviceVector<bool> d_flags   = h_flags;
-    DeviceVector<int>  d_keys_out(size);
-    DeviceVar<int>     d_num_selected_out;
-    DeviceVector<std::byte>       buffer;
+    DeviceVector<int>       d_keys_in = h_keys_in;
+    DeviceVector<bool>      d_flags   = h_flags;
+    DeviceVector<int>       d_keys_out(size);
+    DeviceVar<int>          d_num_selected_out;
+    DeviceVector<std::byte> buffer;
 
     on().next<DeviceSelect>()
-        .Flagged(buffer, data(d_keys_in), data(d_flags), data(d_keys_out), data(d_num_selected_out), size)
+        .Flagged(buffer,
+                 d_keys_in.data(),
+                 d_flags.data(),
+                 d_keys_out.data(),
+                 d_num_selected_out.data(),
+                 size)
         .wait();
 
     d_keys_out.resize(d_num_selected_out);
@@ -1210,16 +1238,16 @@ void device_select_if(HostVector<int>& h_keys_out, HostVector<int>& gt_keys_out)
                  [](int key) { return key % 2 == 0; });
 
     // Filter input data using DeviceSelect::If
-    DeviceVector<int> d_keys_in = h_keys_in;
-    DeviceVector<int> d_keys_out(size);
-    DeviceVar<int>    d_num_selected_out;
-    DeviceVector<std::byte>      buffer;
+    DeviceVector<int>       d_keys_in = h_keys_in;
+    DeviceVector<int>       d_keys_out(size);
+    DeviceVar<int>          d_num_selected_out;
+    DeviceVector<std::byte> buffer;
 
     on().next<DeviceSelect>()
         .If(buffer,
-            data(d_keys_in),
-            data(d_keys_out),
-            data(d_num_selected_out),
+            d_keys_in.data(),
+            d_keys_out.data(),
+            d_num_selected_out.data(),
             size,
             [] __host__ __device__(int key) { return key % 2 == 0; })
         .wait();
@@ -1243,13 +1271,13 @@ void device_select_unique(HostVector<int>& h_keys_out, HostVector<int>& gt_keys_
     std::unique_copy(h_keys_in.begin(), h_keys_in.end(), std::back_inserter(gt_keys_out));
 
     // Filter input data using DeviceSelect::Unique
-    DeviceVector<int> d_keys_in = h_keys_in;
-    DeviceVector<int> d_keys_out(size);
-    DeviceVar<int>    d_num_selected_out;
-    DeviceVector<std::byte>      buffer;
+    DeviceVector<int>       d_keys_in = h_keys_in;
+    DeviceVector<int>       d_keys_out(size);
+    DeviceVar<int>          d_num_selected_out;
+    DeviceVector<std::byte> buffer;
 
     on().next<DeviceSelect>()
-        .Unique(buffer, data(d_keys_in), data(d_keys_out), data(d_num_selected_out), size)
+        .Unique(buffer, d_keys_in.data(), d_keys_out.data(), d_num_selected_out.data(), size)
         .wait();
 
     d_keys_out.resize(d_num_selected_out);
@@ -1309,16 +1337,16 @@ void device_partition_if(HostVector<int>& h_keys_out, HostVector<int>& gt_keys_o
     std::sort(gt_keys_out.begin(), gt_keys_out.end());
 
     // Partition input data using DevicePartition::If
-    DeviceVector<int> d_keys_in = h_keys_in;
-    DeviceVector<int> d_keys_out(size);
-    DeviceVar<int>    d_num_selected_out;
-    DeviceVector<std::byte>      buffer;
+    DeviceVector<int>       d_keys_in = h_keys_in;
+    DeviceVector<int>       d_keys_out(size);
+    DeviceVar<int>          d_num_selected_out;
+    DeviceVector<std::byte> buffer;
 
     on().next<DevicePartition>()
         .If(buffer,
-            data(d_keys_in),
-            data(d_keys_out),
-            data(d_num_selected_out),
+            d_keys_in.data(),
+            d_keys_out.data(),
+            d_num_selected_out.data(),
             size,
             [] __host__ __device__(int key) { return key % 2 == 0; })
         .wait();

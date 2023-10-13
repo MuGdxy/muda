@@ -133,7 +133,7 @@ void compute_graph_graphviz()
     ComputeGraph           graph{manager};
 
     auto& var_x_0 = manager.create_var("x_0", make_viewer(x_0));
-    auto& var_h_x = manager.create_var("h_x", make_viewer(h_x));
+    auto& var_h_x = manager.create_var("h_x", h_x.data());
     auto& var_x   = manager.create_var("x", make_viewer(x));
     auto& var_v   = manager.create_var("v", make_viewer(v));
     auto& var_toi = manager.create_var("toi", make_viewer(toi));
@@ -185,7 +185,7 @@ void compute_graph_graphviz()
 
     graph.create_node("download") << [&]
     {
-        Memory().download(var_h_x.eval().data(), var_x.ceval().data(), var_N * sizeof(Vector3));
+        Memory().download(var_h_x.eval(), var_x.ceval().data(), var_N * sizeof(Vector3));
     };
 
     graph.graphviz(std::cout);

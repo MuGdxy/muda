@@ -770,3 +770,13 @@ MUDA_INLINE MUDA_GENERIC auto make_dense(T* data, const int3& dim) noexcept
     return make_dense3D(data, dim);
 }
 }  // namespace muda
+
+namespace muda
+{
+//print convert
+template <typename T>
+MUDA_INLINE MUDA_GENERIC const T& print_convert(const Dense<T>& idx) MUDA_NOEXCEPT
+{
+    return idx.operator const T&();
+}
+}
