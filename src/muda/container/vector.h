@@ -56,12 +56,12 @@ class DeviceVector : public thrust::device_vector<T, thrust::device_allocator<T>
 
     auto viewer() MUDA_NOEXCEPT
     {
-        return muda::DenseND<T, 1>(this->data(), this->size());
+        return muda::DenseND<T, 1>(this->data(), static_cast<int>(this->size()));
     }
 
     auto cviewer() const MUDA_NOEXCEPT
     {
-        return muda::CDenseND<T, 1>(this->data(), this->size());
+        return muda::CDenseND<T, 1>(this->data(), static_cast<int>(this->size()));
     }
 };
 
