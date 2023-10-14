@@ -29,12 +29,12 @@ void VarView<T>::copy_from(const VarView<T>& val)
 template <typename T>
 Dense<T> VarView<T>::viewer() MUDA_NOEXCEPT
 {
-    return Dense<T>(m_data);
+    return Dense<T>{m_data};
 }
 
 template <typename T>
 CDense<T> VarView<T>::cviewer() const MUDA_NOEXCEPT
 {
-    return CDense<T>(m_data);
+    return CDense<T>{m_data};
 }
 }  // namespace muda

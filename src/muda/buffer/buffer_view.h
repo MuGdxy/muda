@@ -17,6 +17,8 @@ class BufferView
     size_t m_size   = ~0;
 
   public:
+    BufferView() MUDA_NOEXCEPT : m_data(nullptr), m_offset(~0), m_size(~0) {}
+
     BufferView(T* data, size_t offset, size_t size) MUDA_NOEXCEPT : m_data(data),
                                                                     m_offset(offset),
                                                                     m_size(size)

@@ -7,14 +7,14 @@ template <typename T>
 void kernel_destruct(int grid_dim, int block_dim, cudaStream_t stream, T* data, size_t size)
 {
     ParallelFor(grid_dim, block_dim, 0, stream)
-        .apply(size, [d = data] __device__(int i) mutable { d[i].~T(); });
+        .apply(size, [data] __device__(int i) mutable { data[i].~T(); });
 }
 
 template <typename T>
 void kernel_construct(int grid_dim, int block_dim, cudaStream_t stream, T* data, size_t size)
 {
     ParallelFor(grid_dim, block_dim, 0, stream)
-        .apply(size, [d = data] __device__(int i) mutable { new(d + i) T(); });
+        .apply(size, [data] __device__(int i) mutable { new(data + i) T(); });
 }
 
 template <typename T>
@@ -84,6 +84,8 @@ BufferLaunch& BufferLaunch::clear(DeviceBuffer<T>& buffer)
 template <typename T>
 BufferLaunch& BufferLaunch::alloc(DeviceBuffer<T>& buffer, size_t n)
 {
+    MUDA_ASSERT(ComputeGraphBuilder::is_direct_launching(),
+                "cannot alloc a buffer in a compute graph");
     MUDA_ASSERT(!buffer.m_data, "The buffer is already allocated");
     BufferLaunch().resize(buffer, n);
     return *this;
@@ -96,6 +98,8 @@ BufferLaunch& BufferLaunch::free(DeviceBuffer<T>& buffer)
     auto& m_size     = buffer.m_size;
     auto& m_capacity = buffer.m_capacity;
 
+    MUDA_ASSERT(ComputeGraphBuilder::is_direct_launching(),
+                "cannot free a buffer in a compute graph");
     MUDA_ASSERT(buffer.m_data, "The buffer is not allocated");
 
     Memory(m_stream).free(m_data);
@@ -108,6 +112,9 @@ BufferLaunch& BufferLaunch::free(DeviceBuffer<T>& buffer)
 template <typename T>
 BufferLaunch& BufferLaunch::shrink_to_fit(DeviceBuffer<T>& buffer)
 {
+    MUDA_ASSERT(ComputeGraphBuilder::is_direct_launching(),
+                "cannot shrink a buffer in a compute graph");
+
     auto  mem        = Memory(m_stream);
     auto& m_data     = buffer.m_data;
     auto& m_size     = buffer.m_size;
@@ -134,7 +141,7 @@ BufferLaunch& BufferLaunch::copy(BufferView<T>& dst, const BufferView<T>& src)
 {
     MUDA_ASSERT(dst.size() == src.size(), "BufferView should have the same size");
     if constexpr(std::is_trivially_copyable_v<T>)
-        Memory(m_stream).transfer(dst.data(), src.data(), src.size() * sizeof(T));
+        Memory(m_stream).transfer(dst.data(), src.data(), dst.size() * sizeof(T));
     else
         details::kernel_assign(
             m_grid_dim, m_block_dim, m_stream, dst.data(), src.data(), src.size());
@@ -208,6 +215,9 @@ BufferLaunch& BufferLaunch::fill(VarView<T>& buffer, const T& val)
 template <typename T, typename FConstruct>
 BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new_size, FConstruct&& fct)
 {
+    MUDA_ASSERT(ComputeGraphBuilder::is_direct_launching(),
+                "cannot resize a buffer in a compute graph");
+
     auto mem = Memory(m_stream);
 
     auto&   m_data     = buffer.m_data;

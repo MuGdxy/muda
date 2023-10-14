@@ -1,17 +1,21 @@
 #include <muda/buffer/buffer_launch.h>
+#include <muda/compute_graph/compute_graph_builder.h>
 
 namespace muda
 {
 template <typename T>
 BufferView<T> BufferView<T>::subview(size_t offset, size_t size) const MUDA_NOEXCEPT
 {
+    if(ComputeGraphBuilder::is_topo_building())
+        return BufferView{};  // dummy
+
     if(size == ~0)
         size = m_size - offset;
     MUDA_ASSERT(offset + size <= m_size,
                 "BufferView out of range, size = %d, yours = %d",
                 m_size,
                 offset + size);
-    return BufferView(m_data, m_offset + offset, size);
+    return BufferView<T>{m_data, m_offset + offset, size};
 }
 
 template <typename T>
@@ -49,13 +53,13 @@ void BufferView<T>::copy_to(T* host) const
 template <typename T>
 Dense1D<T> BufferView<T>::viewer() MUDA_NOEXCEPT
 {
-    return Dense1D<T>(m_data, m_size);
+    return Dense1D<T>{m_data, static_cast<int>(m_size)};
 }
 
 template <typename T>
 CDense1D<T> BufferView<T>::cviewer() const MUDA_NOEXCEPT
 {
-    return CDense1D<T>(m_data, m_size);
+    return CDense1D<T>{m_data, static_cast<int>(m_size)};
 }
 }  // namespace muda
 
