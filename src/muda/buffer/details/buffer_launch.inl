@@ -1,40 +1,21 @@
 #include <muda/buffer/device_buffer.h>
 #include <muda/buffer/device_var.h>
-
-namespace muda::details
-{
-template <typename T>
-void kernel_destruct(int grid_dim, int block_dim, cudaStream_t stream, T* data, size_t size)
-{
-    ParallelFor(grid_dim, block_dim, 0, stream)
-        .apply(size, [data] __device__(int i) mutable { data[i].~T(); });
-}
-
-template <typename T>
-void kernel_construct(int grid_dim, int block_dim, cudaStream_t stream, T* data, size_t size)
-{
-    ParallelFor(grid_dim, block_dim, 0, stream)
-        .apply(size, [data] __device__(int i) mutable { new(data + i) T(); });
-}
-
-template <typename T>
-void kernel_assign(int grid_dim, int block_dim, cudaStream_t stream, T* dst, const T* src, size_t size)
-{
-    ParallelFor(grid_dim, block_dim, 0, stream)
-        .apply(size, [dst, src] __device__(int i) mutable { dst[i] = src[i]; });
-}
-
-template <typename T>
-void kernel_fill(int grid_dim, int block_dim, cudaStream_t stream, T* dst, const T& val, size_t size)
-{
-    ParallelFor(grid_dim, block_dim, 0, stream)
-        .apply(size, [dst, val] __device__(int i) mutable { dst[i] = val; });
-}
-}  // namespace muda::details
-
+#include <muda/launch/parallel_for.h>
 
 namespace muda
 {
+namespace details
+{
+    template <typename T>
+    void kernel_destruct(int grid_dim, int block_dim, cudaStream_t stream, T* data, size_t size);
+    template <typename T>
+    void kernel_construct(int grid_dim, int block_dim, cudaStream_t stream, T* data, size_t size);
+    template <typename T>
+    void kernel_assign(int grid_dim, int block_dim, cudaStream_t stream, T* dst, const T* src, size_t size);
+    template <typename T>
+    void kernel_fill(int grid_dim, int block_dim, cudaStream_t stream, T* dst, const T& val, size_t size);
+}  // namespace details
+
 template <typename T>
 BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new_size)
 {
@@ -234,8 +215,7 @@ BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new_size, FCo
         // destruct the old memory
         if constexpr(!std::is_trivially_destructible_v<T>)
         {
-            details::kernel_destruct(
-                m_grid_dim, m_block_dim, m_stream, m_data + new_size, m_size - new_size);
+            details::kernel_destruct(m_grid_dim, m_block_dim, m_stream, m_data + new_size, m_size - new_size);
         }
         m_size = new_size;
         return *this;
@@ -267,4 +247,35 @@ BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new_size, FCo
     return *this;
 }
 
+namespace details
+{
+    template <typename T>
+    void kernel_destruct(int grid_dim, int block_dim, cudaStream_t stream, T* data, size_t size)
+    {
+        ::muda::ParallelFor(grid_dim, block_dim, 0, stream)
+            .apply(size, [data] __device__(int i) mutable { data[i].~T(); });
+    }
+
+    template <typename T>
+    void kernel_construct(int grid_dim, int block_dim, cudaStream_t stream, T* data, size_t size)
+    {
+        ::muda::ParallelFor(grid_dim, block_dim, 0, stream)
+            .apply(size, [data] __device__(int i) mutable { new(data + i) T(); });
+    }
+
+    template <typename T>
+    void kernel_assign(int grid_dim, int block_dim, cudaStream_t stream, T* dst, const T* src, size_t size)
+    {
+        ::muda::ParallelFor(grid_dim, block_dim, 0, stream)
+            .apply(size,
+                   [dst, src] __device__(int i) mutable { dst[i] = src[i]; });
+    }
+
+    template <typename T>
+    void kernel_fill(int grid_dim, int block_dim, cudaStream_t stream, T* dst, const T& val, size_t size)
+    {
+        ::muda::ParallelFor(grid_dim, block_dim, 0, stream)
+            .apply(size, [dst, val] __device__(int i) mutable { dst[i] = val; });
+    }
+}  // namespace details
 }  // namespace muda
