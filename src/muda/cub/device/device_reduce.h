@@ -14,7 +14,9 @@ class DeviceReduce : public CubWrapper<DeviceReduce>
         : CubWrapper(stream)
     {
     }
-    // for DeviceVector:
+
+    // DeviceVector:
+
     template <typename InputIteratorT, typename OutputIteratorT, typename ReductionOpT, typename T>
     DeviceReduce& Reduce(DeviceVector<std::byte>& external_buffer,
                          InputIteratorT           d_in,
@@ -103,7 +105,8 @@ class DeviceReduce : public CubWrapper<DeviceReduce>
                                                              num_items));
     }
 
-    // for DeviceBuffer
+    // DeviceBuffer:
+
     template <typename InputIteratorT, typename OutputIteratorT, typename ReductionOpT, typename T>
     DeviceReduce& Reduce(DeviceBuffer<std::byte>& external_buffer,
                          InputIteratorT           d_in,
@@ -190,6 +193,103 @@ class DeviceReduce : public CubWrapper<DeviceReduce>
                                                              d_num_runs_out,
                                                              reduction_op,
                                                              num_items));
+    }
+
+    // Origin:
+
+    template <typename InputIteratorT, typename OutputIteratorT, typename ReductionOpT, typename T>
+    DeviceReduce& Reduce(void*           d_temp_storage,
+                         size_t&         temp_storage_bytes,
+                         InputIteratorT  d_in,
+                         OutputIteratorT d_out,
+                         int             num_items,
+                         ReductionOpT    reduction_op,
+                         T               init)
+    {
+        checkCudaErrors(cub::DeviceReduce::Reduce(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, this->stream(), false));
+    }
+
+    template <typename InputIteratorT, typename OutputIteratorT>
+    DeviceReduce& Sum(void*           d_temp_storage,
+                      size_t&         temp_storage_bytes,
+                      InputIteratorT  d_in,
+                      OutputIteratorT d_out,
+                      int             num_items)
+    {
+        checkCudaErrors(cub::DeviceReduce::Sum(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, this->stream(), false));
+    }
+
+
+    template <typename InputIteratorT, typename OutputIteratorT>
+    DeviceReduce& Min(void*           d_temp_storage,
+                      size_t&         temp_storage_bytes,
+                      InputIteratorT  d_in,
+                      OutputIteratorT d_out,
+                      int             num_items)
+    {
+        checkCudaErrors(cub::DeviceReduce::Min(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, this->stream(), false));
+    }
+
+
+    template <typename InputIteratorT, typename OutputIteratorT>
+    DeviceReduce& ArgMin(void*           d_temp_storage,
+                         size_t&         temp_storage_bytes,
+                         InputIteratorT  d_in,
+                         OutputIteratorT d_out,
+                         int             num_items)
+    {
+        checkCudaErrors(cub::DeviceReduce::ArgMin(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, this->stream(), false));
+    }
+
+
+    template <typename InputIteratorT, typename OutputIteratorT>
+    DeviceReduce& Max(void*           d_temp_storage,
+                      size_t&         temp_storage_bytes,
+                      InputIteratorT  d_in,
+                      OutputIteratorT d_out,
+                      int             num_items)
+    {
+
+        checkCudaErrors(cub::DeviceReduce::Max(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, this->stream(), false));
+    }
+
+
+    template <typename InputIteratorT, typename OutputIteratorT>
+    DeviceReduce& ArgMax(void*           d_temp_storage,
+                         size_t&         temp_storage_bytes,
+                         InputIteratorT  d_in,
+                         OutputIteratorT d_out,
+                         int             num_items)
+    {
+        checkCudaErrors(cub::DeviceReduce::ArgMax(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, this->stream(), false));
+    }
+
+    template <typename KeysInputIteratorT, typename UniqueOutputIteratorT, typename ValuesInputIteratorT, typename AggregatesOutputIteratorT, typename NumRunsOutputIteratorT, typename ReductionOpT>
+    DeviceReduce& ReduceByKey(DeviceBuffer<std::byte>&  d_temp_storage,
+                              size_t&                   temp_storage_bytes,
+                              KeysInputIteratorT        d_keys_in,
+                              UniqueOutputIteratorT     d_unique_out,
+                              ValuesInputIteratorT      d_values_in,
+                              AggregatesOutputIteratorT d_aggregates_out,
+                              NumRunsOutputIteratorT    d_num_runs_out,
+                              ReductionOpT              reduction_op,
+                              int                       num_items)
+    {
+        checkCudaErrors(cub::DeviceReduce::ReduceByKey(d_temp_storage,
+                                                       temp_storage_bytes,
+                                                       d_keys_in,
+                                                       d_unique_out,
+                                                       d_values_in,
+                                                       d_aggregates_out,
+                                                       d_num_runs_out,
+                                                       reduction_op,
+                                                       num_items));
     }
 };
 }  // namespace muda
