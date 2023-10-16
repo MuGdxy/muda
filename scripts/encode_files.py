@@ -11,8 +11,15 @@ if(os.system("iconv --version") != 0):
     print("[iconv] not found, please install it first")
     exit(1)
 
+# if arg1 is not empty, then use it as root directory
+if(len(os.sys.argv) > 1):
+    os.chdir(os.sys.argv[1])
+path = pathlib.Path(".").absolute()
+print(f"traverse root directory:{path}")
+print("enter y to continue, other to exit")
 
-print("traverse root directory:", pathlib.Path(".").absolute())
+if(input() != "y" and input() != "Y"):
+    exit(0)
 
 fail_list = []
 for root, dirs, files in os.walk("."):
