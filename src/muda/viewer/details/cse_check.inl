@@ -6,7 +6,7 @@ namespace details
 {
     MUDA_INLINE MUDA_GENERIC void cse_check_data(void* m_data, const char* m_name, const char* m_kernel_name) MUDA_NOEXCEPT
     {
-        if constexpr(!::muda::NO_CHECK)
+        if constexpr(RUNTIME_CHECK_ON)
         {
             if(!(m_data != nullptr))
             {

@@ -63,7 +63,7 @@
 // check whether (res == true), if not, print the error info (when muda::TRAP_ON_ERROR == true
 // trap the device)
 #define MUDA_KERNEL_ASSERT(res, fmt, ...)                                      \
-    if constexpr(!::muda::NO_CHECK)                                            \
+    if constexpr(::muda::RUNTIME_CHECK_ON)                                            \
     {                                                                          \
         if(!(res))                                                             \
         {                                                                      \
@@ -78,7 +78,7 @@
 
 // check whether (res == true), if not, print the error info(never trap the device)
 #define MUDA_KERNEL_CHECK(res, fmt, ...)                                       \
-    if constexpr(!::muda::NO_CHECK)                                            \
+    if constexpr(::muda::RUNTIME_CHECK_ON)                                            \
     {                                                                          \
         if(!(res))                                                             \
         {                                                                      \
@@ -116,7 +116,7 @@
 
 
 #define MUDA_ASSERT(res, fmt, ...)                                             \
-    if constexpr(!::muda::NO_CHECK)                                            \
+    if constexpr(::muda::RUNTIME_CHECK_ON)                                            \
     {                                                                          \
         if(!(res))                                                             \
         {                                                                      \

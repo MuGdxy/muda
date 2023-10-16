@@ -3,30 +3,18 @@
 #define MUDA_CHECK_ON 0
 #endif
 
-#ifndef MUDA_VIEWER_NAME_MAX_LENGTH
-#define MUDA_VIEWER_NAME_MAX_LENGTH 16
-#endif
-
 namespace muda
 {
-constexpr bool NO_CHECK = !MUDA_CHECK_ON;
+constexpr bool RUNTIME_CHECK_ON = MUDA_CHECK_ON;
 namespace config
 {
     constexpr bool on(bool cond = false)
     {
-        return cond && !NO_CHECK;
+        return cond && RUNTIME_CHECK_ON;
     }
 }  // namespace config
 // debug viewer
 constexpr bool DEBUG_VIEWER = config::on(true);
-// debug ticcd
-constexpr bool DEBUG_TICCD = config::on(true);
-// debug thread only container
-constexpr bool DEBUG_THREAD_ONLY = config::on(true);
-// debug container
-constexpr bool DEBUG_CONTAINER = config::on(true);
-// debug composite
-constexpr bool DEBUG_COMPOSITE = config::on(true);
 // trap on error happens
 constexpr bool TRAP_ON_ERROR = config::on(true);
 // light workload block size
