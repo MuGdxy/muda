@@ -8,4 +8,5 @@
 #include "graph.h"
 #include "container.h"
 #include "buffer.h"
+#include "compute_graph.h"
 

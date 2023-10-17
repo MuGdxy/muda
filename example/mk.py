@@ -3,7 +3,6 @@ import os
 
 content = '''#include <catch2/catch.hpp>
 #include <muda/muda.h>
-#include <muda/container.h>
 #include "../example_common.h"
 using namespace muda;
 
@@ -19,6 +18,11 @@ TEST_CASE("@NAME@", "[@TAG@]")
 '''
 tag = "default"
 name = "example_name"
+
+if(len(sys.argv) == 1):
+    print("usage: python mk.py [name:required] [tag:optional]")
+    exit(0)
+
 if(len(sys.argv) > 1):
     name = sys.argv[1]
 if(len(sys.argv) > 2):

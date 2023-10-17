@@ -1,4 +1,3 @@
-#pragma once
 #include <muda/compute_graph/compute_graph_builder.h>
 #include <muda/compute_graph/nodes/compute_graph_kernel_node.h>
 namespace muda

@@ -24,13 +24,27 @@ class Event
         eInterprocess = cudaEventInterprocess /**< Event is suitable for interprocess use. cudaEventDisableTiming must be set */
     };
 
-    MUDA_NODISCARD Event(Flags<Bit> flag = Bit::eDisableTiming)
+    enum class QueryResult
+    {
+        eFinished = cudaSuccess,       /**< The event has been recorded */
+        eNotReady = cudaErrorNotReady, /**< The event has not been recorded yet */
+    };
+
+    Event(Flags<Bit> flag = Bit::eDisableTiming)
     {
         checkCudaErrors(cudaEventCreateWithFlags(&m_handle, static_cast<unsigned int>(flag)));
     }
 
+    auto query() const
+    {
+        auto res = cudaEventQuery(m_handle);
+        if(res != cudaSuccess && res != cudaErrorNotReady)
+            checkCudaErrors(res);
+        return static_cast<QueryResult>(res);
+    }
+
     // elapsed time (in ms) between two events
-    static float elapsed_time(cudaEvent_t start, cudaEvent_t stop)
+    static auto elapsed_time(cudaEvent_t start, cudaEvent_t stop)
     {
         float time;
         checkCudaErrors(cudaEventElapsedTime(&time, start, stop));

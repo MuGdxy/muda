@@ -11,6 +11,7 @@
 #include <muda/compute_graph/compute_graph_closure_id.h>
 #include <muda/compute_graph/compute_graph_var_id.h>
 #include <muda/compute_graph/compute_graph_var_usage.h>
+#include <muda/launch/event.h>
 
 namespace muda::details
 {
@@ -107,6 +108,9 @@ class ComputeGraph
     std::vector<int>        m_closure_need_update;
     ComputeGraphVarManager* m_var_manager = nullptr;
 
+    Event m_event;
+    mutable Event::QueryResult m_event_result = Event::QueryResult::eFinished;
+
   public:
     ComputeGraph(ComputeGraphVarManager& manager)
         : m_var_manager(&manager)
@@ -132,9 +136,11 @@ class ComputeGraph
 
     void update();
 
-    void launch(bool single_stream, cudaStream_t s = nullptr);
+    Empty launch(bool single_stream, cudaStream_t s = nullptr);
 
-    void launch(cudaStream_t s = nullptr) { launch(false, s); }
+    Empty launch(cudaStream_t s = nullptr) { return launch(false, s); }
+
+    Event::QueryResult query() const;
 
     /**************************************************************
     * 
