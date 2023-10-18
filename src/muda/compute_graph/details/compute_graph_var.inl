@@ -52,7 +52,7 @@ MUDA_INLINE void ComputeGraphVarBase::graphviz_def(std::ostream& o) const
 
 MUDA_INLINE void ComputeGraphVarBase::graphviz_id(std::ostream& o) const
 {
-    o << "var" << var_id();
+    o << "var_" << var_id();
 }
 
 MUDA_INLINE void ComputeGraphVarBase::update()

@@ -110,7 +110,7 @@ class ComputeGraphVar : public ComputeGraphVarBase
     ComputeGraphVar(ComputeGraphVarManager* var_manager,
                     std::string_view        name,
                     VarId                   var_id,
-                    T                       init_value) MUDA_NOEXCEPT
+                    const T&                init_value) MUDA_NOEXCEPT
         : ComputeGraphVarBase(var_manager, name, var_id, true),
           m_value(init_value)
     {

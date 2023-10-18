@@ -63,6 +63,7 @@ finally we launch the graph and get the result.
     x   = x_buffer;
     y   = y_buffer;
 
+    std::cout << "\n\n";
     std::cout << " >>> Results:\n";
     graph.launch(stream).wait();
 }

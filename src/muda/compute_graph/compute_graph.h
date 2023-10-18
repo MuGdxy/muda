@@ -108,6 +108,8 @@ class ComputeGraph
     std::vector<int>        m_closure_need_update;
     ComputeGraphVarManager* m_var_manager = nullptr;
 
+    friend class ComputeGraphVarManager;
+
     Event m_event;
     mutable Event::QueryResult m_event_result = Event::QueryResult::eFinished;
 
