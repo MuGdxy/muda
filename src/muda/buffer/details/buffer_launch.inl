@@ -118,7 +118,7 @@ BufferLaunch& BufferLaunch::shrink_to_fit(DeviceBuffer<T>& buffer)
 
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(BufferView<T>& dst, const BufferView<T>& src)
+BufferLaunch& BufferLaunch::copy(BufferView<T> dst, const BufferView<T>& src)
 {
     MUDA_ASSERT(dst.size() == src.size(), "BufferView should have the same size");
     if constexpr(std::is_trivially_copyable_v<T>)
@@ -137,7 +137,7 @@ BufferLaunch& BufferLaunch::copy(T* dst, const BufferView<T>& src)
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(BufferView<T>& dst, const T* src)
+BufferLaunch& BufferLaunch::copy(BufferView<T> dst, const T* src)
 {
     Memory(m_stream).upload(dst.data(), src, dst.size() * sizeof(T));
     return *this;
@@ -145,7 +145,7 @@ BufferLaunch& BufferLaunch::copy(BufferView<T>& dst, const T* src)
 
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(VarView<T>& dst, const VarView<T>& src)
+BufferLaunch& BufferLaunch::copy(VarView<T> dst, const VarView<T>& src)
 {
     if constexpr(std::is_trivially_copyable_v<T>)
         Memory(m_stream).transfer(dst.data(), src.data(), sizeof(T));
@@ -162,7 +162,7 @@ BufferLaunch& BufferLaunch::copy(T* dst, const VarView<T>& src)
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(VarView<T>& dst, const T* src)
+BufferLaunch& BufferLaunch::copy(VarView<T> dst, const T* src)
 {
     Memory(m_stream).upload(dst.data(), src, sizeof(T));
     return *this;
@@ -170,7 +170,7 @@ BufferLaunch& BufferLaunch::copy(VarView<T>& dst, const T* src)
 
 
 template <typename T>
-BufferLaunch& BufferLaunch::fill(BufferView<T>& buffer, const T& val)
+BufferLaunch& BufferLaunch::fill(BufferView<T> buffer, const T& val)
 {
     ParallelFor(m_grid_dim, m_block_dim, 0, m_stream)
         .apply(buffer.size(),
@@ -179,7 +179,7 @@ BufferLaunch& BufferLaunch::fill(BufferView<T>& buffer, const T& val)
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::fill(VarView<T>& buffer, const T& val)
+BufferLaunch& BufferLaunch::fill(VarView<T> buffer, const T& val)
 {
     if constexpr(std::is_trivially_copyable_v<T>)
     {
@@ -215,7 +215,8 @@ BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new_size, FCo
         // destruct the old memory
         if constexpr(!std::is_trivially_destructible_v<T>)
         {
-            details::kernel_destruct(m_grid_dim, m_block_dim, m_stream, m_data + new_size, m_size - new_size);
+            details::kernel_destruct(
+                m_grid_dim, m_block_dim, m_stream, m_data + new_size, m_size - new_size);
         }
         m_size = new_size;
         return *this;

@@ -47,23 +47,23 @@ class BufferLaunch : public LaunchBase<BufferLaunch>
     BufferLaunch& shrink_to_fit(DeviceBuffer<T>& buffer);
 
     template <typename T>
-    BufferLaunch& copy(BufferView<T>& dst, const BufferView<T>& src);
+    BufferLaunch& copy(BufferView<T> dst, const BufferView<T>& src);
     template <typename T>
     BufferLaunch& copy(T* dst, const BufferView<T>& src);
     template <typename T>
-    BufferLaunch& copy(BufferView<T>& dst, const T* src);
+    BufferLaunch& copy(BufferView<T> dst, const T* src);
 
     template <typename T>
-    BufferLaunch& copy(VarView<T>& dst, const VarView<T>& src);
+    BufferLaunch& copy(VarView<T> dst, const VarView<T>& src);
     template <typename T>
     BufferLaunch& copy(T* dst, const VarView<T>& src);
     template <typename T>
-    BufferLaunch& copy(VarView<T>& dst, const T* src);
+    BufferLaunch& copy(VarView<T> dst, const T* src);
 
     template <typename T>
-    BufferLaunch& fill(BufferView<T>& buffer, const T& val);
+    BufferLaunch& fill(BufferView<T> buffer, const T& val);
     template <typename T>
-    BufferLaunch& fill(VarView<T>& buffer, const T& val);
+    BufferLaunch& fill(VarView<T> buffer, const T& val);
 
   private:
     template <typename T, typename FConstruct>
