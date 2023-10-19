@@ -62,6 +62,7 @@ void graph_quick_start()
 
     auto instance = graph->instantiate();
     instance->launch();
+    Launch::wait_device();
 }
 
 TEST_CASE("graph_quick_start", "[quick_start]")

@@ -2,7 +2,7 @@
 #include <muda/muda.h>
 #include <muda/container.h>
 #include <muda/buffer.h>
-
+#include <Eigen/Core>
 using namespace muda;
 
 struct TestStruct
@@ -144,5 +144,21 @@ TEST_CASE("buffer_test", "[buffer]")
         buffer_var = 2;
         var        = buffer_var.view();  // via buffer view
         REQUIRE(var == buffer_var);
+    }
+
+    SECTION("buffer_eigen_vector_test")
+    {
+        using Vector12 = Eigen::Matrix<double, 12, 1>;
+
+        DeviceBuffer<Vector12> buffer(10);
+        DeviceBuffer<Vector12> buffer2(10);
+
+        buffer2.fill(Vector12::Ones());
+        buffer = buffer2;  // via buffer view
+        std::vector<Vector12> gt(10, Vector12::Ones());
+
+        std::vector<Vector12> h_res;
+        buffer.copy_to(h_res);
+        REQUIRE(h_res == gt);
     }
 }

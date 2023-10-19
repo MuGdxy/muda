@@ -9,13 +9,13 @@ template <typename Derive>
 class CubWrapper : public LaunchBase<Derive>
 {
   protected:
-    void prepareBuffer(DeviceVector<std::byte>& buf, size_t reqSize)
+    void prepare_buffer(DeviceVector<std::byte>& buf, size_t reqSize)
     {
         // details::set_stream_check(buf, this->stream());
         buf.resize(reqSize);
     }
 
-    void prepareBuffer(DeviceBuffer<std::byte>& buf, size_t reqSize)
+    void prepare_buffer(DeviceBuffer<std::byte>& buf, size_t reqSize)
     {
         BufferLaunch(m_stream).resize(buf, reqSize);
     }
@@ -34,7 +34,7 @@ class CubWrapper : public LaunchBase<Derive>
                                                                                \
     checkCudaErrors(x);                                                        \
                                                                                \
-    prepareBuffer(external_buffer, temp_storage_bytes);                        \
+    prepare_buffer(external_buffer, temp_storage_bytes);                        \
     d_temp_storage = (void*)external_buffer.data();                            \
                                                                                \
     checkCudaErrors(x);                                                        \

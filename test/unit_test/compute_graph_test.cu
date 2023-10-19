@@ -1,9 +1,5 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
-#include <muda/container.h>
-#include <muda/compute_graph/compute_graph_builder.h>
-#include <muda/compute_graph/compute_graph.h>
-#include <muda/compute_graph/compute_graph_var_manager.h>
 #include <Eigen/Core>
 
 using namespace muda;

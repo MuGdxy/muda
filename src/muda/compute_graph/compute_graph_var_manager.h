@@ -1,6 +1,7 @@
 #pragma once
 #include <unordered_map>
 #include <vector>
+#include <muda/mstl/span.h>
 namespace muda
 {
 class ComputeGraphVarBase;
@@ -16,18 +17,31 @@ class ComputeGraphVarManager
     ***************************************************************/
     template <typename T>
     ComputeGraphVar<T>& create_var(std::string_view name);
-
     template <typename T>
-    ComputeGraphVar<T>& create_var(std::string_view name, T init_value);
-
+    ComputeGraphVar<T>& create_var(std::string_view name, const T& init_value);
     template <typename T>
     ComputeGraphVar<T>* find_var(std::string_view name);
+
+    bool is_using() const;
+    void sync() const;
+
+    template <typename... T>
+    bool is_using(const ComputeGraphVar<T>&... vars) const;
+    template <typename... T>
+    void sync(const ComputeGraphVar<T>&... vars) const;
+
+    bool is_using(const span<const ComputeGraphVarBase*> vars) const;
+    void sync(const span<const ComputeGraphVarBase*> vars, cudaStream_t stream = nullptr) const;
+
+    std::vector<ComputeGraph*> graphs() const;
 
   private:
     friend class ComputeGraph;
     friend class ComputeGraphNodeBase;
+    std::vector<ComputeGraph*> unique_graphs(span<const ComputeGraphVarBase*> vars) const;
     std::unordered_map<std::string, ComputeGraphVarBase*> m_vars_map;
     std::vector<ComputeGraphVarBase*>                     m_vars;
+    span<const ComputeGraphVarBase*>                      var_span() const;
 };
 }  // namespace muda
 

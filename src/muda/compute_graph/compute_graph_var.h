@@ -5,6 +5,8 @@
 #include <muda/type_traits/type_modifier.h>
 #include <muda/compute_graph/compute_graph_closure_id.h>
 #include <muda/compute_graph/compute_graph_var_usage.h>
+#include <muda/launch/event.h>
+
 namespace muda
 {
 class ComputeGraph;
@@ -18,11 +20,15 @@ class ComputeGraphVarBase
     bool                    m_is_valid;
 
   public:
-    std::string_view name() const MUDA_NOEXCEPT { return m_name; }
-    VarId            var_id() const MUDA_NOEXCEPT { return m_var_id; }
-    bool             is_valid() const MUDA_NOEXCEPT { return m_is_valid; }
-    void             graphviz_def(std::ostream& os) const;
-    void             graphviz_id(std::ostream& os) const;
+    std::string_view   name() const MUDA_NOEXCEPT { return m_name; }
+    VarId              var_id() const MUDA_NOEXCEPT { return m_var_id; }
+    bool               is_valid() const MUDA_NOEXCEPT { return m_is_valid; }
+    void               update();
+    Event::QueryResult query();
+    bool               is_using();
+    void               sync();
+    void               graphviz_def(std::ostream& os) const;
+    void               graphviz_id(std::ostream& os) const;
 
   protected:
     friend class ComputeGraph;
@@ -104,7 +110,7 @@ class ComputeGraphVar : public ComputeGraphVarBase
     ComputeGraphVar(ComputeGraphVarManager* var_manager,
                     std::string_view        name,
                     VarId                   var_id,
-                    T                       init_value) MUDA_NOEXCEPT
+                    const T&                init_value) MUDA_NOEXCEPT
         : ComputeGraphVarBase(var_manager, name, var_id, true),
           m_value(init_value)
     {
@@ -117,13 +123,13 @@ class ComputeGraphVar : public ComputeGraphVarBase
 
     ROViewer ceval() const;
 
-    void update(const RWViewer& view);
-
-    void update();
-
     operator ROViewer() const { return ceval(); }
 
     operator RWViewer() { return eval(); }
+
+    void update(const RWViewer& view);
+
+    ComputeGraphVar<T>& operator=(const RWViewer& view);
 
   private:
     RWViewer m_value;

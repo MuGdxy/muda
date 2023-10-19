@@ -52,8 +52,37 @@ MUDA_INLINE void ComputeGraphVarBase::graphviz_def(std::ostream& o) const
 
 MUDA_INLINE void ComputeGraphVarBase::graphviz_id(std::ostream& o) const
 {
-    o << "var" << var_id();
+    o << "var_" << var_id();
 }
+
+MUDA_INLINE void ComputeGraphVarBase::update()
+{
+    this->base_update();
+}
+
+MUDA_INLINE Event::QueryResult ComputeGraphVarBase::query()
+{
+    for(auto& [graph, info] : m_related_closure_infos)
+    {
+        if(graph->query() == Event::QueryResult::eNotReady)
+            return Event::QueryResult::eNotReady;
+    }
+    return Event::QueryResult::eFinished;
+}
+
+MUDA_INLINE bool ComputeGraphVarBase::is_using()
+{
+    return query() == Event::QueryResult::eNotReady;
+}
+
+MUDA_INLINE void ComputeGraphVarBase::sync()
+{
+    for(auto& [graph, info] : m_related_closure_infos)
+        on().wait(graph->m_event);
+}
+
+
+// ComputeGraphVar<T>:
 
 template <typename T>
 MUDA_INLINE typename ComputeGraphVar<T>::RWViewer ComputeGraphVar<T>::eval()
@@ -115,15 +144,16 @@ MUDA_INLINE typename ComputeGraphVar<T>::ROViewer ComputeGraphVar<T>::ceval() co
 }
 
 template <typename T>
-MUDA_INLINE void muda::ComputeGraphVar<T>::update(const RWViewer& view)
+MUDA_INLINE void ComputeGraphVar<T>::update(const RWViewer& view)
 {
-    update();
+    MUDA_ASSERT(!is_using(), "ComputeGraphVar is using, can't update");
+    ComputeGraphVarBase::update();
     m_value = view;
 }
-
 template <typename T>
-MUDA_INLINE void muda::ComputeGraphVar<T>::update()
+MUDA_INLINE ComputeGraphVar<T>& ComputeGraphVar<T>::operator=(const RWViewer& view)
 {
-    this->base_update();
+    update(view);
+    return *this;
 }
 }  // namespace muda

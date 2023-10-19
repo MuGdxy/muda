@@ -91,48 +91,49 @@ void compute_graph_simple()
     ComputeGraphVarManager manager;
     ComputeGraph graph{manager};
 
-    // 1) define graph vars
+    // 1) define GraphVars
     auto& N   = manager.create_var<size_t>("N");
-    auto& x_0 = manager.create_var<Dense1D<Vector3>>("x_0");
-    auto& x   = manager.create_var<Dense1D<Vector3>>("x");
-    auto& y   = manager.create_var<Dense1D<Vector3>>("y");
+    // BufferView represents a fixed range of memory
+    // dynamic memory allocation is not allowed in GraphVars
+    auto& x_0 = manager.create_var<BufferView<Vector3>>("x_0");
+    auto& x   = manager.create_var<BufferView<Vector3>>("x");
+    auto& y   = manager.create_var<BufferView<Vector3>>("y");
     
-    // 2) define graph nodes
+    // 2) create GraphNode
     graph.create_node("cal_x_0") << [&]
     {
+        // initialize values
         ParallelFor(256).apply(N.eval(),
-                               [x_0 = x_0.eval()] __device__(int i) mutable
-                               {
-                                   // simple set
-                                   x_0(i) = Vector3::Ones();
-                               });
+                               [x_0 = x_0.eval().viewer()] __device__(int i) mutable
+                               { x_0(i) = Vector3::Ones(); });
     };
 
-    graph.create_node("copy_to_x") << [&]
-    {
-        Memory().transfer(x.eval().data(), x_0.ceval().data(), N * sizeof(Vector3));
-    };
+    graph.create_node("copy_to_x") // copy
+        << [&] { BufferLaunch().copy(x.eval(), x_0.ceval()); };
 
-    graph.create_node("copy_to_y") << [&]
-    {
-        Memory().transfer(y.eval().data(), x_0.ceval().data(), N * sizeof(Vector3));
-    };
+    graph.create_node("copy_to_y") // copy
+        << [&] { BufferLaunch().copy(y.eval(), x_0.ceval()); };
 
     graph.create_node("print_x_y") << [&]
     {
-        ParallelFor(256).apply(
-            N.eval(),
-            [x = x.ceval(), y = y.ceval()] __device__(int i) mutable
-            {
-                printf("[%d] x = (%f,%f,%f) y = (%f,%f,%f) \n", 
-                    i, 
-                    x(i).x(), x(i).y(), x(i).z(),
-                    y(i).x(), y(i).y(), y(i).z()
-                );
-            });
+        // print
+        ParallelFor(256).apply(N.eval(),
+                               [x = x.ceval().cviewer(),
+                                y = y.ceval().cviewer(),
+                                N = N.eval()] __device__(int i) mutable
+                               {
+                                   if(N <= 10)
+                                       print("[%d] x = (%f,%f,%f) y = (%f,%f,%f) \n",
+                                             i,
+                                             x(i).x(),
+                                             x(i).y(),
+                                             x(i).z(),
+                                             y(i).x(),
+                                             y(i).y(),
+                                             y(i).z());
+                               });
     };
-
-    // 3) graphvization
+    // 3) visualize it using graphviz (for debug)
     graph.graphviz(std::cout);
 }
 ```
@@ -151,9 +152,9 @@ void compute_graph_simple()
     auto y_buffer   = DeviceVector<Vector3>(N_value);
 
     N.update(N_value);
-    x_0.update(x_0_buffer.viewer());
-    x.update(x_buffer.viewer());
-    y.update(y_buffer.viewer());
+    x_0.update(x_0_buffer);
+    x.update(x_buffer);
+    y.update(y_buffer);
     
     // create stream
     Stream stream;
@@ -204,17 +205,16 @@ Because **muda** is header-only, just copy the `src/muda/` folder to your projec
 | --------------- | ------------------- | ------------------------------------------------------------ |
 | `MUDA_CHECK_ON` | `1`(default) or `0` | `MUDA_CHECK_ON=1` for turn on all muda runtime check(for safety) |
 
+If you manually copy the header files, don't forget to define the macros yourself. If you are using cmake or xmake, just set the project dependency to muda.
+
 ## tutorial
 
-- [tutorial_zh](./doc/tutorial_zh.md)(may be out of date)
+- [tutorial_zh](https://zhuanlan.zhihu.com/p/659664377)
+- If you need an English version tutorial, please contact me or post an issue to let me know.
 
 ## Contribute
 
 Go to [developer_zh.md](./doc/developer_zh.md) and [zhihu-ZH](https://zhuanlan.zhihu.com/p/592439225) for further info.
-
-## More Info
-
-[zhihu-ZH](https://zhuanlan.zhihu.com/p/592439225) :  description of muda.
 
 
 
