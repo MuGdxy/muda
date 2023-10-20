@@ -11,6 +11,7 @@
 #include <muda/compute_graph/compute_graph_closure_id.h>
 #include <muda/compute_graph/compute_graph_var_id.h>
 #include <muda/compute_graph/compute_graph_var_usage.h>
+#include <muda/mstl/span.h>
 #include <muda/launch/event.h>
 
 namespace muda::details
@@ -37,6 +38,20 @@ class ComputeGraphGraphvizOptions
     bool show_nodes = true;
 };
 
+namespace details
+{
+    class LocalVarId : public U64IdWithType
+    {
+        using U64IdWithType::U64IdWithType;
+    };
+    class LocalVarInfo
+    {
+      public:
+        LocalVarId           id{};
+        ComputeGraphVarBase* var = nullptr;
+    };
+}  // namespace details
+
 class ComputeGraph
 {
   public:
@@ -55,21 +70,6 @@ class ComputeGraph
       public:
         NodeId src;
         NodeId dst;
-    };
-
-    class DenpencySpan
-    {
-        const ComputeGraph& m_cg;
-        size_t              m_begin;
-        size_t              m_count;
-
-      public:
-        DenpencySpan(const ComputeGraph& cg, size_t begin, size_t count);
-
-        const auto& operator[](size_t i) const;
-
-        size_t count() const { return m_count; }
-        size_t begin() const { return m_begin; }
     };
 
     class GraphPhaseGuard
@@ -100,7 +100,11 @@ class ComputeGraph
     std::unordered_map<NodeId::value_type, cudaGraph_t> m_sub_graphs;
 
     std::vector<std::pair<std::string, Closure>> m_closures;
-    std::set<ComputeGraphVarBase*>               m_related_vars;
+
+    std::map<VarId, details::LocalVarId> m_global_to_local_var_id;
+    std::vector<details::LocalVarInfo>   m_related_vars;
+    void emplace_related_var(ComputeGraphVarBase* var);
+
 
     std::vector<ComputeGraphNodeBase*> m_nodes;
     std::vector<Dependency>            m_deps;
@@ -110,7 +114,7 @@ class ComputeGraph
 
     friend class ComputeGraphVarManager;
 
-    Event m_event;
+    Event                      m_event;
     mutable Event::QueryResult m_event_result = Event::QueryResult::eFinished;
 
   public:
@@ -179,7 +183,7 @@ class ComputeGraph
     ComputeGraph& add_node(std::string&& name, const Closure& f);
 
     friend class ComputeGraphNodeBase;
-    DenpencySpan dep_span(size_t begin, size_t count) const;
+    span<const Dependency> dep_span(size_t begin, size_t count) const;
 
     void set_current_graph_as_this();
 
@@ -218,106 +222,114 @@ class ComputeGraph
 }  // namespace muda
 
 
-namespace muda::details
+namespace muda
 {
-// allow devlopers to access some internal function
-class ComputeGraphAccessor
+namespace details
 {
-    friend class ComputeGraph;
-    ComputeGraph& m_cg;
-    template <typename T>
-    using S = std::shared_ptr<T>;
-
-  public:
-    ComputeGraphAccessor();
-
-    ComputeGraphAccessor(ComputeGraph& graph)
-        : m_cg(graph)
+    // allow devlopers to access some internal function
+    class ComputeGraphAccessor
     {
-    }
-    ComputeGraphAccessor(ComputeGraph* graph)
-        : m_cg(*graph)
-    {
-    }
+        friend class ComputeGraph;
+        ComputeGraph& m_cg;
+        template <typename T>
+        using S = std::shared_ptr<T>;
 
-    const auto& current_closure() const
-    {
-        return m_cg.m_closures[m_cg.current_closure_id().value()];
-    }
+      public:
+        ComputeGraphAccessor();
 
-    auto current_node() { return m_cg.m_nodes[m_cg.current_node_id().value()]; }
+        ComputeGraphAccessor(ComputeGraph& graph)
+            : m_cg(graph)
+        {
+        }
+        ComputeGraphAccessor(ComputeGraph* graph)
+            : m_cg(*graph)
+        {
+        }
 
-    template <typename T>
-    auto current_node()
-    {
-        return dynamic_cast<T*>(current_node());
-    }
+        const auto& current_closure() const
+        {
+            return m_cg.m_closures[m_cg.current_closure_id().value()];
+        }
 
-    const auto current_node() const
-    {
-        return m_cg.m_nodes[m_cg.current_node_id().value()];
-    }
+        auto current_node()
+        {
+            return m_cg.m_nodes[m_cg.current_node_id().value()];
+        }
 
-    /// <summary>
-    /// automatically add or update kernel node by kernelParms (distincted by ComputeGraphPhase)
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="kernelParms"></param>
-    template <typename T>
-    void set_kernel_node(const S<KernelNodeParms<T>>& kernelParms);
+        template <typename T>
+        auto current_node()
+        {
+            return dynamic_cast<T*>(current_node());
+        }
 
-    void set_memcpy_node(void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind);
+        const auto current_node() const
+        {
+            return m_cg.m_nodes[m_cg.current_node_id().value()];
+        }
 
-    cudaStream_t current_stream() const { return m_cg.m_current_single_stream; }
+        /// <summary>
+        /// automatically add or update kernel node by kernelParms (distincted by ComputeGraphPhase)
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="kernelParms"></param>
+        template <typename T>
+        void set_kernel_node(const S<KernelNodeParms<T>>& kernelParms);
 
-    void check_allow_var_eval() const;
+        void set_memcpy_node(void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind);
 
-    void check_allow_node_adding() const;
+        cudaStream_t current_stream() const
+        {
+            return m_cg.m_current_single_stream;
+        }
 
-    bool is_topo_built() const { return m_cg.m_is_topo_built; }
+        void check_allow_var_eval() const;
 
-  private:
-    friend class ComputeGraphVarBase;
-    void set_var_usage(VarId id, ComputeGraphVarUsage usage);
+        void check_allow_node_adding() const;
 
-    template <typename T>
-    void add_kernel_node(const S<KernelNodeParms<T>>& kernelParms);
+        bool is_topo_built() const { return m_cg.m_is_topo_built; }
 
-    template <typename T>
-    void update_kernel_node(const S<KernelNodeParms<T>>& kernelParms);
+      private:
+        friend class ComputeGraphVarBase;
+        void set_var_usage(VarId id, ComputeGraphVarUsage usage);
 
-    void add_memcpy_node(void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind);
+        template <typename T>
+        void add_kernel_node(const S<KernelNodeParms<T>>& kernelParms);
 
-    void update_memcpy_node(void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind);
+        template <typename T>
+        void update_kernel_node(const S<KernelNodeParms<T>>& kernelParms);
 
-    template <typename F>
-    void access_graph(F&& f)
-    {
-        if(!m_cg.m_allow_access_graph)
-            throw std::runtime_error(  //
-                "a graph closure can only contain one graph node");
-        f(m_cg.m_graph);
-        m_cg.m_allow_access_graph = false;
-    }
+        void add_memcpy_node(void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind);
 
-    template <typename F>
-    void access_graph_exec(F&& f)
-    {
-        if(!m_cg.m_allow_access_graph)
-            throw std::runtime_error(  //
-                "a graph closure can only contain one graph node");
-        f(*m_cg.m_graph_exec.get());
-        m_cg.m_allow_access_graph = false;
-    }
+        void update_memcpy_node(void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind);
 
-    auto&& temp_var_usage()
-    {
-        return std::move(m_cg.m_temp_node_info.var_usage);
-    }
+        template <typename F>
+        void access_graph(F&& f)
+        {
+            if(!m_cg.m_allow_access_graph)
+                throw std::runtime_error(  //
+                    "a graph closure can only contain one graph node");
+            f(m_cg.m_graph);
+            m_cg.m_allow_access_graph = false;
+        }
 
-    template <typename NodeType, typename F>
-    NodeType* get_or_create_node(F&& f);
-};
-}  // namespace muda::details
+        template <typename F>
+        void access_graph_exec(F&& f)
+        {
+            if(!m_cg.m_allow_access_graph)
+                throw std::runtime_error(  //
+                    "a graph closure can only contain one graph node");
+            f(*m_cg.m_graph_exec.get());
+            m_cg.m_allow_access_graph = false;
+        }
 
+        auto&& temp_var_usage()
+        {
+            return std::move(m_cg.m_temp_node_info.var_usage);
+        }
+
+        template <typename NodeType, typename F>
+        NodeType* get_or_create_node(F&& f);
+    };
+}  // namespace details
+}  // namespace muda
 #include <muda/compute_graph/details/compute_graph.inl>

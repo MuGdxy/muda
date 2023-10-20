@@ -39,6 +39,10 @@ MUDA_INLINE Launch& Launch::apply(F&& f, UserTag tag)
         {
             auto parms = this->as_node_parms(std::forward<F>(f), tag);
             details::ComputeGraphAccessor().set_kernel_node(parms);
+        },
+        [&]
+        {
+            details::ComputeGraphAccessor().set_kernel_node<KernelNodeParms<CallableType>>(nullptr);
         });
     return *this;
 }

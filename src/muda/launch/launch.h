@@ -20,18 +20,18 @@ class Launch : public LaunchBase<Launch>
 
   public:
     Launch(dim3 gridDim, dim3 blockDim, size_t sharedMemSize = 0, cudaStream_t stream = nullptr) MUDA_NOEXCEPT
-        : LaunchBase(stream)
-        , m_gridDim(gridDim)
-        , m_block_dim(blockDim)
-        , m_shared_mem_size(sharedMemSize)
+        : LaunchBase(stream),
+          m_gridDim(gridDim),
+          m_block_dim(blockDim),
+          m_shared_mem_size(sharedMemSize)
     {
     }
 
     Launch(int gridDim = 1, int blockDim = 1, size_t sharedMemSize = 0, cudaStream_t stream = nullptr) MUDA_NOEXCEPT
-        : LaunchBase(stream)
-        , m_gridDim(gridDim)
-        , m_block_dim(blockDim)
-        , m_shared_mem_size(sharedMemSize)
+        : LaunchBase(stream),
+          m_gridDim(gridDim),
+          m_block_dim(blockDim),
+          m_shared_mem_size(sharedMemSize)
     {
     }
 
@@ -49,6 +49,7 @@ class Launch : public LaunchBase<Launch>
     }
 
     static void wait_device() { checkCudaErrors(cudaDeviceSynchronize()); }
+
   private:
     template <typename F, typename UserTag = DefaultTag>
     void invoke(F&& f, UserTag tag = {});

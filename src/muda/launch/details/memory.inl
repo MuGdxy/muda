@@ -23,8 +23,6 @@ MUDA_INLINE Memory& Memory::set(void* data, size_t byte_size, char byte)
             checkCudaErrors(cudaMemsetAsync(data, (int)byte, byte_size, stream()));
         },
         [&] { MUDA_ERROR_WITH_LOCATION("not implemented"); });
-
-
     return *this;
 }
 

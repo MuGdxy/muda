@@ -19,18 +19,6 @@ MUDA_INLINE ComputeGraph::AddNodeProxy::AddNodeProxy(ComputeGraph& cg, std::stri
 {
 }
 
-MUDA_INLINE ComputeGraph::DenpencySpan::DenpencySpan(const ComputeGraph& cg, size_t begin, size_t count)
-    : m_cg(cg)
-    , m_begin(begin)
-    , m_count(count)
-{
-}
-
-MUDA_INLINE const auto& ComputeGraph::DenpencySpan::operator[](size_t i) const
-{
-    return m_cg.m_deps[m_begin + i];
-}
-
 MUDA_INLINE ComputeGraph::GraphPhaseGuard::GraphPhaseGuard(ComputeGraph& cg, ComputeGraphPhase phase)
     : m_cg(cg)
 {
@@ -87,7 +75,7 @@ MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraph
     if(options.show_vars)
     {
         o << "// vars: \n";
-        for(auto&& var : m_related_vars)
+        for(auto&& [local_id, var] : m_related_vars)
         {
             var->graphviz_def(o);
             o << "\n";
@@ -193,12 +181,14 @@ MUDA_INLINE void ComputeGraph::serial_launch()
 
 MUDA_INLINE void ComputeGraph::check_vars_valid()
 {
-    for(auto& var : m_related_vars)
+    for(auto&& [local_id, var] : m_related_vars)
         if(!var->is_valid())
+        {
             MUDA_ERROR_WITH_LOCATION(
                 "var[%s] is not valid, "
                 "you need update the var before launch this graph",
                 var->name().data());
+        }
 }
 
 MUDA_INLINE ComputeGraph& ComputeGraph::add_node(std::string&& name, const Closure& f)
@@ -210,9 +200,9 @@ MUDA_INLINE ComputeGraph& ComputeGraph::add_node(std::string&& name, const Closu
     return *this;
 }
 
-MUDA_INLINE auto ComputeGraph::dep_span(size_t begin, size_t count) const -> DenpencySpan
+MUDA_INLINE auto ComputeGraph::dep_span(size_t begin, size_t count) const -> span<const Dependency>
 {
-    return DenpencySpan{*this, begin, count};
+    return span<const Dependency>{m_deps}.subspan(begin, count);
 }
 
 MUDA_INLINE void ComputeGraph::set_current_graph_as_this()
@@ -294,11 +284,23 @@ MUDA_INLINE void ComputeGraph::_update()
 
 MUDA_INLINE ComputeGraph::~ComputeGraph()
 {
-    for(auto var : m_related_vars)
-        var->remove_related_closure_infos(this);
+    for(auto var_info : m_related_vars)
+        var_info.var->remove_related_closure_infos(this);
 
     for(auto node : m_nodes)
         delete node;
+}
+
+MUDA_INLINE void ComputeGraph::emplace_related_var(ComputeGraphVarBase* var)
+{
+    auto global_var_id = var->var_id();
+    auto iter          = m_global_to_local_var_id.find(global_var_id);
+    if(iter == m_global_to_local_var_id.end())
+    {
+        auto local_id = details::LocalVarId{m_related_vars.size()};
+        m_related_vars.emplace_back(details::LocalVarInfo{local_id, var});
+        m_global_to_local_var_id.emplace(std::make_pair(global_var_id, local_id));
+    }
 }
 
 MUDA_INLINE ComputeGraph::AddNodeProxy ComputeGraph::create_node(std::string_view node_name)
@@ -359,7 +361,19 @@ MUDA_INLINE void details::ComputeGraphAccessor::add_kernel_node(const S<KernelNo
                     temp_var_usage());              // kernel node
             });
         if(ComputeGraphBuilder::current_phase() == ComputeGraphPhase::Building)
+        {
             kernel_node->set_node(g.add_kernel_node(parms));
+        }
+        else if(ComputeGraphBuilder::current_phase() == ComputeGraphPhase::TopoBuilding)
+        {
+            MUDA_ASSERT(!parms,
+                        "When ComputeGraphPhase == TopoBuilding, "
+                        "you don't need to create NodeParms, so keep it nullptr.");
+        }
+        else
+        {
+            MUDA_ERROR_WITH_LOCATION("invalid phase");
+        }
     });
 }
 
@@ -491,9 +505,8 @@ namespace details
     MUDA_INLINE void process_node(std::vector<ComputeGraph::Dependency>& deps,
                                   std::vector<NodeId>& last_read_or_write_nodes,
                                   std::vector<NodeId>& last_write_nodes,
-                                  const std::vector<ComputeGraphVarBase*> input_vars,
-                                  std::vector<ComputeGraphNodeBase*> nodes,
-                                  NodeId    current_node_id,
+                                  ComputeGraphNodeBase* node,
+                                  const std::vector<std::pair<LocalVarId, ComputeGraphVarUsage>>& local_var_usage,
                                   uint64_t& dep_begin,
                                   uint64_t& dep_count)
     {
@@ -503,16 +516,15 @@ namespace details
         { return usage == ComputeGraphVarUsage::Read; };
 
         std::unordered_set<VarId::value_type> unique_deps;
-        auto node = nodes[current_node_id.value()];
 
-        for(auto& [arg_id, usage] : node->var_usages())
+        for(auto& [local_var_id, usage] : local_var_usage)
         {
             // if this is a written resource,
             // this should depend on any write and read before it
             // to get newest data or to avoid data corruption
             if(is_read_write(usage))
             {
-                auto dst_nid = last_read_or_write_nodes[arg_id.value()];
+                auto dst_nid = last_read_or_write_nodes[local_var_id.value()];
                 if(dst_nid.is_valid())
                 {
                     // the last accessing node reads or writes this resrouce, so I should depend on it
@@ -529,7 +541,7 @@ namespace details
             // but it has no need to depend on any read before it
             else if(is_read_only(usage))
             {
-                auto dst_nid = last_write_nodes[arg_id.value()];
+                auto dst_nid = last_write_nodes[local_var_id.value()];
                 if(dst_nid.is_valid())
                 {
                     // the last accessing node writes this resrouce, so I should depend on it
@@ -542,23 +554,25 @@ namespace details
             }
         }
 
+        auto current_node_id = node->node_id();
+
         // set up res node map with pair [res, node]
-        for(auto& [arg_id, usage] : node->var_usages())
+        for(auto& [local_var_id, usage] : node->var_usages())
         {
             // if this is a write resource,
             // the latter read/write kernel should depend on this
             // to get the newest data.
             if(is_read_write(usage))
             {
-                last_read_or_write_nodes[arg_id.value()] = current_node_id;
-                last_write_nodes[arg_id.value()]         = current_node_id;
+                last_read_or_write_nodes[local_var_id.value()] = current_node_id;
+                last_write_nodes[local_var_id.value()] = current_node_id;
             }
             // if this is a read resource,
             // the latter write kernel should depend on this
             // to avoid data corruption.
             else if(is_read_only(usage))
             {
-                last_read_or_write_nodes[arg_id.value()] = current_node_id;
+                last_read_or_write_nodes[local_var_id.value()] = current_node_id;
             }
         }
 
@@ -590,19 +604,31 @@ MUDA_INLINE void ComputeGraph::cuda_graph_add_deps()
 MUDA_INLINE void ComputeGraph::build_deps()
 {
     m_deps.clear();
-    auto& vars = m_var_manager->m_vars;
+    auto local_var_count = m_related_vars.size();
+
     // map: var_id -> node_id, uint64_t{-1} means no write node yet
-    auto last_write_nodes = std::vector<NodeId>(vars.size());
+    auto last_write_nodes = std::vector<NodeId>(local_var_count, NodeId{});
     // map: var_id -> node_id, uint64_t{-1} means no read node yet
-    auto last_read_nodes = std::vector<NodeId>(vars.size());
+    auto last_read_nodes = std::vector<NodeId>(local_var_count, NodeId{});
 
     // process all nodes
     for(size_t i = 0u; i < m_nodes.size(); i++)
     {
+        auto node = m_nodes[i];
+
+        // map global var id to local var id
+        std::vector<std::pair<details::LocalVarId, ComputeGraphVarUsage>> local_var_usage;
+        local_var_usage.reserve(node->var_usages().size());
+        for(auto&& [var_id, usage] : node->var_usages())
+        {
+            auto local_id = m_global_to_local_var_id[var_id];
+            local_var_usage.emplace_back(local_id, usage);
+        }
+
         size_t dep_begin, dep_count;
         details::process_node(
-            m_deps, last_read_nodes, last_write_nodes, vars, m_nodes, NodeId{i}, dep_begin, dep_count);
-        m_nodes[i]->set_deps_range(dep_begin, dep_count);
+            m_deps, last_read_nodes, last_write_nodes, node, local_var_usage, dep_begin, dep_count);
+        node->set_deps_range(dep_begin, dep_count);
     }
 
     m_is_topo_built = true;

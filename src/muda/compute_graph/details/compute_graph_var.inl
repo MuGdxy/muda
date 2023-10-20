@@ -18,7 +18,7 @@ MUDA_INLINE void ComputeGraphVarBase::base_building_eval()
     _building_eval(ComputeGraphVarUsage::ReadWrite);
 }
 
-MUDA_INLINE void ComputeGraphVarBase::base_building_eval_const() const
+MUDA_INLINE void ComputeGraphVarBase::base_building_ceval() const
 {
     _building_eval(ComputeGraphVarUsage::Read);
 }
@@ -28,7 +28,7 @@ MUDA_INLINE void ComputeGraphVarBase::_building_eval(ComputeGraphVarUsage usage)
     auto acc   = details::ComputeGraphAccessor();
     auto graph = ComputeGraphBuilder::instance().current_graph();
     m_related_closure_infos[graph].closure_ids.insert(graph->current_closure_id());
-    graph->m_related_vars.emplace(const_cast<ComputeGraphVarBase*>(this));
+    graph->emplace_related_var(const_cast<ComputeGraphVarBase*>(this));
     acc.set_var_usage(var_id(), usage);
 }
 
@@ -103,7 +103,7 @@ MUDA_INLINE typename ComputeGraphVar<T>::RWViewer ComputeGraphVar<T>::eval()
                 if constexpr(std::is_same_v<T, read_only_viewer_t<T>>)
                 {
                     // they are all read only(e.g. host float/int ...)
-                    this->base_building_eval_const();
+                    this->base_building_ceval();
                 }
                 else
                 {
@@ -131,7 +131,7 @@ MUDA_INLINE typename ComputeGraphVar<T>::ROViewer ComputeGraphVar<T>::ceval() co
         break;
         case ComputeGraphPhase::TopoBuilding:
         case ComputeGraphPhase::Building: {
-            this->base_building_eval_const();
+            this->base_building_ceval();
         }
         break;
         case ComputeGraphPhase::Updating: {

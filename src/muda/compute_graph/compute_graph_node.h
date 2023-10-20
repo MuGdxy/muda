@@ -9,20 +9,16 @@ namespace muda
 class ComputeGraphNodeBase
 {
   public:
-    NodeId                     node_id() const { return m_node_id; }
-    ComputeGraphNodeType       type() const { return m_type; }
-    std::string_view           name() const { return m_name; }
-    const auto&                var_usages() const { return m_var_usages; }
-    ComputeGraph::DenpencySpan deps() const
-    {
-        return m_graph->dep_span(m_deps_begin, m_deps_count);
-    }
+    auto        node_id() const { return m_node_id; }
+    auto        type() const { return m_type; }
+    auto        name() const { return std::string_view{m_name}; }
+    const auto& var_usages() const { return m_var_usages; }
+    auto deps() const { return m_graph->dep_span(m_deps_begin, m_deps_count); }
+
     virtual void graphviz_id(std::ostream& o) const;
     virtual void graphviz_def(std::ostream& o) const;
     virtual void graphviz_var_usages(std::ostream& o) const;
-
     virtual ~ComputeGraphNodeBase() = default;
-
 
   protected:
     friend class ComputeGraph;
@@ -39,6 +35,7 @@ class ComputeGraphNodeBase
         , m_var_usages(std::move(usages))
     {
     }
+
     std::map<VarId, ComputeGraphVarUsage> m_var_usages;
     NodeId                                m_node_id;
     ComputeGraph*                         m_graph;
@@ -48,17 +45,10 @@ class ComputeGraphNodeBase
     size_t                                m_deps_count = 0;
     cudaGraphNode_t                       m_cuda_node  = nullptr;
 
-    void set_deps_range(size_t begin, size_t count)
-    {
-        m_deps_begin = begin;
-        m_deps_count = count;
-    }
-
-    cudaGraphNode_t handle() const { return m_cuda_node; }
-
+    void set_deps_range(size_t begin, size_t count);
+    auto handle() const { return m_cuda_node; }
     void set_handle(cudaGraphNode_t handle) { m_cuda_node = handle; }
-
-    bool is_valid() const { return m_cuda_node; }
+    auto is_valid() const { return m_cuda_node; }
 };
 }  // namespace muda
 

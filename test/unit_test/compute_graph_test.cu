@@ -310,14 +310,14 @@ void compute_graph_update()
     y.update(y_buffer.viewer());
 
 
-    graph.launch();
+    graph.launch().wait();
 
     N.update(N_value);
     x_0.update(x_0_buffer.viewer());
     x.update(x_buffer.viewer());
     y.update(y_buffer.viewer());
 
-    graph.launch();
+    graph.launch().wait();
 }
 
 void compute_graph_buffer_view()
@@ -387,25 +387,25 @@ void compute_graph_buffer_view()
 }
 
 
-//TEST_CASE("compute_graph_test_simple", "[compute_graph]")
-//{
-//    compute_graph_simple();
-//}
-//
-//TEST_CASE("compute_graph_test_graphviz", "[compute_graph]")
-//{
-//    compute_graph_graphviz();
-//}
-//
-//TEST_CASE("compute_graph_test_multi_graph", "[compute_graph]")
-//{
-//    compute_graph_multi_graph();
-//}
-//
-//TEST_CASE("compute_graph_test_update", "[compute_graph]")
-//{
-//    compute_graph_update();
-//}
+TEST_CASE("compute_graph_test_simple", "[compute_graph]")
+{
+    compute_graph_simple();
+}
+
+TEST_CASE("compute_graph_test_graphviz", "[compute_graph]")
+{
+    compute_graph_graphviz();
+}
+
+TEST_CASE("compute_graph_test_multi_graph", "[compute_graph]")
+{
+    compute_graph_multi_graph();
+}
+
+TEST_CASE("compute_graph_test_update", "[compute_graph]")
+{
+    compute_graph_update();
+}
 
 TEST_CASE("compute_graph_test_buffer_view", "[compute_graph]")
 {

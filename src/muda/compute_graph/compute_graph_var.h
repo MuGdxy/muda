@@ -6,6 +6,7 @@
 #include <muda/compute_graph/compute_graph_closure_id.h>
 #include <muda/compute_graph/compute_graph_var_usage.h>
 #include <muda/launch/event.h>
+#include <muda/mstl/span.h>
 
 namespace muda
 {
@@ -61,7 +62,7 @@ class ComputeGraphVarBase
 
     void base_building_eval();
 
-    void base_building_eval_const() const;
+    void base_building_ceval() const;
 
   private:
     void _building_eval(ComputeGraphVarUsage usage) const;

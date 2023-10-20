@@ -52,4 +52,15 @@ class IdWithType
 
 using U64IdWithType = IdWithType<uint64_t>;
 using U32IdWithType = IdWithType<uint32_t>;
+using I64IdWithType = IdWithType<int64_t>;
+using I32IdWithType = IdWithType<int32_t>;
 }  // namespace muda
+
+template <typename T>
+struct std::hash<muda::IdWithType<T>>
+{
+    std::size_t operator()(const muda::IdWithType<T>& s) const noexcept
+    {
+        return std::hash<T>{}(s.value());
+    }
+};
