@@ -25,6 +25,7 @@ void compute_graph_event_record_and_wait()
         ParallelFor(256).apply(N.eval(),
                                [x = x.eval().viewer()] __device__(int i) mutable
                                {
+                                   some_work();
                                    x(i) = 1;
                                    MUDA_KERNEL_PRINT("graph1 set x(%d) = %d", i, x(i));
                                });
@@ -53,7 +54,7 @@ void compute_graph_event_record_and_wait()
                                });
     };
 
-    // manager.graphviz(std::cout);
+    manager.graphviz(std::cout);
 
     Stream stream1;
     Stream stream2;

@@ -712,7 +712,7 @@ namespace details
         auto current_node_id = node->node_id();
 
         // set up res node map with pair [res, node]
-        for(auto& [local_var_id, usage] : node->var_usages())
+        for(auto& [local_var_id, usage] : local_var_usage)
         {
             // if this is a write resource,
             // the latter read/write kernel should depend on this
@@ -764,7 +764,7 @@ MUDA_INLINE void ComputeGraph::build_deps()
     // map: var_id -> node_id, uint64_t{-1} means no write node yet
     auto last_write_nodes = std::vector<NodeId>(local_var_count, NodeId{});
     // map: var_id -> node_id, uint64_t{-1} means no read node yet
-    auto last_read_nodes = std::vector<NodeId>(local_var_count, NodeId{});
+    auto last_read_or_write_nodes = std::vector<NodeId>(local_var_count, NodeId{});
 
     // process all nodes
     for(size_t i = 0u; i < m_nodes.size(); i++)
@@ -782,7 +782,7 @@ MUDA_INLINE void ComputeGraph::build_deps()
 
         size_t dep_begin, dep_count;
         details::process_node(
-            m_deps, last_read_nodes, last_write_nodes, node, local_var_usage, dep_begin, dep_count);
+            m_deps, last_read_or_write_nodes, last_write_nodes, node, local_var_usage, dep_begin, dep_count);
         node->set_deps_range(dep_begin, dep_count);
     }
 
