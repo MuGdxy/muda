@@ -37,7 +37,7 @@ void stream_async()
         .callback([] __host__(cudaStream_t stream, cudaError error)
                   { std::cout << "stream 2 callback\n"; });
 
-    Launch::wait_device();
+    wait_device();
 
     std::cout << "launch kernel D\n";
     ParallelFor(1).apply(1,
@@ -47,7 +47,7 @@ void stream_async()
                               print("[kernel print] kernel D on stream 0 costs a lot of time\n");
                           });
     std::cout << "after launch kernel D (no sync)\n";
-    Launch::wait_device();
+    wait_device();
     std::cout << "after kernel D done (device sync)\n";
 }
 

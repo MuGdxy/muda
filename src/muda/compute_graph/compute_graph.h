@@ -13,6 +13,7 @@
 #include <muda/compute_graph/compute_graph_var_usage.h>
 #include <muda/mstl/span.h>
 #include <muda/launch/event.h>
+#include <muda/compute_graph/graphviz_options.h>
 
 namespace muda::details
 {
@@ -27,16 +28,6 @@ class ComputeGraphVarManager;
 
 template <typename T>
 class ComputeGraphVar;
-
-template <typename T>
-class ComputeGraphNode;
-
-class ComputeGraphGraphvizOptions
-{
-  public:
-    bool show_vars  = true;
-    bool show_nodes = true;
-};
 
 namespace details
 {
@@ -118,12 +109,17 @@ class ComputeGraph
     mutable Event::QueryResult m_event_result = Event::QueryResult::eFinished;
 
   public:
-    ComputeGraph(ComputeGraphVarManager& manager)
-        : m_var_manager(&manager)
-    {
-    }
+    ComputeGraph(ComputeGraphVarManager& manager, std::string_view name = "graph");
 
     ~ComputeGraph();
+
+    /**************************************************************
+    * 
+    * Info API
+    * 
+    ***************************************************************/
+
+    std::string_view name() const { return m_name; }
 
     /**************************************************************
     * 
@@ -204,7 +200,7 @@ class ComputeGraph
 
   private:  // internal data
     friend class muda::details::ComputeGraphAccessor;
-
+    std::string       m_name;
     bool              m_need_update = false;
     ClosureId         m_current_closure_id;
     NodeId            m_current_node_id;
@@ -277,6 +273,10 @@ namespace details
 
         void set_memcpy_node(void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind);
 
+        void set_event_record_node(cudaEvent_t event);
+
+        void set_event_wait_node(cudaEvent_t event);
+
         cudaStream_t current_stream() const
         {
             return m_cg.m_current_single_stream;
@@ -294,13 +294,17 @@ namespace details
 
         template <typename T>
         void add_kernel_node(const S<KernelNodeParms<T>>& kernelParms);
-
         template <typename T>
         void update_kernel_node(const S<KernelNodeParms<T>>& kernelParms);
 
         void add_memcpy_node(void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind);
-
         void update_memcpy_node(void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind);
+
+        void add_event_record_node(cudaEvent_t event);
+        void update_event_record_node(cudaEvent_t event);
+
+        void add_event_wait_node(cudaEvent_t event);
+        void update_event_wait_node(cudaEvent_t event);
 
         template <typename F>
         void access_graph(F&& f)

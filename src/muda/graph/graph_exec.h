@@ -2,6 +2,7 @@
 #include "base.h"
 #include "kernel_node.h"
 #include "memory_node.h"
+#include "event_node.h"
 
 namespace muda
 {
@@ -39,13 +40,24 @@ class GraphExec
             m_handle, node->m_handle, dst, src, size_bytes, kind));
     }
 
+    void set_event_record_node_parms(S<EventRecordNode> node, cudaEvent_t event)
+    {
+        checkCudaErrors(cudaGraphExecEventRecordNodeSetEvent(m_handle, node->m_handle, event));
+    }
+
+    void set_event_wait_node_parms(S<EventWaitNode> node, cudaEvent_t event)
+    {
+        checkCudaErrors(cudaGraphExecEventWaitNodeSetEvent(m_handle, node->m_handle, event));
+    }
+
     ~GraphExec()
     {
         if(m_handle)
             checkCudaErrors(cudaGraphExecDestroy(m_handle));
     }
-    
+
     cudaGraphExec_t handle() const { return m_handle; }
+
   private:
     // keep the ref count > 0 for those whose data should be kept alive for the graph life.
     std::list<S<NodeParms>> cached;

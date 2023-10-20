@@ -39,8 +39,12 @@ namespace details
     }
 }  // namespace details
 
+class ComputeGraphVarBase;
 
-template <typename Derived>
+template <typename T>
+class ComputeGraphVar;
+
+template <typename T>
 class LaunchBase
 {
     template <typename Others>
@@ -50,11 +54,12 @@ class LaunchBase
     template <typename T>
     using S = std::shared_ptr<T>;
 
-    cudaStream_t stream() { return m_stream; }
     cudaStream_t stream() const { return m_stream; }
     cudaStream_t m_stream;
 
   public:
+    using derived_type = T;
+
     LaunchBase(cudaStream_t stream) MUDA_NOEXCEPT;
 
     virtual void init_stream(cudaStream_t s) { m_stream = s; }
@@ -66,27 +71,12 @@ class LaunchBase
     //      .next<launch>(1,1).apply(...)
     //      .pop_range()
     //      .wait();
-    Derived& push_range(const std::string& name)
-    {
-        nvtxEventAttributes_t eventAttrib = {0};
-        eventAttrib.version               = NVTX_VERSION;
-        eventAttrib.size                  = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
-        eventAttrib.colorType             = NVTX_COLOR_ARGB;
-        eventAttrib.color                 = 255;
-        eventAttrib.messageType           = NVTX_MESSAGE_TYPE_ASCII;
-        eventAttrib.message.ascii         = name.c_str();
-        nvtxRangePushEx(&eventAttrib);
-        return derived();
-    }
+    T& push_range(const std::string& name);
+    T& pop_range();
 
-    Derived& pop_range()
-    {
-        nvtxRangePop();
-        return derived();
-    }
-
-    template <typename T>
-    friend class launch_base;
+    // create a name for the following kernel launch
+    // viewers will record this name for the sake of better recognization when debugging
+    T& kernel_name(std::string_view name);
 
     // record an event on this point with current stream, you could use .when() to
     // capture this event for synchronization
@@ -94,12 +84,12 @@ class LaunchBase
     //  cudaEventRecordDefault : Default event creation flag.
     //  cudaEventRecordExternal : Event is captured in the graph as an external
     //  event node when performing stream capture.
-    Derived& record(cudaEvent_t e, int flag = cudaEventRecordDefault)
-    {
-        checkCudaErrors(cudaEventRecordWithFlags(e, stream(), flag));
+    T& record(cudaEvent_t e, int flag = cudaEventRecordDefault);
 
-        return derived();
-    }
+    T& record(ComputeGraphVar<cudaEvent_t>& e, const std::vector<ComputeGraphVarBase*>& vars);
+
+    template <typename... ViewT>
+    T& record(ComputeGraphVar<cudaEvent_t>& e, ComputeGraphVar<ViewT>&... vars);
 
     // let the following kernels wait until the event is triggered
     // (asynchronize with the host)
@@ -112,77 +102,37 @@ class LaunchBase
     //  cudaEventRecordDefault : Default event creation flag.
     //  cudaEventRecordExternal : Event is captured in the graph as an external
     //  event node when performing stream capture.
-    Derived& when(cudaEvent_t e, int flag = cudaEventRecordDefault)
-    {
-        checkCudaErrors(cudaStreamWaitEvent(stream(), e, flag));
-
-        return derived();
-    }
-
+    T& when(cudaEvent_t e, int flag = cudaEventWaitDefault);
     // let the host wait for the event
-    Derived& wait(cudaEvent_t e)
-    {
-        checkCudaErrors(cudaEventSynchronize(e));
+    T& wait(cudaEvent_t e, int flag = cudaEventWaitDefault);
+    T& wait(const ComputeGraphVar<cudaEvent_t>& e, const std::vector<ComputeGraphVarBase*>& vars);
+    template <typename... ViewT>
+    T& wait(const ComputeGraphVar<cudaEvent_t>& e, ComputeGraphVar<ViewT>&... vars);
 
-        return derived();
-    }
 
     // let the host wait for the current stream
-    Derived& wait()
-    {
-        checkCudaErrors(cudaStreamSynchronize(stream()));
-
-        return derived();
-    }
+    T& wait();
 
     // register a host callback function, which will be called when all the jobs before
     // this point are done.
-    Derived& callback(const std::function<void(cudaStream_t, cudaError)>& callback)
-    {
-        auto userdata = new std::function<void(cudaStream_t, cudaError)>(callback);
-        checkCudaErrors(cudaStreamAddCallback(
-            stream(), details::stream_error_callback, userdata, 0));
-        return derived();
-    }
+    T& callback(const std::function<void(cudaStream_t, cudaError)>& callback);
+
+    static void wait_event(cudaEvent_t event);
+    static void wait_stream(cudaStream_t stream);
+    static void wait_device();
 
     template <typename Next>
-    Next next(Next n)
-    {
-        static_assert(std::is_base_of_v<LaunchBase<Next>, Next>, "not supported");
-        n.init_stream(stream());
-        return n;
-    }
-
+    Next next(Next n);
     template <typename Next, typename... Args>
-    Next next(Args&&... args)
-    {
-        static_assert(std::is_base_of_v<LaunchBase<Next>, Next>, "not supported");
-        Next n(std::forward<Args>(args)...);
-        n.init_stream(stream());
-        return n;
-    }
-
-    auto& kernel_name(std::string_view name)
-    {
-#if MUDA_CHECK_ON
-        details::LaunchInfoCache::current_kernel_name(name);
-#endif
-        return derived();
-    }
+    Next next(Args&&... args);
 
     ~LaunchBase() MUDA_NOEXCEPT;
 
   protected:
-    auto& finish_kernel_launch()
-    {
-#if MUDA_CHECK_ON
-        details::LaunchInfoCache::current_kernel_name("");
-#endif
-        return derived();
-    }
+    T& finish_kernel_launch();
 
   private:
-    Derived& derived() MUDA_NOEXCEPT { return *(Derived*)(this); }
+    T& derived() MUDA_NOEXCEPT { return *(T*)(this); }
 };
 
 class Empty : public LaunchBase<Empty>
@@ -194,16 +144,13 @@ class Empty : public LaunchBase<Empty>
     }
 };
 
-inline Empty on(cudaStream_t stream)
-{
-    return Empty(stream);
-}
+Empty on(cudaStream_t stream);
 
-inline Empty on()
-{
-    return Empty(nullptr);
-}
+Empty on();
 
+void wait_device();
+void wait_stream(cudaStream_t stream);
+void wait_event(cudaEvent_t event);
 }  // namespace muda
 
 #include <muda/launch/details/launch_base.inl>

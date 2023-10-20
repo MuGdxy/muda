@@ -3,7 +3,7 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 #include <cinttypes>
-
+#include <muda/type_traits/type_modifier.h>
 namespace muda
 {
 template <typename T>
@@ -45,6 +45,18 @@ class BufferView
 
     Dense1D<T>  viewer() MUDA_NOEXCEPT;
     CDense1D<T> cviewer() const MUDA_NOEXCEPT;
+};
+
+template <typename T>
+struct read_only_viewer<BufferView<T>>
+{
+    using type = const BufferView<T>;
+};
+
+template <typename T>
+struct read_write_viewer<const BufferView<T>>
+{
+    using type = BufferView<T>;
 };
 
 template <typename T>

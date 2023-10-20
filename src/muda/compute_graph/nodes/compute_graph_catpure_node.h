@@ -6,9 +6,6 @@ namespace muda
 {
 class ComputeGraphCaptureNode : public ComputeGraphNodeBase
 {
-    template <typename T>
-    using S = std::shared_ptr<T>;
-
   protected:
     friend class ComputeGraph;
     friend class details::ComputeGraphAccessor;

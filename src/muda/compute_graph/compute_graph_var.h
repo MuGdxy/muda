@@ -28,8 +28,9 @@ class ComputeGraphVarBase
     Event::QueryResult query();
     bool               is_using();
     void               sync();
-    void               graphviz_def(std::ostream& os) const;
-    void               graphviz_id(std::ostream& os) const;
+    virtual void       graphviz_def(std::ostream&                      os,
+                                    const ComputeGraphGraphvizOptions& options) const;
+    virtual void graphviz_id(std::ostream& os, const ComputeGraphGraphvizOptions& options) const;
 
   protected:
     friend class ComputeGraph;
@@ -60,6 +61,9 @@ class ComputeGraphVarBase
 
     void base_update();
 
+    template <typename T>
+    friend class LaunchBase;
+
     void base_building_eval();
 
     void base_building_ceval() const;
@@ -79,16 +83,6 @@ class ComputeGraphVarBase
     void remove_related_closure_infos(ComputeGraph* graph);
 };
 
-template <typename T>
-struct read_only_viewer<T*>
-{
-    using type = const T*;
-};
-template <typename T>
-struct read_only_viewer<const T*>
-{
-    using type = T*;
-};
 template <typename T>
 class ComputeGraphVar : public ComputeGraphVarBase
 {
@@ -121,20 +115,42 @@ class ComputeGraphVar : public ComputeGraphVarBase
 
   public:
     RWViewer eval();
-
     ROViewer ceval() const;
 
     operator ROViewer() const { return ceval(); }
-
     operator RWViewer() { return eval(); }
 
-    void update(const RWViewer& view);
-
+    void                update(const RWViewer& view);
     ComputeGraphVar<T>& operator=(const RWViewer& view);
+    virtual void        graphviz_def(std::ostream& os,
+                                     const ComputeGraphGraphvizOptions& options) const override;
 
   private:
     RWViewer m_value;
 };
+
+template <typename T>
+struct read_only_viewer<T*>
+{
+    using type = const T*;
+};
+template <typename T>
+struct read_write_viewer<const T*>
+{
+    using type = T*;
+};
+
+template <>
+struct read_only_viewer<cudaEvent_t>
+{
+    using type = cudaEvent_t;
+};
+template <>
+struct read_write_viewer<cudaEvent_t>
+{
+    using type = cudaEvent_t;
+};
+
 }  // namespace muda
 
 

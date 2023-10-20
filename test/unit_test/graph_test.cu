@@ -41,7 +41,7 @@ void mem_realloc(int first, int last, int& outfirst, int& outlast)
 
     // launch graph
     instance->launch();
-    Launch::wait_device();
+    wait_device();
     outfirst = var;
 
     // realloc some device memory
@@ -52,7 +52,7 @@ void mem_realloc(int first, int last, int& outfirst, int& outlast)
     instance->set_kernel_node_parms(kA, pA);
     // luanch again
     instance->launch();
-    Launch::wait_device();
+    wait_device();
     outlast = var;
 }
 
@@ -109,13 +109,13 @@ TEST_CASE("set_graphExec_node_parms", "[graph]")
 //    auto freeNode = g.addMemFreeNode(allocNode, {cpyNode});
 //    auto instance = g.instantiate();
 //    instance->launch(stream);
-//    launch::wait_stream(stream);
+//    wait_stream(stream);
 //    auto hostDenseHalf = Dense1D<int>(hostDense.data() + half, half);
 //    instance->setMemcpyNodeParms(cpyNode, hostDenseHalf.data(), Dense.data(), half, cudaMemcpyDeviceToHost);
 //    instance->launch(stream);
-//    launch::wait_stream(stream);
+//    wait_stream(stream);
 //
-//    launch::wait_device();
+//    wait_device();
 //}
 //
 //TEST_CASE("graph_memop_node", "[graph]")
@@ -145,7 +145,7 @@ void host_call_graph(int& ground_thruth, int& res)
     auto instance = g->instantiate();
     for(size_t i = 0; i < 10; i++)
         instance->launch();
-    Launch::wait_device();
+    wait_device();
 
     ground_thruth = 0;
     for(size_t i = 0; i < 50; i++)

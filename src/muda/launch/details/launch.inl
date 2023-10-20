@@ -46,11 +46,4 @@ MUDA_INLINE Launch& Launch::apply(F&& f, UserTag tag)
         });
     return *this;
 }
-
-MUDA_INLINE void muda::Launch::wait_event(cudaEvent_t event)
-{
-    ComputeGraphBuilder::invoke_phase_actions(
-        [&] { checkCudaErrors(cudaEventSynchronize(event)); },
-        [&] { MUDA_ERROR_WITH_LOCATION("not implemented"); });
-}
 }  // namespace muda

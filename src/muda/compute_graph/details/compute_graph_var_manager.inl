@@ -1,7 +1,7 @@
-#include <muda/compute_graph/compute_graph_var.h>
 #include <numeric>
 #include <algorithm>
-#include "compute_graph_var_manager.h"
+#include <muda/compute_graph/compute_graph_var.h>
+#include <muda/compute_graph/compute_graph.h>
 
 namespace muda
 {
@@ -12,8 +12,16 @@ MUDA_INLINE ComputeGraphVarManager::~ComputeGraphVarManager()
 }
 
 template <typename T>
+constexpr void check_var_type()
+{
+    static_assert(!std::is_same_v<T, ::muda::Event>,
+                  "please use cudaEvent_t as a ComputeGraphVar");
+}
+
+template <typename T>
 MUDA_INLINE ComputeGraphVar<T>& ComputeGraphVarManager::create_var(std::string_view name)
 {
+    check_var_type<T>();
     auto ptr = new ComputeGraphVar<T>(this, name, VarId{m_vars.size()});
     m_vars.emplace_back(ptr);
     if(m_vars_map.find(std::string{name}) != m_vars_map.end())
@@ -25,6 +33,7 @@ template <typename T>
 MUDA_INLINE ComputeGraphVar<T>& ComputeGraphVarManager::create_var(std::string_view name,
                                                                    const T& init_value)
 {
+    check_var_type<T>();
     auto ptr = new ComputeGraphVar<T>(this, name, VarId{m_vars.size()}, init_value);
     m_vars.emplace_back(ptr);
     m_vars_map.emplace(name, ptr);
@@ -81,9 +90,35 @@ MUDA_INLINE void ComputeGraphVarManager::sync(const span<const ComputeGraphVarBa
                   [&](ComputeGraph* graph) { on(stream).wait(graph->m_event); });
 }
 
-inline std::vector<ComputeGraph*> ComputeGraphVarManager::graphs() const
+MUDA_INLINE void ComputeGraphVarManager::graphviz(std::ostream& o,
+                                                  const ComputeGraphGraphvizOptions& options) const
 {
-    return unique_graphs(var_span());
+    auto opt = options;
+
+    o << "digraph G {\n";
+    if(opt.show_vars)
+    {
+        o << "subgraph cluster_" << opt.graph_id++;
+        o << " {\n"
+             "beautify=true;\n";
+        o << opt.cluster_var_style << "\n";
+        o << "// vars: \n";
+        for(auto var : m_vars)
+        {
+            var->graphviz_def(o, opt);
+            o << "\n";
+        }
+        o << "}\n";
+    }
+
+    opt.as_subgraph = true;
+
+    for(auto graph : m_graphs)
+    {
+        graph->graphviz(o, opt);
+        opt.graph_id++;
+    }
+    o << "}\n";
 }
 
 MUDA_INLINE std::vector<ComputeGraph*> ComputeGraphVarManager::unique_graphs(

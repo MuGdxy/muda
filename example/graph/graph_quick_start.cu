@@ -17,7 +17,7 @@ struct MyKernelD
 
 void graph_quick_start()
 {
-    example_desc(R"(use muda to create a graph:
+    example_desc(R"(use muda to create a graph manually:
             root
             /  \
             A  B
@@ -62,7 +62,7 @@ void graph_quick_start()
 
     auto instance = graph->instantiate();
     instance->launch();
-    Launch::wait_device();
+    wait_device();
 }
 
 TEST_CASE("graph_quick_start", "[quick_start]")

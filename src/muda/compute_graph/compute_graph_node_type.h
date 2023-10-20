@@ -1,8 +1,8 @@
 #pragma once
-
+#include <cinttypes>
 namespace muda
 {
-enum class ComputeGraphNodeType
+enum class ComputeGraphNodeType : uint8_t
 {
     None,
     KernelNode,

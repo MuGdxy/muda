@@ -23,6 +23,17 @@ class VarView
     Dense<T>  viewer() MUDA_NOEXCEPT;
     CDense<T> cviewer() const MUDA_NOEXCEPT;
 };
+template <typename T>
+struct read_only_viewer<VarView<T>>
+{
+    using type = const VarView<T>;
+};
+
+template <typename T>
+struct read_write_viewer<const VarView<T>>
+{
+    using type = VarView<T>;
+};
 }  // namespace muda
 
 

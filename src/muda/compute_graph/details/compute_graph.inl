@@ -8,6 +8,7 @@
 #include <muda/compute_graph/nodes/compute_graph_kernel_node.h>
 #include <muda/compute_graph/nodes/compute_graph_catpure_node.h>
 #include <muda/compute_graph/nodes/compute_graph_memory_node.h>
+#include <muda/compute_graph/nodes/compute_graph_event_node.h>
 #include <muda/debug.h>
 
 
@@ -70,14 +71,26 @@ MUDA_INLINE void ComputeGraph::capture(std::function<void(cudaStream_t)>&& f)
 MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraphvizOptions& options)
 {
     topo_build();
-    o << "digraph G {\n"
-         "beautify=true\n";
-    if(options.show_vars)
+
+    if(options.as_subgraph)
+    {
+        o << "subgraph cluster_" << options.graph_id;
+        o << " {\n";
+        o << "label=\"" << name() << "\";\n";
+        o << options.cluster_style << "\n";
+    }
+    else
+    {
+        o << "digraph G {\n";
+    }
+
+
+    if(options.show_vars && !options.as_subgraph)
     {
         o << "// vars: \n";
         for(auto&& [local_id, var] : m_related_vars)
         {
-            var->graphviz_def(o);
+            var->graphviz_def(o, options);
             o << "\n";
         }
         o << "\n";
@@ -86,9 +99,12 @@ MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraph
     if(options.show_nodes)
     {
         o << "// nodes: \n";
+        o << "node_g" << options.graph_id << "[label=\"" << name() << "\""
+          << options.node_style << "];\n";
+
         for(auto&& node : m_nodes)
         {
-            node->graphviz_def(o);
+            node->graphviz_def(o, options);
             o << "\n";
         }
         o << "\n";
@@ -97,20 +113,33 @@ MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraph
             o << "// node var usages: \n";
             for(auto&& node : m_nodes)
             {
-                node->graphviz_var_usages(o);
+                node->graphviz_var_usages(o, options);
                 o << "\n";
             }
             o << "\n";
         }
         o << "// node deps: \n";
+        for(auto node : m_nodes)
+        {
+            if(node->deps().size() != 0)
+                continue;
+            o << "node_g" << options.graph_id << "->";
+            node->graphviz_id(o, options);
+
+            o << "[" << options.arc_style
+              << "]"
+                 "\n";
+        }
+
         for(auto dep : m_deps)
         {
             auto src = m_nodes[dep.src.value()];
             auto dst = m_nodes[dep.dst.value()];
-            dst->graphviz_id(o);
+            dst->graphviz_id(o, options);
             o << "->";
-            src->graphviz_id(o);
-            o << R"([color="#82B366"])"
+            src->graphviz_id(o, options);
+            o << "[" << options.arc_style
+              << "]"
                  "\n";
         }
     }
@@ -200,7 +229,8 @@ MUDA_INLINE ComputeGraph& ComputeGraph::add_node(std::string&& name, const Closu
     return *this;
 }
 
-MUDA_INLINE auto ComputeGraph::dep_span(size_t begin, size_t count) const -> span<const Dependency>
+MUDA_INLINE auto ComputeGraph::dep_span(size_t begin, size_t count) const
+    -> span<const Dependency>
 {
     return span<const Dependency>{m_deps}.subspan(begin, count);
 }
@@ -287,6 +317,8 @@ MUDA_INLINE ComputeGraph::~ComputeGraph()
     for(auto var_info : m_related_vars)
         var_info.var->remove_related_closure_infos(this);
 
+    m_var_manager->m_graphs.erase(this);
+
     for(auto node : m_nodes)
         delete node;
 }
@@ -302,6 +334,14 @@ MUDA_INLINE void ComputeGraph::emplace_related_var(ComputeGraphVarBase* var)
         m_global_to_local_var_id.emplace(std::make_pair(global_var_id, local_id));
     }
 }
+
+MUDA_INLINE ComputeGraph::ComputeGraph(ComputeGraphVarManager& manager, std::string_view name)
+    : m_var_manager(&manager)
+    , m_name(name)
+{
+    m_var_manager->m_graphs.insert(this);
+}
+
 
 MUDA_INLINE ComputeGraph::AddNodeProxy ComputeGraph::create_node(std::string_view node_name)
 {
@@ -346,160 +386,275 @@ MUDA_INLINE Event::QueryResult ComputeGraph::query() const
     return m_event_result;
 }
 
-template <typename T>
-MUDA_INLINE void details::ComputeGraphAccessor::add_kernel_node(const S<KernelNodeParms<T>>& parms)
+namespace details
 {
-    access_graph([&](Graph& g) {  // create kernel node
-        ComputeGraphKernelNode* kernel_node = get_or_create_node<ComputeGraphKernelNode>(
-            [&]
+    MUDA_INLINE ComputeGraphAccessor::ComputeGraphAccessor()
+        : m_cg(*ComputeGraphBuilder::current_graph())
+    {
+    }
+
+    MUDA_INLINE void ComputeGraphAccessor::check_allow_var_eval() const
+    {
+        if(m_cg.m_is_in_capture_func)
+            MUDA_ERROR_WITH_LOCATION("you can't eval a var in ComputeGraph::capture() function");
+    }
+
+    MUDA_INLINE void ComputeGraphAccessor::check_allow_node_adding() const
+    {
+        if(m_cg.current_graph_phase() != ComputeGraphPhase::None)
+            MUDA_ERROR_WITH_LOCATION("you are not allowed adding node at this point");
+    }
+
+    /*
+     * Set Graph Node 
+     */
+    template <typename T>
+    MUDA_INLINE void ComputeGraphAccessor::set_kernel_node(const S<KernelNodeParms<T>>& kernelParms)
+    {
+        switch(ComputeGraphBuilder::current_phase())
+        {
+            case ComputeGraphPhase::TopoBuilding:
+                MUDA_ASSERT(!kernelParms,
+                            "When ComputeGraphPhase == TopoBuilding, "
+                            "you don't need to create NodeParms, so keep it nullptr.");
+                // fall through
+            case ComputeGraphPhase::Building:
+                add_kernel_node(kernelParms);
+                break;
+            case ComputeGraphPhase::Updating:
+                update_kernel_node(kernelParms);
+                break;
+            default:
+                MUDA_ERROR_WITH_LOCATION("invalid phase");
+                break;
+        }
+    }
+    template <typename T>
+    MUDA_INLINE void ComputeGraphAccessor::add_kernel_node(const S<KernelNodeParms<T>>& parms)
+    {
+        access_graph([&](Graph& g) {  // create kernel node
+            ComputeGraphKernelNode* kernel_node = get_or_create_node<ComputeGraphKernelNode>(
+                [&]
+                {
+                    const auto& [name, closure] = current_closure();
+                    return new ComputeGraphKernelNode(  //
+                        &m_cg,                          // compute graph
+                        name,                           // node name
+                        NodeId{m_cg.m_nodes.size()},    // node id
+                        temp_var_usage());              // kernel node
+                });
+            if(ComputeGraphBuilder::current_phase() == ComputeGraphPhase::Building)
+            {
+                kernel_node->set_node(g.add_kernel_node(parms));
+            }
+        });
+    }
+    template <typename T>
+    MUDA_INLINE void ComputeGraphAccessor::update_kernel_node(const S<KernelNodeParms<T>>& kernelParms)
+    {
+        access_graph_exec(
+            [&](GraphExec& g_exec)
             {
                 const auto& [name, closure] = current_closure();
-                return new ComputeGraphKernelNode(  //
-                    &m_cg,                          // compute graph
-                    name,                           // node name
-                    NodeId{m_cg.m_nodes.size()},    // node id
-                    temp_var_usage());              // kernel node
+                auto kernel_node = current_node<ComputeGraphKernelNode>();
+                g_exec.set_kernel_node_parms(kernel_node->m_node, kernelParms);
             });
-        if(ComputeGraphBuilder::current_phase() == ComputeGraphPhase::Building)
+    }
+
+    MUDA_INLINE void ComputeGraphAccessor::set_memcpy_node(void*       dst,
+                                                           const void* src,
+                                                           size_t size_bytes,
+                                                           cudaMemcpyKind kind)
+    {
+        switch(ComputeGraphBuilder::current_phase())
         {
-            kernel_node->set_node(g.add_kernel_node(parms));
+            case ComputeGraphPhase::TopoBuilding:
+                // fall through
+            case ComputeGraphPhase::Building:
+                add_memcpy_node(dst, src, size_bytes, kind);
+                break;
+            case ComputeGraphPhase::Updating:
+                update_memcpy_node(dst, src, size_bytes, kind);
+                break;
+            default:
+                MUDA_ERROR_WITH_LOCATION("invalid phase");
+                break;
         }
-        else if(ComputeGraphBuilder::current_phase() == ComputeGraphPhase::TopoBuilding)
+    }
+    MUDA_INLINE void ComputeGraphAccessor::add_memcpy_node(void*       dst,
+                                                           const void* src,
+                                                           size_t size_bytes,
+                                                           cudaMemcpyKind kind)
+    {
+        access_graph([&](Graph& g) {  // create memory node
+            ComputeGraphMemcpyNode* memory_node = get_or_create_node<ComputeGraphMemcpyNode>(
+                [&]
+                {
+                    const auto& [name, closure] = current_closure();
+                    return new ComputeGraphMemcpyNode(  //
+                        &m_cg,                          // compute graph
+                        name,                           // node name
+                        NodeId{m_cg.m_nodes.size()},    // node id
+                        temp_var_usage());
+                });
+            if(ComputeGraphBuilder::current_phase() == ComputeGraphPhase::Building)
+                memory_node->set_node(g.add_memcpy_node(dst, src, size_bytes, kind));
+        });
+    }
+    MUDA_INLINE void ComputeGraphAccessor::update_memcpy_node(void*       dst,
+                                                              const void* src,
+                                                              size_t size_bytes,
+                                                              cudaMemcpyKind kind)
+    {
+        access_graph_exec(
+            [&](GraphExec& g_exec)
+            {
+                const auto& [name, closure] = current_closure();
+                auto memory_node = current_node<ComputeGraphMemcpyNode>();
+                g_exec.set_memcpy_node_parms(memory_node->m_node, dst, src, size_bytes, kind);
+            });
+    }
+
+
+    MUDA_INLINE void ComputeGraphAccessor::set_event_record_node(cudaEvent_t event)
+    {
+        switch(ComputeGraphBuilder::current_phase())
         {
-            MUDA_ASSERT(!parms,
-                        "When ComputeGraphPhase == TopoBuilding, "
-                        "you don't need to create NodeParms, so keep it nullptr.");
+            case ComputeGraphPhase::TopoBuilding:
+                MUDA_ASSERT(!event,
+                            "When ComputeGraphPhase == TopoBuilding, "
+                            "you don't need to create event, so keep it nullptr.");
+                // fall through
+            case ComputeGraphPhase::Building:
+                add_event_record_node(event);
+                break;
+            case ComputeGraphPhase::Updating:
+                update_event_record_node(event);
+                break;
+            default:
+                MUDA_ERROR_WITH_LOCATION("invalid phase");
+                break;
+        }
+    }
+    MUDA_INLINE void ComputeGraphAccessor::add_event_record_node(cudaEvent_t event)
+    {
+        access_graph(
+            [&](Graph& g)
+            {
+                ComputeGraphEventRecordNode* event_record =
+                    get_or_create_node<ComputeGraphEventRecordNode>(
+                        [&]
+                        {
+                            const auto& [name, closure] = current_closure();
+                            return new ComputeGraphEventRecordNode(  //
+                                &m_cg,                        // compute graph
+                                name,                         // node name
+                                NodeId{m_cg.m_nodes.size()},  // node id
+                                temp_var_usage());
+                        });
+
+                if(ComputeGraphBuilder::current_phase() == ComputeGraphPhase::Building)
+                {
+                    event_record->set_node(g.add_event_record_node(event));
+                }
+            });
+    }
+    MUDA_INLINE void ComputeGraphAccessor::update_event_record_node(cudaEvent_t event)
+    {
+        access_graph_exec(
+            [&](GraphExec& g_exec)
+            {
+                const auto& [name, closure] = current_closure();
+                auto event_record = current_node<ComputeGraphEventRecordNode>();
+                g_exec.set_event_record_node_parms(event_record->m_node, event);
+            });
+    }
+
+
+    MUDA_INLINE void ComputeGraphAccessor::set_event_wait_node(cudaEvent_t event)
+    {
+        switch(ComputeGraphBuilder::current_phase())
+        {
+            case ComputeGraphPhase::TopoBuilding:
+                MUDA_ASSERT(!event,
+                            "When ComputeGraphPhase == TopoBuilding, "
+                            "you don't need to create event, so keep it nullptr.");
+                // fall through
+            case ComputeGraphPhase::Building:
+                add_event_wait_node(event);
+                break;
+            case ComputeGraphPhase::Updating:
+                update_event_wait_node(event);
+                break;
+            default:
+                MUDA_ERROR_WITH_LOCATION("invalid phase");
+                break;
+        }
+    }
+    MUDA_INLINE void ComputeGraphAccessor::add_event_wait_node(cudaEvent_t event)
+    {
+        access_graph(
+            [&](Graph& g)
+            {
+                ComputeGraphEventWaitNode* event_wait =
+                    get_or_create_node<ComputeGraphEventWaitNode>(
+                        [&]
+                        {
+                            const auto& [name, closure] = current_closure();
+                            return new ComputeGraphEventWaitNode(  //
+                                &m_cg,                        // compute graph
+                                name,                         // node name
+                                NodeId{m_cg.m_nodes.size()},  // node id
+                                temp_var_usage());
+                        });
+
+                if(ComputeGraphBuilder::current_phase() == ComputeGraphPhase::Building)
+                {
+                    event_wait->set_node(g.add_event_wait_node(event));
+                }
+            });
+    }
+    MUDA_INLINE void ComputeGraphAccessor::update_event_wait_node(cudaEvent_t event)
+    {
+        access_graph_exec(
+            [&](GraphExec& g_exec)
+            {
+                const auto& [name, closure] = current_closure();
+                auto event_wait = current_node<ComputeGraphEventWaitNode>();
+                g_exec.set_event_wait_node_parms(event_wait->m_node, event);
+            });
+    }
+
+
+    template <typename NodeType, typename F>
+    MUDA_INLINE NodeType* ComputeGraphAccessor::get_or_create_node(F&& f)
+    {
+        static_assert(std::is_base_of_v<ComputeGraphNodeBase, NodeType>,
+                      "NodeType must be derived from ComputeGraphNodeBase");
+        if(!m_cg.m_is_topo_built)
+        {
+            NodeType* ptr = f();
+            m_cg.m_nodes.emplace_back(ptr);
+            return ptr;
         }
         else
-        {
-            MUDA_ERROR_WITH_LOCATION("invalid phase");
-        }
-    });
-}
-
-template <typename T>
-MUDA_INLINE void details::ComputeGraphAccessor::update_kernel_node(const S<KernelNodeParms<T>>& kernelParms)
-{
-    access_graph_exec(
-        [&](GraphExec& g_exec)
-        {
-            const auto& [name, closure] = current_closure();
-            auto kernel_node = current_node<ComputeGraphKernelNode>();
-            g_exec.set_kernel_node_parms(kernel_node->m_node, kernelParms);
-        });
-}
-
-MUDA_INLINE void details::ComputeGraphAccessor::add_memcpy_node(void*       dst,
-                                                                const void* src,
-                                                                size_t size_bytes,
-                                                                cudaMemcpyKind kind)
-{
-    access_graph([&](Graph& g) {  // create memory node
-        ComputeGraphMemcpyNode* memory_node = get_or_create_node<ComputeGraphMemcpyNode>(
-            [&]
-            {
-                const auto& [name, closure] = current_closure();
-                return new ComputeGraphMemcpyNode(  //
-                    &m_cg,                          // compute graph
-                    name,                           // node name
-                    NodeId{m_cg.m_nodes.size()},    // node id
-                    temp_var_usage());
-            });
-        if(ComputeGraphBuilder::current_phase() == ComputeGraphPhase::Building)
-            memory_node->set_node(g.add_memcpy_node(dst, src, size_bytes, kind));
-    });
-}
-
-MUDA_INLINE void details::ComputeGraphAccessor::update_memcpy_node(
-    void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind)
-{
-    access_graph_exec(
-        [&](GraphExec& g_exec)
-        {
-            const auto& [name, closure] = current_closure();
-            auto memory_node = current_node<ComputeGraphMemcpyNode>();
-            g_exec.set_memcpy_node_parms(memory_node->m_node, dst, src, size_bytes, kind);
-        });
-}
-
-template <typename NodeType, typename F>
-MUDA_INLINE NodeType* details::ComputeGraphAccessor::get_or_create_node(F&& f)
-{
-    static_assert(std::is_base_of_v<ComputeGraphNodeBase, NodeType>,
-                  "NodeType must be derived from ComputeGraphNodeBase");
-    if(!m_cg.m_is_topo_built)
-    {
-        NodeType* ptr = f();
-        m_cg.m_nodes.emplace_back(ptr);
-        return ptr;
+            return current_node<NodeType>();
     }
-    else
-        return current_node<NodeType>();
-}
-
-template <typename T>
-MUDA_INLINE void details::ComputeGraphAccessor::set_kernel_node(const S<KernelNodeParms<T>>& kernelParms)
-{
-    switch(ComputeGraphBuilder::current_phase())
+    MUDA_INLINE void ComputeGraphAccessor::set_var_usage(VarId id, ComputeGraphVarUsage usage)
     {
-        case ComputeGraphPhase::TopoBuilding:
-        case ComputeGraphPhase::Building:
-            add_kernel_node(kernelParms);
-            break;
-        case ComputeGraphPhase::Updating:
-            update_kernel_node(kernelParms);
-            break;
-        default:
-            MUDA_ERROR_WITH_LOCATION("invalid phase");
-            break;
+        auto& dst_usage = m_cg.m_temp_node_info.var_usage[id];
+        if(dst_usage < usage)
+            dst_usage = usage;
     }
-}
 
+}  // namespace details
+}  // namespace muda
 
-MUDA_INLINE void details::ComputeGraphAccessor::set_memcpy_node(void*       dst,
-                                                                const void* src,
-                                                                size_t size_bytes,
-                                                                cudaMemcpyKind kind)
+namespace muda
 {
-    switch(ComputeGraphBuilder::current_phase())
-    {
-        case ComputeGraphPhase::TopoBuilding:
-        case ComputeGraphPhase::Building:
-            add_memcpy_node(dst, src, size_bytes, kind);
-            break;
-        case ComputeGraphPhase::Updating:
-            update_memcpy_node(dst, src, size_bytes, kind);
-            break;
-        default:
-            MUDA_ERROR_WITH_LOCATION("invalid phase");
-            break;
-    }
-}
-
-MUDA_INLINE details::ComputeGraphAccessor::ComputeGraphAccessor()
-    : m_cg(*ComputeGraphBuilder::current_graph())
-{
-}
-
-MUDA_INLINE void details::ComputeGraphAccessor::check_allow_var_eval() const
-{
-    if(m_cg.m_is_in_capture_func)
-        MUDA_ERROR_WITH_LOCATION("you can't eval a var in ComputeGraph::capture() function");
-}
-
-MUDA_INLINE void details::ComputeGraphAccessor::check_allow_node_adding() const
-{
-    if(m_cg.current_graph_phase() != ComputeGraphPhase::None)
-        MUDA_ERROR_WITH_LOCATION("you are not allowed adding node at this point");
-}
-
-MUDA_INLINE void details::ComputeGraphAccessor::set_var_usage(VarId id, ComputeGraphVarUsage usage)
-{
-    auto& dst_usage = m_cg.m_temp_node_info.var_usage[id];
-    if(dst_usage < usage)
-        dst_usage = usage;
-}
-
+/*
+ * Build Graph Dependencies
+ */
 namespace details
 {
     MUDA_INLINE void process_node(std::vector<ComputeGraph::Dependency>& deps,

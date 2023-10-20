@@ -119,7 +119,7 @@ class SPHSolver
 
     void GetParticles(HostVector<Particle>& p)
     {
-        Launch::wait_device();
+        wait_device();
         // copy the particles from device to host
         p = particles;
     }

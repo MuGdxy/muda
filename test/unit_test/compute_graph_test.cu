@@ -71,7 +71,7 @@ void compute_graph_simple()
 
     graph.launch();
     graph.launch(true);
-    Launch::wait_device();
+    wait_device();
 
     // update: change N
     auto f = [&](int new_N, int times)
@@ -93,14 +93,14 @@ void compute_graph_simple()
             {
                 for(int i = 0; i < times; ++i)
                     graph.launch(s);
-                Launch::wait_device();
+                wait_device();
             });
         auto t2 = profile_host(
             [&]
             {
                 for(int i = 0; i < times; ++i)
                     graph.launch(s);
-                Launch::wait_device();
+                wait_device();
             });
 
         std::cout << "N = " << N_value << std::endl;
@@ -254,7 +254,7 @@ void compute_graph_multi_graph()
 
     graph1.launch();
     graph2.launch();
-    Launch::wait_device();
+    wait_device();
 }
 
 void compute_graph_update()

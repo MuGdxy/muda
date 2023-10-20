@@ -5,6 +5,9 @@
 namespace muda
 {
 class ComputeGraphVarBase;
+class ComputeGraph;
+class ComputeGraphGraphvizOptions;
+
 class ComputeGraphVarManager
 {
   public:
@@ -33,7 +36,8 @@ class ComputeGraphVarManager
     bool is_using(const span<const ComputeGraphVarBase*> vars) const;
     void sync(const span<const ComputeGraphVarBase*> vars, cudaStream_t stream = nullptr) const;
 
-    std::vector<ComputeGraph*> graphs() const;
+    const auto& graphs() const { return m_graphs; }
+    void graphviz(std::ostream& os, const ComputeGraphGraphvizOptions& options = {}) const;
 
   private:
     friend class ComputeGraph;
@@ -41,6 +45,7 @@ class ComputeGraphVarManager
     std::vector<ComputeGraph*> unique_graphs(span<const ComputeGraphVarBase*> vars) const;
     std::unordered_map<std::string, ComputeGraphVarBase*> m_vars_map;
     std::vector<ComputeGraphVarBase*>                     m_vars;
+    std::unordered_set<ComputeGraph*>                     m_graphs;
     span<const ComputeGraphVarBase*>                      var_span() const;
 };
 }  // namespace muda

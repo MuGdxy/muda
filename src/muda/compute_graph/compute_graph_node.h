@@ -15,12 +15,16 @@ class ComputeGraphNodeBase
     const auto& var_usages() const { return m_var_usages; }
     auto deps() const { return m_graph->dep_span(m_deps_begin, m_deps_count); }
 
-    virtual void graphviz_id(std::ostream& o) const;
-    virtual void graphviz_def(std::ostream& o) const;
-    virtual void graphviz_var_usages(std::ostream& o) const;
+    virtual void graphviz_id(std::ostream& o, const ComputeGraphGraphvizOptions& options) const;
+    virtual void graphviz_def(std::ostream& o, const ComputeGraphGraphvizOptions& options) const;
+    virtual void graphviz_var_usages(std::ostream& o,
+                                     const ComputeGraphGraphvizOptions& options) const;
     virtual ~ComputeGraphNodeBase() = default;
 
   protected:
+    template <typename T>
+    using S = std::shared_ptr<T>;
+
     friend class ComputeGraph;
     friend class ComputeGraphVarBase;
     ComputeGraphNodeBase(ComputeGraph*                           graph,
@@ -49,6 +53,25 @@ class ComputeGraphNodeBase
     auto handle() const { return m_cuda_node; }
     void set_handle(cudaGraphNode_t handle) { m_cuda_node = handle; }
     auto is_valid() const { return m_cuda_node; }
+};
+
+template <typename NodeT, ComputeGraphNodeType Type>
+class ComputeGraphNode : public ComputeGraphNodeBase
+{
+  protected:
+    friend class ComputeGraph;
+    friend class details::ComputeGraphAccessor;
+    ComputeGraphNode(ComputeGraph*                           graph,
+                     std::string_view                        name,
+                     NodeId                                  node_id,
+                     std::map<VarId, ComputeGraphVarUsage>&& usages)
+        : ComputeGraphNodeBase(graph, name, node_id, Type, std::move(usages))
+    {
+    }
+
+    S<NodeT> m_node;
+    void     set_node(S<NodeT> node);
+    virtual ~ComputeGraphNode() = default;
 };
 }  // namespace muda
 

@@ -40,16 +40,6 @@ class Launch : public LaunchBase<Launch>
 
     template <typename F, typename UserTag = DefaultTag>
     MUDA_NODISCARD S<KernelNodeParms<raw_type_t<F>>> as_node_parms(F&& f, UserTag tag = {});
-
-    static void wait_event(cudaEvent_t event);
-
-    static void wait_stream(cudaStream_t stream)
-    {
-        checkCudaErrors(cudaStreamSynchronize(stream));
-    }
-
-    static void wait_device() { checkCudaErrors(cudaDeviceSynchronize()); }
-
   private:
     template <typename F, typename UserTag = DefaultTag>
     void invoke(F&& f, UserTag tag = {});

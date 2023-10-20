@@ -76,9 +76,8 @@ class Graph
     }
 
 
-
-    auto add_memcpy_node(void*                               dst,
-                         const void*                         src,
+    auto add_memcpy_node(void*                            dst,
+                         const void*                      src,
                          size_t                           size_bytes,
                          cudaMemcpyKind                   kind,
                          const std::vector<S<GraphNode>>& deps)
@@ -115,19 +114,19 @@ class Graph
         return ret;
     }
 
-    auto add_event_wait_node(cudaEvent_t e)
-    {
-        auto ret = std::make_shared<EventWaitNode>();
-        checkCudaErrors(cudaGraphAddEventWaitNode(&ret->m_handle, m_handle, nullptr, 0, e));
-        return ret;
-    }
-
     auto add_event_wait_node(cudaEvent_t e, const std::vector<S<GraphNode>>& deps)
     {
         auto                         ret   = std::make_shared<EventWaitNode>();
         std::vector<cudaGraphNode_t> nodes = map_dependencies(deps);
         checkCudaErrors(cudaGraphAddEventWaitNode(
             &ret->m_handle, m_handle, nodes.data(), nodes.size(), e));
+        return ret;
+    }
+
+    auto add_event_wait_node(cudaEvent_t e)
+    {
+        auto ret = std::make_shared<EventWaitNode>();
+        checkCudaErrors(cudaGraphAddEventWaitNode(&ret->m_handle, m_handle, nullptr, 0, e));
         return ret;
     }
 
@@ -143,6 +142,7 @@ class Graph
     ~Graph() { checkCudaErrors(cudaGraphDestroy(m_handle)); }
 
     static auto create() { return std::make_shared<Graph>(); }
+
   private:
     // keep the ref count > 0 for those whose data should be kept alive for the graph life.
     std::list<S<NodeParms>> cached;

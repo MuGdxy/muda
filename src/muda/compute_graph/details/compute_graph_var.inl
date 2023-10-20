@@ -41,18 +41,20 @@ MUDA_INLINE void ComputeGraphVarBase::remove_related_closure_infos(ComputeGraph*
     }
 }
 
-MUDA_INLINE void ComputeGraphVarBase::graphviz_def(std::ostream& o) const
+MUDA_INLINE void ComputeGraphVarBase::graphviz_def(std::ostream& o,
+                                                   const ComputeGraphGraphvizOptions& options) const
 {
-    graphviz_id(o);
+    graphviz_id(o, options);
     o << "[";
     if(!name().empty())
         o << "label=\"" << name() << "\",";
-    o << R"(shape="rectangle", color="#F08705", style="filled,rounded", fillcolor="#F5AF58"])";
+    o << options.var_style << "]";
 }
 
-MUDA_INLINE void ComputeGraphVarBase::graphviz_id(std::ostream& o) const
+MUDA_INLINE void ComputeGraphVarBase::graphviz_id(std::ostream& o,
+                                                  const ComputeGraphGraphvizOptions& options) const
 {
-    o << "var_" << var_id();
+    o << "var_v" << var_id();
 }
 
 MUDA_INLINE void ComputeGraphVarBase::update()
@@ -98,17 +100,20 @@ MUDA_INLINE typename ComputeGraphVar<T>::RWViewer ComputeGraphVar<T>::eval()
         case ComputeGraphPhase::Building: {
             auto acc = details::ComputeGraphAccessor();
             acc.check_allow_var_eval();
-            if(!acc.is_topo_built())
+            MUDA_ASSERT(ComputeGraphBuilder::is_topo_building() || is_valid(),
+                        "ComputeGraphVar[%s] is not valid, please update it before use",
+                        name().data());
+
+            constexpr auto const_eval = std::is_same_v<T, read_only_viewer_t<T>>;
+
+            if constexpr(const_eval)
             {
-                if constexpr(std::is_same_v<T, read_only_viewer_t<T>>)
-                {
-                    // they are all read only(e.g. host float/int ...)
-                    this->base_building_ceval();
-                }
-                else
-                {
-                    this->base_building_eval();
-                }
+                // they are all read only(e.g. host float/int ...)
+                this->base_building_ceval();
+            }
+            else
+            {
+                this->base_building_eval();
             }
         }
         break;
@@ -131,6 +136,12 @@ MUDA_INLINE typename ComputeGraphVar<T>::ROViewer ComputeGraphVar<T>::ceval() co
         break;
         case ComputeGraphPhase::TopoBuilding:
         case ComputeGraphPhase::Building: {
+            auto acc = details::ComputeGraphAccessor();
+            acc.check_allow_var_eval();
+            MUDA_ASSERT(ComputeGraphBuilder::is_topo_building() || is_valid(),
+                        "ComputeGraphVar[%s] is not valid, please update it before use",
+                        name().data());
+
             this->base_building_ceval();
         }
         break;
@@ -155,5 +166,25 @@ MUDA_INLINE ComputeGraphVar<T>& ComputeGraphVar<T>::operator=(const RWViewer& vi
 {
     update(view);
     return *this;
+}
+template <typename T>
+MUDA_INLINE void ComputeGraphVar<T>::graphviz_def(std::ostream& o,
+                                                  const ComputeGraphGraphvizOptions& options) const
+{
+    graphviz_id(o, options);
+    o << "[";
+    if(!name().empty())
+        o << "label=\"" << name() << "\",";
+
+    if constexpr(std::is_same_v<T, cudaEvent_t>)
+    {
+        o << options.event_style;
+    }
+    else
+    {
+        o << options.var_style;
+    }
+
+    o << "]";
 }
 }  // namespace muda
