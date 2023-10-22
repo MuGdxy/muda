@@ -1,7 +1,9 @@
 #pragma once
+#include <muda/launch/launch_base.h>
 #include <muda/buffer.h>
 #include <muda/container.h>
 #include <muda/buffer/buffer_launch.h>
+#include <muda/compute_graph/compute_graph.h>
 
 namespace muda
 {

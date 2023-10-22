@@ -59,6 +59,7 @@ MUDA_INLINE void ComputeGraphVarBase::graphviz_id(std::ostream& o,
 
 MUDA_INLINE void ComputeGraphVarBase::update()
 {
+    MUDA_ASSERT(!is_using(), "ComputeGraphVar is using, can't update");
     this->base_update();
 }
 
@@ -83,19 +84,16 @@ MUDA_INLINE void ComputeGraphVarBase::sync()
         on().wait(graph->m_event);
 }
 
-
-// ComputeGraphVar<T>:
-
-template <typename T>
-MUDA_INLINE typename ComputeGraphVar<T>::RWViewer ComputeGraphVar<T>::eval()
+template <typename RWView>
+RWView ComputeGraphVarBase::_eval(const RWView& view)
 {
     auto phase = ComputeGraphBuilder::current_phase();
     switch(phase)
     {
-        case ComputeGraphPhase::None: {
-            MUDA_ERROR_WITH_LOCATION("ComputeGraphVar.eval() is not allowed outside Graph Closure");
-        }
-        break;
+        //case ComputeGraphPhase::None: {
+        //    MUDA_ERROR_WITH_LOCATION("ComputeGraphVar.eval() is not allowed outside Graph Closure");
+        //}
+        //break;
         case ComputeGraphPhase::TopoBuilding:
         case ComputeGraphPhase::Building: {
             auto acc = details::ComputeGraphAccessor();
@@ -104,7 +102,7 @@ MUDA_INLINE typename ComputeGraphVar<T>::RWViewer ComputeGraphVar<T>::eval()
                         "ComputeGraphVar[%s] is not valid, please update it before use",
                         name().data());
 
-            constexpr auto const_eval = std::is_same_v<T, read_only_viewer_t<T>>;
+            constexpr auto const_eval = std::is_same_v<RWView, read_only_view_t<RWView>>;
 
             if constexpr(const_eval)
             {
@@ -121,11 +119,11 @@ MUDA_INLINE typename ComputeGraphVar<T>::RWViewer ComputeGraphVar<T>::eval()
         default:  // nothing to do
             break;
     }
-    return m_value;
+    return view;
 }
 
-template <typename T>
-MUDA_INLINE typename ComputeGraphVar<T>::ROViewer ComputeGraphVar<T>::ceval() const
+template <typename ROView>
+ROView ComputeGraphVarBase::_ceval(ROView& view) const
 {
     auto phase = ComputeGraphBuilder::current_phase();
     switch(phase)
@@ -151,22 +149,25 @@ MUDA_INLINE typename ComputeGraphVar<T>::ROViewer ComputeGraphVar<T>::ceval() co
         default:
             break;
     }
-    return m_value;
+    return view;
 }
 
+// ComputeGraphVar<T>:
+
 template <typename T>
-MUDA_INLINE void ComputeGraphVar<T>::update(const RWViewer& view)
+MUDA_INLINE void ComputeGraphVar<T>::update(const RWView& view)
 {
-    MUDA_ASSERT(!is_using(), "ComputeGraphVar is using, can't update");
     ComputeGraphVarBase::update();
     m_value = view;
 }
+
 template <typename T>
-MUDA_INLINE ComputeGraphVar<T>& ComputeGraphVar<T>::operator=(const RWViewer& view)
+MUDA_INLINE ComputeGraphVar<T>& ComputeGraphVar<T>::operator=(const RWView& view)
 {
     update(view);
     return *this;
 }
+
 template <typename T>
 MUDA_INLINE void ComputeGraphVar<T>::graphviz_def(std::ostream& o,
                                                   const ComputeGraphGraphvizOptions& options) const

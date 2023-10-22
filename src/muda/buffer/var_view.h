@@ -24,13 +24,13 @@ class VarView
     CDense<T> cviewer() const MUDA_NOEXCEPT;
 };
 template <typename T>
-struct read_only_viewer<VarView<T>>
+struct read_only_view<VarView<T>>
 {
     using type = const VarView<T>;
 };
 
 template <typename T>
-struct read_write_viewer<const VarView<T>>
+struct read_write_view<const VarView<T>>
 {
     using type = VarView<T>;
 };

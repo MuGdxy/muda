@@ -113,6 +113,11 @@ void compute_graph_simple()
     //f(20, 1M);
 }
 
+TEST_CASE("compute_graph_test_simple", "[compute_graph]")
+{
+    compute_graph_simple();
+}
+
 void compute_graph_graphviz()
 {
     // resources
@@ -187,6 +192,12 @@ void compute_graph_graphviz()
     graph.graphviz(std::cout);
 }
 
+
+TEST_CASE("compute_graph_test_graphviz", "[compute_graph]")
+{
+    compute_graph_graphviz();
+}
+
 void compute_graph_multi_graph()
 {
     ComputeGraphVarManager manager;
@@ -257,6 +268,11 @@ void compute_graph_multi_graph()
     wait_device();
 }
 
+TEST_CASE("compute_graph_test_multi_graph", "[compute_graph]")
+{
+    compute_graph_multi_graph();
+}
+
 void compute_graph_update()
 {
     ComputeGraphVarManager manager;
@@ -320,6 +336,11 @@ void compute_graph_update()
     graph.launch().wait();
 }
 
+TEST_CASE("compute_graph_test_update", "[compute_graph]")
+{
+    compute_graph_update();
+}
+
 void compute_graph_buffer_view()
 {
     ComputeGraphVarManager manager;
@@ -327,10 +348,11 @@ void compute_graph_buffer_view()
     ComputeGraph graph{manager};
 
     // define graph vars
-    auto& N   = manager.create_var<size_t>("N");
-    auto& x_0 = manager.create_var<BufferView<Vector3>>("x_0");
-    auto& x   = manager.create_var<BufferView<Vector3>>("x");
-    auto& y   = manager.create_var<BufferView<Vector3>>("y");
+    auto& N     = manager.create_var<size_t>("N");
+    auto& x_0   = manager.create_var<BufferView<Vector3>>("x_0");
+    auto& h_x_0 = manager.create_var<Vector3*>("h_x_0");
+    auto& x     = manager.create_var<BufferView<Vector3>>("x");
+    auto& y     = manager.create_var<BufferView<Vector3>>("y");
 
     graph.create_node("cal_x_0") << [&]
     {
@@ -339,12 +361,14 @@ void compute_graph_buffer_view()
                                { x_0(i) = Vector3::Ones(); });
     };
 
+    graph.create_node("copy_to_h_x_0")
+        << [&] { BufferLaunch().copy(h_x_0, x_0); };
+
     graph.create_node("copy_to_x") << [&] {  //
-        BufferLaunch().copy(x.eval(), x_0.ceval());
+        BufferLaunch().copy(x, x_0);
     };
 
-    graph.create_node("copy_to_y")
-        << [&] { BufferLaunch().copy(y.eval(), x_0.ceval()); };
+    graph.create_node("copy_to_y") << [&] { BufferLaunch().copy(y, x_0); };
 
     graph.create_node("print_x_y") << [&]
     {
@@ -369,42 +393,22 @@ void compute_graph_buffer_view()
 
     Stream stream;
 
-    auto N_value    = 4;
-    auto x_0_buffer = DeviceBuffer<Vector3>(N_value);
-    auto x_buffer   = DeviceBuffer<Vector3>(N_value);
-    auto y_buffer   = DeviceBuffer<Vector3>(N_value);
+    auto N_value      = 4;
+    auto x_0_buffer   = DeviceBuffer<Vector3>(N_value);
+    auto h_x_0_buffer = std::vector<Vector3>(N_value);
+    auto x_buffer     = DeviceBuffer<Vector3>(N_value);
+    auto y_buffer     = DeviceBuffer<Vector3>(N_value);
 
     N.update(N_value);
     x_0.update(x_0_buffer);
+    h_x_0.update(h_x_0_buffer.data());
     x.update(x_buffer);
     y.update(y_buffer);
-
 
     // graph.launch(s);
     graph.launch(true, stream);
 
     stream.wait();
-}
-
-
-TEST_CASE("compute_graph_test_simple", "[compute_graph]")
-{
-    compute_graph_simple();
-}
-
-TEST_CASE("compute_graph_test_graphviz", "[compute_graph]")
-{
-    compute_graph_graphviz();
-}
-
-TEST_CASE("compute_graph_test_multi_graph", "[compute_graph]")
-{
-    compute_graph_multi_graph();
-}
-
-TEST_CASE("compute_graph_test_update", "[compute_graph]")
-{
-    compute_graph_update();
 }
 
 TEST_CASE("compute_graph_test_buffer_view", "[compute_graph]")

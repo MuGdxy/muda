@@ -233,7 +233,6 @@ class DeviceReduce : public CubWrapper<DeviceReduce>
             d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, this->stream(), false));
     }
 
-
     template <typename InputIteratorT, typename OutputIteratorT>
     DeviceReduce& ArgMin(void*           d_temp_storage,
                          size_t&         temp_storage_bytes,

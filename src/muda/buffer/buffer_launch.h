@@ -46,24 +46,56 @@ class BufferLaunch : public LaunchBase<BufferLaunch>
     template <typename T>
     BufferLaunch& shrink_to_fit(DeviceBuffer<T>& buffer);
 
+    // device to device
     template <typename T>
     BufferLaunch& copy(BufferView<T> dst, const BufferView<T>& src);
     template <typename T>
+    BufferLaunch& copy(ComputeGraphVar<BufferView<T>>&       dst,
+                       const ComputeGraphVar<BufferView<T>>& src);
+
+    // device to host
+    template <typename T>
     BufferLaunch& copy(T* dst, const BufferView<T>& src);
     template <typename T>
-    BufferLaunch& copy(BufferView<T> dst, const T* src);
+    BufferLaunch& copy(ComputeGraphVar<T*>& dst, const ComputeGraphVar<BufferView<T>>& src);
 
+    // host to device
+    template <typename T>
+    BufferLaunch& copy(BufferView<T> dst, const T* src);
+    template <typename T>
+    BufferLaunch& copy(ComputeGraphVar<BufferView<T>>& dst, const ComputeGraphVar<T*>& src);
+
+    // device to device
     template <typename T>
     BufferLaunch& copy(VarView<T> dst, const VarView<T>& src);
     template <typename T>
+    BufferLaunch& copy(ComputeGraphVar<VarView<T>>&       dst,
+                       const ComputeGraphVar<VarView<T>>& src);
+
+    // device to host
+    template <typename T>
     BufferLaunch& copy(T* dst, const VarView<T>& src);
     template <typename T>
-    BufferLaunch& copy(VarView<T> dst, const T* src);
+    BufferLaunch& copy(ComputeGraphVar<T*>& dst, const ComputeGraphVar<VarView<T>>& src);
 
+    // host to device
+    template <typename T>
+    BufferLaunch& copy(VarView<T> dst, const T* src);
+    template <typename T>
+    BufferLaunch& copy(ComputeGraphVar<VarView<T>>& dst, const ComputeGraphVar<T*>& src);
+
+    // host to device (scattered)
     template <typename T>
     BufferLaunch& fill(BufferView<T> buffer, const T& val);
     template <typename T>
+    BufferLaunch& fill(ComputeGraphVar<BufferView<T>>& buffer,
+                       const ComputeGraphVar<T>&       val);
+
+    // host to device (scattered)
+    template <typename T>
     BufferLaunch& fill(VarView<T> buffer, const T& val);
+    template <typename T>
+    BufferLaunch& fill(ComputeGraphVar<VarView<T>>& buffer, const ComputeGraphVar<T>& val);
 
   private:
     template <typename T, typename FConstruct>

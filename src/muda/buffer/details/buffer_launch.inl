@@ -130,10 +130,24 @@ BufferLaunch& BufferLaunch::copy(BufferView<T> dst, const BufferView<T>& src)
 }
 
 template <typename T>
+BufferLaunch& BufferLaunch::copy(ComputeGraphVar<BufferView<T>>&       dst,
+                                 const ComputeGraphVar<BufferView<T>>& src)
+{
+    return copy(dst.eval(), src.ceval());
+}
+
+template <typename T>
 BufferLaunch& BufferLaunch::copy(T* dst, const BufferView<T>& src)
 {
     Memory(m_stream).download(dst, src.data(), src.size() * sizeof(T));
     return *this;
+}
+
+template <typename T>
+BufferLaunch& BufferLaunch::copy(ComputeGraphVar<T*>&                  dst,
+                                 const ComputeGraphVar<BufferView<T>>& src)
+{
+    return copy(dst.eval(), src.ceval());
 }
 
 template <typename T>
@@ -143,6 +157,12 @@ BufferLaunch& BufferLaunch::copy(BufferView<T> dst, const T* src)
     return *this;
 }
 
+template <typename T>
+BufferLaunch& BufferLaunch::copy(ComputeGraphVar<BufferView<T>>& dst,
+                                 const ComputeGraphVar<T*>&      src)
+{
+    return copy(dst.eval(), src.ceval());
+}
 
 template <typename T>
 BufferLaunch& BufferLaunch::copy(VarView<T> dst, const VarView<T>& src)
@@ -155,10 +175,24 @@ BufferLaunch& BufferLaunch::copy(VarView<T> dst, const VarView<T>& src)
 }
 
 template <typename T>
+BufferLaunch& BufferLaunch::copy(ComputeGraphVar<VarView<T>>&       dst,
+                                 const ComputeGraphVar<VarView<T>>& src)
+{
+    return copy(dst.eval(), src.ceval());
+}
+
+template <typename T>
 BufferLaunch& BufferLaunch::copy(T* dst, const VarView<T>& src)
 {
     Memory(m_stream).download(dst, src.data(), sizeof(T));
     return *this;
+}
+
+template <typename T>
+BufferLaunch& BufferLaunch::copy(ComputeGraphVar<T*>&               dst,
+                                 const ComputeGraphVar<VarView<T>>& src)
+{
+    return copy(dst.eval(), src.ceval());
 }
 
 template <typename T>
@@ -168,6 +202,12 @@ BufferLaunch& BufferLaunch::copy(VarView<T> dst, const T* src)
     return *this;
 }
 
+template <typename T>
+BufferLaunch& BufferLaunch::copy(ComputeGraphVar<VarView<T>>& dst,
+                                 const ComputeGraphVar<T*>&   src)
+{
+    return copy(dst.eval(), src.ceval());
+}
 
 template <typename T>
 BufferLaunch& BufferLaunch::fill(BufferView<T> buffer, const T& val)
@@ -176,6 +216,13 @@ BufferLaunch& BufferLaunch::fill(BufferView<T> buffer, const T& val)
         .apply(buffer.size(),
                [d = buffer.data(), val] __device__(int i) mutable { d[i] = val; });
     return *this;
+}
+
+template <typename T>
+BufferLaunch& BufferLaunch::fill(ComputeGraphVar<BufferView<T>>& buffer,
+                                 const ComputeGraphVar<T>&       val)
+{
+    return fill(buffer.eval(), val.eval());
 }
 
 template <typename T>
@@ -192,6 +239,12 @@ BufferLaunch& BufferLaunch::fill(VarView<T> buffer, const T& val)
     return *this;
 }
 
+template <typename T>
+BufferLaunch& BufferLaunch::fill(ComputeGraphVar<VarView<T>>& buffer,
+                                 const ComputeGraphVar<T>&    val)
+{
+    return fill(buffer.eval(), val.eval());
+}
 
 template <typename T, typename FConstruct>
 BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new_size, FConstruct&& fct)

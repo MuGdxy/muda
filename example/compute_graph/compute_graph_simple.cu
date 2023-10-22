@@ -29,7 +29,7 @@ finally we launch the graph and get the result.
     graph.create_node("cal_x_0") << [&]
     {
         ParallelFor(256).apply(N.eval(),
-                               [x_0 = x_0.eval().viewer()] __device__(int i) mutable
+                               [x_0 = x_0.viewer()] __device__(int i) mutable
                                { x_0(i) = 1.0f; });
     };
 
@@ -43,8 +43,8 @@ finally we launch the graph and get the result.
     graph.create_node("print_x_y") << [&]
     {
         ParallelFor(256).apply(N.eval(),
-                               [x = x.ceval().cviewer(),
-                                y = y.ceval().cviewer(),
+                               [x = x.cviewer(),
+                                y = y.cviewer(),
                                 N = N.eval()] __device__(int i) mutable
                                { print("[%d] x = %f y = %f \n", i, x(i), y(i)); });
     };
