@@ -44,25 +44,54 @@ class ComputeGraphVarBase;
 template <typename T>
 class ComputeGraphVar;
 
+class LaunchCore
+{
+  protected:
+    template <typename T>
+    using S = std::shared_ptr<T>;
+    ::cudaStream_t stream() const { return m_stream; }
+    ::cudaStream_t m_stream;
+    void finish_kernel_launch();
+
+  public:
+    LaunchCore(::cudaStream_t stream) MUDA_NOEXCEPT;
+
+    virtual void init_stream(::cudaStream_t s) { m_stream = s; }
+
+    void push_range(const std::string& name);
+    void pop_range();
+    void kernel_name(std::string_view name);
+    void record(cudaEvent_t e, int flag = cudaEventRecordDefault);
+    void record(ComputeGraphVar<cudaEvent_t>&            e,
+                const std::vector<ComputeGraphVarBase*>& vars);
+    template <typename... ViewT>
+    void record(ComputeGraphVar<cudaEvent_t>& e, ComputeGraphVar<ViewT>&... vars);
+    void when(cudaEvent_t e, int flag = cudaEventWaitDefault);
+    // let the host wait for the event
+    void wait(cudaEvent_t e, int flag = cudaEventWaitDefault);
+    void wait(const ComputeGraphVar<cudaEvent_t>&      e,
+              const std::vector<ComputeGraphVarBase*>& vars);
+    template <typename... ViewT>
+    void wait(const ComputeGraphVar<cudaEvent_t>& e, ComputeGraphVar<ViewT>&... vars);
+    void wait();
+    void callback(const std::function<void(::cudaStream_t, ::cudaError)>& callback);
+
+    static void wait_event(cudaEvent_t event);
+    static void wait_stream(::cudaStream_t stream);
+    static void wait_device();
+
+    ~LaunchCore() MUDA_NOEXCEPT;
+};
+
 template <typename T>
-class LaunchBase
+class LaunchBase : public LaunchCore
 {
     template <typename Others>
     friend class launch_base;
 
-  protected:
-    template <typename T>
-    using S = std::shared_ptr<T>;
-
-    cudaStream_t stream() const { return m_stream; }
-    cudaStream_t m_stream;
-
   public:
     using derived_type = T;
-
-    LaunchBase(cudaStream_t stream) MUDA_NOEXCEPT;
-
-    virtual void init_stream(cudaStream_t s) { m_stream = s; }
+    LaunchBase(::cudaStream_t stream) MUDA_NOEXCEPT;
 
     // create a named scope for better recognization (if you are using some profile tools)
     // usage:
@@ -86,7 +115,8 @@ class LaunchBase
     //  event node when performing stream capture.
     T& record(cudaEvent_t e, int flag = cudaEventRecordDefault);
 
-    T& record(ComputeGraphVar<cudaEvent_t>& e, const std::vector<ComputeGraphVarBase*>& vars);
+    T& record(ComputeGraphVar<cudaEvent_t>&            e,
+              const std::vector<ComputeGraphVarBase*>& vars);
 
     template <typename... ViewT>
     T& record(ComputeGraphVar<cudaEvent_t>& e, ComputeGraphVar<ViewT>&... vars);
@@ -105,7 +135,8 @@ class LaunchBase
     T& when(cudaEvent_t e, int flag = cudaEventWaitDefault);
     // let the host wait for the event
     T& wait(cudaEvent_t e, int flag = cudaEventWaitDefault);
-    T& wait(const ComputeGraphVar<cudaEvent_t>& e, const std::vector<ComputeGraphVarBase*>& vars);
+    T& wait(const ComputeGraphVar<cudaEvent_t>&      e,
+            const std::vector<ComputeGraphVarBase*>& vars);
     template <typename... ViewT>
     T& wait(const ComputeGraphVar<cudaEvent_t>& e, ComputeGraphVar<ViewT>&... vars);
 
@@ -115,11 +146,7 @@ class LaunchBase
 
     // register a host callback function, which will be called when all the jobs before
     // this point are done.
-    T& callback(const std::function<void(cudaStream_t, cudaError)>& callback);
-
-    static void wait_event(cudaEvent_t event);
-    static void wait_stream(cudaStream_t stream);
-    static void wait_device();
+    T& callback(const std::function<void(::cudaStream_t, ::cudaError)>& callback);
 
     template <typename Next>
     Next next(Next n);
@@ -138,18 +165,18 @@ class LaunchBase
 class Empty : public LaunchBase<Empty>
 {
   public:
-    Empty(cudaStream_t stream = nullptr)
+    Empty(::cudaStream_t stream = nullptr)
         : LaunchBase(stream)
     {
     }
 };
 
-Empty on(cudaStream_t stream);
+Empty on(::cudaStream_t stream);
 
 Empty on();
 
 void wait_device();
-void wait_stream(cudaStream_t stream);
+void wait_stream(::cudaStream_t stream);
 void wait_event(cudaEvent_t event);
 }  // namespace muda
 

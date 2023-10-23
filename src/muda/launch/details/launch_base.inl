@@ -1,14 +1,14 @@
-#pragma once
 #include <muda/debug.h>
 #include <muda/exception.h>
 #include <muda/compute_graph/compute_graph.h>
 #include <muda/compute_graph/compute_graph_var.h>
+#include <muda/logger/logger.h>
 
 namespace muda
 {
-template <typename T>
-LaunchBase<T>::LaunchBase(cudaStream_t stream) MUDA_NOEXCEPT : m_stream(stream)
+MUDA_INLINE LaunchCore::LaunchCore(cudaStream_t stream) MUDA_NOEXCEPT : m_stream(stream)
 {
+    //Logger::instance();
     if(ComputeGraphBuilder::is_phase_serial_launching())
     {
         MUDA_ASSERT(stream == nullptr
@@ -17,8 +17,8 @@ LaunchBase<T>::LaunchBase(cudaStream_t stream) MUDA_NOEXCEPT : m_stream(stream)
         init_stream(details::ComputeGraphAccessor().current_stream());
     }
 }
-template <typename T>
-T& muda::LaunchBase<T>::push_range(const std::string& name)
+
+MUDA_INLINE void LaunchCore::push_range(const std::string& name)
 {
     MUDA_ASSERT(ComputeGraphBuilder::is_phase_none(),
                 "`push_range()` is meaningless in ComputeGraph");
@@ -31,30 +31,24 @@ T& muda::LaunchBase<T>::push_range(const std::string& name)
     eventAttrib.messageType           = NVTX_MESSAGE_TYPE_ASCII;
     eventAttrib.message.ascii         = name.c_str();
     nvtxRangePushEx(&eventAttrib);
-    return derived();
 }
 
-template <typename T>
-T& LaunchBase<T>::pop_range()
+MUDA_INLINE void LaunchCore::pop_range()
 {
     MUDA_ASSERT(ComputeGraphBuilder::is_phase_none(),
                 "`pop_range()` is meaningless in ComputeGraph");
     nvtxRangePop();
-    return derived();
 }
 
-template <typename T>
-T& LaunchBase<T>::record(cudaEvent_t e, int flag)
+MUDA_INLINE void LaunchCore::record(cudaEvent_t e, int flag)
 {
     MUDA_ASSERT(ComputeGraphBuilder::is_phase_none(),
                 "You need provide at least one ComputeGraphVar for dependency generation");
     checkCudaErrors(cudaEventRecordWithFlags(e, stream(), flag));
-    return derived();
 }
 
-template <typename T>
-T& LaunchBase<T>::record(ComputeGraphVar<cudaEvent_t>&            e,
-                         const std::vector<ComputeGraphVarBase*>& vars)
+MUDA_INLINE void LaunchCore::record(ComputeGraphVar<cudaEvent_t>& e,
+                                    const std::vector<ComputeGraphVarBase*>& vars)
 {
     auto event = e.eval();
     for(auto var : vars)
@@ -66,31 +60,28 @@ T& LaunchBase<T>::record(ComputeGraphVar<cudaEvent_t>&            e,
         },
         [&] { details::ComputeGraphAccessor().set_event_record_node(event); },
         [&] { details::ComputeGraphAccessor().set_event_record_node(nullptr); });
-    return derived();
 }
 
-template <typename T>
-T& LaunchBase<T>::when(cudaEvent_t e, int flag)
+MUDA_INLINE void LaunchCore::when(cudaEvent_t e, int flag)
 {
     MUDA_ASSERT(ComputeGraphBuilder::is_phase_none(),
                 "`when()` makes code reader confused in ComputeGraph, please use `wait()` instead")
     checkCudaErrors(cudaStreamWaitEvent(stream(), e, flag));
-    return derived();
 }
 
-template <typename T>
-T& LaunchBase<T>::wait(cudaEvent_t e, int flag)
+MUDA_INLINE void LaunchCore::wait(cudaEvent_t e, int flag)
 {
     MUDA_ASSERT(ComputeGraphBuilder::is_phase_none(),
                 "You need provide at least one ComputeGraphVar for dependency generation");
 
     checkCudaErrors(cudaStreamWaitEvent(m_stream, e, flag));
-    return derived();
+
+    if(Debug::is_retrieve_on_wait())
+        Debug::logger_retrieve(std::cout);
 }
 
-template <typename T>
-T& LaunchBase<T>::wait(const ComputeGraphVar<cudaEvent_t>&      e,
-                       const std::vector<ComputeGraphVarBase*>& vars)
+MUDA_INLINE void LaunchCore::wait(const ComputeGraphVar<cudaEvent_t>&      e,
+                                  const std::vector<ComputeGraphVarBase*>& vars)
 {
     auto event = e.ceval();
     for(auto var : vars)
@@ -102,24 +93,151 @@ T& LaunchBase<T>::wait(const ComputeGraphVar<cudaEvent_t>&      e,
         },
         [&] { details::ComputeGraphAccessor().set_event_wait_node(event); },
         [&] { details::ComputeGraphAccessor().set_event_wait_node(nullptr); });
-    return derived();
 }
 
-template <typename T>
-T& LaunchBase<T>::wait()
+MUDA_INLINE void LaunchCore::wait()
 {
     wait_stream(m_stream);
-    return derived();
+
+    if(Debug::is_retrieve_on_wait())
+        Debug::logger_retrieve(std::cout);
 }
 
-template <typename T>
-T& LaunchBase<T>::callback(const std::function<void(cudaStream_t, cudaError)>& callback)
+MUDA_INLINE void LaunchCore::callback(const std::function<void(cudaStream_t, cudaError)>& callback)
 {
     MUDA_ASSERT(ComputeGraphBuilder::is_phase_none(),
                 "`callback()` in ComputeGraph is unsupported now");
     auto userdata = new std::function<void(cudaStream_t, cudaError)>(callback);
     checkCudaErrors(
         cudaStreamAddCallback(stream(), details::stream_error_callback, userdata, 0));
+}
+
+template <typename... ViewT>
+MUDA_INLINE void LaunchCore::record(ComputeGraphVar<cudaEvent_t>& e,
+                                    ComputeGraphVar<ViewT>&... vars)
+{
+    record(e, {static_cast<ComputeGraphVarBase*>(&vars)...});
+}
+
+
+template <typename... ViewT>
+MUDA_INLINE void LaunchCore::wait(const ComputeGraphVar<cudaEvent_t>& e,
+                                  ComputeGraphVar<ViewT>&... vars)
+{
+    return wait(e, {static_cast<ComputeGraphVarBase*>(&vars)...});
+}
+
+MUDA_INLINE void LaunchCore::kernel_name(std::string_view name)
+{
+#if MUDA_CHECK_ON
+    details::LaunchInfoCache::current_kernel_name(name);
+#endif
+}
+
+MUDA_INLINE void LaunchCore::finish_kernel_launch()
+{
+#if MUDA_CHECK_ON
+    details::LaunchInfoCache::current_kernel_name("");
+#endif
+}
+
+
+MUDA_INLINE LaunchCore::~LaunchCore() MUDA_NOEXCEPT
+{
+#if MUDA_CHECK_ON
+    if(ComputeGraphBuilder::is_direct_launching() && Debug::is_debug_sync_all())
+        wait();
+#endif
+}
+
+MUDA_INLINE void LaunchCore::wait_event(cudaEvent_t event)
+{
+    MUDA_ASSERT(ComputeGraphBuilder::is_phase_none(),
+                "`wait_event()` is meaningless in ComputeGraph");
+    checkCudaErrors(cudaEventSynchronize(event));
+}
+
+MUDA_INLINE void LaunchCore::wait_stream(cudaStream_t stream)
+{
+    MUDA_ASSERT(ComputeGraphBuilder::is_phase_none(),
+                "`wait_stream()` a stream is meaningless in ComputeGraph");
+    checkCudaErrors(cudaStreamSynchronize(stream));
+}
+
+MUDA_INLINE void LaunchCore::wait_device()
+{
+    MUDA_ASSERT(ComputeGraphBuilder::is_phase_none(),
+                "`wait_device()` a stream is meaningless in ComputeGraph");
+    checkCudaErrors(cudaDeviceSynchronize());
+}
+
+template <typename T>
+LaunchBase<T>::LaunchBase(cudaStream_t stream) MUDA_NOEXCEPT : LaunchCore(stream)
+{
+}
+
+template <typename T>
+T& LaunchBase<T>::push_range(const std::string& name)
+{
+    LaunchCore::push_range(name);
+    return derived();
+}
+
+template <typename T>
+T& LaunchBase<T>::pop_range()
+{
+    LaunchCore::pop_range();
+    return derived();
+}
+
+template <typename T>
+T& LaunchBase<T>::record(cudaEvent_t e, int flag)
+{
+    LaunchCore::record(e, flag);
+    return derived();
+}
+
+template <typename T>
+T& LaunchBase<T>::record(ComputeGraphVar<cudaEvent_t>&            e,
+                         const std::vector<ComputeGraphVarBase*>& vars)
+{
+    LaunchCore::record(e, vars);
+    return derived();
+}
+
+template <typename T>
+T& LaunchBase<T>::when(cudaEvent_t e, int flag)
+{
+    LaunchCore::when(e, flag);
+    return derived();
+}
+
+template <typename T>
+T& LaunchBase<T>::wait(cudaEvent_t e, int flag)
+{
+    LaunchCore::wait(e, flag);
+    return derived();
+}
+
+template <typename T>
+T& LaunchBase<T>::wait(const ComputeGraphVar<cudaEvent_t>&      e,
+                       const std::vector<ComputeGraphVarBase*>& vars)
+{
+    LaunchCore::wait(e, vars);
+    return derived();
+}
+
+template <typename T>
+T& LaunchBase<T>::wait()
+{
+    LaunchCore::wait();
+    return derived();
+}
+
+template <typename T>
+T& LaunchBase<T>::callback(const std::function<void(cudaStream_t, cudaError)>& callback)
+{
+    LaunchCore::callback(callback);
     return derived();
 }
 template <typename T>
@@ -162,52 +280,20 @@ Next LaunchBase<T>::next(Args&&... args)
 template <typename T>
 T& LaunchBase<T>::kernel_name(std::string_view name)
 {
-#if MUDA_CHECK_ON
-    details::LaunchInfoCache::current_kernel_name(name);
-#endif
+    LaunchCore::kernel_name(name);
     return derived();
 }
 
 template <typename T>
 T& LaunchBase<T>::finish_kernel_launch()
 {
-#if MUDA_CHECK_ON
-    details::LaunchInfoCache::current_kernel_name("");
-#endif
+    LaunchCore::finish_kernel_launch();
     return derived();
 }
 
 template <typename T>
 LaunchBase<T>::~LaunchBase() MUDA_NOEXCEPT
 {
-#if MUDA_CHECK_ON
-    if(ComputeGraphBuilder::is_direct_launching() && Debug::is_debug_sync_all())
-        wait();
-#endif
-}
-
-template <typename T>
-void LaunchBase<T>::wait_event(cudaEvent_t event)
-{
-    MUDA_ASSERT(ComputeGraphBuilder::is_phase_none(),
-                "`wait_event()` is meaningless in ComputeGraph");
-    checkCudaErrors(cudaEventSynchronize(event));
-}
-
-template <typename T>
-void LaunchBase<T>::wait_stream(cudaStream_t stream)
-{
-    MUDA_ASSERT(ComputeGraphBuilder::is_phase_none(),
-                "`wait_stream()` a stream is meaningless in ComputeGraph");
-    checkCudaErrors(cudaStreamSynchronize(stream));
-}
-
-template <typename T>
-void LaunchBase<T>::wait_device()
-{
-    MUDA_ASSERT(ComputeGraphBuilder::is_phase_none(),
-                "`wait_device()` a stream is meaningless in ComputeGraph");
-    checkCudaErrors(cudaDeviceSynchronize());
 }
 
 MUDA_INLINE Empty on(cudaStream_t stream)

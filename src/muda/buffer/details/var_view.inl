@@ -27,6 +27,14 @@ void VarView<T>::copy_from(const VarView<T>& val)
 }
 
 template <typename T>
+void VarView<T>::fill(const T& val)
+{
+    BufferLaunch()
+        .fill(*this, val)  //
+        .wait();
+}
+
+template <typename T>
 Dense<T> VarView<T>::viewer() MUDA_NOEXCEPT
 {
     return Dense<T>{m_data};

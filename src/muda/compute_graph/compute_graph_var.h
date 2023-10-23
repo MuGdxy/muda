@@ -65,8 +65,7 @@ class ComputeGraphVarBase
 
     void base_update();
 
-    template <typename T>
-    friend class LaunchBase;
+    friend class LaunchCore;
 
     mutable std::set<ClosureId> m_closure_ids;
 

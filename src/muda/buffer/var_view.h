@@ -19,6 +19,7 @@ class VarView
     void copy_from(const T* data);
     void copy_to(T* data) const;
     void copy_from(const VarView<T>& data);
+    void fill(const T& value);
 
     Dense<T>  viewer() MUDA_NOEXCEPT;
     CDense<T> cviewer() const MUDA_NOEXCEPT;
