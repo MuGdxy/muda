@@ -16,7 +16,7 @@ void log_test()
     Launch(2, 2)
         .apply(
             [] __device__() mutable {  //
-                cout << "threadIdx=(" << threadIdx << ") : hello world\n";
+                cout << "threadIdx=(" << threadIdx << "): hello world\n";
             })
         .wait();
 
