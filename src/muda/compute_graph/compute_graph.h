@@ -5,7 +5,6 @@
 #include <muda/graph/graph.h>
 #include <muda/launch/stream.h>
 #include <muda/compute_graph/compute_graph_phase.h>
-
 #include <muda/compute_graph/compute_graph_node_type.h>
 #include <muda/compute_graph/compute_graph_node_id.h>
 #include <muda/compute_graph/compute_graph_closure_id.h>

@@ -3,6 +3,8 @@
 #include <muda/muda_config.h>
 #include <muda/buffer/var_view.h>
 #include <muda/buffer/buffer_view.h>
+#include <muda/buffer/graph_buffer_view.h>
+#include <muda/buffer/graph_var_view.h>
 
 namespace muda
 {

@@ -1,3 +1,4 @@
+#pragma once
 #include <string>
 namespace muda
 {
@@ -17,7 +18,8 @@ class ComputeGraphGraphvizOptions
     std::string arc_style        = R"(color="#82B366", )";
     std::string event_style =
         R"(shape="rectangle", color="#8E44AD", style="filled,rounded", fillcolor="#BB8FCE",)";
-    std::string cluster_style = R"(fontcolor="#82B366" fontsize=18; color = "#82B366"; style = "dashed";)";
+    std::string cluster_style =
+        R"(fontcolor="#82B366" fontsize=18; color = "#82B366"; style = "dashed";)";
     std::string cluster_var_style = R"(color="#F08705"; style="dashed";)";
 };
 }  // namespace muda

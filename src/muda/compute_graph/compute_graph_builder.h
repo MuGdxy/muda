@@ -1,5 +1,4 @@
 #pragma once
-#include <muda/compute_graph/compute_graph.h>
 #include <muda/compute_graph/compute_graph_phase.h>
 
 namespace muda::details
@@ -9,6 +8,7 @@ class ComputeGraphAccessor;
 namespace muda
 {
 class ComputeGraph;
+
 class ComputeGraphBuilder
 {
     static ComputeGraphBuilder& instance();
@@ -30,14 +30,14 @@ class ComputeGraphBuilder
     // if do_when_topo_building_set_node == nullptr, do_when_set_node will be called
     // if do_when_topo_building_set_node != nullptr, do_when_topo_building_set_node will be called
     static void invoke_phase_actions(PhaseAction&& do_when_direct_launch,
-                                     PhaseAction&& do_when_set_node, 
+                                     PhaseAction&& do_when_set_node,
                                      PhaseAction&& do_when_topo_building_set_node = nullptr);
 
   private:
     friend class ComputeGraph;
     friend class ComputeGraphVarBase;
 
-    static auto current_graph(ComputeGraph* graph);
+    static void current_graph(ComputeGraph* graph);
     friend class details::ComputeGraphAccessor;
     static auto current_graph() { return instance().m_current_graph; }
 

@@ -1,3 +1,4 @@
+#pragma once
 #include <muda/buffer/var_view.h>
 #include <muda/compute_graph/compute_graph_var.h>
 

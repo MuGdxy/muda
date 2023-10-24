@@ -10,16 +10,6 @@ MUDA_DEVICE LoggerViewer::Proxy& operator<<(LoggerViewer::Proxy& proxy, uint3 va
 
 void log_test()
 {
-    Debug::init_logger();  // init global logger
-
-    // global logger
-    Launch(2, 2)
-        .apply(
-            [] __device__() mutable {  //
-                cout << "threadIdx=(" << threadIdx << "): hello world\n";
-            })
-        .wait();
-
     // user logger
     Logger logger{};
     Launch(2, 2)

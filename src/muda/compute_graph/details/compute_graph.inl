@@ -1,5 +1,4 @@
 #include <memory>
-
 #include <muda/exception.h>
 #include <muda/compute_graph/compute_graph_builder.h>
 #include <muda/compute_graph/compute_graph_var.h>
@@ -10,7 +9,6 @@
 #include <muda/compute_graph/nodes/compute_graph_memory_node.h>
 #include <muda/compute_graph/nodes/compute_graph_event_node.h>
 #include <muda/debug.h>
-
 
 namespace muda
 {

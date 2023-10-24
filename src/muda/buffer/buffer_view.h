@@ -4,6 +4,8 @@
 #include <cuda_runtime_api.h>
 #include <cinttypes>
 #include <muda/type_traits/type_modifier.h>
+#include <muda/viewer/dense.h>
+
 namespace muda
 {
 template <typename T>
@@ -26,6 +28,13 @@ class BufferView
     }
 
     BufferView(T* data, size_t size) MUDA_NOEXCEPT : m_data(data), m_offset(0), m_size(size)
+    {
+    }
+
+    BufferView(const Dense1D<T>& viewer) MUDA_NOEXCEPT
+        : m_data(viewer.data()),
+          m_offset(0),
+          m_size((size_t)viewer.total_size())
     {
     }
 

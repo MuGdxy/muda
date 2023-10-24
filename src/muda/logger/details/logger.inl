@@ -1,7 +1,8 @@
 #include <device_atomic_functions.h>
 #include <algorithm>
 #include <sstream>
-
+#include <muda/mstl/span.h>
+#include <muda/debug.h>
 namespace muda
 {
 MUDA_INLINE void Logger::expand_meta_data()
@@ -96,30 +97,30 @@ MUDA_INLINE Logger::~Logger()
     checkCudaErrors(cudaFree(m_offset));
 }
 
-MUDA_INLINE Logger& Logger::instance()
-{
-    static std::unique_ptr<Logger> logger = nullptr;
-    if(!logger)
-    {
-        LoggerViewer* log_viewer_ptr = nullptr;
-        checkCudaErrors(::cudaGetSymbolAddress((void**)&log_viewer_ptr, muda::cout));
-        logger = std::make_unique<Logger>(log_viewer_ptr);
-    }
-    return *logger;
-}
+//MUDA_INLINE Logger& Logger::instance()
+//{
+//    static std::unique_ptr<Logger> logger = nullptr;
+//    if(!logger)
+//    {
+//        LoggerViewer* log_viewer_ptr = nullptr;
+//        checkCudaErrors(cudaGetSymbolAddress((void**)&log_viewer_ptr, muda::cout));
+//        logger = std::make_unique<Logger>(log_viewer_ptr);
+//    }
+//    return *logger;
+//}
 
-MUDA_INLINE std::mutex& Logger::mutex()
-{
-    static std::mutex mtx;
-    return mtx;
-}
+//MUDA_INLINE std::mutex& Logger::mutex()
+//{
+//    static std::mutex mtx;
+//    return mtx;
+//}
 
 MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy::Proxy(LoggerViewer& viewer)
     : m_viewer(viewer)
 {
     MUDA_KERNEL_ASSERT(m_viewer.m_buffer_view_data && m_viewer.m_meta_data_view_data,
                        "LoggerViewer is not initialized");
-    m_log_id = ::atomicAdd(&(m_viewer.m_offset_view->log_id), 1u);
+    m_log_id = atomicAdd(&(m_viewer.m_offset_view->log_id), 1u);
 }
 
 MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy& LoggerViewer::Proxy::operator<<(const char* str)
@@ -160,7 +161,7 @@ MUDA_INLINE MUDA_DEVICE uint32_t next_idx(uint32_t* data_offset, uint32_t size, 
     {
         assumed         = old;
         auto new_offset = old + size;
-        old             = ::atomicCAS(data_offset, assumed, new_offset);
+        old             = atomicCAS(data_offset, assumed, new_offset);
         if(old + size >= total_size)
         {
             old = ~0u;

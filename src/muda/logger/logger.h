@@ -2,7 +2,6 @@
 #include <muda/muda_def.h>
 #include <muda/check/check_cuda_errors.h>
 #include <cinttypes>
-#include <muda/buffer/device_buffer.h>
 #include <muda/literal/unit.h>
 #include <muda/viewer/dense.h>
 #include <mutex>
@@ -108,12 +107,10 @@ class Logger
     void download();
     void expand_if_needed();
 
-    // DeviceBuffer<details::LoggerMetaData> m_meta_data;
     details::LoggerMetaData*             m_meta_data;
     size_t                               m_meta_data_size;
     std::vector<details::LoggerMetaData> m_h_meta_data;
 
-    // DeviceBuffer<char> m_buffer;
     char*             m_buffer;
     size_t            m_buffer_size;
     std::vector<char> m_h_buffer;
@@ -125,8 +122,8 @@ class Logger
     LoggerViewer* m_log_viewer_ptr;
     LoggerViewer  m_viewer;
 
-    static Logger&     instance();
-    static std::mutex& mutex();
+    //static Logger&     instance();
+    //static std::mutex& mutex();
 };
 
 MUDA_INLINE __device__ LoggerViewer cout;

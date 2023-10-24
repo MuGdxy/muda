@@ -1,5 +1,5 @@
-#include <muda/buffer/buffer_launch.h>
 #include <muda/container/vector.h>
+#include <muda/buffer/buffer_launch.h>
 
 namespace muda
 {

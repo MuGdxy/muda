@@ -1,8 +1,7 @@
-#include <muda/debug.h>
 #include <muda/exception.h>
 #include <muda/compute_graph/compute_graph.h>
 #include <muda/compute_graph/compute_graph_var.h>
-#include <muda/logger/logger.h>
+#include <iostream>
 
 namespace muda
 {
@@ -75,9 +74,6 @@ MUDA_INLINE void LaunchCore::wait(cudaEvent_t e, int flag)
                 "You need provide at least one ComputeGraphVar for dependency generation");
 
     checkCudaErrors(cudaStreamWaitEvent(m_stream, e, flag));
-
-    if(Debug::is_retrieve_on_wait())
-        Debug::logger_retrieve(std::cout);
 }
 
 MUDA_INLINE void LaunchCore::wait(const ComputeGraphVar<cudaEvent_t>&      e,
@@ -98,9 +94,6 @@ MUDA_INLINE void LaunchCore::wait(const ComputeGraphVar<cudaEvent_t>&      e,
 MUDA_INLINE void LaunchCore::wait()
 {
     wait_stream(m_stream);
-
-    if(Debug::is_retrieve_on_wait())
-        Debug::logger_retrieve(std::cout);
 }
 
 MUDA_INLINE void LaunchCore::callback(const std::function<void(cudaStream_t, cudaError)>& callback)

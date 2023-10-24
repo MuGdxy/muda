@@ -1,5 +1,5 @@
 #pragma once
-#include "compute_graph_builder.h"
+#include <muda/compute_graph/compute_graph.h>
 
 namespace muda
 {
@@ -60,9 +60,9 @@ MUDA_INLINE void ComputeGraphBuilder::invoke_phase_actions(PhaseAction&& do_when
     }
 }
 
-MUDA_INLINE auto ComputeGraphBuilder::current_graph(ComputeGraph* graph)
+MUDA_INLINE void ComputeGraphBuilder::current_graph(ComputeGraph* graph)
 {
-    return instance().m_current_graph = graph;
+    instance().m_current_graph = graph;
 }
 
 MUDA_INLINE ComputeGraphBuilder& muda::ComputeGraphBuilder::instance()

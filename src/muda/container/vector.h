@@ -9,7 +9,7 @@
 
 #include <muda/muda_def.h>
 #include <muda/buffer/buffer_view.h>
-#include <muda/viewer.h>
+#include <muda/viewer/dense.h>
 
 namespace muda
 {
