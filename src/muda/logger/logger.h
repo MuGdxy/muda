@@ -111,7 +111,7 @@ using LogProxy = LoggerViewer::Proxy;
 class Logger
 {
   public:
-    Logger(LoggerViewer* symbol = nullptr, size_t meta_size = 16_M, size_t buffer_size = 128_M);
+    Logger(LoggerViewer* global_viewer = nullptr, size_t meta_size = 16_M, size_t buffer_size = 128_M);
     ~Logger();
 
     void         retrieve(std::ostream&);
@@ -145,7 +145,7 @@ class Logger
     //static std::mutex& mutex();
 };
 
-MUDA_INLINE __device__ LoggerViewer cout;
+//MUDA_INLINE __device__ LoggerViewer cout;
 }  // namespace muda
 
 #include <muda/logger/details/logger.inl>
