@@ -12,10 +12,19 @@ namespace details
 {
     enum class LoggerBasicType : uint16_t
     {
+        None,
+        Int8,
+        Int16,
         Int,
-        UInt,
+        Int32 = Int,
         Int64,
+
+        UInt8,
+        UInt16,
+        UInt,
+        UInt32 = UInt,
         UInt64,
+
         Float,
         Double,
         String,
@@ -63,10 +72,18 @@ class LoggerViewer
         }
 
         MUDA_DEVICE Proxy& operator<<(const char* str);
-        MUDA_DEVICE Proxy& operator<<(int i);
-        MUDA_DEVICE Proxy& operator<<(uint32_t i);
+
+        MUDA_DEVICE Proxy& operator<<(int8_t i);
+        MUDA_DEVICE Proxy& operator<<(int16_t i);
+        MUDA_DEVICE Proxy& operator<<(int32_t i);
         MUDA_DEVICE Proxy& operator<<(int64_t i);
+
+        MUDA_DEVICE Proxy& operator<<(uint8_t i);
+        MUDA_DEVICE Proxy& operator<<(uint16_t i);
+        MUDA_DEVICE Proxy& operator<<(uint32_t i);
         MUDA_DEVICE Proxy& operator<<(uint64_t i);
+
+
         MUDA_DEVICE Proxy& operator<<(float f);
         MUDA_DEVICE Proxy& operator<<(double d);
     };
@@ -88,6 +105,8 @@ class LoggerViewer
     MUDA_DEVICE uint32_t next_buffer_idx(uint32_t size) const;
     MUDA_DEVICE bool push_data(details::LoggerMetaData meta, const void* data);
 };
+
+using LogProxy = LoggerViewer::Proxy;
 
 class Logger
 {

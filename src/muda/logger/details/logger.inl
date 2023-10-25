@@ -221,33 +221,31 @@ MUDA_INLINE MUDA_DEVICE bool LoggerViewer::push_data(details::LoggerMetaData met
 
 MUDA_INLINE void details::LoggerMetaData::put(std::ostream& os, char* buffer) const
 {
-#define $put(T)                                                                \
-    case LoggerBasicType::T:                                                   \
+#define MUDA_PUT_CASE(EnumT, T)                                                \
+    case LoggerBasicType::EnumT:                                               \
         os << *reinterpret_cast<const T*>(buffer + offset);                    \
         break;
-    using Int    = int;
-    using UInt   = uint32_t;
-    using Int64  = int64_t;
-    using UInt64 = uint64_t;
-    using Float  = float;
-    using Double = double;
 
     switch(type)
     {
         case LoggerBasicType::String:
             os << buffer + offset;
             break;
-            $put(Int);
-            $put(UInt);
-            $put(Int64);
-            $put(UInt64);
-            $put(Float);
-            $put(Double);
+            MUDA_PUT_CASE(Int8, int8_t);
+            MUDA_PUT_CASE(Int16, int16_t);
+            MUDA_PUT_CASE(Int32, int32_t);
+            MUDA_PUT_CASE(Int64, int64_t);
+            MUDA_PUT_CASE(UInt8, uint8_t);
+            MUDA_PUT_CASE(UInt16, uint16_t);
+            MUDA_PUT_CASE(UInt32, uint32_t);
+            MUDA_PUT_CASE(UInt64, uint64_t);
+            MUDA_PUT_CASE(Float, float);
+            MUDA_PUT_CASE(Double, double);
         default:
             MUDA_ERROR_WITH_LOCATION("Unknown type");
             break;
     }
-#undef $put
+#undef MUDA_PUT_CASE
 }
 
 
@@ -302,10 +300,16 @@ MUDA_INLINE void Logger::retrieve(std::ostream& os)
         return *this;                                                                 \
     }
 
-PROXY_OPERATOR(Int, int);
-PROXY_OPERATOR(UInt, uint32_t);
+PROXY_OPERATOR(Int8, int8_t);
+PROXY_OPERATOR(Int16, int16_t);
+PROXY_OPERATOR(Int32, int32_t);
 PROXY_OPERATOR(Int64, int64_t);
+
+PROXY_OPERATOR(UInt8, uint8_t);
+PROXY_OPERATOR(UInt16, uint16_t);
+PROXY_OPERATOR(UInt32, uint32_t);
 PROXY_OPERATOR(UInt64, uint64_t);
+
 PROXY_OPERATOR(Float, float);
 PROXY_OPERATOR(Double, double);
 

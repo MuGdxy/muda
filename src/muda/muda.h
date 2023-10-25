@@ -1,12 +1,13 @@
 #pragma once
-#include "muda_config.h"
-#include "launch.h"
-#include "viewer.h"
-#include "print.h"
-#include "profiler.h"
-#include "assert.h"
-#include "graph.h"
-#include "container.h"
-#include "buffer.h"
-#include "compute_graph.h"
+#include <muda/muda_config.h>
+#include <muda/launch.h>
+#include <muda/viewer.h>
+#include <muda/print.h>
+#include <muda/profiler.h>
+#include <muda/assert.h>
+#include <muda/graph.h>
+#include <muda/container.h>
+#include <muda/buffer.h>
+#include <muda/compute_graph.h>
+#include <muda/logger.h>
 
