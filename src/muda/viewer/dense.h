@@ -154,8 +154,7 @@ template <typename T>
 class CDenseND<T, 1> : public ROViewer
 {
     MUDA_VIEWER_COMMON(CDenseND);
-  private:
-    ;
+
     const T* m_data;
     int      m_dim;
 
@@ -658,7 +657,7 @@ MUDA_INLINE MUDA_GENERIC auto make_dense1D(T* data, int dimx) MUDA_NOEXCEPT
 }
 
 template <typename T, int N>
-MUDA_INLINE MUDA_GENERIC auto make_dense1D(T(&data)[N]) MUDA_NOEXCEPT
+MUDA_INLINE MUDA_GENERIC auto make_dense1D(T (&data)[N]) MUDA_NOEXCEPT
 {
     return Dense1D<T>(data, N);
 }
@@ -781,4 +780,4 @@ MUDA_INLINE MUDA_GENERIC const T& print_convert(const Dense<T>& idx) MUDA_NOEXCE
 {
     return idx.operator const T&();
 }
-}
+}  // namespace muda
