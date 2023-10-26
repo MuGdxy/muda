@@ -154,6 +154,8 @@ template <typename T>
 class CDenseND<T, 1> : public ROViewer
 {
     MUDA_VIEWER_COMMON(CDenseND);
+  private:
+    ;
     const T* m_data;
     int      m_dim;
 

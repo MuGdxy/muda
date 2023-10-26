@@ -6,7 +6,6 @@
 #include <unordered_map>
 #include <string>
 #include <muda/tools/string_pointer.h>
-
 namespace muda::details
 {
 class HostDeviceStringCache
@@ -61,25 +60,27 @@ class HostDeviceStringCache
     StringPointer operator[](std::string_view s)
     {
         if(s.empty() || s == "")
+        {
             return m_empty_string_pointer;
+        }
         return get_string_pointer(s);
     }
 
   private:
     StringPointer get_string_pointer(std::string_view s)
     {
-        auto         str          = std::string{s};
-        auto         it           = m_string_map.find(str);
-        char*        device_begin = nullptr;
-        char*        host_begin   = nullptr;
-        unsigned int str_length   = 0;
+        auto         str           = std::string{s};
+        auto         it            = m_string_map.find(str);
+        char*        device_string = nullptr;
+        char*        host_string   = nullptr;
+        unsigned int str_length    = 0;
 
         if(it != m_string_map.end())  // cached
         {
-            auto& loc    = it->second;
-            device_begin = m_device_string_buffers[loc.buffer_index];
-            host_begin   = m_host_string_buffers[loc.buffer_index];
-            str_length   = static_cast<unsigned int>(loc.size - 1);
+            auto& loc = it->second;
+            device_string = m_device_string_buffers[loc.buffer_index] + loc.offset;
+            host_string = m_host_string_buffers[loc.buffer_index] + loc.offset;
+            str_length  = static_cast<unsigned int>(loc.size - 1);
         }
         else  // need insert
         {
@@ -114,11 +115,11 @@ class HostDeviceStringCache
 
             m_current_buffer_offset += zero_end_length;
 
-            device_begin = device_buffer + loc.offset;
-            host_begin   = host_buffer + loc.offset;
-            str_length   = static_cast<unsigned int>(loc.size - 1);
+            device_string = device_buffer + loc.offset;
+            host_string   = host_buffer + loc.offset;
+            str_length    = static_cast<unsigned int>(loc.size - 1);
         }
-        return StringPointer{device_begin, host_begin, str_length};
+        return StringPointer{device_string, host_string, str_length};
     }
 };
 }  // namespace muda::details
