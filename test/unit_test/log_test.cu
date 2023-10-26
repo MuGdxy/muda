@@ -2,16 +2,9 @@
 #include <muda/muda.h>
 using namespace muda;
 
-
-MUDA_DEVICE LoggerViewer::Proxy& operator<<(LoggerViewer::Proxy& proxy, uint3 val)
-{
-    return proxy << val.x << "," << val.y << "," << val.z;
-}
-
 void log_test()
 {
-    // user logger
-    Logger logger{};
+    Logger logger;
     Launch(2, 2)
         .apply(
             [logger = logger.viewer()] __device__() mutable {  //
