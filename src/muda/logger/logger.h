@@ -26,7 +26,7 @@ class Logger
     ~Logger();
 
     void         retrieve(std::ostream&);
-    LoggerViewer viewer() const { return m_viewer; }
+    LoggerViewer viewer() const { return m_log_viewer_ptr ? *m_log_viewer_ptr : m_viewer; }
 
   private:
     friend class LaunchCore;
