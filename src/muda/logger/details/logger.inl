@@ -159,8 +159,10 @@ MUDA_INLINE LoggerDataContainer Logger::retrieve_meta()
             std::transform(meta_data_span.begin(),
                            meta_data_span.end(),
                            ret.m_meta_data.begin(),
-                           [buffer](const details::LoggerMetaData& meta_data) {
-                               return LoggerMetaData{meta_data.type,
+                           [buffer](const details::LoggerMetaData& meta_data)
+                           {
+                               return LoggerMetaData{meta_data.id,
+                                                     meta_data.type,
                                                      buffer + meta_data.offset};
                            });
         });

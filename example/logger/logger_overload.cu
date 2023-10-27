@@ -31,7 +31,7 @@ __device__ LogProxy& operator<<(LogProxy& o, const Eigen::Matrix<T, M, N>& val)
             o << val(i, j) << " ";
     return o;
 }
-}
+}  // namespace muda
 ```)");
 
     Logger logger;

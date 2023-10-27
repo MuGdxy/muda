@@ -11,6 +11,7 @@ namespace muda
 class LoggerMetaData
 {
   public:
+    uint32_t        id;
     LoggerBasicType type;
     void*           data;
     template <typename T>
@@ -21,7 +22,6 @@ class LoggerDataContainer
 {
   public:
     span<LoggerMetaData> meta_data() { return m_meta_data; }
-
   private:
     friend class Logger;
     std::vector<LoggerMetaData> m_meta_data;
