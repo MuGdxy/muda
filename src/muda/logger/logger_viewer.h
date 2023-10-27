@@ -1,0 +1,64 @@
+#pragma once
+#include <muda/logger/logger_basic_data.h>
+#include <muda/muda_def.h>
+#include <muda/check/check_cuda_errors.h>
+#include <muda/literal/unit.h>
+
+namespace muda
+{
+class LoggerViewer
+{
+  public:
+    class Proxy
+    {
+        LoggerViewer& m_viewer;
+        uint32_t      m_log_id;
+
+      public:
+        MUDA_DEVICE Proxy(LoggerViewer& viewer);
+
+        MUDA_DEVICE Proxy(const Proxy& other)
+            : m_viewer(other.m_viewer)
+            , m_log_id(other.m_log_id)
+        {
+        }
+
+        MUDA_DEVICE Proxy& operator<<(const char* str);
+
+        MUDA_DEVICE Proxy& operator<<(int8_t i);
+        MUDA_DEVICE Proxy& operator<<(int16_t i);
+        MUDA_DEVICE Proxy& operator<<(int32_t i);
+        MUDA_DEVICE Proxy& operator<<(int64_t i);
+
+        MUDA_DEVICE Proxy& operator<<(uint8_t i);
+        MUDA_DEVICE Proxy& operator<<(uint16_t i);
+        MUDA_DEVICE Proxy& operator<<(uint32_t i);
+        MUDA_DEVICE Proxy& operator<<(uint64_t i);
+
+
+        MUDA_DEVICE Proxy& operator<<(float f);
+        MUDA_DEVICE Proxy& operator<<(double d);
+    };
+
+    friend class Logger;
+
+    template <typename T>
+    MUDA_DEVICE Proxy operator<<(const T& t);
+    MUDA_DEVICE Proxy operator<<(const char* s);
+
+  private:
+    details::LoggerMetaData*       m_meta_data_view_data;
+    uint32_t                       m_meta_data_view_size;
+    char*                          m_buffer_view_data;
+    uint32_t                       m_buffer_view_size;
+    mutable details::LoggerOffset* m_offset_view;
+
+    MUDA_DEVICE uint32_t next_meta_data_idx() const;
+    MUDA_DEVICE uint32_t next_buffer_idx(uint32_t size) const;
+    MUDA_DEVICE bool push_data(details::LoggerMetaData meta, const void* data);
+};
+
+using LogProxy = LoggerViewer::Proxy;
+}  // namespace muda
+
+#include <muda/logger/details/logger_viewer.inl>

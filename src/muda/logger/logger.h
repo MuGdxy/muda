@@ -3,115 +3,26 @@
 #include <muda/check/check_cuda_errors.h>
 #include <cinttypes>
 #include <muda/literal/unit.h>
-#include <muda/viewer/dense.h>
-#include <mutex>
+#include <muda/logger/logger_viewer.h>
+#include <vector>
 
 namespace muda
 {
-namespace details
-{
-    enum class LoggerBasicType : uint16_t
-    {
-        None,
-        Int8,
-        Int16,
-        Int,
-        Int32 = Int,
-        Int64,
-
-        UInt8,
-        UInt16,
-        UInt,
-        UInt32 = UInt,
-        UInt64,
-
-        Float,
-        Double,
-        String,
-    };
-
-    class LoggerMetaData
-    {
-      public:
-        LoggerBasicType type;
-        uint16_t        exceeded = 0;  // false
-        uint32_t        id;
-        uint32_t        size;
-        uint32_t        offset;
-
-        void put(std::ostream& os, char* buffer) const;
-    };
-
-    class LoggerOffset
-    {
-      public:
-        uint32_t log_id           = 0;
-        uint32_t meta_data_offset = 0;
-        uint32_t exceed_meta_data = 0;  // false
-        uint32_t buffer_offset    = 0;
-        uint32_t exceed_buffer    = 0;  // false
-    };
-}  // namespace details
-
-
-class LoggerViewer
-{
-  public:
-    class Proxy
-    {
-        LoggerViewer& m_viewer;
-        uint32_t      m_log_id;
-
-      public:
-        MUDA_DEVICE Proxy(LoggerViewer& viewer);
-
-        MUDA_DEVICE Proxy(const Proxy& other)
-            : m_viewer(other.m_viewer)
-            , m_log_id(other.m_log_id)
-        {
-        }
-
-        MUDA_DEVICE Proxy& operator<<(const char* str);
-
-        MUDA_DEVICE Proxy& operator<<(int8_t i);
-        MUDA_DEVICE Proxy& operator<<(int16_t i);
-        MUDA_DEVICE Proxy& operator<<(int32_t i);
-        MUDA_DEVICE Proxy& operator<<(int64_t i);
-
-        MUDA_DEVICE Proxy& operator<<(uint8_t i);
-        MUDA_DEVICE Proxy& operator<<(uint16_t i);
-        MUDA_DEVICE Proxy& operator<<(uint32_t i);
-        MUDA_DEVICE Proxy& operator<<(uint64_t i);
-
-
-        MUDA_DEVICE Proxy& operator<<(float f);
-        MUDA_DEVICE Proxy& operator<<(double d);
-    };
-
-    friend class Logger;
-
-    template <typename T>
-    MUDA_DEVICE Proxy operator<<(const T& t);
-    MUDA_DEVICE Proxy operator<<(const char* s);
-
-  public:
-    details::LoggerMetaData*       m_meta_data_view_data;
-    uint32_t                       m_meta_data_view_size;
-    char*                          m_buffer_view_data;
-    uint32_t                       m_buffer_view_size;
-    mutable details::LoggerOffset* m_offset_view;
-
-    MUDA_DEVICE uint32_t next_meta_data_idx() const;
-    MUDA_DEVICE uint32_t next_buffer_idx(uint32_t size) const;
-    MUDA_DEVICE bool push_data(details::LoggerMetaData meta, const void* data);
-};
-
-using LogProxy = LoggerViewer::Proxy;
-
 class Logger
 {
+    static constexpr size_t DEFAULT_META_SIZE   = 16_M;
+    static constexpr size_t DEFAULT_BUFFER_SIZE = 128_M;
+
   public:
-    Logger(LoggerViewer* global_viewer = nullptr, size_t meta_size = 16_M, size_t buffer_size = 128_M);
+    Logger(LoggerViewer* global_viewer,
+           size_t        meta_size   = DEFAULT_META_SIZE,
+           size_t        buffer_size = DEFAULT_BUFFER_SIZE);
+
+    Logger(size_t meta_size = DEFAULT_META_SIZE, size_t buffer_size = DEFAULT_BUFFER_SIZE)
+        : Logger(nullptr, meta_size, buffer_size)
+    {
+    }
+
     ~Logger();
 
     void         retrieve(std::ostream&);
@@ -134,15 +45,13 @@ class Logger
     size_t            m_buffer_size;
     std::vector<char> m_h_buffer;
 
-    // DeviceVar<details::LoggerOffset> m_offset;
     details::LoggerOffset* m_offset;
     details::LoggerOffset  m_h_offset;
 
     LoggerViewer* m_log_viewer_ptr;
     LoggerViewer  m_viewer;
 
-    //static Logger&     instance();
-    //static std::mutex& mutex();
+    void put(std::ostream& os, const details::LoggerMetaData& meta_data) const;
 };
 
 //MUDA_INLINE __device__ LoggerViewer cout;
