@@ -23,6 +23,9 @@ class LoggerViewer
         {
         }
 
+        template<bool IsFmt>
+        MUDA_DEVICE Proxy& push_string(const char* str);
+
         MUDA_DEVICE Proxy& operator<<(const char* str);
 
         MUDA_DEVICE Proxy& operator<<(int8_t i);
@@ -45,6 +48,8 @@ class LoggerViewer
     template <typename T>
     MUDA_DEVICE Proxy operator<<(const T& t);
     MUDA_DEVICE Proxy operator<<(const char* s);
+    template <bool IsFmt>
+    MUDA_DEVICE Proxy push_string(const char* str);
 
   private:
     details::LoggerMetaData*       m_meta_data_view_data;

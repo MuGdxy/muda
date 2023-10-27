@@ -1,4 +1,5 @@
 #include <device_atomic_functions.h>
+#include "logger_viewer.h"
 
 namespace muda
 {
@@ -9,8 +10,8 @@ MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy::Proxy(LoggerViewer& viewer)
                        "LoggerViewer is not initialized");
     m_log_id = atomicAdd(&(m_viewer.m_offset_view->log_id), 1u);
 }
-
-MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy& LoggerViewer::Proxy::operator<<(const char* str)
+template <bool IsFmt>
+MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy& LoggerViewer::Proxy::push_string(const char* str)
 {
     auto strlen = [](const char* s)
     {
@@ -22,11 +23,23 @@ MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy& LoggerViewer::Proxy::operator<<(con
     auto size = strlen(str) + 1;
 
     details::LoggerMetaData meta;
-    meta.type = details::LoggerBasicType::String;
+    if constexpr(IsFmt)
+    {
+        meta.type = LoggerBasicType::FmtString;
+    }
+    else
+    {
+        meta.type = LoggerBasicType::String;
+    }
     meta.size = size;
     meta.id   = m_log_id;
     m_viewer.push_data(meta, str);
     return *this;
+}
+
+MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy& LoggerViewer::Proxy::operator<<(const char* str)
+{
+    return push_string<false>(str);
 }
 
 template <typename T>
@@ -34,6 +47,21 @@ MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy LoggerViewer::operator<<(const T& t)
 {
     Proxy p(*this);
     p << t;
+    return p;
+}
+
+template <bool IsFmt>
+MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy LoggerViewer::push_string(const char* str)
+{
+    Proxy p(*this);
+    p.push_string<IsFmt>(str);
+    return p;
+}
+
+MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy LoggerViewer::operator<<(const char* s)
+{
+    Proxy p(*this);
+    p << s;
     return p;
 }
 
@@ -56,13 +84,6 @@ MUDA_INLINE MUDA_DEVICE uint32_t next_idx(uint32_t* data_offset, uint32_t size, 
         }
     } while(assumed != old);
     return old;
-}
-
-MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy LoggerViewer::operator<<(const char* s)
-{
-    Proxy p(*this);
-    std::move(p) << s;
-    return std::move(p);
 }
 
 MUDA_INLINE MUDA_DEVICE uint32_t LoggerViewer::next_meta_data_idx() const
@@ -111,7 +132,7 @@ MUDA_INLINE MUDA_DEVICE bool LoggerViewer::push_data(details::LoggerMetaData met
     MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy& LoggerViewer::Proxy::operator<<(T i) \
     {                                                                                 \
         details::LoggerMetaData meta;                                                 \
-        meta.type = details::LoggerBasicType::enum_name;                              \
+        meta.type = LoggerBasicType::enum_name;                                       \
         meta.size = sizeof(T);                                                        \
         meta.id   = m_log_id;                                                         \
         m_viewer.push_data(meta, &i);                                                 \

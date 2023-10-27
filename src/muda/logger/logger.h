@@ -8,6 +8,26 @@
 
 namespace muda
 {
+class LoggerMetaData
+{
+  public:
+    LoggerBasicType type;
+    void*           data;
+    template <typename T>
+    const T& as();
+};
+
+class LoggerDataContainer
+{
+  public:
+    span<LoggerMetaData> meta_data() { return m_meta_data; }
+
+  private:
+    friend class Logger;
+    std::vector<LoggerMetaData> m_meta_data;
+    std::vector<char>           m_buffer;
+};
+
 class Logger
 {
     static constexpr size_t DEFAULT_META_SIZE   = 16_M;
@@ -25,8 +45,26 @@ class Logger
 
     ~Logger();
 
-    void         retrieve(std::ostream&);
-    LoggerViewer viewer() const { return m_log_viewer_ptr ? *m_log_viewer_ptr : m_viewer; }
+    // delete copy
+    Logger(const Logger&)            = delete;
+    Logger& operator=(const Logger&) = delete;
+
+    // allow move
+    Logger(Logger&&) noexcept;
+    Logger& operator=(Logger&&) noexcept;
+
+
+    void retrieve(std::ostream&);
+
+    MUDA_NODISCARD LoggerDataContainer retrieve_meta();
+
+    bool is_meta_data_full() const { return m_h_offset.exceed_meta_data; }
+    bool is_buffer_full() const { return m_h_offset.exceed_buffer; }
+
+    LoggerViewer viewer() const
+    {
+        return m_log_viewer_ptr ? *m_log_viewer_ptr : m_viewer;
+    }
 
   private:
     friend class LaunchCore;
@@ -50,10 +88,10 @@ class Logger
 
     LoggerViewer* m_log_viewer_ptr;
     LoggerViewer  m_viewer;
-
+    template <typename F>
+    void _retrieve(F&&);
     void put(std::ostream& os, const details::LoggerMetaData& meta_data) const;
 };
-
 //MUDA_INLINE __device__ LoggerViewer cout;
 }  // namespace muda
 

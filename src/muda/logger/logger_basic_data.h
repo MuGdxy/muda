@@ -3,28 +3,28 @@
 
 namespace muda
 {
+enum class LoggerBasicType : uint16_t
+{
+    None,
+    Int8,
+    Int16,
+    Int,
+    Int32 = Int,
+    Int64,
+
+    UInt8,
+    UInt16,
+    UInt,
+    UInt32 = UInt,
+    UInt64,
+
+    Float,
+    Double,
+    String,
+    FmtString,
+};
 namespace details
 {
-    enum class LoggerBasicType : uint16_t
-    {
-        None,
-        Int8,
-        Int16,
-        Int,
-        Int32 = Int,
-        Int64,
-
-        UInt8,
-        UInt16,
-        UInt,
-        UInt32 = UInt,
-        UInt64,
-
-        Float,
-        Double,
-        String,
-    };
-
     class LoggerMetaData
     {
       public:
