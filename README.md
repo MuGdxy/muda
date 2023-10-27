@@ -5,7 +5,7 @@ MUDA is **μ-CUDA**, yet another painless CUDA programming **paradigm**.
 
 ## overview
 
-### direct launch
+### launch
 
 easy launch:
 
@@ -23,6 +23,33 @@ int main()
 }
 ```
 
+easy log:
+
+```c++
+DeviceBuffer<int> dynamic_array(10);
+dynamic_array.fill(1);
+
+Logger logger;
+Launch(2, 2)
+    .apply(
+        [logger = logger.viewer(), dynamic_array = dynamic_array.viewer()] __device__() mutable
+        {
+            // type override
+            logger << "int2: " << make_int2(1, 2) << "\n";
+            logger << "float3: " << make_float3(1.0f, 2.0f, 3.0f) << "\n";
+
+            // print a dynamic array and keep the ouput order
+            // anything log to this `proxy` will never be interrupted by other thread
+            auto proxy = LogProxy{logger};
+            proxy << "[thread=" << threadIdx.x << ", block=" << blockIdx.x << "]: ";
+            for(int i = 0; i < dynamic_array.dim(); ++i) proxy << dynamic_array(i) << " ";
+            proxy << "(N=" << dynamic_array.dim() << ")\n";
+        })
+    .wait();
+// download the result to any ostream you like. 
+logger.retrieve(std::cout);
+```
+
 muda vs cuda:
 
 ```c++
@@ -32,9 +59,8 @@ muda vs cuda:
 void muda()
 {
     DeviceVector<int>  dv(64, 1);
-    Stream             s;
-    ParallelFor(2, 16, 0, s) // parallel-semantic
-        .apply(64, //automatically cover the range using (gridim=2, blockdim=16)
+    ParallelFor(256) // parallel-semantic
+        .apply(64, //automatically cover the range
                [
                    // mapping from the device_vector to a proper viewer
                    // which can be trivially copy through device and host
@@ -68,9 +94,9 @@ void muda_vs_cuda()
     // to be brief, we just use thrust to allocate memory
     thrust::device_vector<int> dv(64, 1);
     // cast to raw pointer
-    auto                       dvptr = thrust::raw_pointer_cast(dv.data());
+    auto dvptr = thrust::raw_pointer_cast(dv.data());
     // create stream and check error
-    cudaStream_t               s;
+    cudaStream_t s;
     checkCudaErrors(cudaStreamCreate(&s));
     // call the kernel (which always ruins the Intellisense, if you use VS.)
     times2<<<1, 64, 0, s>>>(dvptr, dv.size());
@@ -79,7 +105,7 @@ void muda_vs_cuda()
 }
 ```
 
-### auto compute graph
+### compute graph
 
 **muda** can generate `cudaGraph` nodes and dependencies from your `eval()` call. And the `cudaGraphExec` will be automatically updated (minimally) if you update a `muda::ComputeGraphVar`, more details in [zhihu_ZH](https://zhuanlan.zhihu.com/p/658080362).
 

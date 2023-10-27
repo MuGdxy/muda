@@ -26,7 +26,7 @@ flexibility:
    by yourself, you could use a file or any `ostream` you like.
 )");
 
-    muda::DeviceBuffer<int> dynamic_array(10);
+    DeviceBuffer<int> dynamic_array(10);
     dynamic_array.fill(1);
 
     Logger logger;
