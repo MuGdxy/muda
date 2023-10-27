@@ -23,8 +23,7 @@ flexibility:
 1. to log something, you construct a `muda::Logger` yourself, and pass
    the `muda::Logger::viewer()` to your kernel.
 2. to get the result, you call `muda::Logger::retrieve(ostream)`  
-   by yourself, you could use a file or any `ostream` you like.
-)");
+   by yourself, you could use a file or any `ostream` you like.)");
 
     DeviceBuffer<int> dynamic_array(10);
     dynamic_array.fill(1);
