@@ -46,7 +46,7 @@ flexibility:
                 float3 v3 = make_float3(1.0f, 2.0f, 3.0f);
                 logger << "float3: " << v3 << "\n";
 
-                // print a dynamic array and keep the ouput order
+                // print a dynamic array and keep the output order
                 LogProxy proxy{logger};
                 proxy << "[thread=" << threadIdx.x << ", block=" << blockIdx.x << "]: ";
                 for(int i = 0; i < dynamic_array.dim(); ++i)

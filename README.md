@@ -38,7 +38,7 @@ Launch(2, 2)
             logger << "int2: " << make_int2(1, 2) << "\n";
             logger << "float3: " << make_float3(1.0f, 2.0f, 3.0f) << "\n";
 
-            // print a dynamic array and keep the ouput order
+            // print a dynamic array and keep the output order
             // anything log to this `proxy` will never be interrupted by other thread
             auto proxy = LogProxy{logger};
             proxy << "[thread=" << threadIdx.x << ", block=" << blockIdx.x << "]: ";
