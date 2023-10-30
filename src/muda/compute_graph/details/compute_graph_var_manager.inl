@@ -96,6 +96,7 @@ MUDA_INLINE void ComputeGraphVarManager::graphviz(std::ostream& o,
     auto opt = options;
 
     o << "digraph G {\n";
+    o << options.graph_font << "\n";
     if(opt.show_vars)
     {
         o << "subgraph cluster_" << opt.graph_id++;

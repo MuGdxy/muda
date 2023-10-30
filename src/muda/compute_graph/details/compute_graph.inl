@@ -1,5 +1,6 @@
 #include <memory>
 #include <muda/exception.h>
+#include <muda/debug.h>
 #include <muda/compute_graph/compute_graph_builder.h>
 #include <muda/compute_graph/compute_graph_var.h>
 #include <muda/compute_graph/compute_graph_var_manager.h>
@@ -8,7 +9,7 @@
 #include <muda/compute_graph/nodes/compute_graph_catpure_node.h>
 #include <muda/compute_graph/nodes/compute_graph_memory_node.h>
 #include <muda/compute_graph/nodes/compute_graph_event_node.h>
-#include <muda/debug.h>
+#include <muda/compute_graph/compute_graph_closure.h>
 
 namespace muda
 {
@@ -31,7 +32,7 @@ MUDA_INLINE ComputeGraph::GraphPhaseGuard::~GraphPhaseGuard()
     ComputeGraph::clear_current_graph();
 }
 
-MUDA_INLINE ComputeGraph& ComputeGraph::AddNodeProxy::operator<<(ComputeGraph::Closure&& f) &&
+MUDA_INLINE ComputeGraph& ComputeGraph::AddNodeProxy::operator<<(std::function<void()>&& f) &&
 {
     m_cg.add_node(std::move(m_node_name), f);
     return m_cg;
@@ -80,6 +81,7 @@ MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraph
     else
     {
         o << "digraph G {\n";
+        o << options.graph_font << "\n";
     }
 
 
@@ -98,9 +100,9 @@ MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraph
     {
         o << "// nodes: \n";
         o << "node_g" << options.graph_id << "[label=\"" << name() << "\""
-          << options.node_style << "];\n";
+          << options.node_style << "]\n";
 
-        for(auto&& node : m_nodes)
+        for(auto& [name, node] : m_closures)
         {
             node->graphviz_def(o, options);
             o << "\n";
@@ -109,7 +111,7 @@ MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraph
         if(options.show_vars)
         {
             o << "// node var usages: \n";
-            for(auto&& node : m_nodes)
+            for(auto& [name, node] : m_closures)
             {
                 node->graphviz_var_usages(o, options);
                 o << "\n";
@@ -117,7 +119,7 @@ MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraph
             o << "\n";
         }
         o << "// node deps: \n";
-        for(auto node : m_nodes)
+        for(auto& [name, node] : m_closures)
         {
             if(node->deps().size() != 0)
                 continue;
@@ -131,11 +133,11 @@ MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraph
 
         for(auto dep : m_deps)
         {
-            auto src = m_nodes[dep.src.value()];
-            auto dst = m_nodes[dep.dst.value()];
-            dst->graphviz_id(o, options);
+            auto src = m_closures[dep.to.value()];
+            auto dst = m_closures[dep.from.value()];
+            dst.second->graphviz_id(o, options);
             o << "->";
-            src->graphviz_id(o, options);
+            src.second->graphviz_id(o, options);
             o << "[" << options.arc_style
               << "]"
                  "\n";
@@ -154,10 +156,11 @@ MUDA_INLINE void ComputeGraph::topo_build()
     GraphPhaseGuard guard(*this, ComputeGraphPhase::TopoBuilding);
     for(size_t i = 0; i < m_closures.size(); ++i)
     {
-        m_current_node_id    = NodeId{i};
+        //m_current_node_id    = NodeId{i};
         m_current_closure_id = ClosureId{i};
         m_allow_access_graph = true;
-        m_closures[i].second();
+        m_access_graph_index = 0;
+        m_closures[i].second->operator()();
         if(m_is_capturing)
             add_capture_node(m_sub_graphs[i]);
     }
@@ -178,10 +181,11 @@ MUDA_INLINE void ComputeGraph::build()
     }
     for(size_t i = 0; i < m_closures.size(); ++i)
     {
-        m_current_node_id    = NodeId{i};
+        //m_current_node_id    = NodeId{i};
         m_current_closure_id = ClosureId{i};
         m_allow_access_graph = true;
-        m_closures[i].second();
+        m_access_graph_index = 0;
+        m_closures[i].second->operator()();
         if(m_is_capturing)
             add_capture_node(m_sub_graphs[i]);
     }
@@ -198,10 +202,10 @@ MUDA_INLINE void ComputeGraph::serial_launch()
 
     for(size_t i = 0; i < m_closures.size(); ++i)
     {
-        m_current_node_id    = NodeId{i};
+        // m_current_node_id    = NodeId{i};
         m_current_closure_id = ClosureId{i};
         m_allow_access_graph = false;  // no need to access graph
-        m_closures[i].second();
+        m_closures[i].second->operator()();
         m_is_capturing = false;
     }
 }
@@ -218,12 +222,15 @@ MUDA_INLINE void ComputeGraph::check_vars_valid()
         }
 }
 
-MUDA_INLINE ComputeGraph& ComputeGraph::add_node(std::string&& name, const Closure& f)
+MUDA_INLINE ComputeGraph& ComputeGraph::add_node(std::string&& name,
+                                                 const std::function<void()>& f)
 {
     details::ComputeGraphAccessor(this).check_allow_node_adding();
     if(!m_allow_node_adding)
         MUDA_ERROR_WITH_LOCATION("This graph is built or updated, so you can't add new nodes any more.");
-    m_closures.emplace_back(std::move(name), f);
+    auto size    = m_closures.size();
+    auto closure = new ComputeGraphClosure{this, ClosureId{size}, name, f};
+    m_closures.emplace_back(name, closure);
     return *this;
 }
 
@@ -254,11 +261,7 @@ MUDA_INLINE void ComputeGraph::add_capture_node(cudaGraph_t sub_graph)
     auto capture_node = details::ComputeGraphAccessor(this).get_or_create_node<ComputeGraphCaptureNode>(
         [&]
         {
-            const auto& [name, closure] = m_closures[current_closure_id().value()];
-            return new ComputeGraphCaptureNode{this,
-                                               name,
-                                               NodeId{m_nodes.size()},  // node id
-                                               std::move(m_temp_node_info.var_usage)};
+            return new ComputeGraphCaptureNode{NodeId{m_nodes.size()}, m_access_graph_index};
         });
     if(ComputeGraphBuilder::is_building())
     {
@@ -299,9 +302,10 @@ MUDA_INLINE void ComputeGraph::_update()
         if(need_update)
         {
             m_current_closure_id = ClosureId{i};
-            m_current_node_id    = NodeId{i};
+            // m_current_node_id    = NodeId{i};
             m_allow_access_graph = true;
-            m_closures[i].second();
+            m_access_graph_index = 0;
+            m_closures[i].second->operator()();
             if(m_is_capturing)
                 update_capture_node(m_sub_graphs[i]);
             m_is_capturing = false;
@@ -319,6 +323,9 @@ MUDA_INLINE ComputeGraph::~ComputeGraph()
 
     for(auto node : m_nodes)
         delete node;
+
+    for(auto& [name, closure] : m_closures)
+        delete closure;
 }
 
 MUDA_INLINE void ComputeGraph::emplace_related_var(ComputeGraphVarBase* var)
@@ -435,11 +442,8 @@ namespace details
                 [&]
                 {
                     const auto& [name, closure] = current_closure();
-                    return new ComputeGraphKernelNode(  //
-                        &m_cg,                          // compute graph
-                        name,                           // node name
-                        NodeId{m_cg.m_nodes.size()},    // node id
-                        temp_var_usage());              // kernel node
+                    return new ComputeGraphKernelNode(NodeId{m_cg.m_nodes.size()},
+                                                      m_cg.current_access_index());
                 });
             if(ComputeGraphBuilder::current_phase() == ComputeGraphPhase::Building)
             {
@@ -457,6 +461,16 @@ namespace details
                 auto kernel_node = current_node<ComputeGraphKernelNode>();
                 g_exec.set_kernel_node_parms(kernel_node->m_node, kernelParms);
             });
+    }
+
+    MUDA_INLINE const ComputeGraphNodeBase* ComputeGraphAccessor::current_node() const
+    {
+        return current_closure().second->m_graph_nodes[m_cg.current_access_index()];
+    }
+
+    MUDA_INLINE ComputeGraphNodeBase* ComputeGraphAccessor::current_node()
+    {
+        return current_closure().second->m_graph_nodes[m_cg.current_access_index()];
     }
 
     MUDA_INLINE void ComputeGraphAccessor::set_memcpy_node(void*       dst,
@@ -489,11 +503,8 @@ namespace details
                 [&]
                 {
                     const auto& [name, closure] = current_closure();
-                    return new ComputeGraphMemcpyNode(  //
-                        &m_cg,                          // compute graph
-                        name,                           // node name
-                        NodeId{m_cg.m_nodes.size()},    // node id
-                        temp_var_usage());
+                    return new ComputeGraphMemcpyNode(NodeId{m_cg.m_nodes.size()},
+                                                      m_cg.current_access_index());
                 });
             if(ComputeGraphBuilder::current_phase() == ComputeGraphPhase::Building)
                 memory_node->set_node(g.add_memcpy_node(dst, src, size_bytes, kind));
@@ -544,11 +555,8 @@ namespace details
                         [&]
                         {
                             const auto& [name, closure] = current_closure();
-                            return new ComputeGraphEventRecordNode(  //
-                                &m_cg,                        // compute graph
-                                name,                         // node name
-                                NodeId{m_cg.m_nodes.size()},  // node id
-                                temp_var_usage());
+                            return new ComputeGraphEventRecordNode(
+                                NodeId{m_cg.m_nodes.size()}, m_cg.current_access_index());
                         });
 
                 if(ComputeGraphBuilder::current_phase() == ComputeGraphPhase::Building)
@@ -599,11 +607,8 @@ namespace details
                         [&]
                         {
                             const auto& [name, closure] = current_closure();
-                            return new ComputeGraphEventWaitNode(  //
-                                &m_cg,                        // compute graph
-                                name,                         // node name
-                                NodeId{m_cg.m_nodes.size()},  // node id
-                                temp_var_usage());
+                            return new ComputeGraphEventWaitNode(
+                                NodeId{m_cg.m_nodes.size()}, m_cg.current_access_index());
                         });
 
                 if(ComputeGraphBuilder::current_phase() == ComputeGraphPhase::Building)
@@ -631,7 +636,9 @@ namespace details
                       "NodeType must be derived from ComputeGraphNodeBase");
         if(!m_cg.m_is_topo_built)
         {
-            NodeType* ptr = f();
+            NodeType* ptr         = f();
+            auto& [name, closure] = current_closure();
+            closure->m_graph_nodes.emplace_back(ptr);
             m_cg.m_nodes.emplace_back(ptr);
             return ptr;
         }
@@ -640,7 +647,7 @@ namespace details
     }
     MUDA_INLINE void ComputeGraphAccessor::set_var_usage(VarId id, ComputeGraphVarUsage usage)
     {
-        auto& dst_usage = m_cg.m_temp_node_info.var_usage[id];
+        auto& dst_usage = current_closure().second->m_var_usages[id];
         if(dst_usage < usage)
             dst_usage = usage;
     }
@@ -656,9 +663,9 @@ namespace muda
 namespace details
 {
     MUDA_INLINE void process_node(std::vector<ComputeGraph::Dependency>& deps,
-                                  std::vector<NodeId>& last_read_or_write_nodes,
-                                  std::vector<NodeId>& last_write_nodes,
-                                  ComputeGraphNodeBase* node,
+                                  std::vector<ClosureId>& last_read_or_write_nodes,
+                                  std::vector<ClosureId>& last_write_nodes,
+                                  ComputeGraphClosure&    closure,
                                   const std::vector<std::pair<LocalVarId, ComputeGraphVarUsage>>& local_var_usage,
                                   uint64_t& dep_begin,
                                   uint64_t& dep_count)
@@ -668,7 +675,7 @@ namespace details
         auto is_read_only = [](ComputeGraphVarUsage usage)
         { return usage == ComputeGraphVarUsage::Read; };
 
-        std::unordered_set<VarId::value_type> unique_deps;
+        std::unordered_set<ClosureId> unique_deps;
 
         for(auto& [local_var_id, usage] : local_var_usage)
         {
@@ -681,10 +688,10 @@ namespace details
                 if(dst_nid.is_valid())
                 {
                     // the last accessing node reads or writes this resrouce, so I should depend on it
-                    if(unique_deps.find(dst_nid.value()) == unique_deps.end())
+                    if(unique_deps.find(dst_nid) == unique_deps.end())
                     {
                         // record this dependency
-                        unique_deps.insert(dst_nid.value());
+                        unique_deps.insert(dst_nid);
                     }
                 }
             }
@@ -698,16 +705,16 @@ namespace details
                 if(dst_nid.is_valid())
                 {
                     // the last accessing node writes this resrouce, so I should depend on it
-                    if(unique_deps.find(dst_nid.value()) == unique_deps.end())
+                    if(unique_deps.find(dst_nid) == unique_deps.end())
                     {
                         // record this dependency
-                        unique_deps.insert(dst_nid.value());
+                        unique_deps.insert(dst_nid);
                     }
                 }
             }
         }
 
-        auto current_node_id = node->node_id();
+        auto current_closure_id = closure.clousure_id();
 
         // set up res node map with pair [res, node]
         for(auto& [local_var_id, usage] : local_var_usage)
@@ -717,41 +724,65 @@ namespace details
             // to get the newest data.
             if(is_read_write(usage))
             {
-                last_read_or_write_nodes[local_var_id.value()] = current_node_id;
-                last_write_nodes[local_var_id.value()] = current_node_id;
+                last_read_or_write_nodes[local_var_id.value()] = current_closure_id;
+                last_write_nodes[local_var_id.value()] = current_closure_id;
             }
             // if this is a read resource,
             // the latter write kernel should depend on this
             // to avoid data corruption.
             else if(is_read_only(usage))
             {
-                last_read_or_write_nodes[local_var_id.value()] = current_node_id;
+                last_read_or_write_nodes[local_var_id.value()] = current_closure_id;
             }
         }
 
         // add dependencies to deps
         dep_begin = deps.size();
         for(auto dep : unique_deps)
-            deps.emplace_back(ComputeGraph::Dependency{current_node_id, NodeId{dep}});
+            deps.emplace_back(ComputeGraph::Dependency{dep, current_closure_id});
         dep_count = unique_deps.size();
     }
 }  // namespace details
 
 MUDA_INLINE void ComputeGraph::cuda_graph_add_deps()
 {
-    std::vector<cudaGraphNode_t> from;
-    from.reserve(m_deps.size());
-    std::vector<cudaGraphNode_t> to;
-    to.reserve(m_deps.size());
+    std::vector<cudaGraphNode_t> froms;
+    froms.reserve(m_deps.size());
+    std::vector<cudaGraphNode_t> tos;
+    tos.reserve(m_deps.size());
+
+    // in closure deps
+
+    for(auto& [name, closure] : m_closures)
+    {
+        MUDA_ASSERT(closure->m_graph_nodes.size() > 0, "closure[%s] has no nodes", name.data());
+        if(closure->m_graph_nodes.size() == 1)
+            continue;
+
+        auto from = closure->m_graph_nodes.front();
+        auto to   = from;
+        for(size_t i = 1; i < closure->m_graph_nodes.size(); ++i)
+        {
+            to = closure->m_graph_nodes[i];
+            froms.emplace_back(from->handle());
+            tos.emplace_back(to->handle());
+            from = to;
+        }
+    }
+
 
     for(auto dep : m_deps)
     {
-        from.emplace_back(m_nodes[dep.dst.value()]->handle());
-        to.emplace_back(m_nodes[dep.src.value()]->handle());
+        auto from = m_closures[dep.from.value()].second->m_graph_nodes.back();
+        auto to   = m_closures[dep.to.value()].second->m_graph_nodes.front();
+
+
+        froms.emplace_back(from->handle());
+        tos.emplace_back(to->handle());
     };
 
     checkCudaErrors(cudaGraphAddDependencies(
-        m_graph.handle(), from.data(), to.data(), m_deps.size()));
+        m_graph.handle(), froms.data(), tos.data(), froms.size()));
 }
 
 MUDA_INLINE void ComputeGraph::build_deps()
@@ -760,19 +791,19 @@ MUDA_INLINE void ComputeGraph::build_deps()
     auto local_var_count = m_related_vars.size();
 
     // map: var_id -> node_id, uint64_t{-1} means no write node yet
-    auto last_write_nodes = std::vector<NodeId>(local_var_count, NodeId{});
+    auto last_write_nodes = std::vector<ClosureId>(local_var_count, ClosureId{});
     // map: var_id -> node_id, uint64_t{-1} means no read node yet
-    auto last_read_or_write_nodes = std::vector<NodeId>(local_var_count, NodeId{});
+    auto last_read_or_write_nodes = std::vector<ClosureId>(local_var_count, ClosureId{});
 
     // process all nodes
-    for(size_t i = 0u; i < m_nodes.size(); i++)
+    for(size_t i = 0u; i < m_closures.size(); i++)
     {
-        auto node = m_nodes[i];
+        auto& [name, closure] = m_closures[i];
 
         // map global var id to local var id
         std::vector<std::pair<details::LocalVarId, ComputeGraphVarUsage>> local_var_usage;
-        local_var_usage.reserve(node->var_usages().size());
-        for(auto&& [var_id, usage] : node->var_usages())
+        local_var_usage.reserve(closure->var_usages().size());
+        for(auto&& [var_id, usage] : closure->var_usages())
         {
             auto local_id = m_global_to_local_var_id[var_id];
             local_var_usage.emplace_back(local_id, usage);
@@ -780,8 +811,8 @@ MUDA_INLINE void ComputeGraph::build_deps()
 
         size_t dep_begin, dep_count;
         details::process_node(
-            m_deps, last_read_or_write_nodes, last_write_nodes, node, local_var_usage, dep_begin, dep_count);
-        node->set_deps_range(dep_begin, dep_count);
+            m_deps, last_read_or_write_nodes, last_write_nodes, *closure, local_var_usage, dep_begin, dep_count);
+        closure->set_deps_range(dep_begin, dep_count);
     }
 
     m_is_topo_built = true;

@@ -26,6 +26,7 @@ MUDA_INLINE ParallelFor& ParallelFor::apply(int count, F&& f, UserTag tag)
             // topo build
             details::ComputeGraphAccessor().set_kernel_node<KernelData<raw_type_t<F>>>(nullptr);
         });
+    pop_kernel_name();
     return *this;
 }
 
@@ -51,7 +52,6 @@ MUDA_INLINE void ParallelFor::invoke(int count, F&& f, UserTag tag)
         details::grid_stride_loop_kernel_with_details<CallableType, UserTag>
             <<<m_gridDim, m_block_dim, m_shared_mem_size, this->stream()>>>(f, count);
     }
-    finish_kernel_launch();
 }
 
 template <typename F, typename UserTag>
@@ -86,7 +86,7 @@ MUDA_INLINE auto ParallelFor::as_node_parms(int count, F&& f, UserTag tag)
         [](KernelData<CallableType>& p) -> std::vector<void*> {
             return {&p.callable, &p.count};
         });
-    finish_kernel_launch();
+    pop_kernel_name();
     return parms;
 }
 

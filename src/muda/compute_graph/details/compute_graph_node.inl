@@ -1,46 +1,22 @@
 #include <muda/compute_graph/compute_graph_var_manager.h>
-
+#include <muda/tools/launch_info_cache.h>
 namespace muda
 {
-MUDA_INLINE void ComputeGraphNodeBase::graphviz_id(std::ostream& o,
-                                                   const ComputeGraphGraphvizOptions& options) const
+template <typename NodeT, ComputeGraphNodeType Type>
+MUDA_INLINE ComputeGraphNode<NodeT, Type>::ComputeGraphNode(NodeId node_id, uint64_t access_graph_index)
+    : ComputeGraphNodeBase(enum_name(Type), node_id, access_graph_index, Type)
 {
-    o << "node_g" << options.graph_id << "_n" << node_id();
-}
-
-MUDA_INLINE void ComputeGraphNodeBase::graphviz_def(std::ostream& o,
-                                                    const ComputeGraphGraphvizOptions& options) const
-{
-    graphviz_id(o, options);
-    o << "[";
-    if(!name().empty())
-        o << "label=\"" << name() << "\", ";
-    o << options.node_style;
-    
-    o << "]";
-}
-
-MUDA_INLINE void ComputeGraphNodeBase::graphviz_var_usages(std::ostream& o,
-                                                           const ComputeGraphGraphvizOptions& options) const
-{
-    for(auto&& [var_id, usage] : var_usages())
+#if MUDA_CHECK_ON
+    if constexpr(Type == ComputeGraphNodeType::KernelNode)
     {
-        auto var = m_graph->m_var_manager->m_vars[var_id.value()];
-        var->graphviz_id(o, options);
-        o << "->";
-        graphviz_id(o, options);
-        if(usage == ComputeGraphVarUsage::ReadWrite)
-            o << "[" << options.read_write_style << "]";
+        auto n = std::string_view{
+            details::LaunchInfoCache::current_kernel_name().auto_select()};
+        if(n.empty() || n == "")
+            m_name += std::string(":~");
         else
-            o << "[" << options.read_style << "]";
-        o << "\n";
+            m_name += std::string(":") + std::string(n.data());
     }
-}
-
-MUDA_INLINE void ComputeGraphNodeBase::set_deps_range(size_t begin, size_t count)
-{
-    m_deps_begin = begin;
-    m_deps_count = count;
+#endif
 }
 
 template <typename NodeT, ComputeGraphNodeType Type>

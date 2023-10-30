@@ -51,7 +51,7 @@ class LaunchCore
     using S = std::shared_ptr<T>;
     ::cudaStream_t stream() const { return m_stream; }
     ::cudaStream_t m_stream;
-    void finish_kernel_launch();
+    void pop_kernel_name();
 
   public:
     LaunchCore(::cudaStream_t stream) MUDA_NOEXCEPT;
@@ -156,7 +156,7 @@ class LaunchBase : public LaunchCore
     ~LaunchBase() MUDA_NOEXCEPT;
 
   protected:
-    T& finish_kernel_launch();
+    T& pop_kernel_name();
 
   private:
     T& derived() MUDA_NOEXCEPT { return *(T*)(this); }

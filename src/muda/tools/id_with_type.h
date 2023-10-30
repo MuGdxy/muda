@@ -56,11 +56,14 @@ using I64IdWithType = IdWithType<int64_t>;
 using I32IdWithType = IdWithType<int32_t>;
 }  // namespace muda
 
-template <typename T>
-struct std::hash<muda::IdWithType<T>>
+namespace std
 {
-    std::size_t operator()(const muda::IdWithType<T>& s) const noexcept
+template <typename T>
+struct hash<muda::IdWithType<T>>
+{
+    size_t operator()(const muda::IdWithType<T>& s) const noexcept
     {
         return std::hash<T>{}(s.value());
     }
 };
+}  // namespace std

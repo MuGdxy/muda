@@ -14,7 +14,7 @@ MUDA_INLINE Launch::S<KernelNodeParms<raw_type_t<F>>> Launch::as_node_parms(F&& 
     parms->blockDim(m_block_dim);
     parms->sharedMemBytes(m_shared_mem_size);
     parms->parse([](CallableType& p) -> std::vector<void*> { return {&p}; });
-    finish_kernel_launch();
+    pop_kernel_name();
     return parms;
 }
 
@@ -24,7 +24,6 @@ MUDA_INLINE void Launch::invoke(F&& f, UserTag tag)
     using CallableType = raw_type_t<F>;
     details::generic_kernel<CallableType, UserTag>
         <<<m_gridDim, m_block_dim, m_shared_mem_size, this->stream()>>>(f);
-    finish_kernel_launch();
 }
 
 template <typename F, typename UserTag>
@@ -44,6 +43,7 @@ MUDA_INLINE Launch& Launch::apply(F&& f, UserTag tag)
         {
             details::ComputeGraphAccessor().set_kernel_node<KernelNodeParms<CallableType>>(nullptr);
         });
+    pop_kernel_name();
     return *this;
 }
 }  // namespace muda

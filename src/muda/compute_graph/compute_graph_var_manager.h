@@ -42,6 +42,7 @@ class ComputeGraphVarManager
   private:
     friend class ComputeGraph;
     friend class ComputeGraphNodeBase;
+    friend class ComputeGraphClosure;
     std::vector<ComputeGraph*> unique_graphs(span<const ComputeGraphVarBase*> vars) const;
     std::unordered_map<std::string, ComputeGraphVarBase*> m_vars_map;
     std::vector<ComputeGraphVarBase*>                     m_vars;

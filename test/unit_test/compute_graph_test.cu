@@ -415,3 +415,82 @@ TEST_CASE("compute_graph_test_buffer_view", "[compute_graph]")
 {
     compute_graph_buffer_view();
 }
+
+void compute_graph_one_closure_multi_graph_nodes()
+{
+    ComputeGraphVarManager manager;
+
+    ComputeGraph graph{manager};
+
+    // define graph vars
+    auto& N     = manager.create_var<size_t>("N");
+    auto& x_0   = manager.create_var<BufferView<Vector3>>("x_0");
+    auto& h_x_0 = manager.create_var<Vector3*>("h_x_0");
+    auto& x     = manager.create_var<BufferView<Vector3>>("x");
+    auto& y     = manager.create_var<BufferView<Vector3>>("y");
+
+    graph.create_node("cal_x_0_and_copy_to_h_x_0") << [&]
+    {
+        ParallelFor(256)
+            .kernel_name("cal_x_0")  //
+            .apply(N.eval(),
+                   [x_0 = x_0.eval().viewer()] __device__(int i) mutable
+                   { x_0(i) = Vector3::Ones(); });
+        BufferLaunch().copy(h_x_0, x_0);
+    };
+
+    graph.create_node("copy_to_x") << [&] {  //
+        BufferLaunch().copy(x, x_0);
+    };
+
+    graph.create_node("copy_to_y") << [&] { BufferLaunch().copy(y, x_0); };
+
+    graph.create_node("print_x_y") << [&]
+    {
+        ParallelFor(256).apply(N.eval(),
+                               [x = x.ceval().cviewer(),
+                                y = y.ceval().cviewer(),
+                                N = N.eval()] __device__(int i) mutable
+                               {
+                                   if(N <= 10)
+                                       print("[%d] x = (%f,%f,%f) y = (%f,%f,%f) \n",
+                                             i,
+                                             x(i).x(),
+                                             x(i).y(),
+                                             x(i).z(),
+                                             y(i).x(),
+                                             y(i).y(),
+                                             y(i).z());
+                               });
+    };
+
+    ComputeGraphGraphvizOptions options;
+    options.show_all_graph_nodes_in_a_closure = true;
+    graph.graphviz(std::cout, options);
+
+    Stream stream;
+
+    auto N_value      = 4;
+    auto x_0_buffer   = DeviceBuffer<Vector3>(N_value);
+    auto h_x_0_buffer = std::vector<Vector3>(N_value);
+    auto x_buffer     = DeviceBuffer<Vector3>(N_value);
+    auto y_buffer     = DeviceBuffer<Vector3>(N_value);
+
+    N.update(N_value);
+    x_0.update(x_0_buffer);
+    h_x_0.update(h_x_0_buffer.data());
+    x.update(x_buffer);
+    y.update(y_buffer);
+
+    // graph.launch(s);
+    graph.launch(stream);
+    stream.wait();
+    std::cout << "h_x_0_buffer = \n";
+    for(auto& v : h_x_0_buffer)
+        std::cout << v.transpose() << std::endl;
+}
+
+TEST_CASE("compute_graph_one_closure_multi_graph_nodes", "[compute_graph]")
+{
+    compute_graph_one_closure_multi_graph_nodes();
+}

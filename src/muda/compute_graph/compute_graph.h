@@ -2,6 +2,8 @@
 #include <map>
 #include <functional>
 #include <set>
+#include <muda/mstl/span.h>
+#include <muda/launch/event.h>
 #include <muda/graph/graph.h>
 #include <muda/launch/stream.h>
 #include <muda/compute_graph/compute_graph_phase.h>
@@ -10,8 +12,7 @@
 #include <muda/compute_graph/compute_graph_closure_id.h>
 #include <muda/compute_graph/compute_graph_var_id.h>
 #include <muda/compute_graph/compute_graph_var_usage.h>
-#include <muda/mstl/span.h>
-#include <muda/launch/event.h>
+#include <muda/compute_graph/compute_graph_dependency.h>
 #include <muda/compute_graph/graphviz_options.h>
 
 namespace muda::details
@@ -24,7 +25,7 @@ namespace muda
 class ComputeGraphVarBase;
 class ComputeGraphNodeBase;
 class ComputeGraphVarManager;
-
+class ComputeGraphClosure;
 template <typename T>
 class ComputeGraphVar;
 
@@ -45,7 +46,6 @@ namespace details
 class ComputeGraph
 {
   public:
-    using Closure = std::function<void()>;
     class AddNodeProxy
     {
         ComputeGraph& m_cg;
@@ -53,14 +53,10 @@ class ComputeGraph
 
       public:
         AddNodeProxy(ComputeGraph& cg, std::string_view node_name);
-        ComputeGraph& operator<<(ComputeGraph::Closure&& f) &&;
+        ComputeGraph& operator<<(std::function<void()>&& f) &&;
     };
-    class Dependency
-    {
-      public:
-        NodeId src;
-        NodeId dst;
-    };
+    // A depends on B : from B to A
+    using Dependency = ComputeGraphDependency;
 
     class GraphPhaseGuard
     {
@@ -70,6 +66,14 @@ class ComputeGraph
         GraphPhaseGuard(ComputeGraph& cg, ComputeGraphPhase phase);
         ~GraphPhaseGuard();
     };
+
+    // delete copy
+    ComputeGraph(const ComputeGraph&)            = delete;
+    ComputeGraph& operator=(const ComputeGraph&) = delete;
+
+    // move
+    ComputeGraph(ComputeGraph&&)            = default;
+    ComputeGraph& operator=(ComputeGraph&&) = default;
 
   private:
     class TempNodeInfo
@@ -89,15 +93,16 @@ class ComputeGraph
 
     std::unordered_map<NodeId::value_type, cudaGraph_t> m_sub_graphs;
 
-    std::vector<std::pair<std::string, Closure>> m_closures;
+    std::vector<std::pair<std::string, ComputeGraphClosure*>> m_closures;
 
     std::map<VarId, details::LocalVarId> m_global_to_local_var_id;
     std::vector<details::LocalVarInfo>   m_related_vars;
     void emplace_related_var(ComputeGraphVarBase* var);
 
 
-    std::vector<ComputeGraphNodeBase*> m_nodes;
-    std::vector<Dependency>            m_deps;
+    std::vector<ComputeGraphNodeBase*>              m_nodes;
+    std::vector<std::vector<ComputeGraphNodeBase*>> m_graph_nodes;
+    std::vector<Dependency>                         m_deps;
 
     std::vector<int>        m_closure_need_update;
     ComputeGraphVarManager* m_var_manager = nullptr;
@@ -175,9 +180,10 @@ class ComputeGraph
     void check_vars_valid();
 
     friend class AddNodeProxy;
-    ComputeGraph& add_node(std::string&& name, const Closure& f);
+    ComputeGraph& add_node(std::string&& name, const std::function<void()>& f);
 
     friend class ComputeGraphNodeBase;
+    friend class ComputeGraphClosure;
     span<const Dependency> dep_span(size_t begin, size_t count) const;
 
     void set_current_graph_as_this();
@@ -195,6 +201,8 @@ class ComputeGraph
 
     NodeId current_node_id() const { return m_current_node_id; };
 
+    size_t current_access_index() const { return m_access_graph_index; }
+
     ComputeGraphPhase current_graph_phase() const;
 
   private:  // internal data
@@ -205,6 +213,7 @@ class ComputeGraph
     NodeId            m_current_node_id;
     ComputeGraphPhase m_current_graph_phase = ComputeGraphPhase::None;
     bool              m_allow_access_graph  = false;
+    size_t            m_access_graph_index  = 0;
     bool              m_allow_node_adding   = true;
     TempNodeInfo      m_temp_node_info;
     cudaStream_t      m_current_single_stream = nullptr;
@@ -246,20 +255,31 @@ namespace details
             return m_cg.m_closures[m_cg.current_closure_id().value()];
         }
 
-        auto current_node()
+        auto& current_closure()
         {
-            return m_cg.m_nodes[m_cg.current_node_id().value()];
+            return m_cg.m_closures[m_cg.m_current_closure_id.value()];
         }
+
+        //auto current_node()
+        //{
+        //    return m_cg.m_nodes[m_cg.current_node_id().value()];
+        //}
+
+
+        //const auto current_node() const
+        //{
+        //    return m_cg.m_nodes[m_cg.current_node_id().value()];
+        //}
+
+        const ComputeGraphNodeBase* current_node() const;
+
+
+        ComputeGraphNodeBase* current_node();
 
         template <typename T>
         auto current_node()
         {
             return dynamic_cast<T*>(current_node());
-        }
-
-        const auto current_node() const
-        {
-            return m_cg.m_nodes[m_cg.current_node_id().value()];
         }
 
         /// <summary>
@@ -308,21 +328,22 @@ namespace details
         template <typename F>
         void access_graph(F&& f)
         {
-            if(!m_cg.m_allow_access_graph)
-                throw std::runtime_error(  //
-                    "a graph closure can only contain one graph node");
+            //if(!m_cg.m_allow_access_graph)
+            //throw std::runtime_error(  //
+            //    "a graph closure can only contain one graph node");
             f(m_cg.m_graph);
-            m_cg.m_allow_access_graph = false;
+            //m_cg.m_allow_access_graph = false;
+            ++m_cg.m_access_graph_index;
         }
 
         template <typename F>
         void access_graph_exec(F&& f)
         {
-            if(!m_cg.m_allow_access_graph)
-                throw std::runtime_error(  //
-                    "a graph closure can only contain one graph node");
+            //if(!m_cg.m_allow_access_graph)
+            //    throw std::runtime_error(  //
+            //        "a graph closure can only contain one graph node");
             f(*m_cg.m_graph_exec.get());
-            m_cg.m_allow_access_graph = false;
+            //m_cg.m_allow_access_graph = false;
         }
 
         auto&& temp_var_usage()

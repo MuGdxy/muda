@@ -9,12 +9,8 @@ class ComputeGraphCaptureNode : public ComputeGraphNodeBase
   protected:
     friend class ComputeGraph;
     friend class details::ComputeGraphAccessor;
-    ComputeGraphCaptureNode(ComputeGraph*                           graph,
-                            std::string_view                        name,
-                            NodeId                                  node_id,
-                            std::map<VarId, ComputeGraphVarUsage>&& usages)
-        : ComputeGraphNodeBase(
-            graph, name, node_id, ComputeGraphNodeType::CaptureNode, std::move(usages))
+    ComputeGraphCaptureNode(NodeId node_id, uint64_t access_index)
+        : ComputeGraphNodeBase("CaptureNode", node_id, access_index, ComputeGraphNodeType::CaptureNode)
     {
     }
 

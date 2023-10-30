@@ -127,7 +127,7 @@ MUDA_INLINE void LaunchCore::kernel_name(std::string_view name)
 #endif
 }
 
-MUDA_INLINE void LaunchCore::finish_kernel_launch()
+MUDA_INLINE void LaunchCore::pop_kernel_name()
 {
 #if MUDA_CHECK_ON
     details::LaunchInfoCache::current_kernel_name("");
@@ -278,9 +278,9 @@ T& LaunchBase<T>::kernel_name(std::string_view name)
 }
 
 template <typename T>
-T& LaunchBase<T>::finish_kernel_launch()
+T& LaunchBase<T>::pop_kernel_name()
 {
-    LaunchCore::finish_kernel_launch();
+    LaunchCore::pop_kernel_name();
     return derived();
 }
 
