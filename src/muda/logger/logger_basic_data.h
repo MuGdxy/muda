@@ -22,17 +22,23 @@ enum class LoggerBasicType : uint16_t
     Double,
     String,
     FmtString,
+
+    Object,  // user defined object
 };
+
+using LoggerFmtArg = void (*)(void* formatter, const void* obj);
+
 namespace details
 {
     class LoggerMetaData
     {
       public:
-        LoggerBasicType type;
+        LoggerBasicType type     = LoggerBasicType::None;
         uint16_t        exceeded = 0;  // false
-        uint32_t        id;
-        uint32_t        size;
-        uint32_t        offset;
+        uint32_t        id       = ~0;
+        uint32_t        size     = ~0;
+        uint32_t        offset   = ~0;
+        LoggerFmtArg    fmt_arg  = nullptr;
     };
 
     class LoggerOffset

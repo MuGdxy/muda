@@ -48,7 +48,7 @@ MUDA_INLINE const T& LoggerMetaData::as()
     }
     else
     {
-        static_assert(false, "Unknown type");
+        MUDA_ASSERT(type == LoggerBasicType::Object)
     };
     return *reinterpret_cast<const T*>(data);
 }
@@ -163,7 +163,8 @@ MUDA_INLINE LoggerDataContainer Logger::retrieve_meta()
                            {
                                return LoggerMetaData{meta_data.id,
                                                      meta_data.type,
-                                                     buffer + meta_data.offset};
+                                                     buffer + meta_data.offset,
+                                                     meta_data.fmt_arg};
                            });
         });
     return ret;

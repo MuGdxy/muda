@@ -41,6 +41,9 @@ class LoggerViewer
 
         MUDA_DEVICE Proxy& operator<<(float f);
         MUDA_DEVICE Proxy& operator<<(double d);
+
+        template<typename T>
+        MUDA_DEVICE void push_fmt_arg(const T& obj, LoggerFmtArg fmt_arg_func);
     };
 
     friend class Logger;

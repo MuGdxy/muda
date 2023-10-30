@@ -14,6 +14,7 @@ class LoggerMetaData
     uint32_t        id;
     LoggerBasicType type;
     void*           data;
+    LoggerFmtArg    fmt_arg;
     template <typename T>
     const T& as();
 };

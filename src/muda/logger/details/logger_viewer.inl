@@ -1,5 +1,4 @@
 #include <device_atomic_functions.h>
-#include "logger_viewer.h"
 
 namespace muda
 {
@@ -35,6 +34,17 @@ MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy& LoggerViewer::Proxy::push_string(co
     meta.id   = m_log_id;
     m_viewer.push_data(meta, str);
     return *this;
+}
+
+template <typename T>
+MUDA_DEVICE void LoggerViewer::Proxy::push_fmt_arg(const T& obj, LoggerFmtArg func)
+{
+    details::LoggerMetaData meta;
+    meta.type = LoggerBasicType::Object;
+    meta.size = sizeof(T);
+    meta.id   = m_log_id;
+    meta.fmt_arg = func;
+    m_viewer.push_data(meta, &obj);
 }
 
 MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy& LoggerViewer::Proxy::operator<<(const char* str)
