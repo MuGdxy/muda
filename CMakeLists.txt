@@ -36,8 +36,6 @@ find_package(CUDAToolkit REQUIRED)
 enable_language(CUDA)
 set(CMAKE_CXX_STANDARD 17)
 
-find_package(Eigen3 REQUIRED)
-
 # muda
 add_library(muda INTERFACE)
 target_compile_options(muda INTERFACE
@@ -56,6 +54,14 @@ if(MUDA_WITH_CHECK)
 endif()
 
 if(MUDA_BUILD_EXAMPLE)
+  find_package(Eigen3 REQUIRED)
+  # if find Eigen3 print
+  if(Eigen3_FOUND)
+    message(STATUS "Eigen3 found (include: ${EIGEN3_INCLUDE_DIR}, version: ${EIGEN3_VERSION_STRING})")
+  else()
+    message(FATAL_ERROR "Eigen3 not found")
+  endif()
+  # find_package(fmt REQUIRED)
   file(GLOB_RECURSE MUDA_EXAMPLE_SOURCE_FILES
   "${PROJECT_SOURCE_DIR}/example/*.cu"
   "${PROJECT_SOURCE_DIR}/example/*.cpp"
@@ -63,6 +69,7 @@ if(MUDA_BUILD_EXAMPLE)
   
   add_executable(muda_example ${MUDA_EXAMPLE_SOURCE_FILES})
   set_target_properties(muda_example PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  target_link_libraries(muda_example PRIVATE fmt::fmt-header-only)
 
   target_include_directories(muda_example PRIVATE 
     "${PROJECT_SOURCE_DIR}/example"
