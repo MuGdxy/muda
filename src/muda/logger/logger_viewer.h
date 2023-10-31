@@ -23,7 +23,7 @@ class LoggerViewer
         {
         }
 
-        template<bool IsFmt>
+        template <bool IsFmt>
         MUDA_DEVICE Proxy& push_string(const char* str);
 
         MUDA_DEVICE Proxy& operator<<(const char* str);
@@ -42,7 +42,7 @@ class LoggerViewer
         MUDA_DEVICE Proxy& operator<<(float f);
         MUDA_DEVICE Proxy& operator<<(double d);
 
-        template<typename T>
+        template <typename T>
         MUDA_DEVICE void push_fmt_arg(const T& obj, LoggerFmtArg fmt_arg_func);
     };
 
@@ -55,11 +55,10 @@ class LoggerViewer
     MUDA_DEVICE Proxy push_string(const char* str);
 
   private:
-    details::LoggerMetaData*       m_meta_data_view_data;
-    uint32_t                       m_meta_data_view_size;
-    char*                          m_buffer_view_data;
-    uint32_t                       m_buffer_view_size;
-    mutable details::LoggerOffset* m_offset_view;
+    Dense1D<uint32_t>                    m_meta_data_id;
+    Dense1D<details::LoggerMetaData>     m_meta_data;
+    Dense1D<char>                        m_buffer;
+    mutable Dense<details::LoggerOffset> m_offset_view;
 
     MUDA_DEVICE uint32_t next_meta_data_idx() const;
     MUDA_DEVICE uint32_t next_buffer_idx(uint32_t size) const;

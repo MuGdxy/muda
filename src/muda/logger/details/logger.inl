@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <sstream>
 #include <muda/mstl/span.h>
+#include <muda/cub/device/device_radix_sort.h>
 namespace muda
 {
 template <typename T>
@@ -54,38 +55,31 @@ MUDA_INLINE const T& LoggerMetaData::as()
 }
 
 MUDA_INLINE Logger::Logger(LoggerViewer* global_viewer, size_t meta_size, size_t buffer_size)
-    : m_meta_data(nullptr)
-    , m_meta_data_size(meta_size)
+    : m_meta_data_id(meta_size)
+    , m_meta_data(meta_size)
+    , m_sorted_meta_data_id(meta_size)
+    , m_sorted_meta_data(meta_size)
     , m_h_meta_data(meta_size)
-    , m_buffer(nullptr)
-    , m_buffer_size(buffer_size)
+    , m_buffer(buffer_size)
     , m_h_buffer(buffer_size)
-    , m_offset(nullptr)
-    , m_h_offset()
     , m_log_viewer_ptr(global_viewer)
 {
-    checkCudaErrors(cudaMalloc(&m_meta_data, sizeof(details::LoggerMetaData) * meta_size));
-    checkCudaErrors(cudaMalloc(&m_buffer, sizeof(char) * buffer_size));
-    checkCudaErrors(cudaMalloc(&m_offset, sizeof(details::LoggerOffset)));
     upload();
 }
 
 MUDA_INLINE Logger::Logger(Logger&& other) noexcept
-    : m_meta_data(other.m_meta_data)
-    , m_meta_data_size(other.m_meta_data_size)
+    : m_sort_temp_storage(std::move(other.m_sort_temp_storage))
+    , m_meta_data_id(std::move(other.m_meta_data_id))
+    , m_meta_data(std::move(other.m_meta_data))
+    , m_sorted_meta_data_id(std::move(other.m_sorted_meta_data_id))
+    , m_sorted_meta_data(std::move(other.m_sorted_meta_data))
     , m_h_meta_data(std::move(other.m_h_meta_data))
-    , m_buffer(other.m_buffer)
-    , m_buffer_size(other.m_buffer_size)
+    , m_buffer(std::move(other.m_buffer))
     , m_h_buffer(std::move(other.m_h_buffer))
-    , m_offset(other.m_offset)
-    , m_h_offset(other.m_h_offset)
-    , m_log_viewer_ptr(other.m_log_viewer_ptr)
+    , m_offset(std::move(other.m_offset))
+    , m_h_offset(std::move(other.m_h_offset))
+    , m_log_viewer_ptr(std::move(other.m_log_viewer_ptr))
 {
-    other.m_meta_data      = nullptr;
-    other.m_meta_data_size = 0;
-    other.m_buffer         = nullptr;
-    other.m_buffer_size    = 0;
-    other.m_offset         = nullptr;
     other.m_log_viewer_ptr = nullptr;
     other.m_viewer         = {};
 }
@@ -94,35 +88,36 @@ MUDA_INLINE Logger& Logger::operator=(Logger&& other) noexcept
 {
     if(this == &other)
         return *this;
-    m_meta_data      = other.m_meta_data;
-    m_meta_data_size = other.m_meta_data_size;
-    m_h_meta_data    = std::move(other.m_h_meta_data);
-    m_buffer         = other.m_buffer;
-    m_buffer_size    = other.m_buffer_size;
-    m_h_buffer       = std::move(other.m_h_buffer);
-    m_offset         = other.m_offset;
-    m_h_offset       = other.m_h_offset;
-    m_log_viewer_ptr = other.m_log_viewer_ptr;
-    m_viewer         = other.m_viewer;
 
-    other.m_meta_data      = nullptr;
-    other.m_meta_data_size = 0;
-    other.m_buffer         = nullptr;
-    other.m_buffer_size    = 0;
-    other.m_offset         = nullptr;
+    m_sort_temp_storage    = std::move(other.m_sort_temp_storage);
+    m_meta_data_id         = std::move(other.m_meta_data_id);
+    m_meta_data            = std::move(other.m_meta_data);
+    m_sorted_meta_data_id  = std::move(other.m_sorted_meta_data_id);
+    m_sorted_meta_data     = std::move(other.m_sorted_meta_data);
+    m_h_meta_data          = std::move(other.m_h_meta_data);
+    m_buffer               = std::move(other.m_buffer);
+    m_h_buffer             = std::move(other.m_h_buffer);
+    m_offset               = std::move(other.m_offset);
+    m_h_offset             = std::move(other.m_h_offset);
+    m_log_viewer_ptr       = std::move(other.m_log_viewer_ptr);
     other.m_log_viewer_ptr = nullptr;
     other.m_viewer         = {};
+
+    return *this;
 }
 template <typename F>
 void Logger::_retrieve(F&& f)
 {
     download();
+    //auto meta_data_span =
+    //    span<details::LoggerMetaData>{m_h_meta_data}.subspan(0, m_h_offset.meta_data_offset);
+    //std::stable_sort(meta_data_span.begin(),
+    //                 meta_data_span.end(),
+    //                 [](const details::LoggerMetaData& a, const details::LoggerMetaData& b)
+    //                 { return a.id < b.id; });
+
     auto meta_data_span =
         span<details::LoggerMetaData>{m_h_meta_data}.subspan(0, m_h_offset.meta_data_offset);
-    std::stable_sort(meta_data_span.begin(),
-                     meta_data_span.end(),
-                     [](const details::LoggerMetaData& a, const details::LoggerMetaData& b)
-                     { return a.id < b.id; });
 
     f(meta_data_span);
 
@@ -172,76 +167,77 @@ MUDA_INLINE LoggerDataContainer Logger::retrieve_meta()
 
 MUDA_INLINE void Logger::expand_meta_data()
 {
-    auto                     new_size = m_meta_data_size * 2;
-    details::LoggerMetaData* new_meta_data;
-    checkCudaErrors(cudaMalloc(&new_meta_data, new_size * sizeof(details::LoggerMetaData)));
-    checkCudaErrors(cudaFree(m_meta_data));
-    m_meta_data      = new_meta_data;
-    m_meta_data_size = new_size;
+    auto new_size = m_meta_data.size() * 2;
+
+    m_meta_data_id.resize(new_size);
+    m_meta_data.resize(new_size);
+
+    m_sorted_meta_data_id.resize(new_size);
+    m_sorted_meta_data.resize(new_size);
 }
 
 MUDA_INLINE void Logger::expand_buffer()
 {
-    auto  new_size = m_buffer_size * 2;
-    char* new_buffer;
-    checkCudaErrors(cudaMalloc(&new_buffer, new_size * sizeof(char)));
-    checkCudaErrors(cudaFree(m_buffer));
-    m_buffer      = new_buffer;
-    m_buffer_size = new_size;
+    auto new_size = m_buffer.size() * 2;
+    m_buffer.resize(new_size);
 }
 
 MUDA_INLINE void Logger::upload()
 {
     // reset
     m_h_offset = {};
-    checkCudaErrors(cudaMemcpyAsync(m_offset, &m_h_offset, sizeof(m_h_offset), cudaMemcpyHostToDevice));
+    m_offset   = m_h_offset;
 
-    m_viewer.m_buffer_view_data    = m_buffer;
-    m_viewer.m_buffer_view_size    = m_buffer_size;
-    m_viewer.m_meta_data_view_data = m_meta_data;
-    m_viewer.m_meta_data_view_size = m_meta_data_size;
-    m_viewer.m_offset_view         = m_offset;
+    m_viewer.m_offset_view  = m_offset.viewer();
+    m_viewer.m_meta_data_id = m_meta_data_id.viewer();
+    m_viewer.m_meta_data    = m_meta_data.viewer();
+    m_viewer.m_buffer       = m_buffer.viewer();
+
     if(m_log_viewer_ptr)
     {
         checkCudaErrors(cudaMemcpyAsync(
             m_log_viewer_ptr, &m_viewer, sizeof(m_viewer), cudaMemcpyHostToDevice));
     }
-    checkCudaErrors(cudaStreamSynchronize(nullptr));
+    Launch().wait();
 }
 
 MUDA_INLINE void Logger::download()
 {
     // copy back
-    checkCudaErrors(cudaMemcpy(&m_h_offset, m_offset, sizeof(m_h_offset), cudaMemcpyDeviceToHost));
+    m_h_offset = m_offset;
+
+    // sort meta data
+
+    DeviceRadixSort().SortPairs(m_sort_temp_storage,
+                                m_meta_data_id.data(),
+                                m_sorted_meta_data_id.data(),
+                                m_meta_data.data(),
+                                m_sorted_meta_data.data(),
+                                m_h_offset.meta_data_offset);
 
     if(m_h_offset.meta_data_offset > 0)
     {
         m_h_meta_data.resize(m_h_offset.meta_data_offset);
-        checkCudaErrors(cudaMemcpyAsync(m_h_meta_data.data(),
-                                        m_meta_data,
-                                        m_h_offset.meta_data_offset * sizeof(details::LoggerMetaData),
-                                        cudaMemcpyDeviceToHost));
+        BufferLaunch().copy(m_h_meta_data.data(),
+                            m_sorted_meta_data.view(0, m_h_offset.meta_data_offset));
     }
 
     if(m_h_offset.buffer_offset > 0)
     {
         m_h_buffer.resize(m_h_offset.buffer_offset);
-        checkCudaErrors(cudaMemcpyAsync(m_h_buffer.data(),
-                                        m_buffer,
-                                        m_h_offset.buffer_offset * sizeof(char),
-                                        cudaMemcpyDeviceToHost));
+        BufferLaunch().copy(m_h_buffer.data(), m_buffer.view(0, m_h_offset.buffer_offset));
     }
 
-    checkCudaErrors(cudaStreamSynchronize(nullptr));
+    Launch().wait();
 }
 
 MUDA_INLINE void Logger::expand_if_needed()
 {
     if(m_h_offset.exceed_meta_data)
     {
-        auto old_size = m_meta_data_size;
+        auto old_size = m_meta_data.size();
         expand_meta_data();
-        auto new_size = m_meta_data_size;
+        auto new_size = m_meta_data.size();
 
         m_h_offset.exceed_meta_data = 0;
         MUDA_KERNEL_WARN_WITH_LOCATION(
@@ -249,9 +245,9 @@ MUDA_INLINE void Logger::expand_if_needed()
     }
     if(m_h_offset.exceed_buffer)
     {
-        auto old_size = m_buffer_size;
+        auto old_size = m_buffer.size();
         expand_buffer();
-        auto new_size = m_buffer_size;
+        auto new_size = m_buffer.size();
 
         m_h_offset.exceed_buffer = 0;
         MUDA_KERNEL_WARN_WITH_LOCATION("Logger buffer expanded %d => %d", old_size, new_size);
@@ -290,13 +286,5 @@ MUDA_INLINE void Logger::put(std::ostream& os, const details::LoggerMetaData& me
 #undef MUDA_PUT_CASE
 }
 
-MUDA_INLINE Logger::~Logger()
-{
-    if(m_buffer)
-        checkCudaErrors(cudaFree(m_buffer));
-    if(m_meta_data)
-        checkCudaErrors(cudaFree(m_meta_data));
-    if(m_offset)
-        checkCudaErrors(cudaFree(m_offset));
-}
+MUDA_INLINE Logger::~Logger() {}
 }  // namespace muda

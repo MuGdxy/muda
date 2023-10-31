@@ -3,7 +3,28 @@
 #include "../example_common.h"
 using namespace muda;
 
-void logger()
+void logger_simple()
+{
+    example_desc(R"(A simple `muda::Logger` example)");
+
+    Logger logger;
+    Launch(2, 1)
+        .apply(
+            [logger = logger.viewer()] __device__() mutable
+            {
+                //print hello world
+                logger << "hello world! from block (" << blockIdx << ")\n";
+            })
+        .wait();
+    logger.retrieve(std::cout);
+}
+
+TEST_CASE("logger_simple", "[logger]")
+{
+    logger_simple();
+}
+
+void log_proxy()
 {
     example_desc(R"(This example, we show how to use `muda::Logger` and
 show the advantages and disadvantages of `muda::Logger` w.r.t. the cuda `printf()`.
@@ -25,27 +46,29 @@ flexibility:
 2. to get the result, you call `muda::Logger::retrieve(ostream)`  
    by yourself, you could use a file or any `ostream` you like.)");
 
-    DeviceBuffer<int> dynamic_array(10);
-    dynamic_array.fill(1);
+    std::vector<int> host_array(10);
+    std::iota(host_array.begin(), host_array.end(), 0);
+    DeviceBuffer<int> dynamic_array;
+    dynamic_array = host_array;
 
+    std::cout << "print a dynamic array using cuda `printf()` (out of order):\n";
+    Launch(2, 1)
+        .apply(
+            [dynamic_array = dynamic_array.viewer()] __device__() mutable
+            {
+                printf("[thread=%d, block=%d]: ", threadIdx.x, blockIdx.x);
+                for(int i = 0; i < dynamic_array.dim(); ++i)
+                    printf("%d ", dynamic_array(i));
+                printf("(N=%d)\n", dynamic_array.dim());
+            })
+        .wait();
+
+    std::cout << "print a dynamic array and keep the output order using `muda::Logger`:\n";
     Logger logger;
     Launch(2, 1)
         .apply(
-            [logger = logger.viewer()] __device__() mutable
-            {
-                //print hello world
-                logger << "hello world! from block (" << blockIdx << ")\n";
-            })
-        .apply(
             [logger = logger.viewer(), dynamic_array = dynamic_array.viewer()] __device__() mutable
             {
-                // type override
-                int2 i2 = make_int2(1, 2);
-                logger << "int2: " << i2 << "\n";
-                float3 v3 = make_float3(1.0f, 2.0f, 3.0f);
-                logger << "float3: " << v3 << "\n";
-
-                // print a dynamic array and keep the output order
                 LogProxy proxy{logger};
                 proxy << "[thread=" << threadIdx.x << ", block=" << blockIdx.x << "]: ";
                 for(int i = 0; i < dynamic_array.dim(); ++i)
@@ -56,7 +79,7 @@ flexibility:
     logger.retrieve(std::cout);
 }
 
-TEST_CASE("logger", "[logger]")
+TEST_CASE("log_proxy", "[logger]")
 {
-    logger();
+    log_proxy();
 }

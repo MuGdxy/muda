@@ -23,6 +23,7 @@ class LoggerDataContainer
 {
   public:
     span<LoggerMetaData> meta_data() { return m_meta_data; }
+
   private:
     friend class Logger;
     std::vector<LoggerMetaData> m_meta_data;
@@ -76,16 +77,26 @@ class Logger
     void download();
     void expand_if_needed();
 
-    details::LoggerMetaData*             m_meta_data;
-    size_t                               m_meta_data_size;
-    std::vector<details::LoggerMetaData> m_h_meta_data;
+    //details::LoggerMetaData* m_meta_data;
+    //size_t                   m_meta_data_size;
+    DeviceBuffer<std::byte> m_sort_temp_storage;
 
-    char*             m_buffer;
-    size_t            m_buffer_size;
-    std::vector<char> m_h_buffer;
+    DeviceBuffer<uint32_t>                m_sorted_meta_data_id;
+    DeviceBuffer<details::LoggerMetaData> m_sorted_meta_data;
 
-    details::LoggerOffset* m_offset;
-    details::LoggerOffset  m_h_offset;
+    DeviceBuffer<uint32_t>                m_meta_data_id;
+    DeviceBuffer<details::LoggerMetaData> m_meta_data;
+
+    std::vector<details::LoggerMetaData>  m_h_meta_data;
+
+    //char*              m_buffer;
+    //size_t             m_buffer_size;
+    DeviceBuffer<char> m_buffer;
+    std::vector<char>  m_h_buffer;
+
+    //details::LoggerOffset*           m_offset;
+    DeviceVar<details::LoggerOffset> m_offset;
+    details::LoggerOffset            m_h_offset;
 
     LoggerViewer* m_log_viewer_ptr;
     LoggerViewer  m_viewer;

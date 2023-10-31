@@ -5,7 +5,7 @@ namespace muda
 MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy::Proxy(LoggerViewer& viewer)
     : m_viewer(viewer)
 {
-    MUDA_KERNEL_ASSERT(m_viewer.m_buffer_view_data && m_viewer.m_meta_data_view_data,
+    MUDA_KERNEL_ASSERT(m_viewer.m_buffer.data() && m_viewer.m_meta_data.data(),
                        "LoggerViewer is not initialized");
     m_log_id = atomicAdd(&(m_viewer.m_offset_view->log_id), 1u);
 }
@@ -40,9 +40,9 @@ template <typename T>
 MUDA_DEVICE void LoggerViewer::Proxy::push_fmt_arg(const T& obj, LoggerFmtArg func)
 {
     details::LoggerMetaData meta;
-    meta.type = LoggerBasicType::Object;
-    meta.size = sizeof(T);
-    meta.id   = m_log_id;
+    meta.type    = LoggerBasicType::Object;
+    meta.size    = sizeof(T);
+    meta.id      = m_log_id;
     meta.fmt_arg = func;
     m_viewer.push_data(meta, &obj);
 }
@@ -98,7 +98,7 @@ MUDA_INLINE MUDA_DEVICE uint32_t next_idx(uint32_t* data_offset, uint32_t size, 
 
 MUDA_INLINE MUDA_DEVICE uint32_t LoggerViewer::next_meta_data_idx() const
 {
-    auto idx = next_idx(&(m_offset_view->meta_data_offset), 1u, m_meta_data_view_size);
+    auto idx = next_idx(&(m_offset_view->meta_data_offset), 1u, m_meta_data.total_size());
     if(idx == ~0u)
     {
         atomicCAS(&(m_offset_view->exceed_meta_data), 0u, 1u);
@@ -109,7 +109,7 @@ MUDA_INLINE MUDA_DEVICE uint32_t LoggerViewer::next_meta_data_idx() const
 
 MUDA_INLINE MUDA_DEVICE uint32_t LoggerViewer::next_buffer_idx(uint32_t size) const
 {
-    auto idx = next_idx(&(m_offset_view->buffer_offset), size, m_buffer_view_size);
+    auto idx = next_idx(&(m_offset_view->buffer_offset), size, m_buffer.total_size());
     if(idx == ~0u)
     {
         atomicCAS(&(m_offset_view->exceed_buffer), 0u, 1u);
@@ -128,13 +128,15 @@ MUDA_INLINE MUDA_DEVICE bool LoggerViewer::push_data(details::LoggerMetaData met
     if(buffer_idx == ~0u)
     {
         meta.exceeded                   = true;
-        m_meta_data_view_data[meta_idx] = meta;
+        m_meta_data.data()[meta_idx]    = meta;
+        m_meta_data_id.data()[meta_idx] = meta.id;
         return false;
     }
     meta.offset                     = buffer_idx;
-    m_meta_data_view_data[meta_idx] = meta;
+    m_meta_data.data()[meta_idx]    = meta;
+    m_meta_data_id.data()[meta_idx] = meta.id;
     for(int i = 0; i < meta.size; ++i)
-        m_buffer_view_data[buffer_idx + i] = reinterpret_cast<const char*>(data)[i];
+        m_buffer.data()[buffer_idx + i] = reinterpret_cast<const char*>(data)[i];
     return true;
 }
 
