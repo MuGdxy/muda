@@ -1,10 +1,10 @@
 #pragma once
-#include "check_cuda_errors.h"
+#include <muda/check/check_cuda_errors.h>
 #include <cusolver_common.h>
 
 namespace muda
 {
-inline const char* mudaCudaGetErrorEnum(cusolverStatus_t error)
+MUDA_INLINE MUDA_GENERIC const char* mudaCudaGetErrorEnum(cusolverStatus_t error)
 {
     switch(error)
     {

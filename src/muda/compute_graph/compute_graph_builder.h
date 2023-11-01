@@ -48,4 +48,4 @@ class ComputeGraphBuilder
 };
 }  // namespace muda
 
-#include <muda/compute_graph/details/compute_graph_builder.inl>
+#include "details/compute_graph_builder.inl"

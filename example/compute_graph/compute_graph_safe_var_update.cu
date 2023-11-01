@@ -163,7 +163,7 @@ graph vars when you don't know whether some graphs are using your graph var or n
     // this is a muda-style graph launch.
     // We keep graph launch and kernel launch consistent.
     on(stream)
-        .next<ComputeGraphLaunch>()
+        .next<GraphLaunch>()
         .launch(graph3)
         .next<Launch>()
         .apply([] __device__() { print("Graph3 is finished\n"); })

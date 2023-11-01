@@ -16,9 +16,8 @@
 #include <muda/tools/launch_info_cache.h>
 
 #include <muda/check/check_cuda_errors.h>
-#include <muda/graph.h>
 #include <muda/muda_def.h>
-#include "event.h"
+#include <muda/launch/event.h>
 
 namespace muda
 {
@@ -49,14 +48,15 @@ class LaunchCore
   protected:
     template <typename T>
     using S = std::shared_ptr<T>;
-    ::cudaStream_t stream() const { return m_stream; }
+    MUDA_GENERIC ::cudaStream_t stream() const { return m_stream; }
+
     ::cudaStream_t m_stream;
-    void pop_kernel_name();
+    MUDA_HOST void pop_kernel_name();
 
   public:
-    LaunchCore(::cudaStream_t stream) MUDA_NOEXCEPT;
+    MUDA_GENERIC LaunchCore(::cudaStream_t stream) MUDA_NOEXCEPT;
 
-    virtual void init_stream(::cudaStream_t s) { m_stream = s; }
+    void init_stream(::cudaStream_t s) { m_stream = s; }
 
     void push_range(const std::string& name);
     void pop_range();
@@ -91,7 +91,7 @@ class LaunchBase : public LaunchCore
 
   public:
     using derived_type = T;
-    LaunchBase(::cudaStream_t stream) MUDA_NOEXCEPT;
+    MUDA_GENERIC LaunchBase(::cudaStream_t stream) MUDA_NOEXCEPT;
 
     // create a named scope for better recognization (if you are using some profile tools)
     // usage:
@@ -180,4 +180,4 @@ void wait_stream(::cudaStream_t stream);
 void wait_event(cudaEvent_t event);
 }  // namespace muda
 
-#include <muda/launch/details/launch_base.inl>
+#include "details/launch_base.inl"

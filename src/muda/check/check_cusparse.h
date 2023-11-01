@@ -1,8 +1,9 @@
 #pragma once
+#include <muda/muda_def.h>
 #include <cusparse.h>
 
 
-__host__ __device__ inline const char* mudaCudaGetErrorEnum(cusparseStatus_t error)
+MUDA_INLINE MUDA_GENERIC const char* mudaCudaGetErrorEnum(cusparseStatus_t error)
 {
     switch(error)
     {

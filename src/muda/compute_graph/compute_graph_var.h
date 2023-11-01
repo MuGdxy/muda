@@ -158,4 +158,4 @@ struct read_write_view<cudaEvent_t>
 }  // namespace muda
 
 
-#include <muda/compute_graph/details/compute_graph_var.inl>
+#include "details/compute_graph_var.inl"

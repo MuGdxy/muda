@@ -11,7 +11,7 @@
 #include <nvtx3/nvToolsExt.h>
 #include <nvtx3/nvToolsExtCuda.h>
 
-#include "check/check_cuda_errors.h"
+#include <muda/check/check_cuda_errors.h>
 
 namespace muda
 {
@@ -30,13 +30,11 @@ class Profile
     bool need_pop;
 
   public:
-    Profile() MUDA_NOEXCEPT
-        : need_pop(false)
+    Profile() MUDA_NOEXCEPT : need_pop(false)
     {
         checkCudaErrors(cudaProfilerStart());
     }
-    Profile(const std::string& name) MUDA_NOEXCEPT
-        : need_pop(true)
+    Profile(const std::string& name) MUDA_NOEXCEPT : need_pop(true)
     {
         nvtxEventAttributes_t eventAttrib = {0};
         eventAttrib.version               = NVTX_VERSION;

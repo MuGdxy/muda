@@ -7,11 +7,25 @@ namespace muda
 {
 namespace details
 {
-    template <typename F, typename UserTag>
-    MUDA_GLOBAL void parallel_for_kernel_with_details(F f, int count);
+    template <typename F>
+    class ParallelForCallable
+    {
+      public:
+        F            callable;
+        int          count;
+        MUDA_GENERIC ParallelForCallable(F callable, int count) MUDA_NOEXCEPT
+            : callable(callable),
+              count(count)
+        {
+        }
+        // MUDA_GENERIC ~ParallelForCallable() = default;
+    };
 
     template <typename F, typename UserTag>
-    MUDA_GLOBAL void grid_stride_loop_kernel_with_details(F f, int count);
+    MUDA_GLOBAL void parallel_for_kernel(ParallelForCallable<F> f);
+
+    template <typename F, typename UserTag>
+    MUDA_GLOBAL void grid_stride_loop_kernel(ParallelForCallable<F> f);
 }  // namespace details
 
 enum class ParallelForType : uint32_t
@@ -54,12 +68,12 @@ class ParallelForDetails
         return m_total_batch;
     }
 
-  private:
-    template <typename F, typename UserTag>
-    friend MUDA_GLOBAL void details::parallel_for_kernel_with_details(F f, int count);
+    //private:
+    //template <typename F, typename UserTag>
+    //friend MUDA_GLOBAL void details::parallel_for_kernel(F f, int count);
 
-    template <typename F, typename UserTag>
-    friend MUDA_GLOBAL void details::grid_stride_loop_kernel_with_details(F f, int count);
+    //template <typename F, typename UserTag>
+    //friend MUDA_GLOBAL void details::grid_stride_loop_kernel(F f, int count);
 
     MUDA_DEVICE ParallelForDetails(ParallelForType type, int i, int total_num) MUDA_NOEXCEPT
         : m_type(type),
@@ -87,61 +101,101 @@ namespace details
     **************************************************************************
     */
 
-    template <typename F, typename UserTag>
-    MUDA_GLOBAL void parallel_for_kernel(F f, int count)
-    {
-        auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-        auto i   = tid;
-        if(i < count)
-        {
-            f(i);
-        }
-    }
+    //template <typename F, typename UserTag>
+    //MUDA_GLOBAL void parallel_for_kernel(F f, int count)
+    //{
+    //    auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+    //    auto i   = tid;
+    //    if(i < count)
+    //    {
+    //        f(i);
+    //    }
+    //}
 
-    template <typename F, typename UserTag>
-    MUDA_GLOBAL void parallel_for_kernel_with_details(F f, int count)
+    //template <typename F, typename UserTag = DefaultTag>
+    //MUDA_GLOBAL void parallel_for_kernel(F f, int count)
+    //{
+    //    ParallelForDetails details{ParallelForType::DynamicBlocks,
+    //                               static_cast<int>(blockIdx.x * blockDim.x
+    //                                                + threadIdx.x),
+    //                               count};
+    //    if(details.i() < count)
+    //    {
+    //        f(details);
+    //    }
+    //}
+
+    template <typename F, typename UserTag = DefaultTag>
+    MUDA_GLOBAL void parallel_for_kernel(ParallelForCallable<F> f)
     {
         ParallelForDetails details{ParallelForType::DynamicBlocks,
                                    static_cast<int>(blockIdx.x * blockDim.x
                                                     + threadIdx.x),
-                                   count};
-        if(details.i() < count)
+                                   f.count};
+        if(details.i() < details.total_num())
         {
-            f(details);
+            f.callable(details);
         }
     }
+    //template <typename F, typename UserTag>
+    //MUDA_GLOBAL void grid_stride_loop_kernel(F f, int count)
+    //{
+    //    auto tid       = blockIdx.x * blockDim.x + threadIdx.x;
+    //    auto grid_size = gridDim.x * blockDim.x;
+    //    auto i         = tid;
+    //    for(; i < count; i += grid_size)
+    //        f(i);
+    //}
 
-    template <typename F, typename UserTag>
-    MUDA_GLOBAL void grid_stride_loop_kernel(F f, int count)
-    {
-        auto tid       = blockIdx.x * blockDim.x + threadIdx.x;
-        auto grid_size = gridDim.x * blockDim.x;
-        auto i         = tid;
-        for(; i < count; i += grid_size)
-            f(i);
-    }
+    //template <typename F, typename UserTag = DefaultTag>
+    //MUDA_GLOBAL void grid_stride_loop_kernel(F f, int count)
+    //{
+    //    auto tid        = blockIdx.x * blockDim.x + threadIdx.x;
+    //    auto grid_size  = gridDim.x * blockDim.x;
+    //    auto block_size = blockDim.x;
+    //    auto i          = tid;
+    //    auto round      = (count + grid_size - 1) / grid_size;
+    //    for(int j = 0; i < count; i += grid_size, ++j)
+    //    {
+    //        ParallelForDetails details{
+    //            ParallelForType::GridStrideLoop, static_cast<int>(i), count};
+    //        details.m_total_batch = round;
+    //        details.m_batch_i     = j;
+    //        if(i + block_size > count)  // the block may be incomplete in the last round
+    //            details.m_active_num_in_block = count - j * grid_size;
+    //        else
+    //            details.m_active_num_in_block = block_size;
+    //        f(details);
+    //    }
+    //}
 
-    template <typename F, typename UserTag>
-    MUDA_GLOBAL void grid_stride_loop_kernel_with_details(F f, int count)
+    template <typename F, typename UserTag = DefaultTag>
+    MUDA_GLOBAL void grid_stride_loop_kernel(ParallelForCallable<F> f)
     {
         auto tid        = blockIdx.x * blockDim.x + threadIdx.x;
         auto grid_size  = gridDim.x * blockDim.x;
         auto block_size = blockDim.x;
         auto i          = tid;
+        auto count      = f.count;
         auto round      = (count + grid_size - 1) / grid_size;
         for(int j = 0; i < count; i += grid_size, ++j)
         {
-            ParallelForDetails details{ParallelForType::GridStrideLoop, static_cast<int>(i), count};
+            ParallelForDetails details{
+                ParallelForType::GridStrideLoop, static_cast<int>(i), count};
+
             details.m_total_batch = round;
             details.m_batch_i     = j;
-            if(i + block_size > count)  // the block may be incomplete in the last round
+            if(i + block_size > details.total_num())  // the block may be incomplete in the last round
                 details.m_active_num_in_block = count - j * grid_size;
             else
                 details.m_active_num_in_block = block_size;
-            f(details);
+            f.callable(details);
         }
     }
 }  // namespace details
+
+using details::grid_stride_loop_kernel;
+using details::parallel_for_kernel;
 
 /// <summary>
 /// ParallelFor
@@ -151,24 +205,24 @@ namespace details
 /// </summary>
 class ParallelFor : public LaunchBase<ParallelFor>
 {
-    int    m_gridDim;
+    int    m_grid_dim;
     int    m_block_dim;
     size_t m_shared_mem_size;
 
   public:
-    template <typename F>
-    class KernelData
-    {
-      public:
-        int count;
-        F   callable;
-        template <typename U>
-        KernelData(int count, U&& callable) MUDA_NOEXCEPT
-            : count(count),
-              callable(std::forward<U>(callable))
-        {
-        }
-    };
+    //template <typename F>
+    //class KernelData
+    //{
+    //  public:
+    //    int count;
+    //    F   callable;
+    //    template <typename U>
+    //    KernelData(int count, U&& callable) MUDA_NOEXCEPT
+    //        : count(count),
+    //          callable(std::forward<U>(callable))
+    //    {
+    //    }
+    //};
 
     /// <summary>
     /// calculate grid dim automatically to cover the range
@@ -176,9 +230,9 @@ class ParallelFor : public LaunchBase<ParallelFor>
     /// <param name="blockDim">block dim to use</param>
     /// <param name="sharedMemSize"></param>
     /// <param name="stream"></param>
-    ParallelFor(int blockDim, size_t shared_mem_size = 0, cudaStream_t stream = nullptr) MUDA_NOEXCEPT
+    MUDA_HOST ParallelFor(int blockDim, size_t shared_mem_size = 0, cudaStream_t stream = nullptr) MUDA_NOEXCEPT
         : LaunchBase(stream),
-          m_gridDim(0),
+          m_grid_dim(0),
           m_block_dim(blockDim),
           m_shared_mem_size(shared_mem_size)
     {
@@ -191,34 +245,37 @@ class ParallelFor : public LaunchBase<ParallelFor>
     /// <param name="gridDim"></param>
     /// <param name="sharedMemSize"></param>
     /// <param name="stream"></param>
-    ParallelFor(int gridDim, int blockDim, size_t shared_mem_size = 0, cudaStream_t stream = nullptr) MUDA_NOEXCEPT
+    MUDA_HOST ParallelFor(int          gridDim,
+                          int          blockDim,
+                          size_t       shared_mem_size = 0,
+                          cudaStream_t stream          = nullptr) MUDA_NOEXCEPT
         : LaunchBase(stream),
-          m_gridDim(gridDim),
+          m_grid_dim(gridDim),
           m_block_dim(blockDim),
           m_shared_mem_size(shared_mem_size)
     {
     }
 
     template <typename F, typename UserTag = DefaultTag>
-    ParallelFor& apply(int count, F&& f, UserTag tag = {});
+    MUDA_HOST ParallelFor& apply(int count, F&& f, UserTag tag = {});
 
     template <typename F, typename UserTag = DefaultTag>
-    MUDA_NODISCARD auto as_node_parms(int count, F&& f, UserTag tag = {})
-        -> S<KernelNodeParms<KernelData<raw_type_t<F>>>>;
+    MUDA_HOST MUDA_NODISCARD auto as_node_parms(int count, F&& f, UserTag tag = {})
+        -> S<KernelNodeParms<details::ParallelForCallable<raw_type_t<F>>>>;
 
-    static int round_up_blocks(int count, int block_dim) MUDA_NOEXCEPT
+    MUDA_GENERIC MUDA_NODISCARD static int round_up_blocks(int count, int block_dim) MUDA_NOEXCEPT
     {
         return (count + block_dim - 1) / block_dim;
     }
 
-  private:
+  public:
     template <typename F, typename UserTag = DefaultTag>
-    void invoke(int count, F&& f, UserTag tag = {});
+    MUDA_HOST void invoke(int count, F&& f, UserTag tag = {});
 
-    int calculate_grid_dim(int count) const MUDA_NOEXCEPT;
+    MUDA_GENERIC int calculate_grid_dim(int count) const MUDA_NOEXCEPT;
 
-    void check_input(int count) const MUDA_NOEXCEPT;
+    MUDA_GENERIC void check_input(int count) const MUDA_NOEXCEPT;
 };
 }  // namespace muda
 
-#include <muda/launch/details/parallel_for.inl>
+#include "details/parallel_for.inl"

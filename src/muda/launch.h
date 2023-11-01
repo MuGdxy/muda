@@ -1,7 +1,7 @@
 #pragma once
-#include "launch/stream.h"
-#include "launch/event.h"
-#include "launch/launch.h"
-#include "launch/parallel_for.h"
-#include "launch/memory.h"
-#include "launch/host_call.h"
+#include <muda/launch/stream.h>
+#include <muda/launch/event.h>
+#include <muda/launch/launch.h>
+#include <muda/launch/parallel_for.h>
+#include <muda/launch/memory.h>
+#include <muda/launch/host_call.h>

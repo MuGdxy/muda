@@ -1,3 +1,3 @@
 #pragma once
-#include "util_type.h"
-#include "cub_device.h"
+#include <muda/cub/util_type.h>
+#include <muda/cub/cub_device.h>

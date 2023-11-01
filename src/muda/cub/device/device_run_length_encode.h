@@ -1,5 +1,5 @@
 #pragma once
-#include "base.h"
+#include <muda/cub/device/cub_wrapper.h>
 #ifndef __INTELLISENSE__
 #include <cub/device/device_run_length_encode.cuh>
 #endif

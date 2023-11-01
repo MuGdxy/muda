@@ -1,5 +1,5 @@
 #pragma once
-#include "base.h"
+#include <muda/graph/graph_base.h>
 
 namespace muda
 {
@@ -34,14 +34,14 @@ class KernelNodeParms : public NodeParms
     U    kernelParmData;
     auto func() { return m_parms.func; }
     void func(void* v) { m_parms.func = v; }
-    auto gridDim() { return m_parms.gridDim; }
-    void gridDim(const dim3& v) { m_parms.gridDim = v; }
-    auto blockDim() { return m_parms.blockDim; }
-    void blockDim(const dim3& v) { m_parms.blockDim = v; }
-    auto sharedMemBytes() { return m_parms.sharedMemBytes; }
-    void sharedMemBytes(unsigned int v) { m_parms.sharedMemBytes = v; }
-    auto kernelParams() { return m_parms.kernelParams; }
-    void kernelParams(const std::vector<void*>& v)
+    auto grid_dim() { return m_parms.gridDim; }
+    void grid_dim(const dim3& v) { m_parms.gridDim = v; }
+    auto block_dim() { return m_parms.blockDim; }
+    void block_dim(const dim3& v) { m_parms.blockDim = v; }
+    auto shared_mem_bytes() { return m_parms.sharedMemBytes; }
+    void shared_mem_bytes(unsigned int v) { m_parms.sharedMemBytes = v; }
+    auto kernel_params() { return m_parms.kernelParams; }
+    void kernel_params(const std::vector<void*>& v)
     {
         m_args               = v;
         m_parms.kernelParams = m_args.data();

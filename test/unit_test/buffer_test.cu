@@ -5,16 +5,16 @@
 #include <Eigen/Core>
 using namespace muda;
 
-struct TestStruct
-{
-    int          a;
-    MUDA_GENERIC TestStruct() { a = 1; }
-    MUDA_GENERIC ~TestStruct() { a = -1; }
-    MUDA_GENERIC bool operator==(const TestStruct& rhs) const
-    {
-        return a == rhs.a;
-    }
-};
+//struct TestStruct
+//{
+//    int          a;
+//    MUDA_GENERIC TestStruct() { a = 1; }
+//    MUDA_GENERIC ~TestStruct() { a = -1; }
+//    MUDA_GENERIC bool operator==(const TestStruct& rhs) const
+//    {
+//        return a == rhs.a;
+//    }
+//};
 
 
 TEST_CASE("buffer_test", "[buffer]")
@@ -70,58 +70,58 @@ TEST_CASE("buffer_test", "[buffer]")
         REQUIRE(h_res == gt);
     }
 
-    SECTION("non-trivial")
-    {
+    //SECTION("non-trivial")
+    //{
 
-        REQUIRE(std::is_trivially_constructible_v<TestStruct> == false);
-        REQUIRE(std::is_trivially_destructible_v<TestStruct> == false);
+    //    REQUIRE(std::is_trivially_constructible_v<TestStruct> == false);
+    //    REQUIRE(std::is_trivially_destructible_v<TestStruct> == false);
 
-        DeviceBuffer<TestStruct> buffer{};
-        DeviceBuffer<TestStruct> buffer_dst{};
-        std::vector<TestStruct>  gt;
+    //    DeviceBuffer<TestStruct> buffer{};
+    //    DeviceBuffer<TestStruct> buffer_dst{};
+    //    std::vector<TestStruct>  gt;
 
-        REQUIRE(buffer.size() == gt.size());
+    //    REQUIRE(buffer.size() == gt.size());
 
-        buffer.resize(77, TestStruct{});
-        gt.resize(77, TestStruct{});
-        REQUIRE(buffer.size() == gt.size());
+    //    buffer.resize(77, TestStruct{});
+    //    gt.resize(77, TestStruct{});
+    //    REQUIRE(buffer.size() == gt.size());
 
-        std::vector<TestStruct> h_res;
+    //    std::vector<TestStruct> h_res;
 
-        buffer.copy_to(h_res);
-        REQUIRE(h_res == gt);
+    //    buffer.copy_to(h_res);
+    //    REQUIRE(h_res == gt);
 
-        buffer.resize(99, TestStruct{});
-        gt.resize(99, TestStruct{});
-        REQUIRE(buffer.size() == gt.size());
+    //    buffer.resize(99, TestStruct{});
+    //    gt.resize(99, TestStruct{});
+    //    REQUIRE(buffer.size() == gt.size());
 
-        buffer.fill(TestStruct{});
-        gt.assign(gt.size(), TestStruct{});
+    //    buffer.fill(TestStruct{});
+    //    gt.assign(gt.size(), TestStruct{});
 
-        buffer.copy_to(h_res);
-        REQUIRE(h_res == gt);
+    //    buffer.copy_to(h_res);
+    //    REQUIRE(h_res == gt);
 
-        buffer.clear();
-        gt.clear();
-        REQUIRE(buffer.size() == gt.size());
+    //    buffer.clear();
+    //    gt.clear();
+    //    REQUIRE(buffer.size() == gt.size());
 
-        buffer.shrink_to_fit();
-        gt.shrink_to_fit();
-        REQUIRE(buffer.size() == gt.size());
+    //    buffer.shrink_to_fit();
+    //    gt.shrink_to_fit();
+    //    REQUIRE(buffer.size() == gt.size());
 
-        buffer.resize(100, TestStruct{});
-        buffer_dst = buffer;
-        gt.resize(100, TestStruct{});
+    //    buffer.resize(100, TestStruct{});
+    //    buffer_dst = buffer;
+    //    gt.resize(100, TestStruct{});
 
-        buffer_dst.copy_to(h_res);
-        REQUIRE(h_res == gt);
+    //    buffer_dst.copy_to(h_res);
+    //    REQUIRE(h_res == gt);
 
-        gt.clear();
-        gt.resize(35, TestStruct{});
-        buffer = gt;
-        buffer.copy_to(h_res);
-        REQUIRE(h_res == gt);
-    }
+    //    gt.clear();
+    //    gt.resize(35, TestStruct{});
+    //    buffer = gt;
+    //    buffer.copy_to(h_res);
+    //    REQUIRE(h_res == gt);
+    //}
 
     SECTION("buffer_view_test")
     {

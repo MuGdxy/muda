@@ -14,7 +14,7 @@
 #include <muda/compute_graph/compute_graph_var_usage.h>
 #include <muda/compute_graph/compute_graph_dependency.h>
 #include <muda/compute_graph/graphviz_options.h>
-
+#include <muda/graph/graph_viewer.h>
 namespace muda::details
 {
 class ComputeGraphAccessor;
@@ -76,11 +76,11 @@ class ComputeGraph
     ComputeGraph& operator=(ComputeGraph&&) = default;
 
   private:
-    class TempNodeInfo
-    {
-      public:
-        std::map<VarId, ComputeGraphVarUsage> var_usage;
-    };
+    //class TempNodeInfo
+    //{
+    //  public:
+    //    std::map<VarId, ComputeGraphVarUsage> var_usage;
+    //};
     template <typename T>
     using U = std::unique_ptr<T>;
     template <typename T>
@@ -146,6 +146,12 @@ class ComputeGraph
 
     Empty launch(cudaStream_t s = nullptr) { return launch(false, s); }
 
+    /**************************************************************
+    * 
+    * Graph Event Query API
+    * 
+    ***************************************************************/
+
     Event::QueryResult query() const;
 
     /**************************************************************
@@ -163,6 +169,16 @@ class ComputeGraph
     ***************************************************************/
 
     void graphviz(std::ostream& o, const ComputeGraphGraphvizOptions& options = {});
+
+    /**************************************************************
+    * 
+    * Graph Viewer API
+    * 
+    ***************************************************************/
+
+    GraphViewer viewer();
+
+    operator GraphViewer() { return viewer(); }
 
   private:  // internal method
     void topo_build();
@@ -215,9 +231,9 @@ class ComputeGraph
     bool              m_allow_access_graph  = false;
     size_t            m_access_graph_index  = 0;
     bool              m_allow_node_adding   = true;
-    TempNodeInfo      m_temp_node_info;
-    cudaStream_t      m_current_single_stream = nullptr;
-    bool              m_is_capturing          = false;
+    // TempNodeInfo      m_temp_node_info;
+    cudaStream_t m_current_single_stream = nullptr;
+    bool         m_is_capturing          = false;
     // in capture func, we don't allow any var eval()
     bool m_is_in_capture_func = false;
     // if we have already built the topo, we don't do that again
@@ -346,14 +362,15 @@ namespace details
             //m_cg.m_allow_access_graph = false;
         }
 
-        auto&& temp_var_usage()
-        {
-            return std::move(m_cg.m_temp_node_info.var_usage);
-        }
+        //auto&& temp_var_usage()
+        //{
+        //    return std::move(m_cg.m_temp_node_info.var_usage);
+        //}
 
         template <typename NodeType, typename F>
         NodeType* get_or_create_node(F&& f);
     };
 }  // namespace details
 }  // namespace muda
-#include <muda/compute_graph/details/compute_graph.inl>
+
+#include "details/compute_graph.inl"

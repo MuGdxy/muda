@@ -1,5 +1,5 @@
 #pragma once
-#include "base.h"
+#include <muda/viewer/viewer_base.h>
 
 namespace muda
 {

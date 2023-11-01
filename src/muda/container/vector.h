@@ -1,5 +1,4 @@
 #pragma once
-
 #include <muda/tools/version.h>
 #include <thrust/device_allocator.h>
 

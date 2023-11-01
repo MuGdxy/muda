@@ -1,5 +1,5 @@
 #pragma once
-#include "muda_config.h"
+#include <muda/muda_config.h>
 #include <muda/tools/platform.h>
 #include <cuda.h>
 #include <cuda_runtime.h>

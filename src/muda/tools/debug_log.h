@@ -1,12 +1,11 @@
 #pragma once
 #include <cstdlib>
 #include <cassert>
-#include <thread>
-#include "fuzzy.h"
-#include "../assert.h"
-#include "../print.h"
-#include "../muda_config.h"
-#include "../muda_def.h"
+#include <muda/tools/fuzzy.h>
+#include <muda/assert.h>
+#include <muda/print.h>
+#include <muda/muda_config.h>
+#include <muda/muda_def.h>
 
 #ifdef __CUDA_ARCH__
 #define MUDA_KERNEL_PRINT(fmt, ...)                                            \

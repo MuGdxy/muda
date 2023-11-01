@@ -1,7 +1,8 @@
 #pragma once
-#include "base.h"
-#include "dense.h"
-#include "details/cse_check.inl"
+#include <muda/viewer/viewer_base.h>
+#include <muda/viewer/dense.h>
+#include <muda/viewer/details/cse_check.inl>
+
 namespace muda
 {
 template <typename T>
@@ -60,26 +61,26 @@ class CCSEViewer : public RWViewer
     MUDA_INLINE MUDA_GENERIC void check_data() const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            details::cse_check_data(m_data, this->name(),this->kernel_name());
+            details::cse_check_data(m_data, this->name(), this->kernel_name());
     }
 
     MUDA_INLINE MUDA_GENERIC void check_dimi(int i) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            details::cse_check_dimi(i, m_dim_i, this->name(),this->kernel_name());
+            details::cse_check_dimi(i, m_dim_i, this->name(), this->kernel_name());
     }
 
     MUDA_INLINE MUDA_GENERIC void check_dimj(int i, int j, int dimj) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            details::cse_check_dimj(i, j, dimj, m_dim_i, this->name(),this->kernel_name());
+            details::cse_check_dimj(i, j, dimj, m_dim_i, this->name(), this->kernel_name());
     }
 
     MUDA_INLINE MUDA_GENERIC void check_global_offset(int i, int j, int dimj, int global_offset) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
             details::cse_check_global_offset(
-                i, j, dimj, global_offset, m_dim_i, m_ndata, this->name(),this->kernel_name());
+                i, j, dimj, global_offset, m_dim_i, m_ndata, this->name(), this->kernel_name());
     }
 
     MUDA_INLINE MUDA_GENERIC int cal_global_offset(int i, int j) const MUDA_NOEXCEPT
@@ -163,26 +164,26 @@ class CSEViewer : public RWViewer
     MUDA_INLINE MUDA_GENERIC void check_data() const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            details::cse_check_data(m_data, this->name(),this->kernel_name());
+            details::cse_check_data(m_data, this->name(), this->kernel_name());
     }
 
     MUDA_INLINE MUDA_GENERIC void check_dimi(int i) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            details::cse_check_dimi(i, m_dim_i, this->name(),this->kernel_name());
+            details::cse_check_dimi(i, m_dim_i, this->name(), this->kernel_name());
     }
 
     MUDA_INLINE MUDA_GENERIC void check_dimj(int i, int j, int dimj) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
-            details::cse_check_dimj(i, j, dimj, m_dim_i, this->name(),this->kernel_name());
+            details::cse_check_dimj(i, j, dimj, m_dim_i, this->name(), this->kernel_name());
     }
 
     MUDA_INLINE MUDA_GENERIC void check_global_offset(int i, int j, int dimj, int global_offset) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
             details::cse_check_global_offset(
-                i, j, dimj, global_offset, m_dim_i, m_ndata, this->name(),this->kernel_name());
+                i, j, dimj, global_offset, m_dim_i, m_ndata, this->name(), this->kernel_name());
     }
 
     MUDA_INLINE MUDA_GENERIC int cal_global_offset(int i, int j) const MUDA_NOEXCEPT

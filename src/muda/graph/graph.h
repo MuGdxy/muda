@@ -2,13 +2,13 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "base.h"
+#include <muda/graph/graph_base.h>
+#include <muda/graph/graph_exec.h>
 
-#include "kernel_node.h"
-#include "memory_node.h"
-#include "host_node.h"
-#include "graph_exec.h"
-#include "event_node.h"
+#include <muda/graph/kernel_node.h>
+#include <muda/graph/memory_node.h>
+#include <muda/graph/host_node.h>
+#include <muda/graph/event_node.h>
 
 namespace muda
 {

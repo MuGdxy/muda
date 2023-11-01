@@ -1,5 +1,5 @@
 #pragma once
-#include "platform.h"
+#include <muda/tools/platform.h>
 
 #ifdef MUDA_PLATFORM_LINUX
 #if __GNUC__ >= 8

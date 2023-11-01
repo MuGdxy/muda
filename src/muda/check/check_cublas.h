@@ -1,7 +1,8 @@
 #pragma once
+#include <muda/muda_def.h>
 #include <cublas.h>
 
-__host__ __device__ inline const char* mudaCudaGetErrorEnum(cublasStatus_t error)
+MUDA_INLINE MUDA_GENERIC const char* mudaCudaGetErrorEnum(cublasStatus_t error)
 {
     switch(error)
     {

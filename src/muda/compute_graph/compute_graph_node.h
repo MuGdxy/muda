@@ -62,4 +62,4 @@ class ComputeGraphNode : public ComputeGraphNodeBase
 };
 }  // namespace muda
 
-#include <muda/compute_graph/details/compute_graph_node.inl>
+#include "details/compute_graph_node.inl"

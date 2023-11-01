@@ -3,7 +3,7 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
-#include "../check/check_cuda_errors.h"
+#include <muda/check/check_cuda_errors.h>
 
 namespace muda
 {
@@ -12,42 +12,50 @@ namespace muda
 /// </summary>
 class Stream
 {
-    cudaStream_t m_handle;
+    cudaStream_t m_handle = nullptr;
 
   public:
-    enum class flag : unsigned int
+    enum class Flag : unsigned int
     {
         eDefault     = cudaStreamDefault,
         eNonBlocking = cudaStreamNonBlocking
     };
 
-    MUDA_NODISCARD Stream(flag f = flag::eDefault)
-    {
-        checkCudaErrors(cudaStreamCreateWithFlags(&m_handle, static_cast<unsigned int>(f)));
-    }
-
-    ~Stream() { checkCudaErrors(cudaStreamDestroy(m_handle)); }
+    MUDA_NODISCARD Stream(Flag f = Flag::eDefault);
+    ~Stream();
 
     operator cudaStream_t() const { return m_handle; }
+    cudaStream_t viewer() const { return m_handle; }
 
     // delete copy constructor and copy assignment operator
     Stream(const Stream&)            = delete;
     Stream& operator=(const Stream&) = delete;
 
     // allow move constructor and move assignment operator
-    Stream(Stream&&)            = default;
-    Stream& operator=(Stream&&) = default;
+    Stream(Stream&& o) MUDA_NOEXCEPT;
+    Stream& operator=(Stream&& o) MUDA_NOEXCEPT;
 
-    void wait() const { checkCudaErrors(cudaStreamSynchronize(m_handle)); }
+    void wait() const;
 
-    void begin_capture(cudaStreamCaptureMode mode = cudaStreamCaptureModeThreadLocal) const
+    void begin_capture(cudaStreamCaptureMode mode = cudaStreamCaptureModeThreadLocal) const;
+    void end_capture(cudaGraph_t* graph) const;
+
+    class TailLaunch
     {
-        checkCudaErrors(cudaStreamBeginCapture(m_handle, mode));
-    }
+      public:
+        MUDA_DEVICE TailLaunch(){};
+        MUDA_DEVICE operator cudaStream_t() const;
+    };
 
-    void end_capture(cudaGraph_t* graph) const
+    class FireAndForget
     {
-        checkCudaErrors(cudaStreamEndCapture(m_handle, graph));
-    }
+      public:
+        MUDA_DEVICE FireAndForget(){};
+        MUDA_DEVICE operator cudaStream_t() const;
+    };
 };
+
+
 }  // namespace muda
+
+#include "details/stream.inl"

@@ -3,11 +3,12 @@
 #include <muda/muda_def.h>
 #include <muda/check/check_cuda_errors.h>
 #include <muda/literal/unit.h>
-
+#include <muda/viewer/dense.h>
 namespace muda
 {
-class LoggerViewer
+class LoggerViewer : public ViewerBase
 {
+    MUDA_VIEWER_COMMON(LoggerViewer);
   public:
     class Proxy
     {

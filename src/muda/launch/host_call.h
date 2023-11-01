@@ -1,5 +1,5 @@
 #pragma once
-#include "launch_base.h"
+#include <muda/launch/launch_base.h>
 
 namespace muda
 {
@@ -24,13 +24,13 @@ namespace details
 class HostCall : public LaunchBase<HostCall>
 {
   public:
-    HostCall(cudaStream_t stream = nullptr)
+    MUDA_HOST HostCall(cudaStream_t stream = nullptr)
         : LaunchBase(stream)
     {
     }
 
     template <typename F, typename UserTag = DefaultTag>
-    HostCall& apply(F&& f, UserTag tag = {})
+    MUDA_HOST HostCall& apply(F&& f, UserTag tag = {})
     {
         using CallableType = raw_type_t<F>;
         static_assert(std::is_invocable_v<CallableType>, "f:void (void)");
@@ -43,7 +43,7 @@ class HostCall : public LaunchBase<HostCall>
     }
 
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <typeparam name="F"></typeparam>
     /// <typeparam name="UserTag"></typeparam>
@@ -51,7 +51,7 @@ class HostCall : public LaunchBase<HostCall>
     /// <param name="tag"></param>
     /// <returns></returns>
     template <typename F, typename UserTag = DefaultTag>
-    MUDA_NODISCARD auto as_node_parms(F&& f, UserTag tag = {})
+    MUDA_NODISCARD MUDA_HOST auto as_node_parms(F&& f, UserTag tag = {})
     {
         using CallableType = raw_type_t<F>;
         auto parms = std::make_shared<HostNodeParms<CallableType>>(std::forward<F>(f));

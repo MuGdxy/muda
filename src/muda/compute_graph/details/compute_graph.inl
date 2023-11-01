@@ -146,6 +146,12 @@ MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraph
     o << "}\n";
 }
 
+MUDA_INLINE GraphViewer ComputeGraph::viewer()
+{
+    build();
+    return GraphViewer{m_graph_exec->handle()};
+}
+
 MUDA_INLINE void ComputeGraph::topo_build()
 {
     if(m_is_topo_built)
@@ -252,7 +258,7 @@ MUDA_INLINE void ComputeGraph::clear_current_graph()
 
 MUDA_INLINE Stream& ComputeGraph::shared_capture_stream()
 {
-    static thread_local Stream s(Stream::flag::eNonBlocking);
+    static thread_local Stream s(Stream::Flag::eNonBlocking);
     return s;
 }
 

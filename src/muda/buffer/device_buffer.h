@@ -29,6 +29,7 @@ class DeviceBuffer
     DeviceBuffer(size_t n);
     DeviceBuffer();
     DeviceBuffer(const DeviceBuffer<T>& other);
+    DeviceBuffer(const std::vector<T>& host);
     DeviceBuffer(DeviceBuffer&& other) MUDA_NOEXCEPT;
 
     DeviceBuffer& operator=(BufferView<T> view);
@@ -37,6 +38,8 @@ class DeviceBuffer
 
     void copy_to(T* host) const;
     void copy_to(std::vector<T>& host) const;
+    void copy_from(const T* host);
+    void copy_from(const std::vector<T>& host);
 
     void resize(size_t new_size);
     void resize(size_t new_size, const T& value);
@@ -97,6 +100,6 @@ template <typename T>
 MUDA_INLINE MUDA_HOST auto make_dense3D(DeviceBuffer<T>& v, const int3& dim) MUDA_NOEXCEPT;
 template <typename T>
 MUDA_INLINE MUDA_HOST auto make_cdense3D(const DeviceBuffer<T>& v, const int3& dim) MUDA_NOEXCEPT;
-}
+}  // namespace muda
 
 #include "details/device_buffer.inl"

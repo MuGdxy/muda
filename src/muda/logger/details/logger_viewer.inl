@@ -123,11 +123,25 @@ MUDA_INLINE MUDA_DEVICE bool LoggerViewer::push_data(details::LoggerMetaData met
 {
     auto meta_idx = next_meta_data_idx();
     if(meta_idx == ~0u)
+    {
+        MUDA_KERNEL_WARN_WITH_LOCATION(
+            "LoggerViewer[%s:%s]: meta data is exceeded, "
+            "the content[id=%d] will be discarded.",
+            kernel_name(),
+            name(),
+            meta.id);
         return false;
+    }
     auto buffer_idx = next_buffer_idx(meta.size);
     if(buffer_idx == ~0u)
     {
-        meta.exceeded                   = true;
+        meta.exceeded = true;
+        MUDA_KERNEL_WARN_WITH_LOCATION(
+            "LoggerViewer[%s:%s]: log buffer is exceeded, "
+            "the content[id=%d] will be discarded.",
+            kernel_name(),
+            name(),
+            meta.id);
         m_meta_data.data()[meta_idx]    = meta;
         m_meta_data_id.data()[meta_idx] = meta.id;
         return false;

@@ -51,4 +51,4 @@ class ComputeGraphVarManager
 };
 }  // namespace muda
 
-#include <muda/compute_graph/details/compute_graph_var_manager.inl>
+#include "details/compute_graph_var_manager.inl"

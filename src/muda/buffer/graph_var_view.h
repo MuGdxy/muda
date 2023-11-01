@@ -53,4 +53,4 @@ class ComputeGraphVar<VarView<T>> : public ComputeGraphVarBase
 
 }  // namespace muda
 
-#include <muda/buffer/details/graph_var_view.inl>
+#include "details/graph_var_view.inl"

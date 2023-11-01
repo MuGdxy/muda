@@ -1,6 +1,6 @@
 #pragma once
 #if 0
-#include "base.h"
+#include <muda/cub/device/cub_wrapper.h>
 #ifndef __INTELLISENSE__
 #include <cub/device/device_adjacent_difference.cuh>
 #else

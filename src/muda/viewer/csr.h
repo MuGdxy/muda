@@ -1,6 +1,7 @@
 #pragma once
-#include "base.h"
-#include "details/csr_check.inl"
+#include <muda/viewer/viewer_base.h>
+#include <muda/viewer/details/csr_check.inl>
+
 namespace muda
 {
 /// <summary>

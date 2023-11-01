@@ -1,4 +1,4 @@
 #pragma once
-#include "viewer/dense.h"
-#include "viewer/csr.h"
-#include "viewer/cse.h"
+#include <muda/viewer/dense.h>
+#include <muda/viewer/csr.h>
+#include <muda/viewer/cse.h>

@@ -1,8 +1,8 @@
 #pragma once
-#include "base.h"
-#include "kernel_node.h"
-#include "memory_node.h"
-#include "event_node.h"
+#include <muda/graph/graph_base.h>
+#include <muda/graph/kernel_node.h>
+#include <muda/graph/memory_node.h>
+#include <muda/graph/event_node.h>
 
 namespace muda
 {

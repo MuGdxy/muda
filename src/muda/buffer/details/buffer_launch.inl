@@ -7,17 +7,19 @@ namespace muda
 namespace details
 {
     template <typename T>
-    void kernel_destruct(int grid_dim, int block_dim, cudaStream_t stream, T* data, size_t size);
+    MUDA_HOST void kernel_destruct(int grid_dim, int block_dim, cudaStream_t stream, T* data, size_t size);
     template <typename T>
-    void kernel_construct(int grid_dim, int block_dim, cudaStream_t stream, T* data, size_t size);
+    MUDA_HOST void kernel_construct(int grid_dim, int block_dim, cudaStream_t stream, T* data, size_t size);
     template <typename T>
-    void kernel_assign(int grid_dim, int block_dim, cudaStream_t stream, T* dst, const T* src, size_t size);
+    MUDA_HOST void kernel_assign(
+        int grid_dim, int block_dim, cudaStream_t stream, T* dst, const T* src, size_t size);
     template <typename T>
-    void kernel_fill(int grid_dim, int block_dim, cudaStream_t stream, T* dst, const T& val, size_t size);
+    MUDA_HOST void kernel_fill(
+        int grid_dim, int block_dim, cudaStream_t stream, T* dst, const T& val, size_t size);
 }  // namespace details
 
 template <typename T>
-BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new_size)
+MUDA_HOST BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new_size)
 {
     auto old_size = buffer.m_size;
     return resize(
@@ -41,7 +43,7 @@ BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new_size)
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new_size, const T& value)
+MUDA_HOST BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new_size, const T& value)
 {
     auto old_size = buffer.m_size;
     return resize(buffer,
@@ -56,14 +58,14 @@ BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new_size, con
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::clear(DeviceBuffer<T>& buffer)
+MUDA_HOST BufferLaunch& BufferLaunch::clear(DeviceBuffer<T>& buffer)
 {
     resize(buffer, 0);
     return *this;
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::alloc(DeviceBuffer<T>& buffer, size_t n)
+MUDA_HOST BufferLaunch& BufferLaunch::alloc(DeviceBuffer<T>& buffer, size_t n)
 {
     MUDA_ASSERT(ComputeGraphBuilder::is_direct_launching(),
                 "cannot alloc a buffer in a compute graph");
@@ -73,7 +75,7 @@ BufferLaunch& BufferLaunch::alloc(DeviceBuffer<T>& buffer, size_t n)
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::free(DeviceBuffer<T>& buffer)
+MUDA_HOST BufferLaunch& BufferLaunch::free(DeviceBuffer<T>& buffer)
 {
     auto& m_data     = buffer.m_data;
     auto& m_size     = buffer.m_size;
@@ -91,7 +93,7 @@ BufferLaunch& BufferLaunch::free(DeviceBuffer<T>& buffer)
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::shrink_to_fit(DeviceBuffer<T>& buffer)
+MUDA_HOST BufferLaunch& BufferLaunch::shrink_to_fit(DeviceBuffer<T>& buffer)
 {
     MUDA_ASSERT(ComputeGraphBuilder::is_direct_launching(),
                 "cannot shrink a buffer in a compute graph");
@@ -118,7 +120,7 @@ BufferLaunch& BufferLaunch::shrink_to_fit(DeviceBuffer<T>& buffer)
 
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(BufferView<T> dst, const BufferView<T>& src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(BufferView<T> dst, const BufferView<T>& src)
 {
     MUDA_ASSERT(dst.size() == src.size(), "BufferView should have the same size");
     if constexpr(std::is_trivially_copyable_v<T>)
@@ -130,42 +132,42 @@ BufferLaunch& BufferLaunch::copy(BufferView<T> dst, const BufferView<T>& src)
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(ComputeGraphVar<BufferView<T>>&       dst,
-                                 const ComputeGraphVar<BufferView<T>>& src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(ComputeGraphVar<BufferView<T>>& dst,
+                                           const ComputeGraphVar<BufferView<T>>& src)
 {
     return copy(dst.eval(), src.ceval());
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(T* dst, const BufferView<T>& src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, const BufferView<T>& src)
 {
     Memory(m_stream).download(dst, src.data(), src.size() * sizeof(T));
     return *this;
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(ComputeGraphVar<T*>&                  dst,
-                                 const ComputeGraphVar<BufferView<T>>& src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(ComputeGraphVar<T*>& dst,
+                                           const ComputeGraphVar<BufferView<T>>& src)
 {
     return copy(dst.eval(), src.ceval());
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(BufferView<T> dst, const T* src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(BufferView<T> dst, const T* src)
 {
     Memory(m_stream).upload(dst.data(), src, dst.size() * sizeof(T));
     return *this;
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(ComputeGraphVar<BufferView<T>>& dst,
-                                 const ComputeGraphVar<T*>&      src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(ComputeGraphVar<BufferView<T>>& dst,
+                                           const ComputeGraphVar<T*>&      src)
 {
     return copy(dst.eval(), src.ceval());
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(VarView<T> dst, const VarView<T>& src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(VarView<T> dst, const VarView<T>& src)
 {
     if constexpr(std::is_trivially_copyable_v<T>)
         Memory(m_stream).transfer(dst.data(), src.data(), sizeof(T));
@@ -175,58 +177,60 @@ BufferLaunch& BufferLaunch::copy(VarView<T> dst, const VarView<T>& src)
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(ComputeGraphVar<VarView<T>>&       dst,
-                                 const ComputeGraphVar<VarView<T>>& src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(ComputeGraphVar<VarView<T>>& dst,
+                                           const ComputeGraphVar<VarView<T>>& src)
 {
     return copy(dst.eval(), src.ceval());
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(T* dst, const VarView<T>& src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, const VarView<T>& src)
 {
     Memory(m_stream).download(dst, src.data(), sizeof(T));
     return *this;
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(ComputeGraphVar<T*>&               dst,
-                                 const ComputeGraphVar<VarView<T>>& src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(ComputeGraphVar<T*>& dst,
+                                           const ComputeGraphVar<VarView<T>>& src)
 {
     return copy(dst.eval(), src.ceval());
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(VarView<T> dst, const T* src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(VarView<T> dst, const T* src)
 {
     Memory(m_stream).upload(dst.data(), src, sizeof(T));
     return *this;
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::copy(ComputeGraphVar<VarView<T>>& dst,
-                                 const ComputeGraphVar<T*>&   src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(ComputeGraphVar<VarView<T>>& dst,
+                                           const ComputeGraphVar<T*>&   src)
 {
     return copy(dst.eval(), src.ceval());
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::fill(BufferView<T> buffer, const T& val)
+MUDA_HOST BufferLaunch& BufferLaunch::fill(BufferView<T> buffer, const T& val)
 {
-    ParallelFor(m_grid_dim, m_block_dim, 0, m_stream)
-        .apply(buffer.size(),
-               [d = buffer.data(), val] __device__(int i) mutable { d[i] = val; });
+    //ParallelFor(m_grid_dim, m_block_dim, 0, m_stream)
+    //    .apply(buffer.size(),
+    //           [d = buffer.data(), val] __device__(int i) mutable { d[i] = val; });
+    details::kernel_fill(
+        m_grid_dim, m_block_dim, m_stream, buffer.data(), val, buffer.size());
     return *this;
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::fill(ComputeGraphVar<BufferView<T>>& buffer,
-                                 const ComputeGraphVar<T>&       val)
+MUDA_HOST BufferLaunch& BufferLaunch::fill(ComputeGraphVar<BufferView<T>>& buffer,
+                                           const ComputeGraphVar<T>& val)
 {
     return fill(buffer.eval(), val.eval());
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::fill(VarView<T> buffer, const T& val)
+MUDA_HOST BufferLaunch& BufferLaunch::fill(VarView<T> buffer, const T& val)
 {
     if constexpr(std::is_trivially_copyable_v<T>)
     {
@@ -240,14 +244,14 @@ BufferLaunch& BufferLaunch::fill(VarView<T> buffer, const T& val)
 }
 
 template <typename T>
-BufferLaunch& BufferLaunch::fill(ComputeGraphVar<VarView<T>>& buffer,
-                                 const ComputeGraphVar<T>&    val)
+MUDA_HOST BufferLaunch& BufferLaunch::fill(ComputeGraphVar<VarView<T>>& buffer,
+                                           const ComputeGraphVar<T>&    val)
 {
     return fill(buffer.eval(), val.eval());
 }
 
 template <typename T, typename FConstruct>
-BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new_size, FConstruct&& fct)
+MUDA_HOST BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new_size, FConstruct&& fct)
 {
     MUDA_ASSERT(ComputeGraphBuilder::is_direct_launching(),
                 "cannot resize a buffer in a compute graph");
@@ -304,21 +308,22 @@ BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new_size, FCo
 namespace details
 {
     template <typename T>
-    void kernel_destruct(int grid_dim, int block_dim, cudaStream_t stream, T* data, size_t size)
+    MUDA_HOST void kernel_destruct(int grid_dim, int block_dim, cudaStream_t stream, T* data, size_t size)
     {
         ::muda::ParallelFor(grid_dim, block_dim, 0, stream)
             .apply(size, [data] __device__(int i) mutable { data[i].~T(); });
     }
 
     template <typename T>
-    void kernel_construct(int grid_dim, int block_dim, cudaStream_t stream, T* data, size_t size)
+    MUDA_HOST void kernel_construct(int grid_dim, int block_dim, cudaStream_t stream, T* data, size_t size)
     {
         ::muda::ParallelFor(grid_dim, block_dim, 0, stream)
             .apply(size, [data] __device__(int i) mutable { new(data + i) T(); });
     }
 
     template <typename T>
-    void kernel_assign(int grid_dim, int block_dim, cudaStream_t stream, T* dst, const T* src, size_t size)
+    MUDA_HOST void kernel_assign(
+        int grid_dim, int block_dim, cudaStream_t stream, T* dst, const T* src, size_t size)
     {
         ::muda::ParallelFor(grid_dim, block_dim, 0, stream)
             .apply(size,
@@ -326,7 +331,8 @@ namespace details
     }
 
     template <typename T>
-    void kernel_fill(int grid_dim, int block_dim, cudaStream_t stream, T* dst, const T& val, size_t size)
+    MUDA_HOST void kernel_fill(
+        int grid_dim, int block_dim, cudaStream_t stream, T* dst, const T& val, size_t size)
     {
         ::muda::ParallelFor(grid_dim, block_dim, 0, stream)
             .apply(size, [dst, val] __device__(int i) mutable { dst[i] = val; });

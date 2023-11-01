@@ -38,6 +38,14 @@ DeviceBuffer<T>::DeviceBuffer(const DeviceBuffer<T>& other)
         .wait();
 }
 
+template <typename T>
+DeviceBuffer<T>::DeviceBuffer(const std::vector<T>& host)
+{
+    BufferLaunch()
+        .alloc(*this, host.size())  //
+        .copy(view(), host.data())  //
+        .wait();
+}
 
 template <typename T>
 DeviceBuffer<T>& DeviceBuffer<T>::operator=(const DeviceBuffer<T>& other)
@@ -84,6 +92,18 @@ void DeviceBuffer<T>::copy_to(std::vector<T>& host) const
     view().copy_to(host.data());
 }
 
+template <typename T>
+void DeviceBuffer<T>::copy_from(const std::vector<T>& host)
+{
+    resize(host.size());
+    view().copy_from(host.data());
+}
+
+template <typename T>
+void DeviceBuffer<T>::copy_from(const T* host)
+{
+    view().copy_from(host);
+}
 
 template <typename T>
 void DeviceBuffer<T>::resize(size_t new_size)
@@ -251,4 +271,4 @@ MUDA_INLINE MUDA_HOST auto make_cdense3D(const DeviceBuffer<T>& v, const int3& d
 {
     return make_cdense3D(v.view(), dim.x, dim.y, dim.z);
 }
-}
+}  // namespace muda

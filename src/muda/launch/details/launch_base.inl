@@ -1,13 +1,17 @@
 #include <muda/exception.h>
 #include <muda/compute_graph/compute_graph.h>
 #include <muda/compute_graph/compute_graph_var.h>
+#include <muda/graph/graph.h>
 #include <iostream>
 
 namespace muda
 {
-MUDA_INLINE LaunchCore::LaunchCore(cudaStream_t stream) MUDA_NOEXCEPT : m_stream(stream)
+MUDA_INLINE MUDA_GENERIC LaunchCore::LaunchCore(cudaStream_t stream) MUDA_NOEXCEPT
+    : m_stream(stream)
 {
-    //Logger::instance();
+//Logger::instance();
+#ifdef __CUDA_ARCH__
+#else
     if(ComputeGraphBuilder::is_phase_serial_launching())
     {
         MUDA_ASSERT(stream == nullptr
@@ -15,6 +19,7 @@ MUDA_INLINE LaunchCore::LaunchCore(cudaStream_t stream) MUDA_NOEXCEPT : m_stream
                     "LaunchBase: stream must be nullptr or equals to current stream");
         init_stream(details::ComputeGraphAccessor().current_stream());
     }
+#endif
 }
 
 MUDA_INLINE void LaunchCore::push_range(const std::string& name)
@@ -127,7 +132,7 @@ MUDA_INLINE void LaunchCore::kernel_name(std::string_view name)
 #endif
 }
 
-MUDA_INLINE void LaunchCore::pop_kernel_name()
+MUDA_INLINE MUDA_HOST void LaunchCore::pop_kernel_name()
 {
 #if MUDA_CHECK_ON
     details::LaunchInfoCache::current_kernel_name("");
@@ -165,7 +170,8 @@ MUDA_INLINE void LaunchCore::wait_device()
 }
 
 template <typename T>
-LaunchBase<T>::LaunchBase(cudaStream_t stream) MUDA_NOEXCEPT : LaunchCore(stream)
+MUDA_GENERIC LaunchBase<T>::LaunchBase(cudaStream_t stream) MUDA_NOEXCEPT
+    : LaunchCore(stream)
 {
 }
 
