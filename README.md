@@ -1,17 +1,20 @@
 # muda
 MUDA is **μ-CUDA**, yet another painless CUDA programming **paradigm**.
 
-> stop bothering yourself using raw CUDA. Just stay elegant and clear-minded.
+> COVER THE LAST MILE OF CUDA
 
 ## overview
 
 ### launch
 
-easy launch:
-
 ```c++
 #include <muda/muda.h>
 using namespace muda;
+__global__ void raw_kernel()
+{
+    printf("hello muda!");
+}
+
 int main()
 {
     Launch(1, 1)
@@ -20,37 +23,88 @@ int main()
         {
             print("hello muda!\n"); 
         }).wait();
+    
+    constexpr int N = 8;
+    // dynamic grid
+    ParallelFor(256 /*block size*/)
+        .apply(N,
+        [] __device__(int i) 
+        {
+            print("hello muda %d!\n", i); 
+        }).wait();
+    
+	// grid stride loop
+    ParallelFor(8  /*grid size*/, 
+                32 /*block size*/)
+        .apply(N,
+        [] __device__(int i) 
+        {
+            print("hello muda %d!\n", i); 
+        }).wait();
+    
+    // intellisense-friendly wrapper 
+    Kernel{raw_kernel}();
 }
 ```
 
-easy log:
+### logger
 
 ```c++
-DeviceBuffer<int> dynamic_array(10);
-dynamic_array.fill(1);
-
 Logger logger;
 Launch(2, 2)
     .apply(
-        [logger = logger.viewer(), dynamic_array = dynamic_array.viewer()] __device__() mutable
+        [logger = logger.viewer()] __device__() mutable
         {
             // type override
             logger << "int2: " << make_int2(1, 2) << "\n";
             logger << "float3: " << make_float3(1.0f, 2.0f, 3.0f) << "\n";
-
-            // print a dynamic array and keep the output order
-            // anything log to this `proxy` will never be interrupted by other thread
-            auto proxy = LogProxy{logger};
-            proxy << "[thread=" << threadIdx.x << ", block=" << blockIdx.x << "]: ";
-            for(int i = 0; i < dynamic_array.dim(); ++i) proxy << dynamic_array(i) << " ";
-            proxy << "(N=" << dynamic_array.dim() << ")\n";
         })
     .wait();
 // download the result to any ostream you like. 
 logger.retrieve(std::cout);
 ```
 
-muda vs cuda:
+### buffer
+
+```c++
+DeviceBuffer<int> buffer;
+
+// copy from std::vector
+std::vector<int> host{8};
+buffer.copy_from(host);
+
+// copy to raw memory
+int host_array[8];
+buffer.copy_to(host_array);
+
+// use BufferView to copy sub-buffer
+buffer.view(0,4).copy_from(host.data());
+
+DeviceBuffer<int> dst_buffer{4};
+// use BufferView to copy sub-buffer
+buffer.view(0,4).copy_to(dst_buffer.view());
+```
+
+### asynchronous operation
+
+```c++
+// kernel launch
+Launch(stream).apply(...).wait();
+ParallelFor(stream).apply(N, ...).wait();
+
+// graph launch
+GraphLaunch().launch(graph).wait();
+
+// Memory
+Memory(stream).copy(...).wait();
+Memory(stream).set(...).wait();
+
+// Buffer
+BufferLaunch(stream).copy(...).wait();
+BufferLaunch(stream).copy(...).wait();
+```
+
+### muda vs cuda
 
 ```c++
 /* 
@@ -58,13 +112,15 @@ muda vs cuda:
 */
 void muda()
 {
-    DeviceVector<int>  dv(64, 1);
+    DeviceBuffer<int>  dv(64);
+    dv.fill(1);
+    
     ParallelFor(256) // parallel-semantic
         .apply(64, //automatically cover the range
                [
                    // mapping from the device_vector to a proper viewer
                    // which can be trivially copy through device and host
-                   dv = make_viewer(dv) 
+                   dv = dv.viewer()
                ] 
                __device__(int i) mutable
                { 
