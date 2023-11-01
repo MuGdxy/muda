@@ -294,7 +294,7 @@ If you manually copy the header files, don't forget to define the macros yoursel
 - [tutorial_zh](https://zhuanlan.zhihu.com/p/659664377)
 - If you need an English version tutorial, please contact me or post an issue to let me know.
 
-### Examples
+## Examples
 
 - [examples](./example/)
 
@@ -314,18 +314,26 @@ Contributions are welcome. We are looking for or are working on:
 
 ## Related Work
 
-```latex
-@article{article,
-author = {Lu, Xinyu and Bo, Pengbo and Wang, Linqin},
-year = {2023},
-month = {07},
-pages = {},
-title = {Real-Time 3D Topological Braiding Simulation with Penetration-Free Guarantee},
-volume = {164},
-journal = {Computer-Aided Design},
-doi = {10.1016/j.cad.2023.103594}
-}
-```
+- Topological braiding simulation using **muda** (old version)
 
-![braiding](README.assets/braiding.png)
+  ```latex
+  @article{article,
+  author = {Lu, Xinyu and Bo, Pengbo and Wang, Linqin},
+  year = {2023},
+  month = {07},
+  pages = {},
+  title = {Real-Time 3D Topological Braiding Simulation with Penetration-Free Guarantee},
+  volume = {164},
+  journal = {Computer-Aided Design},
+  doi = {10.1016/j.cad.2023.103594}
+  }
+  ```
+
+  ![braiding](README.assets/braiding.png)
+
+  
+
+
+
+
 
