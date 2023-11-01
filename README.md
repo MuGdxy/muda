@@ -12,7 +12,7 @@ MUDA is **μ-CUDA**, yet another painless CUDA programming **paradigm**.
 using namespace muda;
 __global__ void raw_kernel()
 {
-    printf("hello muda!");
+    printf("hello muda!\n");
 }
 
 int main()
