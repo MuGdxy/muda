@@ -1,4 +1,4 @@
-# muda
+# MUDA
 MUDA is **μ-CUDA**, yet another painless CUDA programming **paradigm**.
 
 > COVER THE LAST MILE OF CUDA
@@ -247,9 +247,9 @@ void compute_graph_simple()
 }
 ```
 
-## build
+## Build
 
-### xmake
+### Xmake
 
 run example:
 
@@ -268,7 +268,7 @@ play all examples:
 ```shell
 $ xmake run muda_example
 ```
-### cmake
+### Cmake
 
 ```shell
 $ mkdir CMakeBuild
@@ -277,11 +277,11 @@ $ cmake -S ..
 $ cmake --build .
 ```
 
-### copy headers
+### Copy headers
 
 Because **muda** is header-only, just copy the `src/muda/` folder to your project, set the include directory, and then everything is done.
 
-### macro
+### Macro
 
 | Macro           | Value               | Details                                                      |
 | --------------- | ------------------- | ------------------------------------------------------------ |
@@ -289,12 +289,12 @@ Because **muda** is header-only, just copy the `src/muda/` folder to your projec
 
 If you manually copy the header files, don't forget to define the macros yourself. If you are using cmake or xmake, just set the project dependency to muda.
 
-## tutorial
+## Tutorial
 
 - [tutorial_zh](https://zhuanlan.zhihu.com/p/659664377)
 - If you need an English version tutorial, please contact me or post an issue to let me know.
 
-### examples
+### Examples
 
 - [examples](./example/)
 
