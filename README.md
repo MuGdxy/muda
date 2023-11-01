@@ -3,9 +3,9 @@ MUDA is **μ-CUDA**, yet another painless CUDA programming **paradigm**.
 
 > COVER THE LAST MILE OF CUDA
 
-## overview
+## Overview
 
-### launch
+### Launch
 
 ```c++
 #include <muda/muda.h>
@@ -33,7 +33,7 @@ int main()
             print("hello muda %d!\n", i); 
         }).wait();
     
-	// grid stride loop
+    // grid stride loop
     ParallelFor(8  /*grid size*/, 
                 32 /*block size*/)
         .apply(N,
@@ -47,7 +47,7 @@ int main()
 }
 ```
 
-### logger
+### Logger
 
 ```c++
 Logger logger;
@@ -64,7 +64,7 @@ Launch(2, 2)
 logger.retrieve(std::cout);
 ```
 
-### buffer
+### Buffer
 
 ```c++
 DeviceBuffer<int> buffer;
@@ -85,7 +85,7 @@ DeviceBuffer<int> dst_buffer{4};
 buffer.view(0,4).copy_to(dst_buffer.view());
 ```
 
-### asynchronous operation
+### Asynchronous Operation
 
 ```c++
 // kernel launch
@@ -104,7 +104,7 @@ BufferLaunch(stream).copy(...).wait();
 BufferLaunch(stream).copy(...).wait();
 ```
 
-### muda vs cuda
+### MUDA vs. CUDA
 
 ```c++
 /* 
@@ -161,9 +161,9 @@ void muda_vs_cuda()
 }
 ```
 
-### compute graph
+### Compute Graph
 
-**muda** can generate `cudaGraph` nodes and dependencies from your `eval()` call. And the `cudaGraphExec` will be automatically updated (minimally) if you update a `muda::ComputeGraphVar`, more details in [zhihu_ZH](https://zhuanlan.zhihu.com/p/658080362).
+**MUDA** can generate `cudaGraph` nodes and dependencies from your `eval()` call. And the `cudaGraphExec` will be automatically updated (minimally) if you update a `muda::ComputeGraphVar`, more details in [zhihu_ZH](https://zhuanlan.zhihu.com/p/658080362).
 
 define a muda compute graph:
 
@@ -294,11 +294,38 @@ If you manually copy the header files, don't forget to define the macros yoursel
 - [tutorial_zh](https://zhuanlan.zhihu.com/p/659664377)
 - If you need an English version tutorial, please contact me or post an issue to let me know.
 
-## Contribute
+### examples
 
-Go to [developer_zh.md](./doc/developer_zh.md) and [zhihu-ZH](https://zhuanlan.zhihu.com/p/592439225) for further info.
+- [examples](./example/)
 
+All examples in `muda/example` are self-explanatory,  enjoy it.
 
+![image-20231102030703199](README.assets/example-img.png)
 
+## Contributing
 
+Contributions are welcome. We are looking for or are working on:
+
+1. **muda** development
+
+2. fancy simulation demos using **muda**
+
+3. better documentation of **muda**
+
+## Related Work
+
+```latex
+@article{article,
+author = {Lu, Xinyu and Bo, Pengbo and Wang, Linqin},
+year = {2023},
+month = {07},
+pages = {},
+title = {Real-Time 3D Topological Braiding Simulation with Penetration-Free Guarantee},
+volume = {164},
+journal = {Computer-Aided Design},
+doi = {10.1016/j.cad.2023.103594}
+}
+```
+
+![braiding](README.assets/braiding.png)
 
