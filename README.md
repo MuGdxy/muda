@@ -277,7 +277,7 @@ $ cmake -S ..
 $ cmake --build .
 ```
 
-### Copy headers
+### Copy Headers
 
 Because **muda** is header-only, just copy the `src/muda/` folder to your project, set the include directory, and then everything is done.
 
