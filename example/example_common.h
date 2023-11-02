@@ -99,3 +99,11 @@ inline __device__ void some_work(size_t clock_cycles = 1e9)
             break;
     }
 }
+
+inline void make_progress_bar(float progress, int bar = 77)
+{
+    int         w = std::round(progress * bar);
+    std::string done(w, '>');
+    std::string undone(bar - w, '=');
+    std::cout << "[" << done << undone << "]\r";
+}

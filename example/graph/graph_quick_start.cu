@@ -28,7 +28,7 @@ void graph_quick_start()
              |
              D
 )");
-	
+
     auto graph = Graph::create();
 
     DeviceVar<int> value = 1;
@@ -37,22 +37,23 @@ void graph_quick_start()
         1, [] __device__(int i) mutable { print("kernel A\n"); });
 
     auto pB = ParallelFor(1).as_node_parms(
-        1, [] __device__(int i) mutable { print("kernel B\n"); }, MyKernelB{});
+        1, [] __device__(int i) mutable { print("kernel B\n"); }, Tag<MyKernelB>{});
 
     auto pH = HostCall().as_node_parms([&] __host__()
-                                      { std::cout << "host call" << std::endl; });
+                                       { std::cout << "host call" << std::endl; });
 
     auto pC =
         ParallelFor(1).as_node_parms(1,
-                                    [value = make_viewer(value)] __device__(int i) mutable
-                                    {
-                                        print("kernel C, value=%d -> 2\n", value);
-                                        value = 2;
-                                    });
+                                     [value = make_viewer(value)] __device__(int i) mutable
+                                     {
+                                         print("kernel C, value=%d -> 2\n", value);
+                                         value = 2;
+                                     });
 
-    auto pD = Launch(1, 1).as_node_parms([value = make_viewer(value)] __device__() mutable
-                                       { print("kernel D, value=%d\n", value); },
-                                       MyKernelD{});
+    auto pD =
+        Launch(1, 1).as_node_parms([value = make_viewer(value)] __device__() mutable
+                                   { print("kernel D, value=%d\n", value); },
+                                   Tag<MyKernelD>{});
 
     auto kA = graph->add_kernel_node(pA);
     auto kB = graph->add_kernel_node(pB);

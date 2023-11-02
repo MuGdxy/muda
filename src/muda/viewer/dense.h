@@ -322,6 +322,11 @@ class CDenseND<T, 2> : public ROViewer
     {
     }
 
+    MUDA_GENERIC const T& operator()(const int2& xy) const MUDA_NOEXCEPT
+    {
+        return operator()(xy.x, xy.y);
+    }
+
     MUDA_GENERIC const T& operator()(int x, int y) const MUDA_NOEXCEPT
     {
         check();
@@ -392,6 +397,11 @@ class DenseND<T, 2> : public RWViewer
         return CDenseND<T, 2>(m_data, m_dim);
     }
 
+    MUDA_GENERIC const T& operator()(const int2& xy) const MUDA_NOEXCEPT
+    {
+        return operator()(xy.x, xy.y);
+    }
+
     MUDA_GENERIC const T& operator()(int x, int y) const MUDA_NOEXCEPT
     {
         check();
@@ -402,6 +412,11 @@ class DenseND<T, 2> : public RWViewer
     {
         check();
         return m_data[map(x, y)];
+    }
+
+    MUDA_GENERIC T& operator()(const int2& xy) MUDA_NOEXCEPT
+    {
+        return operator()(xy.x, xy.y);
     }
 
     MUDA_GENERIC T* data() MUDA_NOEXCEPT { return m_data; }
@@ -462,9 +477,16 @@ class CDenseND<T, 3> : public ROViewer
     {
     }
 
-    MUDA_GENERIC CDenseND(const T* p, const int3& dim) MUDA_NOEXCEPT : m_data(p),
-                                                                       m_dim(dim)
+    MUDA_GENERIC CDenseND(const T* p, const int3& dim) MUDA_NOEXCEPT
+        : m_data(p),
+          m_dim(dim),
+          m_area(dim.y* dim.z)
     {
+    }
+
+    MUDA_GENERIC const T& operator()(const int3& xyz) const MUDA_NOEXCEPT
+    {
+        return operator()(xyz.x, xyz.y, xyz.z);
     }
 
     MUDA_GENERIC const T& operator()(int x, int y, int z) const MUDA_NOEXCEPT
@@ -533,7 +555,10 @@ class DenseND<T, 3> : public RWViewer
     {
     }
 
-    MUDA_GENERIC DenseND(T* p, const int3& dim) MUDA_NOEXCEPT : m_data(p), m_dim(dim)
+    MUDA_GENERIC DenseND(T* p, const int3& dim) MUDA_NOEXCEPT
+        : m_data(p),
+          m_dim(dim),
+          m_area(dim.y* dim.z)
     {
     }
 
@@ -542,10 +567,21 @@ class DenseND<T, 3> : public RWViewer
         return CDenseND<T, 3>(m_data, m_dim);
     }
 
+    MUDA_GENERIC const T& operator()(const int3& xyz) const MUDA_NOEXCEPT
+    {
+        return operator()(xyz.x, xyz.y, xyz.z);
+    }
+
     MUDA_GENERIC const T& operator()(int x, int y, int z) const MUDA_NOEXCEPT
     {
         check();
         return m_data[map(x, y, z)];
+    }
+
+
+    MUDA_GENERIC T& operator()(const int3& xyz) MUDA_NOEXCEPT
+    {
+        return operator()(xyz.x, xyz.y, xyz.z);
     }
 
     MUDA_GENERIC T& operator()(int x, int y, int z) MUDA_NOEXCEPT

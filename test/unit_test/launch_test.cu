@@ -1,31 +1,53 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
 #include <muda/container.h>
-#include <source_location>
+#include <muda/syntax_sugar.h>
 using namespace muda;
 
-void launch_test(DeviceVar<int>& res, DeviceVar<int>& res2)
+struct MyTag
 {
-    Stream s;
-    on(s)
-        .next<Launch>(1, 1)
-        .apply([res = make_viewer(res)] __device__() mutable { res += 1; })
+};
+void launch_test()
+{
+    std::vector<int> gt;
+    gt.resize(8 * 8 * 8, 1);
+    DeviceBuffer<int> res(8 * 8 * 8);
+    res.fill(0);
+
+    Launch(cube(4))  // block dim = (4,4,4)
         .apply(
-            [res = make_viewer(res)] __device__() mutable
+            cube(8),  // total count = (8,8,8)
+            [res = make_dense3D(res, 8, 8, 8)] $(const int3 xyz)
+            { res(xyz) = 1; },
+            Tag<MyTag>{})
+        .wait();
+
+    std::vector<int> h_res;
+    res.copy_to(h_res);
+
+    REQUIRE(h_res == gt);
+
+    gt.clear();
+    gt.resize(4 * 4 * 4, 1);
+    res.resize(4 * 4 * 4);
+    res.fill(0);
+
+    Launch(dim3{2, 2, 2}, dim3{2, 2, 2})
+        .apply(
+            [res = make_dense3D(res, make_int3(4, 4, 4))] $()
             {
-                if(res == 1)
-                    res = 2;
+                auto x       = threadIdx.x + blockIdx.x * blockDim.x;
+                auto y       = threadIdx.y + blockIdx.y * blockDim.y;
+                auto z       = threadIdx.z + blockIdx.z * blockDim.z;
+                res(x, y, z) = 1;
             })
         .wait();
+
+    res.copy_to(h_res);
+    REQUIRE(h_res == gt);
 }
 
 TEST_CASE("launch_test", "[launch]")
 {
-    DeviceVar<int> res  = 0;
-    DeviceVar<int> res2 = 0;
-    launch_test(res, res2);
-    int result  = res;
-    int result2 = res2;
-    REQUIRE(result2 == 0);
-    REQUIRE(result == 2);
+    launch_test();
 }

@@ -21,12 +21,6 @@
 
 namespace muda
 {
-/// <summary>
-/// a default tag for kernel (which can be shown in profile tools such as Nsight System)
-/// </summary>
-struct DefaultTag
-{
-};
 namespace details
 {
     inline void stream_error_callback(cudaStream_t stream, cudaError error, void* userdata)

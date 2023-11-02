@@ -74,7 +74,7 @@ struct Particle
     float   rho, p;
     int     id;
 
-    void ToCSV(std::ostream& o) const
+    void to_csv(std::ostream& o) const
     {
         // expand to 3d for latter visualization
         // clang-format off
@@ -97,7 +97,7 @@ constexpr int BLOCK_DIM = 128;
 class SPHSolver
 {
     DeviceVector<Particle> particles;
-    cudaStream_t            stream;
+    cudaStream_t           stream;
 
   public:
     SPHSolver(cudaStream_t stream = nullptr)
@@ -105,26 +105,23 @@ class SPHSolver
     {
     }
 
-    void SetParticles(const HostVector<Particle>& p) 
-    { 
-        particles = p;
-    }
+    void set_particles(const HostVector<Particle>& p) { particles = p; }
 
-    void Solve()
+    void solve()
     {
-        ComputeDensityPressure();
-        ComputeForces();
-        Integrate();
+        compute_density_pressure();
+        compute_forces();
+        integrate();
     }
 
-    void GetParticles(HostVector<Particle>& p)
+    void get_particles(HostVector<Particle>& p)
     {
         wait_device();
         // copy the particles from device to host
         p = particles;
     }
 
-    void Integrate()
+    void integrate()
     {
         // using dynamic grid size to cover all the particles
         ParallelFor(BLOCK_DIM, 0, stream)
@@ -165,7 +162,7 @@ class SPHSolver
                    });
     }
 
-    void ComputeForces()
+    void compute_forces()
     {
         // using dynamic grid size to cover all the particles
         ParallelFor(BLOCK_DIM, 0, stream)
@@ -207,7 +204,7 @@ class SPHSolver
                    });
     }
 
-    void ComputeDensityPressure()
+    void compute_density_pressure()
     {
         // using dynamic grid size to cover all the particles
         ParallelFor(BLOCK_DIM, 0, stream)
@@ -238,7 +235,7 @@ class SPHSolver
     }
 };
 
-void InitSPH(HostVector<Particle>& particles)
+void init_sph(HostVector<Particle>& particles)
 {
     int i = 0;
     for(float y = CONST_DATA.EPS; y < CONST_DATA.VIEW_HEIGHT - CONST_DATA.EPS * 2.f;
@@ -261,25 +258,16 @@ void InitSPH(HostVector<Particle>& particles)
     }
 }
 
-void ExportParticlesToCSV(const std::string& folder, int idx, HostVector<Particle>& particles)
+void export_csv(const std::string& folder, int idx, HostVector<Particle>& particles)
 {
-    std::ofstream f;
+    std::ofstream     f;
     std::stringstream ss;
     f.open(folder + "/" + std::to_string(idx) + ".csv");
     Particle::CSVHeader(ss);
     for(const auto& p : particles)
-        p.ToCSV(ss);
+        p.to_csv(ss);
     f << ss.str();
     f.close();
-}
-
-void MakeProgress(float progress, int bar)
-{
-    // make a progress bar
-    int         w = std::round(progress * bar);
-    std::string done(w, '>');
-    std::string undone(bar - w, '=');
-    std::cout << "[" << done << undone << "]\r";
 }
 
 void sph2d(int particle_count)
@@ -294,7 +282,7 @@ void sph2d(int particle_count)
     CONST_DATA.DAM_PARTICLES = particle_count;
     particles.reserve(CONST_DATA.DAM_PARTICLES);
     // generate particles randomly
-    InitSPH(particles);
+    init_sph(particles);
     std::cout << "initializing dam break with " << CONST_DATA.DAM_PARTICLES
               << " particles" << std::endl;
 
@@ -306,7 +294,7 @@ void sph2d(int particle_count)
 
     SPHSolver solver(s);
     // set the particles in solver
-    solver.SetParticles(particles);
+    solver.set_particles(particles);
 
     // create a folder for frame data output
     filesystem::path folder("sph2d/");
@@ -320,10 +308,10 @@ void sph2d(int particle_count)
     int nframe = 1000;
     for(int i = 0; i < nframe; i++)
     {
-        solver.Solve();
-        solver.GetParticles(particles);
-        MakeProgress((i + 1.0f) / nframe, bar);
-        ExportParticlesToCSV("sph2d", i, particles);
+        solver.solve();
+        solver.get_particles(particles);
+        make_progress_bar((i + 1.0f) / nframe, bar);
+        export_csv("sph2d", i, particles);
     }
 }
 
