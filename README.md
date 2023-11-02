@@ -44,6 +44,9 @@ int main()
     
     // intellisense-friendly wrapper 
     Kernel{raw_kernel}();
+    
+    // wait on nullptr stream
+    on(nullptr).wait();
 }
 ```
 
@@ -101,7 +104,7 @@ Memory(stream).set(...).wait();
 
 // Buffer
 BufferLaunch(stream).copy(...).wait();
-BufferLaunch(stream).copy(...).wait();
+BufferLaunch(stream).fill(...).wait();
 ```
 
 ### MUDA vs. CUDA
@@ -116,11 +119,12 @@ void muda()
     dv.fill(1);
     
     ParallelFor(256) // parallel-semantic
-        .apply(64, //automatically cover the range
+        .kernel_name("my_kernel") // or just .kernel_name(__FUNCTION__)
+        .apply(64, // automatically cover the range
                [
-                   // mapping from the device_vector to a proper viewer
+                   // mapping from the DeviceBuffer to a proper viewer
                    // which can be trivially copy through device and host
-                   dv = dv.viewer()
+                   dv = dv.viewer().name("dv")
                ] 
                __device__(int i) mutable
                { 
@@ -145,7 +149,7 @@ __global__ void times2(int* i, int N) // modifying parameters is horrible
     }
 }
 
-void muda_vs_cuda()
+void cuda()
 {
     // to be brief, we just use thrust to allocate memory
     thrust::device_vector<int> dv(64, 1);
@@ -165,7 +169,7 @@ void muda_vs_cuda()
 
 **MUDA** can generate `cudaGraph` nodes and dependencies from your `eval()` call. And the `cudaGraphExec` will be automatically updated (minimally) if you update a `muda::ComputeGraphVar`, more details in [zhihu_ZH](https://zhuanlan.zhihu.com/p/658080362).
 
-define a muda compute graph:
+Define a muda compute graph:
 
 ```c++
 void compute_graph_simple()
@@ -222,7 +226,7 @@ void compute_graph_simple()
 
 ![graphviz](README.assets/graphviz.svg)
 
-launch a muda compute graph:
+Launch a muda compute graph:
 
 ```c++
 void compute_graph_simple()
@@ -251,19 +255,19 @@ void compute_graph_simple()
 
 ### Xmake
 
-run example:
+Run example:
 
 ```shell
 $ xmake f --example=true
 $ xmake 
 $ xmake run muda_example hello_muda
 ```
-to show all examples:
+To show all examples:
 
 ```shell
 $ xmake run muda_example -l
 ```
-play all examples:
+Play all examples:
 
 ```shell
 $ xmake run muda_example
@@ -287,7 +291,7 @@ Because **muda** is header-only, just copy the `src/muda/` folder to your projec
 | --------------- | ------------------- | ------------------------------------------------------------ |
 | `MUDA_CHECK_ON` | `1`(default) or `0` | `MUDA_CHECK_ON=1` for turn on all muda runtime check(for safety) |
 
-If you manually copy the header files, don't forget to define the macros yourself. If you are using cmake or xmake, just set the project dependency to muda.
+If you manually copy the header files, don't forget to define the macros yourself. If you use cmake or xmake, just set the project dependency to muda.
 
 ## Tutorial
 
