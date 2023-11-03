@@ -16,12 +16,10 @@ option(MUDA_BUILD_UNIT_TEST "build muda test. if you're the developer, you could
 option(MUDA_DEV "build muda example and unit test. if you're the developer, you could enable this option." OFF)
 option(MUDA_WITH_CHECK "turn on muda runtime check" ON)
 
-
-
 if(MUDA_DEV)
-    set(MUDA_BUILD_EXAMPLE ON)
-    set(MUDA_PLAYGROUND ON)
-    set(MUDA_BUILD_UNIT_TEST ON)
+  set(MUDA_BUILD_EXAMPLE ON)
+  set(MUDA_PLAYGROUND ON)
+  set(MUDA_BUILD_UNIT_TEST ON)
 endif()
 
 # to remove warning
@@ -49,28 +47,31 @@ target_sources(muda PUBLIC ${MUDA_HEADER_FILES})
 target_link_libraries(muda INTERFACE Eigen3::Eigen)
 target_link_libraries(muda INTERFACE ${CUDA_LIBRARIES})
 target_include_directories(muda INTERFACE "${PROJECT_SOURCE_DIR}/src/")
+
 if(MUDA_WITH_CHECK)
   target_compile_definitions(muda INTERFACE "-DMUDA_CHECK_ON=1")
 endif()
 
 if(MUDA_BUILD_EXAMPLE)
   find_package(Eigen3 REQUIRED)
+
   if(Eigen3_FOUND)
     message(STATUS "Eigen3 found (include: ${EIGEN3_INCLUDE_DIR}, version: ${EIGEN3_VERSION_STRING})")
   else()
     message(FATAL_ERROR "Eigen3 not found")
   endif()
-  #find_package(fmt REQUIRED)
+
+  # find_package(fmt REQUIRED)
   file(GLOB_RECURSE MUDA_EXAMPLE_SOURCE_FILES
-  "${PROJECT_SOURCE_DIR}/example/*.cu"
-  "${PROJECT_SOURCE_DIR}/example/*.cpp"
-  "${PROJECT_SOURCE_DIR}/example/*.h")
-  
+    "${PROJECT_SOURCE_DIR}/example/*.cu"
+    "${PROJECT_SOURCE_DIR}/example/*.cpp"
+    "${PROJECT_SOURCE_DIR}/example/*.h")
+
   add_executable(muda_example ${MUDA_EXAMPLE_SOURCE_FILES})
   set_target_properties(muda_example PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-  #target_link_libraries(muda_example PRIVATE fmt::fmt-header-only)
 
-  target_include_directories(muda_example PRIVATE 
+  # target_link_libraries(muda_example PRIVATE fmt::fmt-header-only)
+  target_include_directories(muda_example PRIVATE
     "${PROJECT_SOURCE_DIR}/example"
     "${PROJECT_SOURCE_DIR}/external")
   target_link_libraries(muda_example PRIVATE muda)
@@ -79,18 +80,27 @@ if(MUDA_BUILD_EXAMPLE)
 endif()
 
 if(MUDA_BUILD_UNIT_TEST)
+  file (GLOB_RECURSE MUDA_UNIT_TEST_CU_SOURCE_FILES
+    "${PROJECT_SOURCE_DIR}/test/unit_test/*.cu"
+    "${PROJECT_SOURCE_DIR}/test/unit_test/*.h")
   file(GLOB_RECURSE MUDA_UNIT_TEST_SOURCE_FILES
-  "${PROJECT_SOURCE_DIR}/test/unit_test/*.cu"
-  "${PROJECT_SOURCE_DIR}/test/unit_test/*.cpp"
-  "${PROJECT_SOURCE_DIR}/test/unit_test/*.h")
+    "${PROJECT_SOURCE_DIR}/test/unit_test/*.cpp"
+    ${MUDA_UNIT_TEST_CU_SOURCE_FILES})
   add_executable(muda_test ${MUDA_UNIT_TEST_SOURCE_FILES})
   set_target_properties(muda_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-  target_include_directories(muda_test PRIVATE 
+  target_include_directories(muda_test PRIVATE
     "${PROJECT_SOURCE_DIR}/test"
     "${PROJECT_SOURCE_DIR}/external")
   target_link_libraries(muda_test PRIVATE muda cusparse cublas)
   target_compile_definitions(muda_test PRIVATE "-DMUDA_TEST_DATA_DIR=R\"(${PROJECT_SOURCE_DIR}/test/data)\"")
   source_group(TREE "${PROJECT_SOURCE_DIR}/test" PREFIX "test" FILES ${MUDA_UNIT_TEST_SOURCE_FILES})
   source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
+
+  # add_library(muda_test_ptx OBJECT ${MUDA_UNIT_TEST_CU_SOURCE_FILES})
+  # target_include_directories(muda_test_ptx PRIVATE
+  # "${PROJECT_SOURCE_DIR}/test"
+  # "${PROJECT_SOURCE_DIR}/external")
+  # set_property(TARGET muda_test_ptx PROPERTY CUDA_PTX_COMPILATION ON)
+  # target_link_libraries(muda_test_ptx PRIVATE muda cusparse cublas)
+  # target_compile_definitions(muda_test_ptx PRIVATE "-DMUDA_TEST_DATA_DIR=R\"(${PROJECT_SOURCE_DIR}/test/data)\"")
 endif()

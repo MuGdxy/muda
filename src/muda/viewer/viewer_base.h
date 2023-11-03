@@ -13,10 +13,15 @@
 
 namespace muda
 {
+namespace details
+{
+    class ViewerBaseAccessor;
+}
 class ViewerBase
 {
+    friend class details::ViewerBaseAccessor;
 #if MUDA_CHECK_ON
-    details::StringPointer m_view_name;
+    details::StringPointer m_viewer_name;
     details::StringPointer m_kernel_name;
 #endif
   public:
@@ -33,7 +38,7 @@ class ViewerBase
     {
 #if MUDA_CHECK_ON
 
-        auto n = m_view_name.auto_select();
+        auto n = m_viewer_name.auto_select();
         if(n)
             return n;
 #endif
@@ -60,7 +65,7 @@ class ViewerBase
     MUDA_INLINE MUDA_HOST void name(const char* n) MUDA_NOEXCEPT
     {
 #if MUDA_CHECK_ON
-        m_view_name = details::LaunchInfoCache::view_name(n);
+        m_viewer_name = details::LaunchInfoCache::view_name(n);
 #endif
     }
 };
@@ -75,7 +80,7 @@ class ROViewer : public ViewerBase
 {
 };
 
-#define MUDA_VIEWER_COMMON(viewer_name)                                        \
+#define MUDA_VIEWER_COMMON_NAME(viewer_name)                                        \
   public:                                                                      \
     using this_type = viewer_name;                                             \
                                                                                \
@@ -91,6 +96,4 @@ class ROViewer : public ViewerBase
     }                                                                          \
                                                                                \
   private:
-
-
 }  // namespace muda

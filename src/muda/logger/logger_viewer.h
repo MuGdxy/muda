@@ -8,7 +8,7 @@ namespace muda
 {
 class LoggerViewer : public ViewerBase
 {
-    MUDA_VIEWER_COMMON(LoggerViewer);
+    MUDA_VIEWER_COMMON_NAME(LoggerViewer);
   public:
     class Proxy
     {

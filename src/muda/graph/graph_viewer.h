@@ -5,7 +5,7 @@ namespace muda
 {
 class GraphViewer : public ViewerBase
 {
-    MUDA_VIEWER_COMMON(GraphViewer);
+    MUDA_VIEWER_COMMON_NAME(GraphViewer);
 
   public:
     MUDA_HOST void launch(cudaStream_t stream = nullptr) const;

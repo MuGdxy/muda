@@ -8,7 +8,7 @@ namespace muda
 template <typename T>
 class CCSEViewer : public RWViewer
 {
-    MUDA_VIEWER_COMMON(CCSEViewer);
+    MUDA_VIEWER_COMMON_NAME(CCSEViewer);
     const T* m_data;
 
     int* m_begin;

@@ -11,7 +11,7 @@ namespace muda
 template <typename T>
 class CCSRViewer : public ROViewer
 {
-    MUDA_VIEWER_COMMON(CCSRViewer);
+    MUDA_VIEWER_COMMON_NAME(CCSRViewer);
 
   public:
     class CElem
@@ -148,7 +148,7 @@ class CCSRViewer : public ROViewer
 template <typename T>
 class CSRViewer : public RWViewer
 {
-    MUDA_VIEWER_COMMON(CSRViewer);
+    MUDA_VIEWER_COMMON_NAME(CSRViewer);
 
   public:
     class Elem
