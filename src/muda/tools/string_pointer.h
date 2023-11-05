@@ -1,3 +1,4 @@
+#pragma once
 #include <muda/muda_def.h>
 
 namespace muda::details
