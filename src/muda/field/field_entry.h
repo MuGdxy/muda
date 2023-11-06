@@ -83,6 +83,7 @@ class FieldEntry : public FieldEntryBase
     {
     }
     FieldEntryViewer<T, Layout, M, N> viewer();
+    CFieldEntryViewer<T, Layout, M, N> cviewer() const;
 };
 
 template <typename T, FieldEntryLayout Layout>

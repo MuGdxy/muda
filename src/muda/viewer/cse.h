@@ -6,7 +6,7 @@
 namespace muda
 {
 template <typename T>
-class CCSEViewer : public RWViewer
+class CCSEViewer : public ViewerBase
 {
     MUDA_VIEWER_COMMON_NAME(CCSEViewer);
     const T* m_data;
@@ -105,7 +105,7 @@ class CCSEViewer : public RWViewer
 /// </summary>
 /// <typeparam name="T"></typeparam>
 template <typename T>
-class CSEViewer : public RWViewer
+class CSEViewer : public ViewerBase
 {
     T* m_data;
 

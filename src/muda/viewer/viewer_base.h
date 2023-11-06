@@ -70,7 +70,7 @@ class ViewerBase
     }
 };
 
-#define MUDA_VIEWER_COMMON_NAME(viewer_name)                                        \
+#define MUDA_VIEWER_COMMON_NAME(viewer_name)                                   \
   public:                                                                      \
     using this_type = viewer_name;                                             \
                                                                                \

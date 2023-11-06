@@ -440,7 +440,7 @@ class EigenMatrixViewer : public muda::FieldEntryViewer<T, Layout, M, N>
     {
     }
 
-    MUDA_DEVICE Map<Matrix<T, M, N>, 0, Stride<Dynamic, Dynamic>> operator()(int i) const
+    MUDA_DEVICE auto operator()(int i) const
     {
         auto info = Base::operator()(i);
         return Map<Matrix<T, M, N>, 0, Stride<Dynamic, Dynamic>>{
@@ -449,9 +449,36 @@ class EigenMatrixViewer : public muda::FieldEntryViewer<T, Layout, M, N>
 };
 
 template <typename T, FieldEntryLayout Layout, int M, int N>
-EigenMatrixViewer<T, Layout, M, N> make_viewer(FieldEntry<T, Layout, M, N>& e)
+class CEigenMatrixViewer : public muda::CFieldEntryViewer<T, Layout, M, N>
+{
+    using Base = muda::CFieldEntryViewer<T, Layout, M, N>;
+
+  public:
+    using Base::Base;
+    using Base::operator();
+    CEigenMatrixViewer(const Base& base)
+        : Base(base)
+    {
+    }
+
+    MUDA_DEVICE auto operator()(int i) const
+    {
+        auto info = Base::operator()(i);
+        return Map<const Matrix<T, M, N>, 0, Stride<Dynamic, Dynamic>>{
+            info.begin, Stride<Dynamic, Dynamic>{info.outer_stride, info.inner_stride}};
+    }
+};
+
+template <typename T, FieldEntryLayout Layout, int M, int N>
+auto make_viewer(FieldEntry<T, Layout, M, N>& e)
 {
     return EigenMatrixViewer<T, Layout, M, N>{e.viewer()};
+}
+
+template <typename T, FieldEntryLayout Layout, int M, int N>
+auto make_cviewer(FieldEntry<T, Layout, M, N>& e)
+{
+    return CEigenMatrixViewer<T, Layout, M, N>{e.cviewer()};
 }
 
 void field_test()
@@ -467,11 +494,10 @@ void field_test()
     auto& vel     = builder.entry("velocity").vector3<float>();
     auto& force   = builder.entry("force").vector3<float>();
     auto& I       = builder.entry("inertia").matrix3x3<float>();
-
     particle.build();
 
-    constexpr int N = 1;
     // set size of the particle attributes
+    constexpr int N = 10;
     particle.resize(N);
 
     ParallelFor(256)
@@ -489,7 +515,7 @@ void field_test()
 
                    I(i, 1, 0) = 1;
                    I(i) += Matrix3f::Ones();
-
+                   f.name();
                    auto x = pos(i);
                    print("position = %f %f %f\n", x.x(), x.y(), x.z());
                })
@@ -497,12 +523,12 @@ void field_test()
                [m   = m.viewer(),
                 pos = make_viewer(pos),
                 vel = make_viewer(vel),
-                f   = make_viewer(force),
-                I   = make_viewer(I),
+                f   = make_cviewer(force),
+                I   = make_cviewer(I),
                 dt] $(int i)
                {
-                   auto     x = pos(i);
-                   auto     v = vel(i);
+                   auto x  = pos(i);
+                   auto v  = vel(i);
                    Vector3f a = f(i) / m(i);
 
                    v = v + a * dt;
