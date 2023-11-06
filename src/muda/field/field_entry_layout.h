@@ -1,5 +1,7 @@
 #pragma once
 #include <cinttypes>
+#include <muda/muda_def.h>
+#include <muda/tools/debug_log.h>
 namespace muda
 {
 enum class FieldEntryLayout

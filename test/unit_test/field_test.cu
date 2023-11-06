@@ -427,30 +427,31 @@ using namespace muda;
 
 using namespace Eigen;
 
-template <typename T, FieldEntryLayout Layout, int N>
-class FieldEntryVectorViewer : public muda::FieldEntryViewer<T, Layout, N, 1>
+template <typename T, FieldEntryLayout Layout, int M, int N>
+class EigenMatrixViewer : public muda::FieldEntryViewer<T, Layout, M, N>
 {
-    using Base = muda::FieldEntryViewer<T, Layout, N, 1>;
+    using Base = muda::FieldEntryViewer<T, Layout, M, N>;
 
   public:
     using Base::Base;
-    FieldEntryVectorViewer(const Base& base)
+    using Base::operator();
+    EigenMatrixViewer(const Base& base)
         : Base(base)
     {
     }
 
-    MUDA_DEVICE Map<Vector<T, N>, 0, InnerStride<Dynamic>> operator()(int i) const
+    MUDA_DEVICE Map<Matrix<T, M, N>, 0, Stride<Dynamic, Dynamic>> operator()(int i) const
     {
         auto info = Base::operator()(i);
-        return Map<Vector<T, N>, 0, InnerStride<Dynamic>>{
-            info.begin, InnerStride<Dynamic>{info.stride}};
+        return Map<Matrix<T, M, N>, 0, Stride<Dynamic, Dynamic>>{
+            info.begin, Stride<Dynamic, Dynamic>{info.outer_stride, info.inner_stride}};
     }
 };
 
-template <typename T, FieldEntryLayout Layout, int N>
-FieldEntryVectorViewer<T, Layout, N> make_viewer(FieldEntry<T, Layout, N, 1>& e)
+template <typename T, FieldEntryLayout Layout, int M, int N>
+EigenMatrixViewer<T, Layout, M, N> make_viewer(FieldEntry<T, Layout, M, N>& e)
 {
-    return FieldEntryVectorViewer<T, Layout, N>{e.viewer()};
+    return EigenMatrixViewer<T, Layout, M, N>{e.viewer()};
 }
 
 void field_test()
@@ -460,14 +461,16 @@ void field_test()
     float dt       = 0.01f;
 
     // build the field
-    auto  builder = particle.builder(FieldEntryLayout::AoSoA);
-    auto& m       = builder.entry("m").scalar<float>();
+    auto  builder = particle.AoSoA();
+    auto& m       = builder.entry("mass").scalar<float>();
     auto& pos     = builder.entry("position").vector3<float>();
     auto& vel     = builder.entry("velocity").vector3<float>();
     auto& force   = builder.entry("force").vector3<float>();
+    auto& I       = builder.entry("inertia").matrix3x3<float>();
+
     particle.build();
 
-    constexpr int N = 10;
+    constexpr int N = 1;
     // set size of the particle attributes
     particle.resize(N);
 
@@ -476,12 +479,16 @@ void field_test()
                [m   = m.viewer(),
                 pos = make_viewer(pos),
                 vel = make_viewer(vel),
-                f   = make_viewer(force)] $(int i)
+                f   = make_viewer(force),
+                I   = make_viewer(I)] $(int i)
                {
                    m(i)   = 1.0f;
                    pos(i) = Vector3f::Zero();
                    vel(i) = Vector3f::Zero();
                    f(i)   = Vector3f{0.0f, -9.8f, 0.0f};
+
+                   I(i, 1, 0) = 1;
+                   I(i) += Matrix3f::Ones();
 
                    auto x = pos(i);
                    print("position = %f %f %f\n", x.x(), x.y(), x.z());
@@ -491,6 +498,7 @@ void field_test()
                 pos = make_viewer(pos),
                 vel = make_viewer(vel),
                 f   = make_viewer(force),
+                I   = make_viewer(I),
                 dt] $(int i)
                {
                    auto     x = pos(i);
@@ -500,6 +508,8 @@ void field_test()
                    v = v + a * dt;
                    x = x + v * dt;
                    print("position = %f %f %f\n", x.x(), x.y(), x.z());
+                   print("innerta diag = %f %f %f\n", I(i)(0, 0), I(i)(1, 1), I(i)(2, 2));
+                   print("innerta(1,0) = %f\n", I(i)(1, 0));
                })
         .wait();
 }

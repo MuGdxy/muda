@@ -37,13 +37,34 @@ class SubField
   public:
     template <FieldEntryLayout Layout>
     FieldBuilder<Layout> builder(FieldEntryLayoutInfo layout = FieldEntryLayoutInfo{});
+    /// <summary>
+    /// The layout is determined at runtime.
+    /// </summary>
+    /// <param name="layout"></param>
+    /// <returns></returns>
     FieldBuilder<FieldEntryLayout::RuntimeLayout> builder(FieldEntryLayoutInfo layout);
+    /// <summary>
+    /// The layout is array of structs of arrays (determined at compile time)
+    /// </summary>
+    /// <param name="layout"></param>
+    /// <returns></returns>
     FieldBuilder<FieldEntryLayout::AoSoA> AoSoA(FieldEntryLayoutInfo layout = FieldEntryLayoutInfo{});
+    /// <summary>
+    /// The layout is struct of arrays (determined at compile time)
+    /// </summary>
+    /// <returns></returns>
     FieldBuilder<FieldEntryLayout::SoA> SoA();
+    /// <summary>
+    /// The layout is array of structs (determined at compile time)
+    /// </summary>
+    /// <returns></returns>
     FieldBuilder<FieldEntryLayout::AoS> AoS();
 
 
-    // finish building up the field
+    /// <summary>
+    /// Finish building the field.
+    /// </summary>
+    /// <param name="options"></param>
     void build(const FieldBuildOptions& options = {});
 
     std::string_view name() const { return m_name; }
@@ -69,7 +90,12 @@ class SubField
 
     void upload_entries() const;
     void resize_aosoa(size_t num_elements);
+    void resize_soa(size_t num_elements);
+    void resize_aos(size_t num_elements);
+
     void build_aosoa(const FieldBuildOptions& options);
+    void build_soa(const FieldBuildOptions& options);
+    void build_aos(const FieldBuildOptions& options);
 
     static uint32_t div_round_up(uint32_t total, uint32_t N);
     static uint32_t align(uint32_t offset, uint32_t size, uint32_t min_alignment, uint32_t max_alignment);

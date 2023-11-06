@@ -8,7 +8,7 @@ class FieldEntryBaseData
   public:
     FieldEntryLayoutInfo layout;
     FieldEntryType       type           = FieldEntryType::None;
-    uint32_t             begin          = ~0;
+    uint32_t             offset_in_struct          = ~0;
     uint32_t             elem_byte_size = ~0;
     uint32_t             elem_alignment = ~0;
     uint32_t             elem_count     = ~0;

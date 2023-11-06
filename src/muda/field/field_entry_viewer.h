@@ -23,7 +23,6 @@ class FieldEntryViewerBase : public ViewerBase
     }
 
   protected:
-  public:
     FieldEntryLayoutInfo m_layout = {};
 
     std::byte*             m_buffer = nullptr;
@@ -31,11 +30,15 @@ class FieldEntryViewerBase : public ViewerBase
     details::StringPointer m_name_ptr = {};
 
     template <typename T>
-    MUDA_GENERIC T& cast(void* data);
+    MUDA_GENERIC T& cast(std::byte* data);
     template <typename T>
-    MUDA_GENERIC const T& cast(const void* data) const;
+    MUDA_GENERIC const T& cast(const std::byte* data) const;
 
-    MUDA_GENERIC void* aosoa_elem_addr(int i, int elem_j) const;
+    MUDA_GENERIC uint32_t aosoa_inner_index(int i) const;
+    MUDA_GENERIC std::byte* aosoa_struct_begin(int i) const;
+    MUDA_GENERIC std::byte* aosoa_elem_addr(int i) const;
+    MUDA_GENERIC std::byte* aosoa_elem_addr(int i, int j) const;
+    MUDA_GENERIC std::byte* aosoa_elem_addr(int i, int row_index, int col_index) const;
 
   public:
     MUDA_GENERIC auto layout() const { return m_layout; }
@@ -53,16 +56,6 @@ class FieldEntryViewer;
 // implementation is in details/entry_viewers/ ...
 
 /// <summary>
-/// For MapVector e.g. Eigen::Map< ... >
-/// </summary>
-template <typename T, int N>
-class VectorMapInfo
-{
-  public:
-    T*  begin;
-    int stride;
-};
-/// <summary>
 /// For MapMatrix e.g. Eigen::Map< ... >
 /// </summary>
 template <typename T, int M, int N>
@@ -70,8 +63,8 @@ class MatrixMapInfo
 {
   public:
     T*  begin;
-    int inner_stride;
     int outer_stride;
+    int inner_stride;
 };
 }  // namespace muda
 

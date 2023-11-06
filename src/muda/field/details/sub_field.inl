@@ -64,7 +64,7 @@ MUDA_INLINE FieldBuilder<FieldEntryLayout::AoS> SubField::AoS()
     return builder<FieldEntryLayout::AoS>(FieldEntryLayoutInfo{FieldEntryLayout::AoS, 0});
 }
 
-MUDA_INLINE auto SubField::upload_entries() const -> void
+MUDA_INLINE void SubField::upload_entries() const
 {
     //m_entries_buffer.resize(m_entries.size());
     //std::vector<FieldEntryViewerBase> entries(m_entries.size());
@@ -100,7 +100,7 @@ MUDA_INLINE void SubField::build(const FieldBuildOptions& options)
             MUDA_ERROR_WITH_LOCATION("SoA is not supported yet");
             break;
         case FieldEntryLayout::AoS:
-            MUDA_ERROR_WITH_LOCATION("SoA is not supported yet");
+            build_aos(options);
             break;
         default:
             MUDA_ERROR_WITH_LOCATION("Unknown layout");
@@ -120,14 +120,14 @@ MUDA_INLINE void SubField::build_aosoa(const FieldBuildOptions& options)
     auto min_alignment = options.min_alignment;
     auto max_alignment = options.max_alignment;
     // eg: innermost array size = 4
-    // a "Struct" like this: M/V/S are 3 different entries, has type of matrix/vector/scalar
+    // a "Struct" is something like the following, where M/V/S are 3 different entries, has type of matrix/vector/scalar
     //tex:
     // $$
     // \begin{bmatrix}
     // M_{11} & M_{11} & M_{11} & M_{11}\\
     // M_{21} & M_{21} & M_{21} & M_{21}\\
-    // M_{31} & M_{31} & M_{31} & M_{31}\\
-    // M_{41} & M_{41} & M_{41} & M_{41}\\
+    // M_{12} & M_{12} & M_{12} & M_{12}\\
+    // M_{22} & M_{22} & M_{22} & M_{22}\\
     // V_x & V_x & V_x & V_x\\
     // V_y & V_y & V_y & V_y\\
     // V_z & V_z & V_z & V_z\\
@@ -147,11 +147,12 @@ MUDA_INLINE void SubField::build_aosoa(const FieldBuildOptions& options)
         struct_stride = align(struct_stride, elem_byte_size, min_alignment, max_alignment);
 
         // now struct_stride is the offset of the entry in the "Struct"
-        e->m_info.begin = struct_stride;
+        e->m_info.offset_in_struct = struct_stride;
 
         struct_stride += elem_byte_size * inner_array_size * total_elem_count_in_innermost_array;
     }
-    m_struct_stride = align(struct_stride, struct_stride, min_alignment, max_alignment);  // the final stride of the "Struct"
+    // the final stride of the "Struct" >= struct size
+    m_struct_stride = align(struct_stride, struct_stride, min_alignment, max_alignment);
 
     for(auto e : m_entries)
     {
@@ -159,6 +160,42 @@ MUDA_INLINE void SubField::build_aosoa(const FieldBuildOptions& options)
         e->m_name_ptr           = m_field.m_string_cache[e->m_name];
     }
 }
+
+MUDA_INLINE void SubField::build_soa(const FieldBuildOptions& options)
+{
+    auto min_alignment = options.min_alignment;
+    auto max_alignment = options.max_alignment;
+    // a "Struct" is something like the following, where M/V/S are 3 different entries, has type of matrix/vector/scalar
+    //tex:
+    // $$
+    // \begin{bmatrix}
+    // M_{11} & M_{21} & M_{12} & M_{22} & V_x & V_y & V_z & S
+    // \end{bmatrix}
+    // $$
+    uint32_t struct_stride = 0;  // the stride of the "Struct"
+    for(auto e : m_entries)  // in an entry, the elem type is the same (e.g. float/int/double...)
+    {
+        // elem type = float/double/int ... or User Type
+        auto elem_byte_size = e->elem_byte_size();
+        // e.g. scalar=1 vector3 = 3, vector4 = 4, matrix3x3 = 9, matrix4x4 = 16, and so on
+        auto total_elem_count_in_a_struct_member = e->shape().x * e->shape().y;
+        struct_stride = align(struct_stride, elem_byte_size, min_alignment, max_alignment);
+        // now struct_stride is the offset of the entry in the "Struct"
+        e->m_info.offset_in_struct = struct_stride;
+
+        struct_stride += elem_byte_size * total_elem_count_in_a_struct_member;
+    }
+    // the final stride of the "Struct" >= struct size
+    m_struct_stride = align(struct_stride, struct_stride, min_alignment, max_alignment);
+
+    for(auto e : m_entries)
+    {
+        e->m_info.struct_stride = m_struct_stride;
+        e->m_name_ptr           = m_field.m_string_cache[e->m_name];
+    }
+}
+
+MUDA_INLINE void SubField::build_aos(const FieldBuildOptions& options) {}
 
 MUDA_INLINE void SubField::resize(size_t num_elements)
 {
@@ -171,7 +208,7 @@ MUDA_INLINE void SubField::resize(size_t num_elements)
             MUDA_ERROR_WITH_LOCATION("SoA is not supported yet");
             break;
         case FieldEntryLayout::AoS:
-            MUDA_ERROR_WITH_LOCATION("SoA is not supported yet");
+            resize_aos(num_elements);
             break;
         default:
             MUDA_ERROR_WITH_LOCATION("Unknow Layout");
@@ -185,6 +222,11 @@ MUDA_INLINE void SubField::resize_aosoa(size_t num_elements)
 {
     size_t outer_size = div_round_up(num_elements, m_layout.innermost_array_size());
     m_data_buffer.resize(outer_size * m_struct_stride);
+}
+
+MUDA_INLINE void SubField::resize_aos(size_t num_elements)
+{
+    m_data_buffer.resize(num_elements);
 }
 
 }  // namespace muda
