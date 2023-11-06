@@ -196,4 +196,16 @@ class CSEViewer : public RWViewer
         return global_offset;
     }
 };
+
+template <typename T>
+struct read_only_view<CSEViewer<T>>
+{
+    using type = CCSEViewer<T>;
+};
+
+template <typename T>
+struct read_write_view<CCSEViewer<T>>
+{
+    using type = CSEViewer<T>;
+};
 }  // namespace muda

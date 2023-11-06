@@ -22,7 +22,7 @@ struct read_write_view<CDenseND<T, Dim>>
 };
 
 template <typename T>
-class CDenseND<T, 0> : public ROViewer
+class CDenseND<T, 0> : public ViewerBase
 {
     MUDA_VIEWER_COMMON_NAME(CDenseND);
     const T* m_data;
@@ -72,7 +72,7 @@ class CDenseND<T, 0> : public ROViewer
 };
 
 template <typename T>
-class DenseND<T, 0> : public RWViewer
+class DenseND<T, 0> : public ViewerBase
 {
     MUDA_VIEWER_COMMON_NAME(DenseND);
     T* m_data;
@@ -151,7 +151,7 @@ class DenseND<T, 0> : public RWViewer
 };
 
 template <typename T>
-class CDenseND<T, 1> : public ROViewer
+class CDenseND<T, 1> : public ViewerBase
 {
     MUDA_VIEWER_COMMON_NAME(CDenseND);
 
@@ -221,7 +221,7 @@ class CDenseND<T, 1> : public ROViewer
 
 
 template <typename T>
-class DenseND<T, 1> : public RWViewer
+class DenseND<T, 1> : public ViewerBase
 {
     MUDA_VIEWER_COMMON_NAME(DenseND);
     T*  m_data;
@@ -301,7 +301,7 @@ class DenseND<T, 1> : public RWViewer
 
 
 template <typename T>
-class CDenseND<T, 2> : public ROViewer
+class CDenseND<T, 2> : public ViewerBase
 {
     MUDA_VIEWER_COMMON_NAME(CDenseND);
     const T* m_data;
@@ -372,7 +372,7 @@ class CDenseND<T, 2> : public ROViewer
 };
 
 template <typename T>
-class DenseND<T, 2> : public RWViewer
+class DenseND<T, 2> : public ViewerBase
 {
     MUDA_VIEWER_COMMON_NAME(DenseND);
     T*   m_data;
@@ -460,7 +460,7 @@ class DenseND<T, 2> : public RWViewer
 };
 
 template <typename T>
-class CDenseND<T, 3> : public ROViewer
+class CDenseND<T, 3> : public ViewerBase
 {
     MUDA_VIEWER_COMMON_NAME(CDenseND);
     const T* m_data;
@@ -538,7 +538,7 @@ class CDenseND<T, 3> : public ROViewer
 };
 
 template <typename T>
-class DenseND<T, 3> : public RWViewer
+class DenseND<T, 3> : public ViewerBase
 {
     MUDA_VIEWER_COMMON_NAME(DenseND);
     T*   m_data;

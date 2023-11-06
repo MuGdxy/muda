@@ -9,7 +9,7 @@ namespace muda
 /// </summary>
 /// <typeparam name="T"></typeparam>
 template <typename T>
-class CCSRViewer : public ROViewer
+class CCSRViewer : public ViewerBase
 {
     MUDA_VIEWER_COMMON_NAME(CCSRViewer);
 
@@ -146,7 +146,7 @@ class CCSRViewer : public ROViewer
 /// </summary>
 /// <typeparam name="T"></typeparam>
 template <typename T>
-class CSRViewer : public RWViewer
+class CSRViewer : public ViewerBase
 {
     MUDA_VIEWER_COMMON_NAME(CSRViewer);
 
@@ -350,5 +350,17 @@ class CSRViewer : public RWViewer
         global_offset = m_rowPtr[row] + local_offset;
         check_global_offset(global_offset);
     }
+};
+
+template <typename T>
+struct read_only_view<CSRViewer<T>>
+{
+    using type = CCSRViewer<T>;
+};
+
+template <typename T>
+struct read_write_view<CCSRViewer<T>>
+{
+    using type = CSRViewer<T>;
 };
 }  // namespace muda

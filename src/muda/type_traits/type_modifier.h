@@ -22,5 +22,14 @@ template <typename T>
 using read_only_view_t = typename read_only_view<T>::type;
 
 template <typename T>
+constexpr bool is_read_only_view_v = std::is_same_v<T, read_only_view_t<T>>;
+
+template <typename T>
 using read_write_view_t = typename read_write_view<T>::type;
+
+template <typename T>
+constexpr bool is_read_write_view_v = std::is_same_v<T, read_write_view_t<T>>;
+
+template <typename T>
+constexpr bool is_uniform_view_v = is_read_only_view_v<T> && is_read_write_view_v<T>;
 }  // namespace muda
