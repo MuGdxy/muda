@@ -13,6 +13,11 @@ class FieldEntryBaseData
     uint32_t             elem_alignment = ~0;
     uint32_t             elem_count     = ~0;
     uint2                shape;
-    uint32_t             struct_stride = ~0;
+    union
+    {
+        uint32_t struct_stride = ~0;
+        uint32_t base_offset_in_struct;
+    };
+    
 };
 }  // namespace muda

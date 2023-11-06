@@ -15,21 +15,22 @@ class FieldEntry;
 
 class SubField
 {
-    Field&                                  m_field;
-    std::string                             m_name;
-    size_t                                  m_size = 0;
-    std::vector<FieldEntryBase*>            m_entries;
-    std::unordered_map<std::string, size_t> m_name_to_index;
-    FieldEntryLayoutInfo                    m_layout;
-
+    Field&                                     m_field;
+    std::string                                m_name;
+    size_t                                     m_size = 0;
+    std::vector<FieldEntryBase*>               m_entries;
+    std::unordered_map<std::string, size_t>    m_name_to_index;
+    FieldEntryLayoutInfo                       m_layout;
+    FieldBuildOptions                          m_build_options;
     mutable DeviceBuffer<FieldEntryViewerBase> m_entries_buffer;
 
     mutable std::byte* m_data_buffer      = nullptr;
     size_t             m_data_buffer_size = 0;
 
-    bool     m_is_built      = false;
-    uint32_t m_struct_stride = ~0;
-    size_t   m_num_elements  = 0;
+    bool     m_is_built           = false;
+    uint32_t m_struct_stride      = ~0;
+    uint32_t m_base_struct_stride = ~0;
+    size_t   m_num_elements       = 0;
 
     SubField(Field& field, std::string_view name);
     ~SubField();
@@ -89,9 +90,9 @@ class SubField
                                               FieldEntryLayoutInfo layout,
                                               FieldEntryType       type,
                                               uint2                shape);
-    void copy_resize_data_buffer(size_t size);
+    void                         copy_resize_data_buffer(size_t size);
     template <typename F>  // F: void(std::byte* old_ptr, size_t old_size, std::byte* new_ptr, size_t new_size)
-    void resize_data_buffer(F&& func, size_t size);
+    void resize_data_buffer(size_t size, F&& func);
 
     void upload_entries() const;
     void resize_aosoa(size_t num_elements);
@@ -101,9 +102,9 @@ class SubField
     void build_aosoa(const FieldBuildOptions& options);
     void build_soa(const FieldBuildOptions& options);
     void build_aos(const FieldBuildOptions& options);
-    void resize_build_soa(const FieldBuildOptions& options, size_t num_elements);
+    void resize_build_soa(size_t num_elements);
 
-    static uint32_t div_round_up(uint32_t total, uint32_t N);
+    static uint32_t round_up(uint32_t total, uint32_t N);
     static uint32_t align(uint32_t offset, uint32_t size, uint32_t min_alignment, uint32_t max_alignment);
 };
 }  // namespace muda

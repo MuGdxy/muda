@@ -65,7 +65,7 @@ MUDA_INLINE FieldBuilder<FieldEntryLayout::AoS> SubField::AoS()
 }
 
 template <typename F>
-void SubField::resize_data_buffer(F&& func, size_t size)
+void SubField::resize_data_buffer(size_t size, F&& func)
 {
     if(m_data_buffer == nullptr)
     {
@@ -85,14 +85,13 @@ void SubField::resize_data_buffer(F&& func, size_t size)
 
 MUDA_INLINE void SubField::copy_resize_data_buffer(size_t size)
 {
-    resize_data_buffer(
-        [](std::byte* old_ptr, size_t old_size, std::byte* new_ptr, size_t new_size)
-        {
-            Memory()
-                .set(new_ptr + old_size, new_size - old_size, 0)  // set the new memory to 0
-                .transfer(new_ptr, old_ptr, old_size);  // copy the old memory to the new memory
-        },
-        size);
+    resize_data_buffer(size,
+                       [](std::byte* old_ptr, size_t old_size, std::byte* new_ptr, size_t new_size)
+                       {
+                           Memory()
+                               .set(new_ptr + old_size, new_size - old_size, 0)  // set the new memory to 0
+                               .transfer(new_ptr, old_ptr, old_size);  // copy the old memory to the new memory
+                       });
 }
 
 MUDA_INLINE void SubField::upload_entries() const
@@ -107,7 +106,7 @@ MUDA_INLINE void SubField::upload_entries() const
     //m_entries_buffer.copy_from(entries);
 }
 
-MUDA_INLINE uint32_t SubField::div_round_up(uint32_t x, uint32_t n)
+MUDA_INLINE uint32_t SubField::round_up(uint32_t x, uint32_t n)
 {
     MUDA_ASSERT((n & (n - 1)) == 0, "n is not power of 2");
     return (x + n - 1) & ~(n - 1);
@@ -116,11 +115,12 @@ MUDA_INLINE uint32_t SubField::div_round_up(uint32_t x, uint32_t n)
 MUDA_INLINE uint32_t SubField::align(uint32_t offset, uint32_t size, uint32_t min_alignment, uint32_t max_alignment)
 {
     auto alignment = std::clamp(size, min_alignment, max_alignment);
-    return div_round_up(offset, alignment);
+    return round_up(offset, alignment);
 }
 
 MUDA_INLINE void SubField::build(const FieldBuildOptions& options)
 {
+    m_build_options = options;
     MUDA_ASSERT(!m_is_built, "Field is already built!");
     switch(m_layout.layout())
     {
@@ -194,11 +194,47 @@ MUDA_INLINE void SubField::build_aosoa(const FieldBuildOptions& options)
 
 MUDA_INLINE void SubField::build_soa(const FieldBuildOptions& options)
 {
-    // the array size is unknown so we can't build the field now, 
-    // we will build the field when resize() is called
+    auto min_alignment = options.min_alignment;
+    auto max_alignment = options.max_alignment;
+    // we use the max alignment as the base array size
+    auto base_array_size = max_alignment;
+    // e.g. base array size = 4
+    // a "Struct" is something like the following, where M/V/S are 3 different entries, has type of matrix/vector/scalar
+    //tex:
+    // $$
+    // \begin{bmatrix}
+    // M_{11} & M_{11} & M_{11} & M_{11}\\
+    // M_{21} & M_{21} & M_{21} & M_{21}\\
+    // M_{12} & M_{12} & M_{12} & M_{12}\\
+    // M_{22} & M_{22} & M_{22} & M_{22}\\
+    // V_x & V_x & V_x & V_x\\
+    // V_y & V_y & V_y & V_y\\
+    // V_z & V_z & V_z & V_z\\
+    // S   & S   & S   & S \\
+    // \end{bmatrix}
+    // $$
+    uint32_t struct_stride = 0;  // the stride of the "Struct"=> SoA total size
+    for(auto e : m_entries)  // in an entry, the elem type is the same (e.g. float/int/double...)
+    {
+        // elem type = float/double/int ... or User Type
+        auto elem_byte_size = e->elem_byte_size();
+        // total elem count in innermost array:
+        // scalar=1 vector3 = 3, vector4 = 4, matrix3x3 = 9, matrix4x4 = 16, and so on
+        auto elem_count = e->shape().x * e->shape().y;
+        struct_stride = align(struct_stride, elem_byte_size, min_alignment, max_alignment);
+        auto total_elem_count_in_base_array = e->shape().x * e->shape().y * base_array_size;
+        // now struct_stride is the offset of the entry in the "Struct"
+        e->m_info.offset_in_struct = struct_stride;
+        struct_stride += elem_byte_size * total_elem_count_in_base_array;
+    }
+
+    MUDA_ASSERT(struct_stride % base_array_size == 0,
+                "m_struct_stride should be multiple of base_array_size");
+
+    m_base_struct_stride = struct_stride;
+
     for(auto e : m_entries)
-        e->m_name_ptr           = m_field.m_string_cache[e->m_name];
-    
+        e->m_name_ptr = m_field.m_string_cache[e->m_name];
 }
 
 MUDA_INLINE void SubField::build_aos(const FieldBuildOptions& options)
@@ -221,7 +257,7 @@ MUDA_INLINE void SubField::build_aos(const FieldBuildOptions& options)
         auto total_elem_count_in_a_struct_member = e->shape().x * e->shape().y;
         struct_stride = align(struct_stride, elem_byte_size, min_alignment, max_alignment);
         // now struct_stride is the offset of the entry in the "Struct"
-        e->m_info.offset_in_struct = struct_stride;
+        e->m_info.base_offset_in_struct = struct_stride;
 
         struct_stride += elem_byte_size * total_elem_count_in_a_struct_member;
     }
@@ -233,44 +269,6 @@ MUDA_INLINE void SubField::build_aos(const FieldBuildOptions& options)
         e->m_info.struct_stride = m_struct_stride;
         e->m_name_ptr           = m_field.m_string_cache[e->m_name];
     }
-}
-
-MUDA_INLINE void SubField::resize_build_soa(const FieldBuildOptions& options, size_t num_elements)
-{
-    //auto min_alignment = options.min_alignment;
-    //auto max_alignment = options.max_alignment;
-    //// e.g. array size = 4
-    //// a "Struct" is something like the following, where M/V/S are 3 different entries, has type of matrix/vector/scalar
-    ////tex:
-    //// $$
-    //// \begin{bmatrix}
-    //// M_{11} & M_{11} & M_{11} & M_{11}\\
-    //// M_{21} & M_{21} & M_{21} & M_{21}\\
-    //// M_{12} & M_{12} & M_{12} & M_{12}\\
-    //// M_{22} & M_{22} & M_{22} & M_{22}\\
-    //// V_x & V_x & V_x & V_x\\
-    //// V_y & V_y & V_y & V_y\\
-    //// V_z & V_z & V_z & V_z\\
-    //// S   & S   & S   & S \\
-    //// \end{bmatrix}
-    //// $$
-    //uint32_t struct_stride = 0;  // the stride of the "Struct"=> SoA total size
-    //for(auto e : m_entries)  // in an entry, the elem type is the same (e.g. float/int/double...)
-    //{
-    //    // elem type = float/double/int ... or User Type
-    //    auto elem_byte_size = e->elem_byte_size();
-    //    // total elem count in innermost array:
-    //    // scalar=1 vector3 = 3, vector4 = 4, matrix3x3 = 9, matrix4x4 = 16, and so on
-    //    auto elem_count = e->shape().x * e->shape().y;
-    //    struct_stride = align(struct_stride, elem_byte_size, min_alignment, max_alignment);
-
-    //    // now struct_stride is the offset of the entry in the "Struct"
-    //    e->m_info.offset_in_struct = struct_stride;
-
-    //    struct_stride += elem_byte_size * inner_array_size * total_elem_count_in_innermost_array;
-    //}
-    //// the final stride of the "Struct" >= struct size
-    //m_struct_stride = align(struct_stride, struct_stride, min_alignment, max_alignment);
 }
 
 MUDA_INLINE void SubField::resize(size_t num_elements)
@@ -296,11 +294,70 @@ MUDA_INLINE void SubField::resize(size_t num_elements)
 
 MUDA_INLINE void SubField::resize_aosoa(size_t num_elements)
 {
-    size_t outer_size = div_round_up(num_elements, m_layout.innermost_array_size());
+    size_t outer_size = round_up(num_elements, m_layout.innermost_array_size());
     copy_resize_data_buffer(outer_size * m_struct_stride);
 }
 
-MUDA_INLINE void SubField::resize_soa(size_t num_elements) {}
+
+namespace details
+{
+    struct CopyMap
+    {
+        uint32_t base_old_offset;
+        uint32_t base_new_offset;
+        uint32_t size;
+    };
+
+    void map_copy(BufferView<CopyMap> copy_maps,
+                  uint32_t            count_of_base,
+                  std::byte*          old_ptr,
+                  size_t              old_size,
+                  std::byte*          new_ptr,
+                  size_t              new_size)
+    {
+        Memory().set(new_ptr, new_size, 0);
+        ParallelFor(LIGHT_WORKLOAD_BLOCK_SIZE)
+            .apply(old_size,
+                   [old_ptr, new_ptr, count_of_base, copy_maps = copy_maps.viewer()] __device__(int i) mutable
+                   {
+                       for(int j = 0; j < copy_maps.dim(); ++j)
+                       {
+                           auto map = copy_maps(j);
+                           for(int k = 0; k < map.size; ++k)
+                           {
+                               auto local_offset = map.size * i + k;
+
+                               auto new_offset =
+                                   map.base_new_offset * count_of_base + local_offset;
+                               auto old_offset =
+                                   map.base_old_offset * count_of_base + local_offset;
+
+                               new_ptr[new_offset] = old_ptr[old_offset];
+                           }
+                       }
+                   });
+    }
+}  // namespace details
+
+MUDA_INLINE void SubField::resize_soa(size_t num_elements)
+{
+    auto base          = m_build_options.max_alignment;
+    auto count_of_base = (num_elements + base - 1) / base;
+    auto rounded_num   = count_of_base * base;
+    m_struct_stride    = m_base_struct_stride * count_of_base;
+
+
+    for(auto e : m_entries)
+    {
+        e->m_info.struct_stride = m_struct_stride;
+        e->m_info.offset_in_struct = e->m_info.base_offset_in_struct * count_of_base;
+    }
+    resize_data_buffer(rounded_num,
+                       [](std::byte* old_ptr, size_t old_size, std::byte* new_ptr, size_t new_size)
+                       {
+                           // TODO: how to copy the old data to the new data?
+                       });
+}
 
 MUDA_INLINE void SubField::resize_aos(size_t num_elements)
 {
