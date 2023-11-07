@@ -14,12 +14,12 @@ MUDA_INLINE MUDA_GENERIC const T& FieldEntryViewerBase::cast(const std::byte* da
 
 MUDA_INLINE MUDA_GENERIC uint32_t FieldEntryViewerBase::aosoa_inner_index(int i) const
 {
-    return i & (m_layout.innermost_array_size() - 1);
+    return i & (layout_info().innermost_array_size() - 1);
 }
 
 MUDA_INLINE MUDA_GENERIC std::byte* FieldEntryViewerBase::aosoa_struct_begin(int i) const
 {
-    auto outer_index = i / m_layout.innermost_array_size();
+    auto outer_index = i / layout_info().innermost_array_size();
     return m_buffer + outer_index * struct_stride() + m_info.offset_in_struct;
 }
 
@@ -51,7 +51,7 @@ MUDA_INLINE MUDA_GENERIC std::byte* FieldEntryViewerBase::aosoa_elem_addr(int i,
                        shape().x,
                        shape().y,
                        comp_j);
-    auto innermost_array_size = m_layout.innermost_array_size();
+    auto innermost_array_size = layout_info().innermost_array_size();
     auto struct_begin         = aosoa_struct_begin(i);
     auto inner_index          = aosoa_inner_index(i);
     return struct_begin
@@ -77,7 +77,7 @@ MUDA_INLINE MUDA_GENERIC std::byte* FieldEntryViewerBase::aosoa_elem_addr(int i,
                        shape().y,
                        row_index,
                        col_index);
-    auto innermost_array_size = m_layout.innermost_array_size();
+    auto innermost_array_size = layout_info().innermost_array_size();
     auto struct_begin         = aosoa_struct_begin(i);
     auto inner_index          = aosoa_inner_index(i);
     // column major

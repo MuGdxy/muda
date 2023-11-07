@@ -2,7 +2,7 @@
 
 #define MUDA_SCALAR_ENTRY_ACCESSOR(i)                                          \
     {                                                                          \
-        switch(m_layout.layout())                                              \
+        switch(layout())                                                       \
         {                                                                      \
             case FieldEntryLayout::AoSoA:                                      \
                 return cast<T>(aosoa_elem_addr(i));                            \
@@ -17,7 +17,7 @@
 
 #define MUDA_VECTOR_ENTRY_ACCESSOR(i, comp)                                    \
     {                                                                          \
-        switch(m_layout.layout())                                              \
+        switch(layout())                                                       \
         {                                                                      \
             case FieldEntryLayout::AoSoA:                                      \
                 return cast<T>(aosoa_elem_addr(i, comp));                      \
@@ -32,7 +32,7 @@
 
 #define MUDA_MATRIX_ENTRY_ACCESSOR(i, row_index, col_index)                    \
     {                                                                          \
-        switch(m_layout.layout())                                              \
+        switch(layout())                                                       \
         {                                                                      \
             case FieldEntryLayout::AoSoA:                                      \
                 return cast<T>(aosoa_elem_addr(i, row_index, col_index));      \

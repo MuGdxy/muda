@@ -12,9 +12,9 @@ MUDA_INLINE SubField& muda::Field::operator[](std::string_view name)
     auto iter = m_name_to_index.find(std::string{name});
     if(iter == m_name_to_index.end())
     {
-        auto  ptr       = new SubField{*this, name};
-        auto  id        = m_sub_fields.size();
-        auto& sub_field = m_sub_fields.emplace_back(ptr);
+        auto  id = m_sub_fields.size();
+        auto& sub_field =
+            m_sub_fields.emplace_back(std::make_unique<SubField>(*this, name));
         m_name_to_index.emplace(name, id);
         return *sub_field;
     }
@@ -24,12 +24,5 @@ MUDA_INLINE SubField& muda::Field::operator[](std::string_view name)
     }
 }
 
-Field::~Field()
-{
-    for(auto sub : m_sub_fields)
-    {
-        delete sub;
-    }
-}
-
+MUDA_INLINE Field::~Field() {}
 }  // namespace muda

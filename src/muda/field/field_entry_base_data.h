@@ -7,21 +7,16 @@ class FieldEntryBaseData
 {
   public:
     // common info
-    FieldEntryLayoutInfo layout;
+    FieldEntryLayoutInfo layout_info;
     FieldEntryType       type = FieldEntryType::None;
     uint2                shape;
     uint32_t             elem_byte_size = ~0;
-    uint32_t             elem_alignment = ~0;
-    uint32_t             elem_count     = ~0;
+    //uint32_t             elem_alignment   = ~0;
+    uint32_t elem_count       = ~0;
+    uint32_t offset_in_struct = ~0;
 
-    union
-    {
-        // used by aos and aosoa
-        uint32_t offset_in_struct = ~0;
-        // used by soa
-        uint32_t offset_in_base_struct;
-    };
-
+    // used by soa
+    uint32_t offset_in_base_struct = ~0;
     union
     {
         // used by aos and aosoa

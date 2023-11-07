@@ -481,14 +481,14 @@ auto make_cviewer(FieldEntry<T, Layout, M, N>& e)
     return CEigenMatrixViewer<T, Layout, M, N>{e.cviewer()};
 }
 
-void field_test()
+void field_test1(FieldEntryLayout layout)
 {
     Field field;
     auto& particle = field["particle"];
     float dt       = 0.01f;
 
     // build the field
-    auto  builder = particle.AoS();
+    auto  builder = particle.builder(FieldEntryLayout::SoA);
     auto& m       = builder.entry("mass").scalar<float>();
     auto& pos     = builder.entry("position").vector3<float>();
     auto& vel     = builder.entry("velocity").vector3<float>();
@@ -519,6 +519,11 @@ void field_test()
                    auto x = pos(i);
                    print("position = %f %f %f\n", x.x(), x.y(), x.z());
                })
+        .wait();
+
+    particle.resize(N * 3);
+
+    ParallelFor(256)
         .apply(N,
                [m   = m.viewer(),
                 pos = make_viewer(pos),
@@ -540,7 +545,62 @@ void field_test()
         .wait();
 }
 
+void field_test2(FieldEntryLayout layout)
+{
+    Field field;
+    auto& particle = field["particle"];
+    float dt       = 0.01f;
+
+    // build the field
+    auto builder = particle.builder(layout);
+    // auto  builder = particle.builder<FieldEntryLayout::SoA>();
+    auto& m = builder.entry("mass").scalar<float>();
+    auto& I = builder.entry("inertia").matrix3x3<float>();
+    particle.build();
+
+    // set size of the particle attributes
+    constexpr int N = 10;
+    particle.resize(N);
+
+    ParallelFor(256)
+        .apply(N,
+               [m = m.viewer(), I = make_viewer(I)] $(int i)
+               {
+                   m(i) = 1.0f;
+                   //pos(i) = Vector3f::Ones();
+                   I(i, 0, 0) = 0;
+                   I(i, 1, 0) = 1;
+                   I(i, 2, 0) = 2;
+                   I(i, 0, 1) = 3;
+                   I(i, 1, 1) = 4;
+                   I(i, 2, 1) = 5;
+                   I(i, 0, 2) = 6;
+                   I(i, 1, 2) = 7;
+                   I(i, 2, 2) = 8;
+                   print("m = %f \n", m(i));
+                   print("innerta diag = %f %f %f\n", I(i)(0, 0), I(i)(1, 1), I(i)(2, 2));
+               })
+        .wait();
+
+    particle.resize(N * 2);
+
+    ParallelFor(256)
+        .apply(N,
+               [m = m.viewer(), I = make_viewer(I)] $(int i)
+               {
+                   print("m = %f \n", m(i));
+                   print("innerta diag = %f %f %f\n", I(i, 0, 0), I(i, 1, 1), I(i, 2, 2));
+               })
+        .wait();
+}
+
 TEST_CASE("field_test", "[field]")
 {
-    field_test();
+    using Layout = FieldEntryLayout;
+    field_test1(Layout::AoS);
+    field_test1(Layout::SoA);
+    field_test1(Layout::AoSoA);
+    field_test2(Layout::AoS);
+    field_test2(Layout::SoA);
+    field_test2(Layout::AoSoA);
 }

@@ -33,8 +33,6 @@ class FieldEntryViewerBase : protected ViewerBase
     }
 
   protected:
-    FieldEntryLayoutInfo m_layout = {};
-
     mutable std::byte*     m_buffer = nullptr;
     FieldEntryBaseData     m_info;
     details::StringPointer m_name_ptr = {};
@@ -60,10 +58,11 @@ class FieldEntryViewerBase : protected ViewerBase
     MUDA_GENERIC std::byte* aos_elem_addr(int i, int row_index, int col_index) const;
 
   public:
-    MUDA_GENERIC auto layout() const { return m_layout; }
+    MUDA_GENERIC auto layout_info() const { return m_info.layout_info; }
+    MUDA_GENERIC auto layout() const { return m_info.layout_info.layout(); }
     MUDA_GENERIC auto count() const { return m_info.elem_count; }
     MUDA_GENERIC auto elem_byte_size() const { return m_info.elem_byte_size; }
-    MUDA_GENERIC auto elem_alignment() const { return m_info.elem_alignment; }
+    // MUDA_GENERIC auto elem_alignment() const { return m_info.elem_alignment; }
     MUDA_GENERIC auto shape() const { return m_info.shape; }
     MUDA_GENERIC auto struct_stride() const { return m_info.struct_stride; }
     MUDA_GENERIC auto name() const { return m_name_ptr.auto_select(); }
