@@ -50,6 +50,15 @@ class FieldEntryViewerBase : protected ViewerBase
     MUDA_GENERIC std::byte* aosoa_elem_addr(int i, int j) const;
     MUDA_GENERIC std::byte* aosoa_elem_addr(int i, int row_index, int col_index) const;
 
+    MUDA_GENERIC std::byte* soa_elem_addr(int i) const;
+    MUDA_GENERIC std::byte* soa_elem_addr(int i, int j) const;
+    MUDA_GENERIC std::byte* soa_elem_addr(int i, int row_index, int col_index) const;
+
+    MUDA_GENERIC std::byte* aos_struct_begin(int i) const;
+    MUDA_GENERIC std::byte* aos_elem_addr(int i) const;
+    MUDA_GENERIC std::byte* aos_elem_addr(int i, int j) const;
+    MUDA_GENERIC std::byte* aos_elem_addr(int i, int row_index, int col_index) const;
+
   public:
     MUDA_GENERIC auto layout() const { return m_layout; }
     MUDA_GENERIC auto count() const { return m_info.elem_count; }
@@ -70,5 +79,5 @@ class CFieldEntryViewer;
 }  // namespace muda
 
 #include "details/field_entry_viewer.inl"
-#include "details/entry_viewers/aosoa_viewer.inl"
+#include "details/entry_viewers/compile_time_layout_viewer.inl"
 #include "details/entry_viewers/runtime_layout_viewer.inl"

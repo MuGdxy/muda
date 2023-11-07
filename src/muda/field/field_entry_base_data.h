@@ -6,18 +6,28 @@ namespace muda
 class FieldEntryBaseData
 {
   public:
+    // common info
     FieldEntryLayoutInfo layout;
-    FieldEntryType       type           = FieldEntryType::None;
-    uint32_t             offset_in_struct          = ~0;
+    FieldEntryType       type = FieldEntryType::None;
+    uint2                shape;
     uint32_t             elem_byte_size = ~0;
     uint32_t             elem_alignment = ~0;
     uint32_t             elem_count     = ~0;
-    uint2                shape;
+
     union
     {
-        uint32_t struct_stride = ~0;
-        uint32_t base_offset_in_struct;
+        // used by aos and aosoa
+        uint32_t offset_in_struct = ~0;
+        // used by soa
+        uint32_t offset_in_base_struct;
     };
-    
+
+    union
+    {
+        // used by aos and aosoa
+        uint32_t struct_stride = ~0;
+        // used by soa
+        uint32_t elem_count_based_stride;
+    };
 };
 }  // namespace muda

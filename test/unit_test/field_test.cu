@@ -488,7 +488,7 @@ void field_test()
     float dt       = 0.01f;
 
     // build the field
-    auto  builder = particle.AoSoA();
+    auto  builder = particle.AoS();
     auto& m       = builder.entry("mass").scalar<float>();
     auto& pos     = builder.entry("position").vector3<float>();
     auto& vel     = builder.entry("velocity").vector3<float>();
@@ -527,8 +527,8 @@ void field_test()
                 I   = make_cviewer(I),
                 dt] $(int i)
                {
-                   auto x  = pos(i);
-                   auto v  = vel(i);
+                   auto     x = pos(i);
+                   auto     v = vel(i);
                    Vector3f a = f(i) / m(i);
 
                    v = v + a * dt;

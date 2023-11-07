@@ -1,7 +1,8 @@
 #include <muda/field/field.h>
 #include <muda/field/field_entry.h>
 #include <muda/field/field_builder.h>
-
+#include <muda/cuda/cooperative_groups.h>
+#include <muda/cuda/cooperative_groups/memcpy_async.h>
 namespace muda
 {
 MUDA_INLINE SubField::SubField(Field& field, std::string_view name)
@@ -128,7 +129,7 @@ MUDA_INLINE void SubField::build(const FieldBuildOptions& options)
             build_aosoa(options);
             break;
         case FieldEntryLayout::SoA:
-            MUDA_ERROR_WITH_LOCATION("SoA is not supported yet");
+            build_soa(options);
             break;
         case FieldEntryLayout::AoS:
             build_aos(options);
@@ -233,8 +234,26 @@ MUDA_INLINE void SubField::build_soa(const FieldBuildOptions& options)
 
     m_base_struct_stride = struct_stride;
 
-    for(auto e : m_entries)
-        e->m_name_ptr = m_field.m_string_cache[e->m_name];
+    m_h_copy_map_buffer.reserve(4 * m_entries.size());
+    for(size_t i = 0; i < m_entries.size(); ++i)
+    {
+        auto e                  = m_entries[i];
+        e->m_info.struct_stride = m_struct_stride;
+        e->m_name_ptr           = m_field.m_string_cache[e->m_name];
+        auto btye_in_base_array = e->elem_byte_size() * options.max_alignment;  // the size of the entry in the base array
+        auto first_comp_offset_in_base_struct = e->m_info.offset_in_base_struct;  // the offset of the entry in the base struct
+        auto comp_count = e->shape().x * e->shape().y;
+        for(int i = 0; i < comp_count; ++i)
+        {
+            details::SoACopyMap copy_map;
+            copy_map.offset_in_base_struct =
+                first_comp_offset_in_base_struct + i * btye_in_base_array;
+            copy_map.btye_in_base_array = btye_in_base_array;
+            m_h_copy_map_buffer.push_back(copy_map);
+        }
+    }
+    // copy to device
+    m_copy_map_buffer = m_h_copy_map_buffer;
 }
 
 MUDA_INLINE void SubField::build_aos(const FieldBuildOptions& options)
@@ -257,7 +276,7 @@ MUDA_INLINE void SubField::build_aos(const FieldBuildOptions& options)
         auto total_elem_count_in_a_struct_member = e->shape().x * e->shape().y;
         struct_stride = align(struct_stride, elem_byte_size, min_alignment, max_alignment);
         // now struct_stride is the offset of the entry in the "Struct"
-        e->m_info.base_offset_in_struct = struct_stride;
+        e->m_info.offset_in_base_struct = struct_stride;
 
         struct_stride += elem_byte_size * total_elem_count_in_a_struct_member;
     }
@@ -279,7 +298,7 @@ MUDA_INLINE void SubField::resize(size_t num_elements)
             resize_aosoa(num_elements);
             break;
         case FieldEntryLayout::SoA:
-            MUDA_ERROR_WITH_LOCATION("SoA is not supported yet");
+            resize_soa(num_elements);
             break;
         case FieldEntryLayout::AoS:
             resize_aos(num_elements);
@@ -301,39 +320,45 @@ MUDA_INLINE void SubField::resize_aosoa(size_t num_elements)
 
 namespace details
 {
-    struct CopyMap
+    void soa_map_copy(BufferView<SoACopyMap> copy_maps,
+                      size_t                 base_strcut_stride,
+                      uint32_t               old_count_of_base,
+                      uint32_t               new_count_of_base,
+                      std::byte*             old_ptr,
+                      std::byte*             new_ptr)
     {
-        uint32_t base_old_offset;
-        uint32_t base_new_offset;
-        uint32_t size;
-    };
-
-    void map_copy(BufferView<CopyMap> copy_maps,
-                  uint32_t            count_of_base,
-                  std::byte*          old_ptr,
-                  size_t              old_size,
-                  std::byte*          new_ptr,
-                  size_t              new_size)
-    {
-        Memory().set(new_ptr, new_size, 0);
+        namespace cg = cooperative_groups;
+        Memory().set(new_ptr, new_count_of_base * base_strcut_stride, 0);
         ParallelFor(LIGHT_WORKLOAD_BLOCK_SIZE)
-            .apply(old_size,
-                   [old_ptr, new_ptr, count_of_base, copy_maps = copy_maps.viewer()] __device__(int i) mutable
+            .apply(old_count_of_base,
+                   [old_ptr,
+                    new_ptr,
+                    old_count_of_base,
+                    new_count_of_base,
+                    copy_maps = copy_maps.viewer()] __device__(int i) mutable
                    {
+                       auto copy = [] __device__(std::byte * dst, const std::byte* src, size_t size)
+                       {
+                           using CopyType = int;
+                           // floor to 4 bytes (like int/float ...)
+                           size_t floor = size & ~sizeof(CopyType);
+                           size_t rest  = size - floor;
+                           auto   count = floor / sizeof(CopyType);
+                           for(int i = 0; i < count; ++i)
+                               ((CopyType*)dst)[i] = ((const CopyType*)src)[i];
+                           // copy the rest
+                           for(int i = 0; i < rest; ++i)
+                               dst[floor + i] = src[floor + i];
+                       };
+
                        for(int j = 0; j < copy_maps.dim(); ++j)
                        {
                            auto map = copy_maps(j);
-                           for(int k = 0; k < map.size; ++k)
-                           {
-                               auto local_offset = map.size * i + k;
-
-                               auto new_offset =
-                                   map.base_new_offset * count_of_base + local_offset;
-                               auto old_offset =
-                                   map.base_old_offset * count_of_base + local_offset;
-
-                               new_ptr[new_offset] = old_ptr[old_offset];
-                           }
+                           auto old_offset =
+                               map.offset_in_base_struct * old_count_of_base + i;
+                           auto new_offset =
+                               map.offset_in_base_struct * new_count_of_base + i;
+                           copy(new_ptr + new_offset, old_ptr + old_offset, map.btye_in_base_array);
                        }
                    });
     }
@@ -341,21 +366,29 @@ namespace details
 
 MUDA_INLINE void SubField::resize_soa(size_t num_elements)
 {
-    auto base          = m_build_options.max_alignment;
-    auto count_of_base = (num_elements + base - 1) / base;
-    auto rounded_num   = count_of_base * base;
-    m_struct_stride    = m_base_struct_stride * count_of_base;
+    auto base              = m_build_options.max_alignment;
+    auto old_count_of_base = (m_num_elements + base - 1) / base;
+    auto new_count_of_base = (num_elements + base - 1) / base;
+    auto rounded_num       = new_count_of_base * base;
+    m_struct_stride        = m_base_struct_stride * new_count_of_base;
 
 
     for(auto e : m_entries)
     {
         e->m_info.struct_stride = m_struct_stride;
-        e->m_info.offset_in_struct = e->m_info.base_offset_in_struct * count_of_base;
+        e->m_info.offset_in_struct = e->m_info.offset_in_base_struct * new_count_of_base;
+        e->m_info.elem_count_based_stride = e->m_info.elem_byte_size * base * new_count_of_base;
     }
+
     resize_data_buffer(rounded_num,
-                       [](std::byte* old_ptr, size_t old_size, std::byte* new_ptr, size_t new_size)
+                       [&](std::byte* old_ptr, size_t old_size, std::byte* new_ptr, size_t new_size)
                        {
-                           // TODO: how to copy the old data to the new data?
+                           details::soa_map_copy(m_copy_map_buffer,
+                                                 m_base_struct_stride,
+                                                 old_count_of_base,
+                                                 new_count_of_base,
+                                                 old_ptr,
+                                                 new_ptr);
                        });
 }
 

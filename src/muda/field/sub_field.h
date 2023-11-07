@@ -12,7 +12,14 @@ class Field;
 class FieldEntryBase;
 template <typename T, FieldEntryLayout Layout, int M, int N>
 class FieldEntry;
-
+namespace details
+{
+    struct SoACopyMap
+    {
+        uint32_t offset_in_base_struct;
+        uint32_t btye_in_base_array;
+    };
+}  // namespace details
 class SubField
 {
     Field&                                     m_field;
@@ -23,6 +30,9 @@ class SubField
     FieldEntryLayoutInfo                       m_layout;
     FieldBuildOptions                          m_build_options;
     mutable DeviceBuffer<FieldEntryViewerBase> m_entries_buffer;
+    DeviceBuffer<details::SoACopyMap>             m_copy_map_buffer;
+    std::vector<details::SoACopyMap>              m_h_copy_map_buffer;
+
 
     mutable std::byte* m_data_buffer      = nullptr;
     size_t             m_data_buffer_size = 0;
