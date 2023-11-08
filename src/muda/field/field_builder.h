@@ -51,9 +51,11 @@ class FieldBuilder
     };
 
   private:
+    friend class SubField;
+
     SubField&            m_subfield;
     FieldEntryLayoutInfo m_layout;
-    friend class SubField;
+    bool                 m_single_entry = false;
 
     FieldBuilder(SubField& subfield, FieldEntryLayoutInfo layout)
         : m_subfield(subfield)
@@ -69,6 +71,11 @@ class FieldBuilder
   public:
     EntryProxy entry(std::string_view name);
     EntryProxy entry();
+    /// <summary>
+    /// Finish building the field.
+    /// </summary>
+    /// <param name="options"></param>
+    void build(const FieldBuildOptions& options = {});
     ~FieldBuilder() = default;
 };
 }  // namespace muda

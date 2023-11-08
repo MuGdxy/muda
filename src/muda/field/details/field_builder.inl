@@ -76,14 +76,23 @@ FieldEntry<T, Layout, M, N>& FieldBuilder<Layout>::create_entry(std::string_view
 }
 
 template <FieldEntryLayout Layout>
-MUDA_INLINE auto FieldBuilder<Layout>::entry(std::string_view name) -> EntryProxy
+auto FieldBuilder<Layout>::entry(std::string_view name) -> EntryProxy
 {
+    MUDA_ASSERT(m_single_entry == false, "Named entry and Anonymous entry should not appear together!")
     return EntryProxy{*this, name};
 }
 
 template <FieldEntryLayout Layout>
-MUDA_INLINE auto FieldBuilder<Layout>::entry() -> EntryProxy
+auto FieldBuilder<Layout>::entry() -> EntryProxy
 {
+    MUDA_ASSERT(m_subfield.num_entries() == 0,
+                "Anonymous entry should be the only entry in a SubField!");
+    m_single_entry = true;
     return EntryProxy{*this, m_subfield.name()};
+}
+template <FieldEntryLayout Layout>
+void FieldBuilder<Layout>::build(const FieldBuildOptions& options)
+{
+    m_subfield.build(options);
 }
 }  // namespace muda

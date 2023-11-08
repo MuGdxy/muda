@@ -494,7 +494,7 @@ void field_test1(FieldEntryLayout layout)
     auto& vel     = builder.entry("velocity").vector3<float>();
     auto& force   = builder.entry("force").vector3<float>();
     auto& I       = builder.entry("inertia").matrix3x3<float>();
-    particle.build();
+    builder.build();
 
     // set size of the particle attributes
     constexpr int N = 10;
@@ -556,7 +556,7 @@ void field_test2(FieldEntryLayout layout)
     // auto  builder = particle.builder<FieldEntryLayout::SoA>();
     auto& m = builder.entry("mass").scalar<float>();
     auto& I = builder.entry("inertia").matrix3x3<float>();
-    particle.build();
+    builder.build();
 
     // set size of the particle attributes
     constexpr int N = 10;

@@ -66,13 +66,6 @@ class SubField
     /// <returns></returns>
     FieldBuilder<FieldEntryLayout::AoS> AoS();
 
-
-    /// <summary>
-    /// Finish building the field.
-    /// </summary>
-    /// <param name="options"></param>
-    void build(const FieldBuildOptions& options = {});
-
     // delete copy and move
     SubField(const SubField&)            = delete;
     SubField(SubField&&)                 = delete;
@@ -93,6 +86,8 @@ class SubField
                                               FieldEntryLayoutInfo layout,
                                               FieldEntryType       type,
                                               uint2                shape);
+
+    void build(const FieldBuildOptions& options);
 };
 }  // namespace muda
 
