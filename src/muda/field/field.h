@@ -2,6 +2,7 @@
 #include <memory>
 #include <muda/tools/host_device_string_cache.h>
 #include <muda/field/field_viewer.h>
+#include <muda/field/field_entry_layout.h>
 
 namespace muda
 {
@@ -34,8 +35,7 @@ class Field
 
     // sub field count
     size_t num_sub_fields() const { return m_sub_fields.size(); }
-
-    FieldViewer viewer() const;
+    
     // create or find a subfield
     SubField& operator[](std::string_view name);
 };

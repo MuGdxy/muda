@@ -198,13 +198,13 @@ class CSEViewer : public ViewerBase
 };
 
 template <typename T>
-struct read_only_view<CSEViewer<T>>
+struct read_only_viewer<CSEViewer<T>>
 {
     using type = CCSEViewer<T>;
 };
 
 template <typename T>
-struct read_write_view<CCSEViewer<T>>
+struct read_write_viewer<CCSEViewer<T>>
 {
     using type = CSEViewer<T>;
 };

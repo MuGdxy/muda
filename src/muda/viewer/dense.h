@@ -10,13 +10,13 @@ template <typename T, int Dim>
 class CDenseND;
 
 template <typename T, int Dim>
-struct read_only_view<DenseND<T, Dim>>
+struct read_only_viewer<DenseND<T, Dim>>
 {
     using type = CDenseND<T, Dim>;
 };
 
 template <typename T, int Dim>
-struct read_write_view<CDenseND<T, Dim>>
+struct read_write_viewer<CDenseND<T, Dim>>
 {
     using type = DenseND<T, Dim>;
 };

@@ -353,13 +353,13 @@ class CSRViewer : public ViewerBase
 };
 
 template <typename T>
-struct read_only_view<CSRViewer<T>>
+struct read_only_viewer<CSRViewer<T>>
 {
     using type = CCSRViewer<T>;
 };
 
 template <typename T>
-struct read_write_view<CCSRViewer<T>>
+struct read_write_viewer<CCSRViewer<T>>
 {
     using type = CSRViewer<T>;
 };

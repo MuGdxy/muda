@@ -103,7 +103,7 @@ RWView ComputeGraphVarBase::_eval(const RWView& view)
                         "ComputeGraphVar[%s] is not valid, please update it before use",
                         name().data());
 
-            constexpr auto const_eval = std::is_same_v<RWView, read_only_view_t<RWView>>;
+            constexpr auto const_eval = std::is_same_v<RWView, read_only_viewer_t<RWView>>;
 
             if constexpr(const_eval)
             {

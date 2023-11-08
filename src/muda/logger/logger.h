@@ -56,7 +56,7 @@ class Logger
     Logger& operator=(Logger&&) noexcept;
 
 
-    void retrieve(std::ostream&);
+    void retrieve(std::ostream& o = std::cout);
 
     MUDA_NODISCARD LoggerDataContainer retrieve_meta();
 

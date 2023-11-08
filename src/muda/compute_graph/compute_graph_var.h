@@ -92,7 +92,7 @@ class ComputeGraphVar : public ComputeGraphVarBase
 {
   public:
     static_assert(!std::is_const_v<T>, "T must not be const");
-    using ROView = read_only_view_t<T>;
+    using ROView = read_only_viewer_t<T>;
     using RWView = T;
 
   protected:
@@ -134,23 +134,23 @@ class ComputeGraphVar : public ComputeGraphVarBase
 };
 
 template <typename T>
-struct read_only_view<T*>
+struct read_only_viewer<T*>
 {
     using type = const T*;
 };
 template <typename T>
-struct read_write_view<const T*>
+struct read_write_viewer<const T*>
 {
     using type = T*;
 };
 
 template <>
-struct read_only_view<cudaEvent_t>
+struct read_only_viewer<cudaEvent_t>
 {
     using type = cudaEvent_t;
 };
 template <>
-struct read_write_view<cudaEvent_t>
+struct read_write_viewer<cudaEvent_t>
 {
     using type = cudaEvent_t;
 };

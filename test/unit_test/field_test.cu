@@ -423,63 +423,10 @@ using namespace muda;
 
 #include <muda/field/field.h>
 #include <muda/field/field_builder.h>
-#include <Eigen/Core>
+#include <muda/ext/eigen.h>
 
 using namespace Eigen;
-
-template <typename T, FieldEntryLayout Layout, int M, int N>
-class EigenMatrixViewer : public muda::FieldEntryViewer<T, Layout, M, N>
-{
-    using Base = muda::FieldEntryViewer<T, Layout, M, N>;
-
-  public:
-    using Base::Base;
-    using Base::operator();
-    EigenMatrixViewer(const Base& base)
-        : Base(base)
-    {
-    }
-
-    MUDA_DEVICE auto operator()(int i) const
-    {
-        auto info = Base::operator()(i);
-        return Map<Matrix<T, M, N>, 0, Stride<Dynamic, Dynamic>>{
-            info.begin, Stride<Dynamic, Dynamic>{info.outer_stride, info.inner_stride}};
-    }
-};
-
-template <typename T, FieldEntryLayout Layout, int M, int N>
-class CEigenMatrixViewer : public muda::CFieldEntryViewer<T, Layout, M, N>
-{
-    using Base = muda::CFieldEntryViewer<T, Layout, M, N>;
-
-  public:
-    using Base::Base;
-    using Base::operator();
-    CEigenMatrixViewer(const Base& base)
-        : Base(base)
-    {
-    }
-
-    MUDA_DEVICE auto operator()(int i) const
-    {
-        auto info = Base::operator()(i);
-        return Map<const Matrix<T, M, N>, 0, Stride<Dynamic, Dynamic>>{
-            info.begin, Stride<Dynamic, Dynamic>{info.outer_stride, info.inner_stride}};
-    }
-};
-
-template <typename T, FieldEntryLayout Layout, int M, int N>
-auto make_viewer(FieldEntry<T, Layout, M, N>& e)
-{
-    return EigenMatrixViewer<T, Layout, M, N>{e.viewer()};
-}
-
-template <typename T, FieldEntryLayout Layout, int M, int N>
-auto make_cviewer(FieldEntry<T, Layout, M, N>& e)
-{
-    return CEigenMatrixViewer<T, Layout, M, N>{e.cviewer()};
-}
+using namespace muda::eigen;
 
 void field_test1(FieldEntryLayout layout)
 {
@@ -502,7 +449,7 @@ void field_test1(FieldEntryLayout layout)
 
     ParallelFor(256)
         .apply(N,
-               [m   = m.viewer(),
+               [m   = make_viewer(m),
                 pos = make_viewer(pos),
                 vel = make_viewer(vel),
                 f   = make_viewer(force),
@@ -521,7 +468,7 @@ void field_test1(FieldEntryLayout layout)
                })
         .wait();
 
-    particle.resize(N * 3);
+    particle.resize(N * 13);
 
     ParallelFor(256)
         .apply(N,
@@ -562,34 +509,40 @@ void field_test2(FieldEntryLayout layout)
     constexpr int N = 10;
     particle.resize(N);
 
+    Logger logger;
     ParallelFor(256)
         .apply(N,
-               [m = m.viewer(), I = make_viewer(I)] $(int i)
+               [m = m.viewer(), I = make_viewer(I), logger = logger.viewer()] $(int i)
                {
                    m(i) = 1.0f;
                    //pos(i) = Vector3f::Ones();
-                   I(i, 0, 0) = 0;
-                   I(i, 1, 0) = 1;
-                   I(i, 2, 0) = 2;
-                   I(i, 0, 1) = 3;
-                   I(i, 1, 1) = 4;
-                   I(i, 2, 1) = 5;
-                   I(i, 0, 2) = 6;
-                   I(i, 1, 2) = 7;
-                   I(i, 2, 2) = 8;
-                   print("m = %f \n", m(i));
-                   print("innerta diag = %f %f %f\n", I(i)(0, 0), I(i)(1, 1), I(i)(2, 2));
+                   I(i, 0, 0) = 1;
+                   I(i, 1, 0) = 2;
+                   I(i, 2, 0) = 3;
+                   I(i, 0, 1) = 4;
+                   I(i, 1, 1) = 5;
+                   I(i, 2, 1) = 6;
+                   I(i, 0, 2) = 7;
+                   I(i, 1, 2) = 8;
+                   I(i, 2, 2) = 9;
+                   logger << "i=" << i << "\n"
+                          << "m=" << m(i) << "\n"
+                          << "I=\n"
+                          << I(i) << "\n";
                })
         .wait();
+    logger.retrieve();
 
     particle.resize(N * 2);
 
     ParallelFor(256)
         .apply(N,
-               [m = m.viewer(), I = make_viewer(I)] $(int i)
+               [m = m.viewer(), I = make_viewer(I), logger = logger.viewer()] $(int i)
                {
-                   print("m = %f \n", m(i));
-                   print("innerta diag = %f %f %f\n", I(i, 0, 0), I(i, 1, 1), I(i, 2, 2));
+                   logger << "i=" << i << "\n"
+                          << "m=" << m(i) << "\n"
+                          << "I=\n"
+                          << I(i) << "\n";
                })
         .wait();
 }

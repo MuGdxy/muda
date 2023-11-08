@@ -57,13 +57,13 @@ class BufferView
 };
 
 template <typename T>
-struct read_only_view<BufferView<T>>
+struct read_only_viewer<BufferView<T>>
 {
     using type = const BufferView<T>;
 };
 
 template <typename T>
-struct read_write_view<const BufferView<T>>
+struct read_write_viewer<const BufferView<T>>
 {
     using type = BufferView<T>;
 };

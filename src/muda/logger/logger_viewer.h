@@ -9,6 +9,7 @@ namespace muda
 class LoggerViewer : public ViewerBase
 {
     MUDA_VIEWER_COMMON_NAME(LoggerViewer);
+
   public:
     class Proxy
     {
@@ -54,6 +55,7 @@ class LoggerViewer : public ViewerBase
     MUDA_DEVICE Proxy operator<<(const char* s);
     template <bool IsFmt>
     MUDA_DEVICE Proxy push_string(const char* str);
+    MUDA_DEVICE Proxy proxy() { return Proxy(*this); }
 
   private:
     Dense1D<uint32_t>                    m_meta_data_id;
