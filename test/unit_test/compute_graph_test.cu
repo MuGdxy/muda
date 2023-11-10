@@ -1,5 +1,7 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
+#include <muda/cub/device/device_scan.h>
+#include <muda/syntax_sugar.h>
 #include <Eigen/Core>
 
 using namespace muda;
@@ -493,4 +495,58 @@ void compute_graph_one_closure_multi_graph_nodes()
 TEST_CASE("compute_graph_one_closure_multi_graph_nodes", "[compute_graph]")
 {
     compute_graph_one_closure_multi_graph_nodes();
+}
+
+void compute_graph_catpure_test()
+{
+    ComputeGraphVarManager manager;
+    ComputeGraph           graph{manager};
+
+    // define graph vars
+    auto& N = manager.create_var<int>("N");
+    auto& temp_storage = manager.create_var<BufferView<std::byte>>("temp_storage");
+    auto& count  = manager.create_var<BufferView<int>>("count");
+    auto& prefix = manager.create_var<BufferView<int>>("prefix");
+
+    graph.$node("prefix_sum")
+    {
+        auto data = temp_storage.eval().data();
+        auto size = temp_storage.eval().size();
+
+        muda::DeviceScan().ExclusiveSum(
+            data, size, count.ceval().data(), prefix.eval().data(), N.eval());
+    };
+
+    // prepare resources
+    auto N_value      = 10;
+    auto count_buffer = DeviceBuffer<int>(N_value);
+    count_buffer.fill(1);
+    auto   prefix_buffer = DeviceBuffer<int>(N_value);
+    size_t temp_size;
+    muda::DeviceScan().ExclusiveSum(
+        nullptr, temp_size, count_buffer.data(), prefix_buffer.data(), N_value);
+    auto temp_storage_buffer = DeviceBuffer<std::byte>(temp_size);
+
+    // update graph vars
+    N            = N_value;
+    temp_storage = temp_storage_buffer;
+    count        = count_buffer;
+    prefix       = prefix_buffer;
+
+    // graph.launch(s);
+    graph.launch();
+
+    std::vector<int> h_prefix(N_value);
+
+    prefix_buffer.copy_to(h_prefix.data());
+
+    std::vector<int> ground_truth(N_value);
+    std::iota(ground_truth.begin(), ground_truth.end(), 0);
+
+    REQUIRE(h_prefix == ground_truth);
+}
+
+TEST_CASE("compute_graph_catpure_test", "[compute_graph]")
+{
+    compute_graph_catpure_test();
 }

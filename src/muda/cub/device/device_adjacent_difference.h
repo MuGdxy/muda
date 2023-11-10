@@ -168,4 +168,6 @@ class DeviceAdjacentDifference : public CubWrapper<DeviceAdjacentDifference>
     }
 };
 }  // namespace muda
+
 #endif
+

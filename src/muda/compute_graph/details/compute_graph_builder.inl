@@ -1,5 +1,6 @@
 #pragma once
 #include <muda/compute_graph/compute_graph.h>
+#include "compute_graph_builder.h"
 
 namespace muda
 {
@@ -10,6 +11,12 @@ MUDA_INLINE ComputeGraphPhase ComputeGraphBuilder::current_phase()
         return ins->current_graph_phase();
     else
         return ComputeGraphPhase::None;
+}
+
+MUDA_INLINE void ComputeGraphBuilder::capture(CaptureAction&& cap)
+{
+    MUDA_ASSERT(instance().current_graph(), "Error current graph = nullptr!");
+    instance().current_graph()->capture(std::move(cap));
 }
 
 MUDA_INLINE bool ComputeGraphBuilder::is_phase_none()
@@ -41,23 +48,33 @@ MUDA_INLINE void ComputeGraphBuilder::invoke_phase_actions(PhaseAction&& do_when
                                                            PhaseAction&& do_when_set_node,
                                                            PhaseAction&& do_when_topo_building)
 {
+    MUDA_ASSERT(do_when_direct_launching, "do_when_direct_launching is null");
+    MUDA_ASSERT(do_when_set_node, "do_when_set_node is null");
+    MUDA_ASSERT(do_when_topo_building, "do_when_topo_building is null");
     if(is_direct_launching())
-    {
-        MUDA_ASSERT(do_when_direct_launching, "do_when_direct_launching is null");
         do_when_direct_launching();
-    }
     else if(is_building())
-    {
-        MUDA_ASSERT(do_when_set_node, "do_when_set_node is null");
         do_when_set_node();
-    }
     else if(is_topo_building())
-    {
-        if(do_when_topo_building)
-            do_when_topo_building();
-        else
-            do_when_set_node();
-    }
+        do_when_topo_building();
+}
+
+MUDA_INLINE void ComputeGraphBuilder::invoke_phase_actions(PhaseAction&& do_when_direct_launching,
+                                                           PhaseAction&& do_when_set_node)
+{
+    MUDA_ASSERT(do_when_direct_launching, "do_when_direct_launching is null");
+    MUDA_ASSERT(do_when_set_node, "do_when_set_node is null");
+
+    if(is_direct_launching())
+        do_when_direct_launching();
+    else if(is_building() || is_topo_building())
+        do_when_set_node();
+}
+
+MUDA_INLINE void ComputeGraphBuilder::invoke_phase_actions(PhaseAction&& do_in_every_phase)
+{
+    if(is_direct_launching() || is_building() || is_topo_building())
+        do_in_every_phase();
 }
 
 MUDA_INLINE void ComputeGraphBuilder::current_graph(ComputeGraph* graph)
