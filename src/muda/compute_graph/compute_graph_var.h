@@ -92,8 +92,10 @@ class ComputeGraphVar : public ComputeGraphVarBase
 {
   public:
     static_assert(!std::is_const_v<T>, "T must not be const");
-    using ROView = read_only_viewer_t<T>;
-    using RWView = T;
+    using ROViewer = read_only_viewer_t<T>;
+    using RWViewer = T;
+    static_assert(std::is_convertible_v<RWViewer, ROViewer>,
+                  "RWViewer must be convertible to ROView");
 
   protected:
     friend class ComputeGraph;
@@ -118,21 +120,22 @@ class ComputeGraphVar : public ComputeGraphVarBase
     virtual ~ComputeGraphVar() = default;
 
   public:
-    RWView eval() { return _eval(m_value); }
-    ROView ceval() const { return _ceval(m_value); }
+    RWViewer eval() { return _eval(m_value); }
+    ROViewer ceval() const { return _ceval(m_value); }
 
-    operator ROView() const { return ceval(); }
-    operator RWView() { return eval(); }
+    operator ROViewer() const { return ceval(); }
+    operator RWViewer() { return eval(); }
 
-    void                update(const RWView& view);
-    ComputeGraphVar<T>& operator=(const RWView& view);
+    void                update(const RWViewer& view);
+    ComputeGraphVar<T>& operator=(const RWViewer& view);
     virtual void        graphviz_def(std::ostream& os,
                                      const ComputeGraphGraphvizOptions& options) const override;
 
   private:
-    RWView m_value;
+    RWViewer m_value;
 };
 
+// for host memory
 template <typename T>
 struct read_only_viewer<T*>
 {
@@ -144,6 +147,7 @@ struct read_write_viewer<const T*>
     using type = T*;
 };
 
+// for cuda event
 template <>
 struct read_only_viewer<cudaEvent_t>
 {

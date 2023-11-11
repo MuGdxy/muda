@@ -27,18 +27,8 @@ class CubWrapper : public LaunchBase<Derive>
         : LaunchBase<Derive>(stream)
     {
     }
+
+    // meaningless for cub, so we just delete it
+    void kernel_name(std::string_view) = delete;
 };
 }  // namespace muda
-
-#define MUDA_CUB_WRAPPER_IMPL(x)                                               \
-    size_t temp_storage_bytes = 0;                                             \
-    void*  d_temp_storage     = nullptr;                                       \
-                                                                               \
-    checkCudaErrors(x);                                                        \
-                                                                               \
-    prepare_buffer(external_buffer, temp_storage_bytes);                        \
-    d_temp_storage = (void*)external_buffer.data();                            \
-                                                                               \
-    checkCudaErrors(x);                                                        \
-                                                                               \
-    return *this;

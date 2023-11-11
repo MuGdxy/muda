@@ -14,8 +14,17 @@ class ComputeGraphCaptureNode : public ComputeGraphNodeBase
     {
     }
 
+    virtual ~ComputeGraphCaptureNode() override { update_sub_graph(nullptr); }
+
     void set_node(cudaGraphNode_t node) { set_handle(node); }
 
-    virtual ~ComputeGraphCaptureNode() = default;
+    void update_sub_graph(cudaGraph_t sub_graph)
+    {
+        if(m_sub_graph)
+            checkCudaErrors(cudaGraphDestroy(m_sub_graph));
+        m_sub_graph = sub_graph;
+    }
+
+    cudaGraph_t m_sub_graph = nullptr;
 };
 }  // namespace muda

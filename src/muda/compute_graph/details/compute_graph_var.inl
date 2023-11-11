@@ -103,7 +103,7 @@ RWView ComputeGraphVarBase::_eval(const RWView& view)
                         "ComputeGraphVar[%s] is not valid, please update it before use",
                         name().data());
 
-            constexpr auto const_eval = std::is_same_v<RWView, read_only_viewer_t<RWView>>;
+            constexpr auto const_eval = is_uniform_viewer_v<RWView>;
 
             if constexpr(const_eval)
             {
@@ -156,14 +156,14 @@ ROView ComputeGraphVarBase::_ceval(ROView& view) const
 // ComputeGraphVar<T>:
 
 template <typename T>
-MUDA_INLINE void ComputeGraphVar<T>::update(const RWView& view)
+MUDA_INLINE void ComputeGraphVar<T>::update(const RWViewer& view)
 {
     ComputeGraphVarBase::update();
     m_value = view;
 }
 
 template <typename T>
-MUDA_INLINE ComputeGraphVar<T>& ComputeGraphVar<T>::operator=(const RWView& view)
+MUDA_INLINE ComputeGraphVar<T>& ComputeGraphVar<T>::operator=(const RWViewer& view)
 {
     update(view);
     return *this;

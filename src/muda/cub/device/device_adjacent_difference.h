@@ -1,6 +1,7 @@
 #pragma once
 #if 0
 #include <muda/cub/device/cub_wrapper.h>
+#include "details/cub_wrapper_macro_def.inl"
 #ifndef __INTELLISENSE__
 #include <cub/device/device_adjacent_difference.cuh>
 #else
@@ -129,7 +130,7 @@ class DeviceAdjacentDifference : public CubWrapper<DeviceAdjacentDifference>
                                                DifferenceOpT difference_op = {},
                                                bool debug_synchronous = false)
     {
-        checkCudaErrors(cub::DeviceAdjacentDifference::SubtractLeftCopy(
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DeviceAdjacentDifference::SubtractLeftCopy(
             d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, difference_op, this->stream(), debug_synchronous));
     }
 
@@ -140,7 +141,7 @@ class DeviceAdjacentDifference : public CubWrapper<DeviceAdjacentDifference>
                                            DifferenceOpT difference_op = {},
                                            bool debug_synchronous      = false)
     {
-        checkCudaErrors(cub::DeviceAdjacentDifference::SubtractLeft(
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DeviceAdjacentDifference::SubtractLeft(
             d_temp_storage, temp_storage_bytes, d_in, num_items, difference_op, this->stream(), debug_synchronous));
     }
 
@@ -152,7 +153,7 @@ class DeviceAdjacentDifference : public CubWrapper<DeviceAdjacentDifference>
                                                 DifferenceOpT difference_op = {},
                                                 bool debug_synchronous = false)
     {
-        checkCudaErrors(cub::DeviceAdjacentDifference::SubtractRightCopy(
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DeviceAdjacentDifference::SubtractRightCopy(
             d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, difference_op, this->stream(), debug_synchronous));
     }
 
@@ -163,9 +164,11 @@ class DeviceAdjacentDifference : public CubWrapper<DeviceAdjacentDifference>
                                             DifferenceOpT difference_op = {},
                                             bool debug_synchronous      = false)
     {
-        checkCudaErrors(cub::DeviceAdjacentDifference::SubtractRight(
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DeviceAdjacentDifference::SubtractRight(
             d_temp_storage, temp_storage_bytes, d_in, num_items, difference_op, this->stream(), debug_synchronous));
     }
 };
 }  // namespace muda
+
+#include "details/cub_wrapper_macro_undef.inl"
 #endif

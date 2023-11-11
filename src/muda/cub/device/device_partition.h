@@ -1,5 +1,6 @@
 #pragma once
 #include <muda/cub/device/cub_wrapper.h>
+#include "details/cub_wrapper_macro_def.inl"
 #ifndef __INTELLISENSE__
 #include <cub/device/device_partition.cuh>
 #endif
@@ -156,15 +157,8 @@ class DevicePartition : public CubWrapper<DevicePartition>
                              NumSelectedIteratorT d_num_selected_out,
                              int                  num_items)
     {
-        checkCudaErrors(cub::DevicePartition::Flagged(d_temp_storage,
-                                                      temp_storage_bytes,
-                                                      d_in,
-                                                      d_flags,
-                                                      d_out,
-                                                      d_num_selected_out,
-                                                      num_items,
-                                                      this->stream(),
-                                                      false));
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DevicePartition::Flagged(
+            d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, this->stream(), false));
     }
 
     template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename SelectOp>
@@ -176,15 +170,8 @@ class DevicePartition : public CubWrapper<DevicePartition>
                         int                  num_items,
                         SelectOp             select_op)
     {
-        checkCudaErrors(cub::DevicePartition::If(d_temp_storage,
-                                                 temp_storage_bytes,
-                                                 d_in,
-                                                 d_out,
-                                                 d_num_selected_out,
-                                                 num_items,
-                                                 select_op,
-                                                 this->stream(),
-                                                 false));
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DevicePartition::If(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op, this->stream(), false));
     }
 
     template <typename InputIteratorT, typename FirstOutputIteratorT, typename SecondOutputIteratorT, typename UnselectedOutputIteratorT, typename NumSelectedIteratorT, typename SelectFirstPartOp, typename SelectSecondPartOp>
@@ -199,18 +186,21 @@ class DevicePartition : public CubWrapper<DevicePartition>
                         SelectFirstPartOp         select_first_part_op,
                         SelectSecondPartOp        select_second_part_op)
     {
-        checkCudaErrors(cub::DevicePartition::If(d_temp_storage,
-                                                 temp_storage_bytes,
-                                                 d_in,
-                                                 d_first_part_out,
-                                                 d_second_part_out,
-                                                 d_unselected_out,
-                                                 d_num_selected_out,
-                                                 num_items,
-                                                 select_first_part_op,
-                                                 select_second_part_op,
-                                                 this->stream(),
-                                                 false));
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(
+            cub::DevicePartition::If(d_temp_storage,
+                                     temp_storage_bytes,
+                                     d_in,
+                                     d_first_part_out,
+                                     d_second_part_out,
+                                     d_unselected_out,
+                                     d_num_selected_out,
+                                     num_items,
+                                     select_first_part_op,
+                                     select_second_part_op,
+                                     this->stream(),
+                                     false));
     }
 };
 }  // namespace muda
+
+#include "details/cub_wrapper_macro_undef.inl"

@@ -1,3 +1,6 @@
+// don't place #pragma once at the beginning of this file
+// because it should be inserted in multiple files
+
 #define MUDA_ENTRY_VIEWER_COMMON(MUDA_FIELD_ENTRY_LAYOUT,                                   \
                                  MUDA_SCALAR_ENTRY_ACCESSOR,                                \
                                  MUDA_VECTOR_ENTRY_ACCESSOR,                                \
@@ -13,6 +16,11 @@
       public:                                                                               \
         using FieldEntryViewerBase::FieldEntryViewerBase;                                   \
                                                                                             \
+        CFieldEntryViewer(const FieldEntryViewerBase& base)                                 \
+            : FieldEntryViewerBase{base}                                                    \
+        {                                                                                   \
+        }                                                                                   \
+                                                                                            \
         MUDA_GENERIC const T& operator()(int i) const MUDA_SCALAR_ENTRY_ACCESSOR(i);        \
     };                                                                                      \
                                                                                             \
@@ -24,6 +32,17 @@
                                                                                             \
       public:                                                                               \
         using FieldEntryViewerBase::FieldEntryViewerBase;                                   \
+                                                                                            \
+        FieldEntryViewer(const FieldEntryViewerBase& base)                                  \
+            : FieldEntryViewerBase{base}                                                    \
+        {                                                                                   \
+        }                                                                                   \
+                                                                                            \
+        operator CFieldEntryViewer<T, MUDA_FIELD_ENTRY_LAYOUT, 1, 1>() const                \
+        {                                                                                   \
+            return CFieldEntryViewer<T, MUDA_FIELD_ENTRY_LAYOUT, 1, 1>{                     \
+                static_cast<const FieldEntryViewerBase&>(*this)};                           \
+        }                                                                                   \
                                                                                             \
         MUDA_GENERIC T& operator()(int i) MUDA_SCALAR_ENTRY_ACCESSOR(i);                    \
         MUDA_GENERIC const T& operator()(int i) const MUDA_SCALAR_ENTRY_ACCESSOR(i);        \
@@ -39,6 +58,12 @@
                                                                                             \
       public:                                                                               \
         using FieldEntryViewerBase::FieldEntryViewerBase;                                   \
+                                                                                            \
+        CFieldEntryViewer(const FieldEntryViewerBase& base)                                 \
+            : FieldEntryViewerBase{base}                                                    \
+        {                                                                                   \
+        }                                                                                   \
+                                                                                            \
                                                                                             \
         MUDA_GENERIC const T& x(int i) const MUDA_VECTOR_ENTRY_ACCESSOR(i, 0);              \
         MUDA_GENERIC const T& y(int i) const MUDA_VECTOR_ENTRY_ACCESSOR(i, 1);              \
@@ -67,6 +92,16 @@
       public:                                                                               \
         using FieldEntryViewerBase::FieldEntryViewerBase;                                   \
                                                                                             \
+        FieldEntryViewer(const FieldEntryViewerBase& base)                                  \
+            : FieldEntryViewerBase{base}                                                    \
+        {                                                                                   \
+        }                                                                                   \
+                                                                                            \
+        operator CFieldEntryViewer<T, MUDA_FIELD_ENTRY_LAYOUT, N, 1>() const                \
+        {                                                                                   \
+            return CFieldEntryViewer<T, MUDA_FIELD_ENTRY_LAYOUT, N, 1>{                     \
+                static_cast<const FieldEntryViewerBase&>(*this)};                           \
+        }                                                                                   \
                                                                                             \
         MUDA_GENERIC T& x(int i) MUDA_VECTOR_ENTRY_ACCESSOR(i, 0);                          \
         MUDA_GENERIC T& y(int i) MUDA_VECTOR_ENTRY_ACCESSOR(i, 1);                          \
@@ -100,6 +135,12 @@
                                                                                             \
       public:                                                                               \
         using FieldEntryViewerBase::FieldEntryViewerBase;                                   \
+                                                                                            \
+        CFieldEntryViewer(const FieldEntryViewerBase& base)                                 \
+            : FieldEntryViewerBase{base}                                                    \
+        {                                                                                   \
+        }                                                                                   \
+                                                                                            \
         MUDA_GENERIC const T& operator()(int i, int row_index, int col_index) const         \
             MUDA_MATRIX_ENTRY_ACCESSOR(i, row_index, col_index);                            \
                                                                                             \
@@ -122,6 +163,18 @@
                                                                                             \
       public:                                                                               \
         using FieldEntryViewerBase::FieldEntryViewerBase;                                   \
+                                                                                            \
+        FieldEntryViewer(const FieldEntryViewerBase& base)                                  \
+            : FieldEntryViewerBase{base}                                                    \
+        {                                                                                   \
+        }                                                                                   \
+                                                                                            \
+        operator CFieldEntryViewer<T, MUDA_FIELD_ENTRY_LAYOUT, M, N>() const                \
+        {                                                                                   \
+            return CFieldEntryViewer<T, MUDA_FIELD_ENTRY_LAYOUT, M, N>{                     \
+                static_cast<const FieldEntryViewerBase&>(*this)};                           \
+        }                                                                                   \
+                                                                                            \
                                                                                             \
         MUDA_GENERIC T& operator()(int i, int row_index, int col_index)                     \
             MUDA_MATRIX_ENTRY_ACCESSOR(i, row_index, col_index);                            \

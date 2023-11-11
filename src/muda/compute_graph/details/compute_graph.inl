@@ -38,35 +38,6 @@ MUDA_INLINE ComputeGraph& ComputeGraph::AddNodeProxy::operator<<(std::function<v
     return m_cg;
 }
 
-MUDA_INLINE void ComputeGraph::capture(std::function<void(cudaStream_t)>&& f)
-{
-    m_is_in_capture_func = true;
-    switch(current_graph_phase())
-    {
-        case ComputeGraphPhase::TopoBuilding:
-            // if this is called in topo building phase, we do nothing
-            break;
-        case ComputeGraphPhase::SerialLaunching: {
-            // simply call it
-            f(m_current_single_stream);
-        }
-        break;
-        case ComputeGraphPhase::Updating:
-        case ComputeGraphPhase::Building: {
-            auto& s = shared_capture_stream();
-            // begin capture and pass the stream to f
-            s.begin_capture();
-            m_is_capturing = true;
-            f(s);
-        }
-        break;
-        default:
-            MUDA_ERROR_WITH_LOCATION("invoking capture() outside Graph Closure is not allowed");
-            break;
-    }
-    m_is_in_capture_func = false;
-}
-
 MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraphvizOptions& options)
 {
     topo_build();
@@ -167,8 +138,6 @@ MUDA_INLINE void ComputeGraph::topo_build()
         m_allow_access_graph = true;
         m_access_graph_index = 0;
         m_closures[i].second->operator()();
-        if(m_is_capturing)
-            add_capture_node(m_sub_graphs[i]);
     }
 
     build_deps();
@@ -192,8 +161,6 @@ MUDA_INLINE void ComputeGraph::build()
         m_allow_access_graph = true;
         m_access_graph_index = 0;
         m_closures[i].second->operator()();
-        if(m_is_capturing)
-            add_capture_node(m_sub_graphs[i]);
     }
     if(!m_is_topo_built)
         build_deps();
@@ -262,32 +229,39 @@ MUDA_INLINE Stream& ComputeGraph::shared_capture_stream()
     return s;
 }
 
-MUDA_INLINE void ComputeGraph::add_capture_node(cudaGraph_t sub_graph)
+MUDA_INLINE void ComputeGraph::capture(std::function<void(cudaStream_t)>&& f)
 {
-    auto capture_node = details::ComputeGraphAccessor(this).get_or_create_node<ComputeGraphCaptureNode>(
-        [&]
-        {
-            return new ComputeGraphCaptureNode{NodeId{m_nodes.size()}, m_access_graph_index};
-        });
-    if(ComputeGraphBuilder::is_building())
+    m_is_in_capture_func = true;
+    switch(current_graph_phase())
     {
-
-        shared_capture_stream().end_capture(&sub_graph);
-        cudaGraphNode_t node;
-        checkCudaErrors(cudaGraphAddChildGraphNode(&node, m_graph.handle(), nullptr, 0, sub_graph));
-        capture_node->set_node(node);
+        case ComputeGraphPhase::TopoBuilding:
+            // if this is called in topo building phase, we do nothing
+            // but just create an empty capture node
+            details::ComputeGraphAccessor(this).set_capture_node(nullptr);
+            break;
+        case ComputeGraphPhase::SerialLaunching: {
+            // simply call it
+            f(m_current_single_stream);
+        }
+        break;
+        case ComputeGraphPhase::Updating:
+        case ComputeGraphPhase::Building: {
+            auto& s = shared_capture_stream();
+            // begin capture and pass the stream to f
+            m_is_capturing = true;
+            s.begin_capture();
+            f(s);
+            cudaGraph_t g;
+            s.end_capture(&g);
+            details::ComputeGraphAccessor(this).set_capture_node(g);
+            m_is_capturing = false;
+        }
+        break;
+        default:
+            MUDA_ERROR_WITH_LOCATION("invoking capture() outside Graph Closure is not allowed");
+            break;
     }
-    m_is_capturing = false;
-}
-
-MUDA_INLINE void ComputeGraph::update_capture_node(cudaGraph_t sub_graph)
-{
-    const auto& [name, closure] = m_closures[current_closure_id().value()];
-    auto node                   = m_nodes[current_node_id().value()];
-    auto capture_node           = dynamic_cast<ComputeGraphCaptureNode*>(node);
-    auto cuda_node              = capture_node->handle();
-    checkCudaErrors(cudaGraphExecChildGraphNodeSetParams(m_graph_exec->handle(), cuda_node, sub_graph));
-    m_is_capturing = false;
+    m_is_in_capture_func = false;
 }
 
 MUDA_INLINE ComputeGraphPhase ComputeGraph::current_graph_phase() const
@@ -312,10 +286,10 @@ MUDA_INLINE void ComputeGraph::_update()
             m_allow_access_graph = true;
             m_access_graph_index = 0;
             m_closures[i].second->operator()();
-            if(m_is_capturing)
-                update_capture_node(m_sub_graphs[i]);
-            m_is_capturing = false;
-            need_update    = false;
+            //if(m_is_capturing)
+            //    update_capture_node(m_sub_graphs[i]);
+            //m_is_capturing = false;
+            need_update = false;
         }
     }
 }
@@ -603,6 +577,27 @@ namespace details
                 break;
         }
     }
+
+    MUDA_INLINE void ComputeGraphAccessor::set_capture_node(cudaGraph_t sub_graph)
+    {
+        switch(ComputeGraphBuilder::current_phase())
+        {
+            case ComputeGraphPhase::TopoBuilding:
+                MUDA_ASSERT(!sub_graph,
+                            "When ComputeGraphPhase == TopoBuilding, "
+                            "you don't need to create sub_graph, so keep it nullptr.");
+            case ComputeGraphPhase::Building:
+                add_capture_node(sub_graph);
+                break;
+            case ComputeGraphPhase::Updating:
+                update_capture_node(sub_graph);
+                break;
+            default:
+                MUDA_ERROR_WITH_LOCATION("invalid phase");
+                break;
+        }
+    }
+
     MUDA_INLINE void ComputeGraphAccessor::add_event_wait_node(cudaEvent_t event)
     {
         access_graph(
@@ -632,6 +627,43 @@ namespace details
                 auto event_wait = current_node<ComputeGraphEventWaitNode>();
                 g_exec.set_event_wait_node_parms(event_wait->m_node, event);
             });
+    }
+
+    MUDA_INLINE void ComputeGraphAccessor::add_capture_node(cudaGraph_t sub_graph)
+    {
+        access_graph(
+            [&](Graph& g)
+            {
+                auto capture_node = get_or_create_node<ComputeGraphCaptureNode>(
+                    [&]
+                    {
+                        const auto& [name, closure] = current_closure();
+                        return new ComputeGraphCaptureNode{NodeId{m_cg.m_nodes.size()},
+                                                           m_cg.current_access_index()};
+                    });
+                if(ComputeGraphBuilder::is_building())
+                {
+                    cudaGraphNode_t node;
+                    checkCudaErrors(cudaGraphAddChildGraphNode(
+                        &node, g.handle(), nullptr, 0, sub_graph));
+                    capture_node->set_node(node);
+                    capture_node->update_sub_graph(sub_graph);  // update sub graph
+                }
+            });
+    }
+
+    MUDA_INLINE void ComputeGraphAccessor::update_capture_node(cudaGraph_t sub_graph)
+    {
+        access_graph_exec(
+            [&](GraphExec& g_exec)
+            {
+                const auto& [name, closure] = current_closure();
+                auto capture_node = current_node<ComputeGraphCaptureNode>();
+                checkCudaErrors(cudaGraphExecChildGraphNodeSetParams(
+                    g_exec.handle(), capture_node->handle(), sub_graph));
+                capture_node->update_sub_graph(sub_graph);  // update sub graph
+            });
+        // m_is_capturing = false;
     }
 
 

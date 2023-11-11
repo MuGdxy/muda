@@ -1,5 +1,6 @@
 #pragma once
 #include <muda/cub/device/cub_wrapper.h>
+#include "details/cub_wrapper_macro_def.inl"
 #ifndef __INTELLISENSE__
 #include <cub/device/device_merge_sort.cuh>
 #endif
@@ -189,7 +190,7 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
                                OffsetT        num_items,
                                CompareOpT     compare_op)
     {
-        checkCudaErrors(cub::DeviceMergeSort::SortPairs(
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DeviceMergeSort::SortPairs(
             d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, this->stream(), false));
     }
 
@@ -203,16 +204,17 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
                                    OffsetT             num_items,
                                    CompareOpT          compare_op)
     {
-        checkCudaErrors(cub::DeviceMergeSort::SortPairsCopy(d_temp_storage,
-                                                            temp_storage_bytes,
-                                                            d_input_keys,
-                                                            d_input_items,
-                                                            d_output_keys,
-                                                            d_output_items,
-                                                            num_items,
-                                                            compare_op,
-                                                            this->stream(),
-                                                            false));
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(
+            cub::DeviceMergeSort::SortPairsCopy(d_temp_storage,
+                                                temp_storage_bytes,
+                                                d_input_keys,
+                                                d_input_items,
+                                                d_output_keys,
+                                                d_output_items,
+                                                num_items,
+                                                compare_op,
+                                                this->stream(),
+                                                false));
     }
 
     template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
@@ -222,7 +224,7 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
                               OffsetT      num_items,
                               CompareOpT   compare_op)
     {
-        checkCudaErrors(cub::DeviceMergeSort::SortKeys(
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DeviceMergeSort::SortKeys(
             d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, this->stream(), false));
     }
 
@@ -234,14 +236,15 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
                                   OffsetT           num_items,
                                   CompareOpT        compare_op)
     {
-        checkCudaErrors(cub::DeviceMergeSort::SortKeysCopy(d_temp_storage,
-                                                           temp_storage_bytes,
-                                                           d_input_keys,
-                                                           d_output_keys,
-                                                           num_items,
-                                                           compare_op,
-                                                           this->stream(),
-                                                           false));
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(
+            cub::DeviceMergeSort::SortKeysCopy(d_temp_storage,
+                                               temp_storage_bytes,
+                                               d_input_keys,
+                                               d_output_keys,
+                                               num_items,
+                                               compare_op,
+                                               this->stream(),
+                                               false));
     }
 
     template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
@@ -252,7 +255,7 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
                                      OffsetT        num_items,
                                      CompareOpT     compare_op)
     {
-        checkCudaErrors(cub::DeviceMergeSort::StableSortPairs(
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DeviceMergeSort::StableSortPairs(
             d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, this->stream(), false));
     }
 
@@ -263,8 +266,9 @@ class DeviceMergeSort : public CubWrapper<DeviceMergeSort>
                                     OffsetT      num_items,
                                     CompareOpT   compare_op)
     {
-        checkCudaErrors(cub::DeviceMergeSort::StableSortKeys(
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DeviceMergeSort::StableSortKeys(
             d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, this->stream(), false));
     }
 };
 }  // namespace muda
+#include "details/cub_wrapper_macro_undef.inl"

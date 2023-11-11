@@ -12,11 +12,13 @@ class ComputeGraph;
 class ComputeGraphBuilder
 {
     static ComputeGraphBuilder& instance();
-    using Phase       = ComputeGraphPhase;
-    using PhaseAction = std::function<void()>;
+    using Phase         = ComputeGraphPhase;
+    using PhaseAction   = std::function<void()>;
+    using CaptureAction = std::function<void(cudaStream_t)>;
 
   public:
     static Phase current_phase();
+    static void  capture(CaptureAction&& cap);
     static bool  is_phase_none();
     static bool  is_phase_serial_launching();
     static bool  is_topo_building();
@@ -29,9 +31,50 @@ class ComputeGraphBuilder
     // do_when_set_node => do_when_add_node & do_when_update_node
     // if do_when_topo_building_set_node == nullptr, do_when_set_node will be called
     // if do_when_topo_building_set_node != nullptr, do_when_topo_building_set_node will be called
+    // copy this code to use:
+    /*
+            ComputeGraphBuilder::invoke_phase_actions(
+            [&] // do_when_direct_launch
+            {
+
+            },
+            [&] // do_when_set_node
+            {
+
+            },
+            [&] // do_when_topo_building_set_node
+            {
+
+            });
+    */
     static void invoke_phase_actions(PhaseAction&& do_when_direct_launch,
                                      PhaseAction&& do_when_set_node,
-                                     PhaseAction&& do_when_topo_building_set_node = nullptr);
+                                     PhaseAction&& do_when_topo_building_set_node);
+
+    // copy this code to use:
+    /*
+            ComputeGraphBuilder::invoke_phase_actions(
+            [&] // do_when_direct_launch
+            {
+
+            },
+            [&] // do_when_set_node and do_when_topo_building_set_node
+            {
+
+            });
+    */
+    static void invoke_phase_actions(PhaseAction&& do_when_direct_launch,
+                                     PhaseAction&& do_when_set_node);
+
+    // copy this code to use:
+    /*
+            ComputeGraphBuilder::invoke_phase_actions(
+            [&] // do_in_every_phase
+            {
+
+            });
+    */
+    static void invoke_phase_actions(PhaseAction&& do_in_every_phase);
 
   private:
     friend class ComputeGraph;

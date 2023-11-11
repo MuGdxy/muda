@@ -4,28 +4,10 @@
 namespace muda::eigen
 {
 template <typename T, FieldEntryLayout Layout, int M, int N>
-class MatrixEntryViewer : public FieldEntryViewer<T, Layout, M, N>
-{
-    using Base = muda::FieldEntryViewer<T, Layout, M, N>;
-
-  public:
-    using Base::Base;
-    using Base::operator();
-    MUDA_GENERIC MatrixEntryViewer(const Base& base)
-        : Base(base)
-    {
-    }
-
-    MUDA_GENERIC auto operator()(int i)
-        -> Eigen::Map<Eigen::Matrix<T, M, N>, 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>;
-};
-
-template <typename T, FieldEntryLayout Layout, int M, int N>
 class CMatrixEntryViewer : public CFieldEntryViewer<T, Layout, M, N>
 {
-    using Base = muda::CFieldEntryViewer<T, Layout, M, N>;
-
   public:
+    using Base = muda::CFieldEntryViewer<T, Layout, M, N>;
     using Base::Base;
     using Base::operator();
     MUDA_GENERIC CMatrixEntryViewer(const Base& base)
@@ -35,6 +17,28 @@ class CMatrixEntryViewer : public CFieldEntryViewer<T, Layout, M, N>
 
     MUDA_GENERIC auto operator()(int i) const
         -> Eigen::Map<const Eigen::Matrix<T, M, N>, 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>;
+};
+
+template <typename T, FieldEntryLayout Layout, int M, int N>
+class MatrixEntryViewer : public FieldEntryViewer<T, Layout, M, N>
+{
+  public:
+    using Base = muda::FieldEntryViewer<T, Layout, M, N>;
+    using Base::Base;
+    using Base::operator();
+    MUDA_GENERIC MatrixEntryViewer(const Base& base)
+        : Base(base)
+    {
+    }
+
+    MUDA_GENERIC auto operator()(int i)
+        -> Eigen::Map<Eigen::Matrix<T, M, N>, 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>;
+
+    MUDA_GENERIC operator CMatrixEntryViewer<T, Layout, M, N>() const
+    {
+        return CMatrixEntryViewer<T, Layout, M, N>(
+            Base::operator typename CMatrixEntryViewer<T, Layout, M, N>::Base());
+    }
 };
 
 template <typename T, FieldEntryLayout Layout, int N>
