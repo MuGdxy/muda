@@ -107,62 +107,68 @@ BufferLaunch(stream).copy(...).wait();
 BufferLaunch(stream).fill(...).wait();
 ```
 
-### MUDA vs. CUDA
+###  Field Layout
 
 ```c++
-/* 
-* muda style
-*/
-void muda()
-{
-    DeviceBuffer<int>  dv(64);
-    dv.fill(1);
-    
-    ParallelFor(256) // parallel-semantic
-        .kernel_name("my_kernel") // or just .kernel_name(__FUNCTION__)
-        .apply(64, // automatically cover the range
-               [
-                   // mapping from the DeviceBuffer to a proper viewer
-                   // which can be trivially copy through device and host
-                   dv = dv.viewer().name("dv")
-               ] 
-               __device__(int i) mutable
-               { 
-                   dv(i) *= 2; // safe, the viewer check the boundary automatically
-               })
-        .wait();// happy waiting, muda remember the stream.
-    	//.apply(...) //if you want to go forward with the same config, just call .apply() again.
-}
+// create a field
+Field field;
+// create a subfield called "particle"
+// all attribute in this subfield has the same size
+auto& particle = field["particle"];
+// create a logger
+Logger logger;
 
+// build the subfield
+auto  builder = particle.SoAoS(); // use SoAoS layout
+auto& m       = builder.entry("mass").scalar<float>();
+auto& pos     = builder.entry("position").vector3<float>(); 
+auto& vel     = builder.entry("velocity").vector3<float>();
+auto& f       = builder.entry("force").vector3<float>();
+builder.build(); // finish building a subfield
 
-/* 
-* cuda style
-*/
+// set size of the particle attributes
+constexpr int N = 10;
+particle.resize(N);
 
-// manually create kernel
-__global__ void times2(int* i, int N) // modifying parameters is horrible
-{
-    auto tid = threadIdx.x;
-    if(tid < N) // check corner case manaully
-    {
-        i[tid] *= 2;// unsafe: no boundary check at all
-    }
-}
+ParallelFor(256)
+    .apply(N,
+           [m   = make_viewer(m),
+            pos = make_viewer(pos),
+            vel = make_viewer(vel),
+            f   = make_viewer(f)] $(int i) // : syntax sugar for : `__device__ (int i) mutable`
+           {
+               m(i)   = 1.0f;
+               pos(i) = Vector3f::Zero();
+               vel(i) = Vector3f::Zero();
+               f(i)   = Vector3f{0.0f, -9.8f, 0.0f};
+           })
+    .wait();
 
-void cuda()
-{
-    // to be brief, we just use thrust to allocate memory
-    thrust::device_vector<int> dv(64, 1);
-    // cast to raw pointer
-    auto dvptr = thrust::raw_pointer_cast(dv.data());
-    // create stream and check error
-    cudaStream_t s;
-    checkCudaErrors(cudaStreamCreate(&s));
-    // call the kernel (which always ruins the Intellisense, if you use VS.)
-    times2<<<1, 64, 0, s>>>(dvptr, dv.size());
-    // boring waiting and error checking
-    checkCudaErrors(cudaStreamSynchronize(s));
-}
+// safely resize the subfield
+particle.resize(N * 13);
+
+float dt = 0.01f;
+
+// integration
+ParallelFor(256)
+    .apply(N,
+           [logger = logger.viewer(),
+            m   = make_viewer(m),
+            pos = make_viewer(pos),
+            vel = make_viewer(vel),
+            f   = make_cviewer(f),
+            dt] $(int i)
+           {
+               auto     x = pos(i);
+               auto     v = vel(i);
+               Vector3f a = f(i) / m(i);
+               v = v + a * dt;
+               x = x + v * dt;
+               logger << "position=" << x << "\n"; 
+           })
+    .wait();
+
+logger.retrieve(std::cout);
 ```
 
 ### Compute Graph
@@ -248,6 +254,64 @@ void compute_graph_simple()
     graph.launch(stream);
     // launch all nodes on a single stream (fallback to origin cuda kernel launch)
     graph.launch(true, stream);
+}
+```
+
+### MUDA vs. CUDA
+
+```c++
+/* 
+* muda style
+*/
+void muda()
+{
+    DeviceBuffer<int>  dv(64);
+    dv.fill(1);
+    
+    ParallelFor(256) // parallel-semantic
+        .kernel_name("my_kernel") // or just .kernel_name(__FUNCTION__)
+        .apply(64, // automatically cover the range
+               [
+                   // mapping from the DeviceBuffer to a proper viewer
+                   // which can be trivially copy through device and host
+                   dv = dv.viewer().name("dv")
+               ] 
+               __device__(int i) mutable
+               { 
+                   dv(i) *= 2; // safe, the viewer check the boundary automatically
+               })
+        .wait();// happy waiting, muda remember the stream.
+    	//.apply(...) //if you want to go forward with the same config, just call .apply() again.
+}
+
+
+/* 
+* cuda style
+*/
+
+// manually create kernel
+__global__ void times2(int* i, int N) // modifying parameters is horrible
+{
+    auto tid = threadIdx.x;
+    if(tid < N) // check corner case manaully
+    {
+        i[tid] *= 2;// unsafe: no boundary check at all
+    }
+}
+
+void cuda()
+{
+    // to be brief, we just use thrust to allocate memory
+    thrust::device_vector<int> dv(64, 1);
+    // cast to raw pointer
+    auto dvptr = thrust::raw_pointer_cast(dv.data());
+    // create stream and check error
+    cudaStream_t s;
+    checkCudaErrors(cudaStreamCreate(&s));
+    // call the kernel (which always ruins the Intellisense, if you use VS.)
+    times2<<<1, 64, 0, s>>>(dvptr, dv.size());
+    // boring waiting and error checking
+    checkCudaErrors(cudaStreamSynchronize(s));
 }
 ```
 
