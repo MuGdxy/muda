@@ -1,5 +1,6 @@
 #pragma once
 #include <muda/cub/device/cub_wrapper.h>
+#include "details/cub_wrapper_macro_def.inl"
 #ifndef __INTELLISENSE__
 #include <cub/device/device_radix_sort.cuh>
 #else
@@ -333,17 +334,18 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
                                int           end_bit   = sizeof(KeyT) * 8,
                                bool          debug_synchronous = false)
     {
-        checkCudaErrors(cub::DeviceRadixSort::SortPairs(d_temp_storage,
-                                                        temp_storage_bytes,
-                                                        d_keys_in,
-                                                        d_keys_out,
-                                                        d_values_in,
-                                                        d_values_out,
-                                                        num_items,
-                                                        begin_bit,
-                                                        end_bit,
-                                                        this->stream(),
-                                                        debug_synchronous));
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(
+            cub::DeviceRadixSort::SortPairs(d_temp_storage,
+                                            temp_storage_bytes,
+                                            d_keys_in,
+                                            d_keys_out,
+                                            d_values_in,
+                                            d_values_out,
+                                            num_items,
+                                            begin_bit,
+                                            end_bit,
+                                            this->stream(),
+                                            debug_synchronous));
     }
 
     template <typename KeyT, typename ValueT, typename NumItemsT>
@@ -356,15 +358,8 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
                                int  end_bit           = sizeof(KeyT) * 8,
                                bool debug_synchronous = false)
     {
-        checkCudaErrors(cub::DeviceRadixSort::SortPairs(d_temp_storage,
-                                                        temp_storage_bytes,
-                                                        d_keys,
-                                                        d_values,
-                                                        num_items,
-                                                        begin_bit,
-                                                        end_bit,
-                                                        this->stream(),
-                                                        debug_synchronous));
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DeviceRadixSort::SortPairs(
+            d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, this->stream(), debug_synchronous));
     }
 
     template <typename KeyT, typename ValueT, typename NumItemsT>
@@ -379,17 +374,18 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
                                          int  end_bit = sizeof(KeyT) * 8,
                                          bool debug_synchronous = false)
     {
-        checkCudaErrors(cub::DeviceRadixSort::SortPairsDescending(d_temp_storage,
-                                                                  temp_storage_bytes,
-                                                                  d_keys_in,
-                                                                  d_keys_out,
-                                                                  d_values_in,
-                                                                  d_values_out,
-                                                                  num_items,
-                                                                  begin_bit,
-                                                                  end_bit,
-                                                                  this->stream(),
-                                                                  debug_synchronous));
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(
+            cub::DeviceRadixSort::SortPairsDescending(d_temp_storage,
+                                                      temp_storage_bytes,
+                                                      d_keys_in,
+                                                      d_keys_out,
+                                                      d_values_in,
+                                                      d_values_out,
+                                                      num_items,
+                                                      begin_bit,
+                                                      end_bit,
+                                                      this->stream(),
+                                                      debug_synchronous));
     }
 
     template <typename KeyT, typename ValueT, typename NumItemsT>
@@ -402,7 +398,7 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
                                          int  end_bit   = sizeof(KeyT) * 8,
                                          bool debug_synchronous = false)
     {
-        checkCudaErrors(cub::DeviceRadixSort::SortPairsDescending(
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DeviceRadixSort::SortPairsDescending(
             d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, this->stream(), debug_synchronous));
     }
 
@@ -416,15 +412,16 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
                               int         end_bit           = sizeof(KeyT) * 8,
                               bool        debug_synchronous = false)
     {
-        checkCudaErrors(cub::DeviceRadixSort::SortKeys(d_temp_storage,
-                                                       temp_storage_bytes,
-                                                       d_keys_in,
-                                                       d_keys_out,
-                                                       num_items,
-                                                       begin_bit,
-                                                       end_bit,
-                                                       this->stream(),
-                                                       debug_synchronous));
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(
+            cub::DeviceRadixSort::SortKeys(d_temp_storage,
+                                           temp_storage_bytes,
+                                           d_keys_in,
+                                           d_keys_out,
+                                           num_items,
+                                           begin_bit,
+                                           end_bit,
+                                           this->stream(),
+                                           debug_synchronous));
     }
 
     template <typename KeyT, typename NumItemsT>
@@ -436,7 +433,7 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
                               int  end_bit           = sizeof(KeyT) * 8,
                               bool debug_synchronous = false)
     {
-        checkCudaErrors(cub::DeviceRadixSort::SortKeys(
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DeviceRadixSort::SortKeys(
             d_temp_storage, temp_storage_bytes, d_keys, num_items, begin_bit, end_bit, this->stream(), debug_synchronous));
     }
 
@@ -450,15 +447,16 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
                                         int         end_bit = sizeof(KeyT) * 8,
                                         bool        debug_synchronous = false)
     {
-        checkCudaErrors(cub::DeviceRadixSort::SortKeysDescending(d_temp_storage,
-                                                                 temp_storage_bytes,
-                                                                 d_keys_in,
-                                                                 d_keys_out,
-                                                                 num_items,
-                                                                 begin_bit,
-                                                                 end_bit,
-                                                                 this->stream(),
-                                                                 debug_synchronous));
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(
+            cub::DeviceRadixSort::SortKeysDescending(d_temp_storage,
+                                                     temp_storage_bytes,
+                                                     d_keys_in,
+                                                     d_keys_out,
+                                                     num_items,
+                                                     begin_bit,
+                                                     end_bit,
+                                                     this->stream(),
+                                                     debug_synchronous));
     }
 
     template <typename KeyT, typename NumItemsT>
@@ -470,8 +468,10 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
                                         int  end_bit = sizeof(KeyT) * 8,
                                         bool debug_synchronous = false)
     {
-        checkCudaErrors(cub::DeviceRadixSort::SortKeysDescending(
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DeviceRadixSort::SortKeysDescending(
             d_temp_storage, temp_storage_bytes, d_keys, num_items, begin_bit, end_bit, this->stream(), debug_synchronous));
     }
 };
 }  // namespace muda
+
+#include "details/cub_wrapper_macro_undef.inl"

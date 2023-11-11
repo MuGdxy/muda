@@ -1,5 +1,6 @@
 #pragma once
 #include <muda/cub/device/cub_wrapper.h>
+#include "details/cub_wrapper_macro_def.inl"
 #ifndef __INTELLISENSE__
 #include <cub/device/device_reduce.cuh>
 #endif
@@ -292,3 +293,5 @@ class DeviceReduce : public CubWrapper<DeviceReduce>
     }
 };
 }  // namespace muda
+
+#include "details/cub_wrapper_macro_undef.inl"

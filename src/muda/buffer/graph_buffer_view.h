@@ -9,7 +9,6 @@ class ComputeGraphVar<BufferView<T>> : public ComputeGraphVarBase
 {
   public:
     static_assert(!std::is_const_v<T>, "T must not be const");
-
     using VarType = BufferView<T>;
     using ROView  = read_only_viewer_t<VarType>;
     using RWView  = VarType;

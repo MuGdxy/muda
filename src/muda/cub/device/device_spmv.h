@@ -1,5 +1,6 @@
 #pragma once
 #include <muda/cub/device/cub_wrapper.h>
+#include "details/cub_wrapper_macro_def.inl"
 #ifndef __INTELLISENSE__
 #include <cub/device/device_spmv.cuh>
 #endif
@@ -83,18 +84,21 @@ class DeviceSpmv : public CubWrapper<DeviceSpmv>
                       int           num_cols,
                       int           num_nonzeros)
     {
-        checkCudaErrors(cub::DeviceSpmv::CsrMV(d_temp_storage,
-                                               temp_storage_bytes,
-                                               d_values,
-                                               d_row_offsets,
-                                               d_column_indices,
-                                               d_vector_x,
-                                               d_vector_y,
-                                               num_rows,
-                                               num_cols,
-                                               num_nonzeros,
-                                               this->stream(),
-                                               false));
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(
+            cub::DeviceSpmv::CsrMV(d_temp_storage,
+                                   temp_storage_bytes,
+                                   d_values,
+                                   d_row_offsets,
+                                   d_column_indices,
+                                   d_vector_x,
+                                   d_vector_y,
+                                   num_rows,
+                                   num_cols,
+                                   num_nonzeros,
+                                   this->stream(),
+                                   false));
     }
 };
 }  // namespace muda
+
+#include "details/cub_wrapper_macro_undef.inl"

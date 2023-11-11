@@ -1,5 +1,6 @@
 #pragma once
 #include <muda/cub/device/cub_wrapper.h>
+#include "details/cub_wrapper_macro_def.inl"
 #ifndef __INTELLISENSE__
 #include <cub/device/device_scan.cuh>
 #else
@@ -424,3 +425,5 @@ class DeviceScan : public CubWrapper<DeviceScan>
     }
 };
 }  // namespace muda
+
+#include "details/cub_wrapper_macro_undef.inl"

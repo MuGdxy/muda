@@ -208,10 +208,6 @@ class ComputeGraph
 
     static Stream& shared_capture_stream();
 
-    void add_capture_node(cudaGraph_t sub_graph);
-
-    void update_capture_node(cudaGraph_t sub_graph);
-
     friend class ComputeGraphBuilder;
     ClosureId current_closure_id() const { return m_current_closure_id; };
 
@@ -312,6 +308,8 @@ namespace details
 
         void set_event_wait_node(cudaEvent_t event);
 
+        void set_capture_node(cudaGraph_t sub_graph);
+
         cudaStream_t current_stream() const
         {
             return m_cg.m_current_single_stream;
@@ -340,6 +338,9 @@ namespace details
 
         void add_event_wait_node(cudaEvent_t event);
         void update_event_wait_node(cudaEvent_t event);
+
+        void add_capture_node(cudaGraph_t sub_graph);
+        void update_capture_node(cudaGraph_t sub_graph);
 
         template <typename F>
         void access_graph(F&& f)
