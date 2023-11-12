@@ -812,8 +812,14 @@ namespace muda
 {
 //print convert
 template <typename T>
-MUDA_INLINE MUDA_GENERIC const T& print_convert(const Dense<T>& idx) MUDA_NOEXCEPT
+MUDA_INLINE MUDA_GENERIC const T& print_convert(const Dense<T>& v) MUDA_NOEXCEPT
 {
-    return idx.operator const T&();
+    return v.operator const T&();
+}
+
+template <typename T>
+MUDA_INLINE MUDA_GENERIC const T& print_convert(const CDense<T>& v) MUDA_NOEXCEPT
+{
+    return v.operator const T&();
 }
 }  // namespace muda
