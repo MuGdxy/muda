@@ -73,7 +73,7 @@ logger.retrieve(std::cout);
 DeviceBuffer<int> buffer;
 
 // copy from std::vector
-std::vector<int> host{8};
+std::vector<int> host(8);
 buffer.copy_from(host);
 
 // copy to raw memory
