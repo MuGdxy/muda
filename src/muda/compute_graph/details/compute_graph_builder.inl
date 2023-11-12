@@ -1,6 +1,5 @@
 #pragma once
 #include <muda/compute_graph/compute_graph.h>
-#include "compute_graph_builder.h"
 
 namespace muda
 {
