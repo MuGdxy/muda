@@ -52,4 +52,11 @@ class MemcpyNode : public GraphNode
     using this_type = MemcpyNode;
     friend class Graph;
 };
+
+class MemsetNode : public GraphNode
+{
+  public:
+    using this_type = MemsetNode;
+    friend class Graph;
+};
 }  // namespace muda

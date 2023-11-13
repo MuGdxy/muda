@@ -1,6 +1,7 @@
 #include <muda/compute_graph/compute_graph_builder.h>
 #include <muda/compute_graph/compute_graph.h>
 #include <muda/compute_graph/compute_graph_node.h>
+#include <muda/compute_graph/compute_graph_accessor.h>
 
 namespace muda
 {

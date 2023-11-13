@@ -17,49 +17,42 @@ class GraphExec
   public:
     friend class Graph;
 
-    GraphExec()
-        : m_handle(nullptr)
-    {
-    }
+    GraphExec();
 
-    void launch(cudaStream_t stream = nullptr)
-    {
-        checkCudaErrors(cudaGraphLaunch(m_handle, stream));
-    }
+    // delete copy
+    GraphExec(const GraphExec&)            = delete;
+    GraphExec& operator=(const GraphExec&) = delete;
+
+    // move
+    GraphExec(GraphExec&& other);
+    GraphExec& operator=(GraphExec&& other);
+
+    void launch(cudaStream_t stream = nullptr);
 
     template <typename T>
-    void set_kernel_node_parms(S<KernelNode> node, const S<KernelNodeParms<T>>& new_parms)
-    {
-        checkCudaErrors(cudaGraphExecKernelNodeSetParams(
-            m_handle, node->m_handle, new_parms->handle()));
-    }
+    void set_kernel_node_parms(S<KernelNode> node, const S<KernelNodeParms<T>>& new_parms);
 
-    void set_memcpy_node_parms(S<MemcpyNode> node, void* dst, const void* src, size_t size_bytes, cudaMemcpyKind kind)
-    {
-        checkCudaErrors(cudaGraphExecMemcpyNodeSetParams1D(
-            m_handle, node->m_handle, dst, src, size_bytes, kind));
-    }
 
-    void set_event_record_node_parms(S<EventRecordNode> node, cudaEvent_t event)
-    {
-        checkCudaErrors(cudaGraphExecEventRecordNodeSetEvent(m_handle, node->m_handle, event));
-    }
+    void set_memcpy_node_parms(S<MemcpyNode>  node,
+                               void*          dst,
+                               const void*    src,
+                               size_t         size_bytes,
+                               cudaMemcpyKind kind);
+    void set_memcpy_node_parms(S<MemcpyNode> node, const cudaMemcpy3DParms& parms);
+    void set_memset_node_parms(S<MemsetNode> node, const cudaMemsetParams& parms);
 
-    void set_event_wait_node_parms(S<EventWaitNode> node, cudaEvent_t event)
-    {
-        checkCudaErrors(cudaGraphExecEventWaitNodeSetEvent(m_handle, node->m_handle, event));
-    }
 
-    ~GraphExec()
-    {
-        if(m_handle)
-            checkCudaErrors(cudaGraphExecDestroy(m_handle));
-    }
+    void set_event_record_node_parms(S<EventRecordNode> node, cudaEvent_t event);
+    void set_event_wait_node_parms(S<EventWaitNode> node, cudaEvent_t event);
+
+    ~GraphExec();
 
     cudaGraphExec_t handle() const { return m_handle; }
 
   private:
     // keep the ref count > 0 for those whose data should be kept alive for the graph life.
-    std::list<S<NodeParms>> cached;
+    std::list<S<NodeParms>> m_cached;
 };
 }  // namespace muda
+
+#include "details/graph_exec.inl"

@@ -35,4 +35,7 @@ namespace muda
 
 using ComputeGraphMemcpyNode =
     ComputeGraphNode<MemcpyNode, ComputeGraphNodeType::MemcpyNode>;
+
+using ComputeGraphMemsetNode =
+    ComputeGraphNode<MemsetNode, ComputeGraphNodeType::MemsetNode>;
 }  // namespace muda
