@@ -15,6 +15,7 @@
     return *this;
 
 #define MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(x)                                                        \
+    std::string_view name{__func__};                                                                      \
     ComputeGraphBuilder::invoke_phase_actions(                                                            \
         [&] { checkCudaErrors(x); },                                                                      \
         [&]                                                                                               \
@@ -23,7 +24,7 @@
                         "d_temp_storage must not be nullptr when building graph. you should not"          \
                         "query the temp_storage_size when building a compute graph, please do it outside" \
                         "a compute graph.");                                                              \
-            ComputeGraphBuilder::capture([&](cudaStream_t)                                                \
-                                         { checkCudaErrors(x); });                                        \
+            ComputeGraphBuilder::capture(                                                                 \
+                name, [&](cudaStream_t) { checkCudaErrors(x); });                                         \
         });                                                                                               \
     return *this;

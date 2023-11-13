@@ -18,6 +18,12 @@ MUDA_INLINE void ComputeGraphBuilder::capture(CaptureAction&& cap)
     instance().current_graph()->capture(std::move(cap));
 }
 
+MUDA_INLINE void ComputeGraphBuilder::capture(std::string_view name, CaptureAction&& cap)
+{
+    MUDA_ASSERT(instance().current_graph(), "Error current graph = nullptr!");
+    instance().current_graph()->capture(name, std::move(cap));
+}
+
 MUDA_INLINE bool ComputeGraphBuilder::is_phase_none()
 {
     return current_phase() == ComputeGraphPhase::None;

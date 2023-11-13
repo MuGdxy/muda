@@ -161,6 +161,7 @@ class ComputeGraph
     ***************************************************************/
 
     void capture(std::function<void(cudaStream_t)>&& f);
+    void capture(std::string_view name, std::function<void(cudaStream_t)>&& f);
 
     /**************************************************************
     * 

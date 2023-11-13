@@ -115,7 +115,7 @@ void compute_graph_simple()
     //f(20, 1M);
 }
 
-TEST_CASE("compute_graph_test_simple", "[compute_graph]")
+TEST_CASE("compute_graph_simple", "[compute_graph]")
 {
     compute_graph_simple();
 }
@@ -195,7 +195,7 @@ void compute_graph_graphviz()
 }
 
 
-TEST_CASE("compute_graph_test_graphviz", "[compute_graph]")
+TEST_CASE("compute_graph_graphviz", "[compute_graph]")
 {
     compute_graph_graphviz();
 }
@@ -270,7 +270,7 @@ void compute_graph_multi_graph()
     wait_device();
 }
 
-TEST_CASE("compute_graph_test_multi_graph", "[compute_graph]")
+TEST_CASE("compute_graph_multi_graph", "[compute_graph]")
 {
     compute_graph_multi_graph();
 }
@@ -338,7 +338,7 @@ void compute_graph_update()
     graph.launch().wait();
 }
 
-TEST_CASE("compute_graph_test_update", "[compute_graph]")
+TEST_CASE("compute_graph_update", "[compute_graph]")
 {
     compute_graph_update();
 }
@@ -413,7 +413,7 @@ void compute_graph_buffer_view()
     stream.wait();
 }
 
-TEST_CASE("compute_graph_test_buffer_view", "[compute_graph]")
+TEST_CASE("compute_graph_buffer_view", "[compute_graph]")
 {
     compute_graph_buffer_view();
 }
@@ -497,7 +497,7 @@ TEST_CASE("compute_graph_one_closure_multi_graph_nodes", "[compute_graph]")
     compute_graph_one_closure_multi_graph_nodes();
 }
 
-void compute_graph_catpure_test()
+void compute_graph_capture()
 {
     ComputeGraphVarManager manager;
     ComputeGraph           graph{manager};
@@ -516,6 +516,10 @@ void compute_graph_catpure_test()
         muda::DeviceScan().ExclusiveSum(
             data, size, count.ceval().data(), prefix.eval().data(), N.eval());
     };
+
+    ComputeGraphGraphvizOptions options;
+    options.show_all_graph_nodes_in_a_closure = true;
+    graph.graphviz(std::cout, options);
 
     // prepare resources
     auto N_value      = 10;
@@ -546,7 +550,7 @@ void compute_graph_catpure_test()
     REQUIRE(h_prefix == ground_truth);
 }
 
-TEST_CASE("compute_graph_catpure_test", "[compute_graph]")
+TEST_CASE("compute_graph_capture", "[compute_graph]")
 {
-    compute_graph_catpure_test();
+    compute_graph_capture();
 }

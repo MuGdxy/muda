@@ -19,6 +19,7 @@ class ComputeGraphBuilder
   public:
     static Phase current_phase();
     static void  capture(CaptureAction&& cap);
+    static void  capture(std::string_view name, CaptureAction&& cap);
     static bool  is_phase_none();
     static bool  is_phase_serial_launching();
     static bool  is_topo_building();

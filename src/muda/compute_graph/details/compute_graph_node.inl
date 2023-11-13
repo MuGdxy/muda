@@ -6,7 +6,6 @@ template <typename NodeT, ComputeGraphNodeType Type>
 MUDA_INLINE ComputeGraphNode<NodeT, Type>::ComputeGraphNode(NodeId node_id, uint64_t access_graph_index)
     : ComputeGraphNodeBase(enum_name(Type), node_id, access_graph_index, Type)
 {
-#if MUDA_CHECK_ON
     if constexpr(Type == ComputeGraphNodeType::KernelNode)
     {
         auto n = std::string_view{
@@ -16,7 +15,6 @@ MUDA_INLINE ComputeGraphNode<NodeT, Type>::ComputeGraphNode(NodeId node_id, uint
         else
             m_name += std::string(":") + std::string(n.data());
     }
-#endif
 }
 
 template <typename NodeT, ComputeGraphNodeType Type>

@@ -228,30 +228,49 @@ MUDA_INLINE Stream& ComputeGraph::shared_capture_stream()
 
 MUDA_INLINE void ComputeGraph::capture(std::function<void(cudaStream_t)>&& f)
 {
+    capture("", std::move(f));
+}
+
+MUDA_INLINE void ComputeGraph::capture(std::string_view                    name,
+                                       std::function<void(cudaStream_t)>&& f)
+{
     m_is_in_capture_func = true;
+
+    auto do_capture = [&]
+    {
+        auto& s = shared_capture_stream();
+        // begin capture and pass the stream to f
+        m_is_capturing = true;
+        s.begin_capture();
+        f(s);
+        cudaGraph_t g;
+        s.end_capture(&g);
+        details::ComputeGraphAccessor(this).set_capture_node(g);
+        m_is_capturing = false;
+    };
+
     switch(current_graph_phase())
     {
         case ComputeGraphPhase::TopoBuilding:
             // if this is called in topo building phase, we do nothing
             // but just create an empty capture node
+            details::LaunchInfoCache::current_capture_name(name);
             details::ComputeGraphAccessor(this).set_capture_node(nullptr);
+            details::LaunchInfoCache::current_capture_name("");
             break;
         case ComputeGraphPhase::SerialLaunching: {
             // simply call it
             f(m_current_single_stream);
         }
         break;
-        case ComputeGraphPhase::Updating:
+        case ComputeGraphPhase::Updating: {
+            do_capture();
+        }
+        break;
         case ComputeGraphPhase::Building: {
-            auto& s = shared_capture_stream();
-            // begin capture and pass the stream to f
-            m_is_capturing = true;
-            s.begin_capture();
-            f(s);
-            cudaGraph_t g;
-            s.end_capture(&g);
-            details::ComputeGraphAccessor(this).set_capture_node(g);
-            m_is_capturing = false;
+            details::LaunchInfoCache::current_capture_name(name);
+            do_capture();
+            details::LaunchInfoCache::current_capture_name("");
         }
         break;
         default:
