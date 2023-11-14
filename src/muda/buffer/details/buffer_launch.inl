@@ -120,7 +120,7 @@ MUDA_HOST BufferLaunch& BufferLaunch::shrink_to_fit(DeviceBuffer<T>& buffer)
 
 
 template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::copy(BufferView<T> dst, const BufferView<T>& src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(BufferView<T> dst, const BufferViewBase<T>& src)
 {
     MUDA_ASSERT(dst.size() == src.size(), "BufferView should have the same size");
     if constexpr(std::is_trivially_copyable_v<T>)
@@ -139,7 +139,7 @@ MUDA_HOST BufferLaunch& BufferLaunch::copy(ComputeGraphVar<BufferView<T>>& dst,
 }
 
 template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, const BufferView<T>& src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, const BufferViewBase<T>& src)
 {
     Memory(m_stream).download(dst, src.data(), src.size() * sizeof(T));
     return *this;
@@ -167,7 +167,7 @@ MUDA_HOST BufferLaunch& BufferLaunch::copy(ComputeGraphVar<BufferView<T>>& dst,
 }
 
 template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::copy(VarView<T> dst, const VarView<T>& src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(VarView<T> dst, const VarViewBase<T>& src)
 {
     if constexpr(std::is_trivially_copyable_v<T>)
         Memory(m_stream).transfer(dst.data(), src.data(), sizeof(T));
@@ -184,7 +184,7 @@ MUDA_HOST BufferLaunch& BufferLaunch::copy(ComputeGraphVar<VarView<T>>& dst,
 }
 
 template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, const VarView<T>& src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, const VarViewBase<T>& src)
 {
     Memory(m_stream).download(dst, src.data(), sizeof(T));
     return *this;

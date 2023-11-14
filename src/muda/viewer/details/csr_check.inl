@@ -8,7 +8,7 @@ namespace details
     {
         if(row < 0 || row >= m_rows || col < 0 || col >= m_cols)
         {
-            MUDA_KERNEL_ERROR("csr[%s:%s]: row/col index out of range: index=(%d,%d) dim_=(%d,%d)\n",
+            MUDA_KERNEL_ERROR("csr[%s:%s]: row/col index out of range: index=(%d,%d) dim_=(%d,%d)",
                               m_name,
                               m_kernel_name,
                               row,
@@ -25,7 +25,7 @@ namespace details
     {
         if(row < 0 || row >= m_rows)
         {
-            MUDA_KERNEL_ERROR("csr[%s:%s]: row index out of range: index=(%d) rows=(%d)\n",
+            MUDA_KERNEL_ERROR("csr[%s:%s]: row index out of range: index=(%d) rows=(%d)",
                               m_name,
                               m_kernel_name,
                               row,
@@ -44,8 +44,8 @@ namespace details
            || offset >= m_rowPtr[row + 1] - m_rowPtr[row])
         {
             MUDA_KERNEL_ERROR(
-                "csr[%s:%s]: 'rowPtr[row] + offset > rowPtr[row+1]' out of range:\n"
-                "row=%d, offset=%d, rowPtr[row]=%d, rowPtr[row+1]=%d\n",
+                "csr[%s:%s]: 'rowPtr[row] + offset > rowPtr[row+1]' out of range:"
+                "row=%d, offset=%d, rowPtr[row]=%d, rowPtr[row+1]=%d",
                 m_name,
                 m_kernel_name,
                 row,
@@ -62,7 +62,7 @@ namespace details
     {
         if(globalOffset < 0 || globalOffset >= m_nnz)
         {
-            MUDA_KERNEL_ERROR("csr[%s]: globalOffset out of range: globalOffset=%d, nnz=%d\n",
+            MUDA_KERNEL_ERROR("csr[%s]: globalOffset out of range: globalOffset=%d, nnz=%d",
                               m_name,
                               m_kernel_name,
                               globalOffset,

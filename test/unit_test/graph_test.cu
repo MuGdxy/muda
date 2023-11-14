@@ -28,7 +28,7 @@ void mem_realloc(int first, int last, int& outfirst, int& outlast)
     auto var = DeviceVar<int>(0);
 
     // create kernel
-    kernelA a(make_viewer(s), var.viewer());
+    kernelA a(s.viewer(), var.viewer());
 
     // create graph
     auto graph = Graph::create();
@@ -47,7 +47,7 @@ void mem_realloc(int first, int last, int& outfirst, int& outlast)
     // realloc some device memory
     s.resize(last);
     // reset node parameters
-    a.s = make_viewer(s);
+    a.s = s.viewer();
     pA  = ParallelFor(1).as_node_parms(1, a);
     instance->set_kernel_node_parms(kA, pA);
     // luanch again

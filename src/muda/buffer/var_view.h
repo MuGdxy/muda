@@ -6,35 +6,74 @@
 namespace muda
 {
 template <typename T>
-class VarView
+class VarViewBase
 {
+  protected:
     T* m_data = nullptr;
 
   public:
-    VarView() MUDA_NOEXCEPT : m_data(nullptr) {}
-    VarView(T* data) MUDA_NOEXCEPT : m_data(data) {}
-    T*       data() MUDA_NOEXCEPT { return m_data; }
+    VarViewBase() MUDA_NOEXCEPT : m_data(nullptr) {}
+    VarViewBase(T* data) MUDA_NOEXCEPT : m_data(data) {}
+
     const T* data() const MUDA_NOEXCEPT { return m_data; }
 
-    void copy_from(const T* data);
     void copy_to(T* data) const;
-    void copy_from(const VarView<T>& data);
-    void fill(const T& value);
 
-    Dense<T>  viewer() MUDA_NOEXCEPT;
     CDense<T> cviewer() const MUDA_NOEXCEPT;
 };
+
+template <typename T>
+class CVarView : public VarViewBase<T>
+{
+  public:
+    using VarViewBase::VarViewBase;
+
+    CVarView(const VarViewBase<T>& base) MUDA_NOEXCEPT : VarViewBase<T>(base) {}
+
+    CVarView(const T* data) MUDA_NOEXCEPT : VarViewBase<T>(const_cast<T*>(data))
+    {
+    }
+};
+
+template <typename T>
+class VarView : public VarViewBase<T>
+{
+  public:
+    using VarViewBase::data;
+    using VarViewBase::VarViewBase;
+
+    VarView(const VarViewBase<T>& base) MUDA_NOEXCEPT : VarViewBase<T>(base) {}
+
+    operator CVarView<T>() const MUDA_NOEXCEPT { return CVarView<T>{*this}; }
+
+    T* data() MUDA_NOEXCEPT { return this->m_data; }
+
+    void copy_from(const T* data);
+    void copy_from(const VarViewBase<T>& data);
+    void fill(const T& value);
+
+    Dense<T> viewer() MUDA_NOEXCEPT;
+};
+
+// viewer traits
 template <typename T>
 struct read_only_viewer<VarView<T>>
 {
-    using type = const VarView<T>;
+    using type = CVarView<T>;
 };
 
 template <typename T>
-struct read_write_viewer<const VarView<T>>
+struct read_write_viewer<CVarView<T>>
 {
     using type = VarView<T>;
 };
+
+// CTAD
+template <typename T>
+CVarView(T*) -> CVarView<T>;
+
+template <typename T>
+VarView(T*) -> VarView<T>;
 }  // namespace muda
 
 

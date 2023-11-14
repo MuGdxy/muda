@@ -131,7 +131,7 @@ class SPHSolver
                     VIEW_WIDTH    = CONST_DATA.VIEW_WIDTH,
                     VIEW_HEIGHT   = CONST_DATA.VIEW_HEIGHT,
                     DT            = CONST_DATA.DT,
-                    particles = make_viewer(particles)] __device__(int i) mutable
+                    particles = particles.viewer()] __device__(int i) mutable
                    {
                        auto& p = particles(i);
                        // forward Euler integration
@@ -173,7 +173,7 @@ class SPHSolver
                     VISC       = CONST_DATA.VISC,
                     VISC_LAP   = CONST_DATA.VISC_LAP,
                     G          = CONST_DATA.G,
-                    particles = make_viewer(particles)] __device__(int i) mutable
+                    particles  = particles.viewer()] __device__(int i) mutable
                    {
                        auto&   pi = particles(i);
                        Vector2 fpress(0.f, 0.f);
@@ -214,7 +214,7 @@ class SPHSolver
                     POLY6     = CONST_DATA.POLY6,
                     GAS_CONST = CONST_DATA.GAS_CONST,
                     REST_DENS = CONST_DATA.REST_DENS,
-                    particles = make_viewer(particles)] __device__(int i) mutable
+                    particles = particles.viewer()] __device__(int i) mutable
                    {
                        auto& pi = particles(i);
                        pi.rho   = 0.f;

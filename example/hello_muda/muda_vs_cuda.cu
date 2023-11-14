@@ -24,7 +24,7 @@ void muda_vs_cuda()
         Stream             s;
         ParallelFor(1, 64, 0, s)
             .apply(64,
-                   [dv = make_viewer(dv)] __device__(int i) mutable
+                   [dv = dv.viewer()] __device__(int i) mutable
                    { dv(i) *= 2; })
             .wait();
     }

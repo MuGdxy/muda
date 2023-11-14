@@ -15,6 +15,12 @@
                                                                                             \
       public:                                                                               \
         using FieldEntryViewerBase::FieldEntryViewerBase;                                   \
+        CFieldEntryViewer(const std::byte*          buffer,                                 \
+                          const FieldEntryBaseData& info,                                   \
+                          details::StringPointer    name_ptr)                               \
+            : FieldEntryViewerBase(const_cast<std::byte*>(buffer), info, name_ptr)          \
+        {                                                                                   \
+        }                                                                                   \
                                                                                             \
         CFieldEntryViewer(const FieldEntryViewerBase& base)                                 \
             : FieldEntryViewerBase{base}                                                    \

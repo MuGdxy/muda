@@ -18,9 +18,9 @@ void dense_viewer(HostVector<int>& ground_truth, HostVector<int>& res)
 
     ParallelFor(32 /*blockDim*/)
         .apply(32 /*count*/,
-               [scalar = make_viewer(scalar),  // the same as scalar = make_dense(scalar)
-                vector = make_viewer(vector),  // the same as vector = make_dense(vector)
-                buffer = make_viewer(result)]  // the same as buffer = make_dense(buffer)
+               [scalar = scalar.viewer(),  // the same as scalar = make_dense(scalar)
+                vector = vector.viewer(),  // the same as vector = make_dense(vector)
+                buffer = result.viewer()]  // the same as buffer = make_dense(buffer)
                __device__(int i) mutable { buffer(i) = scalar * vector(i); })
         .wait();
     res = result;

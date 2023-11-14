@@ -11,8 +11,8 @@ class ComputeGraphVar<VarView<T>> : public ComputeGraphVarBase
     static_assert(!std::is_const_v<T>, "T must not be const");
 
     using VarType = VarView<T>;
-    using ROView  = read_only_viewer_t<VarType>;
-    using RWView  = VarType;
+    using ROView  = CVarView<T>;
+    using RWView  = VarView<T>;
 
   protected:
     friend class ComputeGraph;
@@ -28,7 +28,7 @@ class ComputeGraphVar<VarView<T>> : public ComputeGraphVarBase
     ComputeGraphVar(ComputeGraphVarManager* var_manager,
                     std::string_view        name,
                     VarId                   var_id,
-                    const T&                init_value) MUDA_NOEXCEPT
+                    const RWView&           init_value) MUDA_NOEXCEPT
         : ComputeGraphVarBase(var_manager, name, var_id, true),
           m_value(init_value)
     {

@@ -28,7 +28,7 @@ void grid_stride_vs_dynamic_grid()
     //grid-stride loop
     ParallelFor(8, 8)
         .apply(values.size(),
-               [values = make_viewer(values)] __device__(int i) mutable
+               [values = values.viewer()] __device__(int i) mutable
                {
                    values(i) = i;
                    int gid   = cg::this_grid().thread_rank();
@@ -43,7 +43,7 @@ void grid_stride_vs_dynamic_grid()
     //dynamic-grid loop
     ParallelFor(8)
         .apply(values.size(),
-               [values = make_viewer(values)] __device__(int i) mutable
+               [values = values.viewer()] __device__(int i) mutable
                {
                    values(i) = i;
                    int gid   = cg::this_grid().thread_rank();
@@ -57,7 +57,7 @@ void grid_stride_vs_dynamic_grid()
 
     ParallelFor(2)
         .apply(values.size(),
-               [values = make_viewer(values)] __device__(int i) mutable
+               [values = values.viewer()] __device__(int i) mutable
                {
                    values(i) = i;
                    int gid   = cg::this_grid().thread_rank();

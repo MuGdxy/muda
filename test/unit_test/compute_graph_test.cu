@@ -135,11 +135,11 @@ void compute_graph_graphviz()
     ComputeGraphVarManager manager;
     ComputeGraph           graph{manager};
 
-    auto& var_x_0 = manager.create_var("x_0", make_viewer(x_0));
+    auto& var_x_0 = manager.create_var("x_0", x_0.view());
     auto& var_h_x = manager.create_var("h_x", h_x.data());
-    auto& var_x   = manager.create_var("x", make_viewer(x));
-    auto& var_v   = manager.create_var("v", make_viewer(v));
-    auto& var_toi = manager.create_var("toi", make_viewer(toi));
+    auto& var_x   = manager.create_var("x", x.view());
+    auto& var_v   = manager.create_var("v", v.view());
+    auto& var_toi = manager.create_var("toi", toi.view());
     auto& var_dt  = manager.create_var("dt", 0.1);
     auto& var_N   = manager.create_var("N", N);
 
@@ -148,7 +148,7 @@ void compute_graph_graphviz()
     {
         ParallelFor(256)  //
             .apply(var_N,
-                   [v = var_v.eval(), dt = var_dt.eval()] __device__(int i) mutable
+                   [v = var_v.viewer(), dt = var_dt.eval()] __device__(int i) mutable
                    {
                        // simple set
                        v(i) = Vector3::Ones() * dt * dt;
@@ -159,9 +159,9 @@ void compute_graph_graphviz()
     {
         ParallelFor(256)  //
             .apply(var_N,
-                   [x   = var_x.ceval(),
-                    v   = var_v.ceval(),
-                    dt  = var_dt.eval(),
+                   [x   = var_x.cviewer(),
+                    v   = var_v.cviewer(),
+                    dt  = var_dt.ceval(),
                     toi = var_toi.ceval()] __device__(int i) mutable
                    {
                        // collision detection
@@ -171,10 +171,10 @@ void compute_graph_graphviz()
     graph.create_node("cal_x") << [&]
     {
         ParallelFor(256).apply(var_N,
-                               [x   = var_x.eval(),
-                                v   = var_v.ceval(),
-                                dt  = var_dt.eval(),
-                                toi = var_toi.ceval()] __device__(int i) mutable
+                               [x  = var_x.viewer(),
+                                v  = var_v.cviewer(),
+                                dt = var_dt.eval(),
+                                toi = var_toi.cviewer()] __device__(int i) mutable
                                {
                                    // integrate
                                    x(i) += v(i) * toi * dt;
@@ -358,9 +358,10 @@ void compute_graph_buffer_view()
 
     graph.create_node("cal_x_0") << [&]
     {
-        ParallelFor(256).apply(N.eval(),
-                               [x_0 = x_0.eval().viewer()] __device__(int i) mutable
-                               { x_0(i) = Vector3::Ones(); });
+        ParallelFor(256).kernel_name("cal_x_0").apply(
+            N.eval(),
+            [x_0 = x_0.eval().viewer()] __device__(int i) mutable
+            { x_0(i) = Vector3::Ones(); });
     };
 
     graph.create_node("copy_to_h_x_0")
@@ -374,21 +375,21 @@ void compute_graph_buffer_view()
 
     graph.create_node("print_x_y") << [&]
     {
-        ParallelFor(256).apply(N.eval(),
-                               [x = x.ceval().cviewer(),
-                                y = y.ceval().cviewer(),
-                                N = N.eval()] __device__(int i) mutable
-                               {
-                                   if(N <= 10)
-                                       print("[%d] x = (%f,%f,%f) y = (%f,%f,%f) \n",
-                                             i,
-                                             x(i).x(),
-                                             x(i).y(),
-                                             x(i).z(),
-                                             y(i).x(),
-                                             y(i).y(),
-                                             y(i).z());
-                               });
+        ParallelFor(256)
+            .kernel_name("print_x_y")  //
+            .apply(N.eval(),
+                   [x = x.ceval().cviewer(), y = y.ceval().cviewer(), N = N.eval()] __device__(int i) mutable
+                   {
+                       if(N <= 10)
+                           print("[%d] x = (%f,%f,%f) y = (%f,%f,%f) \n",
+                                 i,
+                                 x(i).x(),
+                                 x(i).y(),
+                                 x(i).z(),
+                                 y(i).x(),
+                                 y(i).y(),
+                                 y(i).z());
+                   });
     };
 
     graph.graphviz(std::cout);

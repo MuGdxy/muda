@@ -17,7 +17,7 @@ void launch_test()
     Launch(cube(4))  // block dim = (4,4,4)
         .apply(
             cube(8),  // total count = (8,8,8)
-            [res = make_dense3D(res, 8, 8, 8)] $(const int3 xyz)
+            [res = make_dense3D(res.data(), 8, 8, 8)] $(const int3 xyz)
             { res(xyz) = 1; },
             Tag<MyTag>{})
         .wait();
@@ -34,7 +34,7 @@ void launch_test()
 
     Launch(dim3{2, 2, 2}, dim3{2, 2, 2})
         .apply(
-            [res = make_dense3D(res, make_int3(4, 4, 4))] $()
+            [res = make_dense3D(res.data(), make_int3(4, 4, 4))] $()
             {
                 auto x       = threadIdx.x + blockIdx.x * blockDim.x;
                 auto y       = threadIdx.y + blockIdx.y * blockDim.y;

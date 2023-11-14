@@ -23,15 +23,6 @@ class FieldEntryViewerBase : protected ViewerBase
     {
     }
 
-    MUDA_GENERIC FieldEntryViewerBase(const std::byte*          buffer,
-                                      const FieldEntryBaseData& info,
-                                      details::StringPointer    name_ptr)
-        : m_buffer(const_cast<std::byte*>(buffer))
-        , m_info(info)
-        , m_name_ptr(name_ptr)
-    {
-    }
-
     MUDA_GENERIC FieldEntryViewerBase(const FieldEntryViewerBase& rhs) = default;
   protected:
     mutable std::byte*     m_buffer = nullptr;
