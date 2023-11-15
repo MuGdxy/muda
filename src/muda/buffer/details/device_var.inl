@@ -76,28 +76,4 @@ CDense<T> DeviceVar<T>::cviewer() const MUDA_NOEXCEPT
 {
     return CDense<T>(m_data);
 }
-
-template <typename T>
-Dense<T> make_dense(DeviceVar<T>& v) MUDA_NOEXCEPT
-{
-    return v.viewer();
-}
-
-template <typename T>
-CDense<T> make_cdense(const DeviceVar<T>& v) MUDA_NOEXCEPT
-{
-    return v.cviewer();
-}
-
-template <typename T>
-Dense<T> make_viewer(DeviceVar<T>& v) MUDA_NOEXCEPT
-{
-    return make_dense(v);
-}
-
-template <typename T>
-CDense<T> make_cviewer(const DeviceVar<T>& v) MUDA_NOEXCEPT
-{
-    return make_cdense(v);
-}
 }  // namespace muda

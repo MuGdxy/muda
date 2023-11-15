@@ -26,6 +26,7 @@ class ComputeGraphBuilder
     static bool  is_building();
     // return true when no graph is building or the graph is in serial launching mode
     static bool is_direct_launching();
+    static bool is_caturing();
 
 
     // do_when_direct_launch

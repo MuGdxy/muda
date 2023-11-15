@@ -1,5 +1,6 @@
 #pragma once
 #include <muda/compute_graph/compute_graph.h>
+#include "compute_graph_builder.h"
 
 namespace muda
 {
@@ -47,6 +48,11 @@ MUDA_INLINE bool ComputeGraphBuilder::is_building()
 MUDA_INLINE bool ComputeGraphBuilder::is_direct_launching()
 {
     return is_phase_serial_launching() || is_phase_none();
+}
+
+MUDA_INLINE bool ComputeGraphBuilder::is_caturing()
+{
+    return is_building() && instance().m_current_graph->m_is_capturing;
 }
 
 MUDA_INLINE void ComputeGraphBuilder::invoke_phase_actions(PhaseAction&& do_when_direct_launching,

@@ -39,7 +39,7 @@ class DeviceSpmv : public CubWrapper<DeviceSpmv>
                                                      num_rows,
                                                      num_cols,
                                                      num_nonzeros,
-                                                     this->stream(),
+                                                     _stream,
                                                      false));
     }
 
@@ -66,7 +66,7 @@ class DeviceSpmv : public CubWrapper<DeviceSpmv>
                                                      num_rows,
                                                      num_cols,
                                                      num_nonzeros,
-                                                     this->stream(),
+                                                     _stream,
                                                      false));
     }
 
@@ -84,19 +84,18 @@ class DeviceSpmv : public CubWrapper<DeviceSpmv>
                       int           num_cols,
                       int           num_nonzeros)
     {
-        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(
-            cub::DeviceSpmv::CsrMV(d_temp_storage,
-                                   temp_storage_bytes,
-                                   d_values,
-                                   d_row_offsets,
-                                   d_column_indices,
-                                   d_vector_x,
-                                   d_vector_y,
-                                   num_rows,
-                                   num_cols,
-                                   num_nonzeros,
-                                   this->stream(),
-                                   false));
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DeviceSpmv::CsrMV(d_temp_storage,
+                                                                       temp_storage_bytes,
+                                                                       d_values,
+                                                                       d_row_offsets,
+                                                                       d_column_indices,
+                                                                       d_vector_x,
+                                                                       d_vector_y,
+                                                                       num_rows,
+                                                                       num_cols,
+                                                                       num_nonzeros,
+                                                                       _stream,
+                                                                       false));
     }
 };
 }  // namespace muda

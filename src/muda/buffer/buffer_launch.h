@@ -3,16 +3,24 @@
 #include <muda/muda_config.h>
 #include <muda/buffer/var_view.h>
 #include <muda/buffer/buffer_view.h>
+#include <muda/buffer/buffer_2d_view.h>
+#include <muda/buffer/buffer_3d_view.h>
 #include <muda/buffer/graph_buffer_view.h>
 #include <muda/buffer/graph_var_view.h>
 
 namespace muda
 {
 template <typename T>
+class DeviceVar;
+
+template <typename T>
 class DeviceBuffer;
 
 template <typename T>
-class DeviceVar;
+class DeviceBuffer2D;
+
+template <typename T>
+class DeviceBuffer3D;
 
 class BufferLaunch : public LaunchBase<BufferLaunch>
 {
@@ -37,78 +45,184 @@ class BufferLaunch : public LaunchBase<BufferLaunch>
     {
     }
 
+    /**********************************************************************************************
+    * 
+    * Buffer API
+    * 0D DeviceVar
+    * 1D DeviceBuffer
+    * 2D DeviceBuffer2D
+    * 3D DeviceBuffer3D
+    * 
+    ***********************************************************************************************/
     template <typename T>
     MUDA_HOST BufferLaunch& resize(DeviceBuffer<T>& buffer, size_t size);
     template <typename T>
+    MUDA_HOST BufferLaunch& resize(DeviceBuffer2D<T>& buffer, Extent2D extent);
+    template <typename T>
+    MUDA_HOST BufferLaunch& resize(DeviceBuffer3D<T>& buffer, Extent3D extent);
+
+
+    template <typename T>
     MUDA_HOST BufferLaunch& resize(DeviceBuffer<T>& buffer, size_t size, const T& val);
+    template <typename T>
+    MUDA_HOST BufferLaunch& resize(DeviceBuffer2D<T>& buffer, Extent2D extent, const T& val);
+    template <typename T>
+    MUDA_HOST BufferLaunch& resize(DeviceBuffer3D<T>& buffer, Extent3D extent, const T& val);
+
+
     template <typename T>
     MUDA_HOST BufferLaunch& clear(DeviceBuffer<T>& buffer);
     template <typename T>
+    MUDA_HOST BufferLaunch& clear(DeviceBuffer2D<T>& buffer);
+    template <typename T>
+    MUDA_HOST BufferLaunch& clear(DeviceBuffer3D<T>& buffer);
+
+
+    template <typename T>
     MUDA_HOST BufferLaunch& alloc(DeviceBuffer<T>& buffer, size_t n);
+    template <typename T>
+    MUDA_HOST BufferLaunch& alloc(DeviceBuffer2D<T>& buffer, Extent2D extent);
+    template <typename T>
+    MUDA_HOST BufferLaunch& alloc(DeviceBuffer3D<T>& buffer, Extent3D extent);
+
+
     template <typename T>
     MUDA_HOST BufferLaunch& free(DeviceBuffer<T>& buffer);
     template <typename T>
+    MUDA_HOST BufferLaunch& free(DeviceBuffer2D<T>& buffer);
+    template <typename T>
+    MUDA_HOST BufferLaunch& free(DeviceBuffer3D<T>& buffer);
+
+
+    template <typename T>
     MUDA_HOST BufferLaunch& shrink_to_fit(DeviceBuffer<T>& buffer);
+    template <typename T>
+    MUDA_HOST BufferLaunch& shrink_to_fit(DeviceBuffer2D<T>& buffer);
+    template <typename T>
+    MUDA_HOST BufferLaunch& shrink_to_fit(DeviceBuffer3D<T>& buffer);
 
-    // device to device
-    template <typename T>
-    MUDA_HOST BufferLaunch& copy(BufferView<T> dst, const BufferViewBase<T>& src);
-    template <typename T>
-    MUDA_HOST BufferLaunch& copy(ComputeGraphVar<BufferView<T>>&       dst,
-                                 const ComputeGraphVar<BufferView<T>>& src);
 
-    // device to host
-    template <typename T>
-    MUDA_HOST BufferLaunch& copy(T* dst, const BufferViewBase<T>& src);
-    template <typename T>
-    MUDA_HOST BufferLaunch& copy(ComputeGraphVar<T*>&                  dst,
-                                 const ComputeGraphVar<BufferView<T>>& src);
-
-    // host to device
-    template <typename T>
-    MUDA_HOST BufferLaunch& copy(BufferView<T> dst, const T* src);
-    template <typename T>
-    MUDA_HOST BufferLaunch& copy(ComputeGraphVar<BufferView<T>>& dst,
-                                 const ComputeGraphVar<T*>&      src);
-
-    // device to device
+    /**********************************************************************************************
+    * 
+    * BufferView Copy: Device <- Device
+    * 
+    **********************************************************************************************/
     template <typename T>
     MUDA_HOST BufferLaunch& copy(VarView<T> dst, const VarViewBase<T>& src);
     template <typename T>
+    MUDA_HOST BufferLaunch& copy(BufferView<T> dst, CBufferView<T> src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(Buffer2DView<T> dst, CBuffer2DView<T> src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(Buffer3DView<T> dst, CBuffer3DView<T> src);
+
+    template <typename T>
     MUDA_HOST BufferLaunch& copy(ComputeGraphVar<VarView<T>>&       dst,
                                  const ComputeGraphVar<VarView<T>>& src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(ComputeGraphVar<BufferView<T>>&       dst,
+                                 const ComputeGraphVar<BufferView<T>>& src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(ComputeGraphVar<Buffer2DView<T>>&       dst,
+                                 const ComputeGraphVar<Buffer2DView<T>>& src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(ComputeGraphVar<Buffer3DView<T>>&       dst,
+                                 const ComputeGraphVar<Buffer3DView<T>>& src);
 
-    // device to host
+    /**********************************************************************************************
+    * 
+    * BufferView Copy: Host <- Device
+    * 
+    **********************************************************************************************/
     template <typename T>
     MUDA_HOST BufferLaunch& copy(T* dst, const VarViewBase<T>& src);
     template <typename T>
+    MUDA_HOST BufferLaunch& copy(T* dst, CBufferView<T>& src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(T* dst, CBuffer2DView<T>& src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(T* dst, CBuffer3DView<T>& src);
+
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(ComputeGraphVar<T*>&                  dst,
+                                 const ComputeGraphVar<BufferView<T>>& src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(ComputeGraphVar<T*>&                    dst,
+                                 const ComputeGraphVar<Buffer2DView<T>>& src);
+    template <typename T>
     MUDA_HOST BufferLaunch& copy(ComputeGraphVar<T*>&               dst,
                                  const ComputeGraphVar<VarView<T>>& src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(ComputeGraphVar<T*>&                    dst,
+                                 const ComputeGraphVar<Buffer3DView<T>>& src);
 
-    // host to device
+    /**********************************************************************************************
+    * 
+    * BufferView Copy: Device <- Host
+    * 
+    **********************************************************************************************/
     template <typename T>
     MUDA_HOST BufferLaunch& copy(VarView<T> dst, const T* src);
     template <typename T>
+    MUDA_HOST BufferLaunch& copy(BufferView<T> dst, const T* src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(Buffer2DView<T> dst, const T* src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(Buffer3DView<T> dst, const T* src);
+
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(ComputeGraphVar<BufferView<T>>& dst,
+                                 const ComputeGraphVar<T*>&      src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(ComputeGraphVar<Buffer2DView<T>>& dst,
+                                 const ComputeGraphVar<T*>&        src);
+    template <typename T>
     MUDA_HOST BufferLaunch& copy(ComputeGraphVar<VarView<T>>& dst,
                                  const ComputeGraphVar<T*>&   src);
-
-    // host to device (scattered)
     template <typename T>
-    MUDA_HOST BufferLaunch& fill(BufferView<T> buffer, const T& val);
-    template <typename T>
-    MUDA_HOST BufferLaunch& fill(ComputeGraphVar<BufferView<T>>& buffer,
-                                 const ComputeGraphVar<T>&       val);
+    MUDA_HOST BufferLaunch& copy(ComputeGraphVar<Buffer3DView<T>>& dst,
+                                 const ComputeGraphVar<T*>&        src);
 
-    // host to device (scattered)
+    /**********************************************************************************************
+    * 
+    * BufferView Scatter: Device <- Host
+    * 
+    **********************************************************************************************/
     template <typename T>
     MUDA_HOST BufferLaunch& fill(VarView<T> buffer, const T& val);
     template <typename T>
+    MUDA_HOST BufferLaunch& fill(BufferView<T> buffer, const T& val);
+    template <typename T>
+    MUDA_HOST BufferLaunch& fill(Buffer2DView<T> buffer, const T& val);
+    template <typename T>
+    MUDA_HOST BufferLaunch& fill(Buffer3DView<T> buffer, const T& val);
+
+    template <typename T>
     MUDA_HOST BufferLaunch& fill(ComputeGraphVar<VarView<T>>& buffer,
                                  const ComputeGraphVar<T>&    val);
+    template <typename T>
+    MUDA_HOST BufferLaunch& fill(ComputeGraphVar<BufferView<T>>& buffer,
+                                 const ComputeGraphVar<T>&       val);
+    template <typename T>
+    MUDA_HOST BufferLaunch& fill(ComputeGraphVar<Buffer2DView<T>>& buffer,
+                                 const ComputeGraphVar<T>&         val);
+    template <typename T>
+    MUDA_HOST BufferLaunch& fill(ComputeGraphVar<Buffer3DView<T>>& buffer,
+                                 const ComputeGraphVar<T>&         val);
 
   private:
     template <typename T, typename FConstruct>
-    MUDA_HOST BufferLaunch& resize(DeviceBuffer<T>& buffer, size_t size, FConstruct&& fct);
+    MUDA_HOST BufferLaunch& resize(DeviceBuffer<T>& buffer, size_t new_size, FConstruct&& fct);
+
+    template <typename T, typename FConstruct>
+    MUDA_HOST BufferLaunch& resize(DeviceBuffer2D<T>& buffer, Extent2D new_extent, FConstruct&& fct);
+
+    MUDA_HOST BufferLaunch& resize(DeviceBuffer3D<float>& buffer,
+                                   Extent3D               new_extent,
+                                   std::function<void(Buffer3DView<float>)>&& fct);
+
+    template <typename T, typename FConstruct>
+    MUDA_HOST BufferLaunch& resize(DeviceBuffer3D<T>& buffer, Extent3D new_extent, FConstruct&& fct);
 };
 }  // namespace muda
 

@@ -48,6 +48,7 @@ namespace details
         const ComputeGraphNodeBase* current_node() const;
         ComputeGraphNodeBase*       current_node();
         cudaStream_t                current_stream() const;
+        cudaStream_t                capture_stream() const;
 
         bool is_topo_built() const { return m_cg.m_is_topo_built; }
 

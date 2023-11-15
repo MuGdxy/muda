@@ -116,6 +116,12 @@ namespace details
         return m_cg.m_current_single_stream;
     }
 
+    MUDA_INLINE cudaStream_t ComputeGraphAccessor::capture_stream() const
+    {
+        MUDA_ASSERT(m_cg.m_is_capturing, "Not Capture Phase!");
+        return m_cg.shared_capture_stream();
+    }
+
     template <typename T>
     T* ComputeGraphAccessor::current_node()
     {
