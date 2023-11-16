@@ -46,59 +46,66 @@ class BufferViewBase
     MUDA_GENERIC const T* origin_data() const MUDA_NOEXCEPT { return m_data; }
     MUDA_GENERIC size_t   offset() const MUDA_NOEXCEPT { return m_offset; }
 
-    MUDA_HOST void copy_to(T* host) const;
-
     MUDA_GENERIC BufferViewBase subview(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT;
     MUDA_GENERIC CDense1D<T> cviewer() const MUDA_NOEXCEPT;
 };
 
 template <typename T>
+class BufferView;
+
+template <typename T>
 class CBufferView : public BufferViewBase<T>
 {
+    using Base = BufferViewBase<T>;
+
   public:
-    using BufferViewBase<T>::BufferViewBase;
+    using Base::Base;
 
     MUDA_GENERIC CBufferView(const BufferViewBase<T>& base)
-        : BufferViewBase<T>(base)
+        : Base(base)
     {
     }
 
     MUDA_GENERIC CBufferView(const T* data, size_t offset, size_t size) MUDA_NOEXCEPT
-        : BufferViewBase<T>(const_cast<T*>(data), offset, size)
+        : Base(const_cast<T*>(data), offset, size)
     {
     }
 
     MUDA_GENERIC CBufferView(const T* data, size_t size) MUDA_NOEXCEPT
-        : BufferViewBase<T>(const_cast<T*>(data), size)
+        : Base(const_cast<T*>(data), size)
     {
     }
 
     MUDA_GENERIC CBufferView(CDense1D<T> viewer) MUDA_NOEXCEPT
-        : BufferViewBase<T>(const_cast<T*>(viewer.data()), 0, (size_t)viewer.total_size())
+        : Base(const_cast<T*>(viewer.data()), 0, (size_t)viewer.total_size())
     {
     }
 
     MUDA_GENERIC CBufferView subview(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT
     {
-        return CBufferView{BufferViewBase<T>::subview(offset, size)};
+        return CBufferView{Base::subview(offset, size)};
     }
+
+    MUDA_HOST void copy_to(T* host) const;
 };
 
 template <typename T>
 class BufferView : public BufferViewBase<T>
 {
-  public:
-    using BufferViewBase<T>::BufferViewBase;
-    using BufferViewBase<T>::data;
-    using BufferViewBase<T>::origin_data;
+    using Base = BufferViewBase<T>;
 
-    MUDA_GENERIC BufferView(const BufferViewBase<T>& base)
-        : BufferViewBase<T>(base)
+  public:
+    using Base::BufferViewBase;
+    using Base::data;
+    using Base::origin_data;
+
+    MUDA_GENERIC BufferView(const Base& base)
+        : Base(base)
     {
     }
 
     MUDA_GENERIC BufferView(Dense1D<T> viewer) MUDA_NOEXCEPT
-        : BufferViewBase<T>(viewer.data(), 0, (size_t)viewer.total_size())
+        : Base(viewer.data(), 0, (size_t)viewer.total_size())
     {
     }
 
@@ -109,27 +116,31 @@ class BufferView : public BufferViewBase<T>
 
     MUDA_GENERIC T* data() MUDA_NOEXCEPT
     {
-        return const_cast<T*>(BufferViewBase<T>::data());
+        return const_cast<T*>(Base::data());
     }
 
     MUDA_GENERIC T* data(size_t x) MUDA_NOEXCEPT
     {
-        return const_cast<T*>(BufferViewBase<T>::data(x));
+        return const_cast<T*>(Base::data(x));
     }
 
     MUDA_GENERIC T* origin_data() MUDA_NOEXCEPT
     {
-        return const_cast<T*>(BufferViewBase<T>::origin_data());
+        return const_cast<T*>(Base::origin_data());
     }
 
     MUDA_GENERIC BufferView subview(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT
     {
-        return BufferView{BufferViewBase<T>::subview(offset, size)};
+        return BufferView{Base::subview(offset, size)};
     }
 
     MUDA_HOST void fill(const T& v);
-    MUDA_HOST void copy_from(const BufferView<T>& other);
+    MUDA_HOST void copy_from(CBufferView<T> other);
     MUDA_HOST void copy_from(T* host);
+    MUDA_HOST void copy_to(T* host) const
+    {
+        CBufferView<T>{*this}.copy_to(host);
+    }
 
     MUDA_GENERIC Dense1D<T> viewer() const MUDA_NOEXCEPT;
 };

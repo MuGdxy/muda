@@ -44,8 +44,9 @@ class Event
     Event(const Event&)            = delete;
     Event& operator=(const Event&) = delete;
 
-    // allow move constructor and assignment operator
+    // allow move constructor
     Event(Event&& o) MUDA_NOEXCEPT;
+    // delete move assignment operator
     Event& operator=(Event&& o) MUDA_NOEXCEPT;
 };
 }  // namespace muda

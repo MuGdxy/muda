@@ -194,14 +194,22 @@ template <typename T>
 MUDA_INLINE MUDA_GENERIC auto make_cdense_3d(const T* data, const int3& dim) MUDA_NOEXCEPT
 {
     auto pitch_bytes = dim.z * sizeof(T);
-    return CDense3D<T>{data, make_int3(0, 0, 0), dim, pitch_bytes, dim.y * pitch_bytes};
+    return CDense3D<T>{data,
+                       make_int3(0, 0, 0),
+                       dim,
+                       static_cast<int>(pitch_bytes),
+                       static_cast<int>(dim.y * pitch_bytes)};
 }
 
 template <typename T>
 MUDA_INLINE MUDA_GENERIC auto make_dense_3d(T* data, const int3& dim) MUDA_NOEXCEPT
 {
     auto pitch_bytes = dim.z * sizeof(T);
-    return Dense3D<T>{data, make_int3(0, 0, 0), dim, pitch_bytes, dim.y * pitch_bytes};
+    return Dense3D<T>{data,
+                      make_int3(0, 0, 0),
+                      dim,
+                      static_cast<int>(pitch_bytes),
+                      static_cast<int>(dim.y * pitch_bytes)};
 }
 
 template <typename T>

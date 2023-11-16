@@ -1,26 +1,43 @@
 #pragma once
 #include <muda/launch/launch_base.h>
 #include <muda/muda_config.h>
-#include <muda/buffer/var_view.h>
-#include <muda/buffer/buffer_view.h>
-#include <muda/buffer/buffer_2d_view.h>
-#include <muda/buffer/buffer_3d_view.h>
-#include <muda/buffer/graph_buffer_view.h>
-#include <muda/buffer/graph_var_view.h>
+#include <muda/tools/extent.h>
+//#include <muda/buffer/var_view.h>
+//#include <muda/buffer/buffer_view.h>
+//#include <muda/buffer/buffer_2d_view.h>
+//#include <muda/buffer/buffer_3d_view.h>
+//#include <muda/buffer/graph_buffer_view.h>
+//#include <muda/buffer/graph_var_view.h>
 
 namespace muda
 {
 template <typename T>
 class DeviceVar;
-
 template <typename T>
 class DeviceBuffer;
-
 template <typename T>
 class DeviceBuffer2D;
-
 template <typename T>
 class DeviceBuffer3D;
+
+template <typename T>
+class VarView;
+template <typename T>
+class CVarView;
+template <typename T>
+class BufferView;
+template <typename T>
+class CBufferView;
+template <typename T>
+class Buffer2DView;
+template <typename T>
+class CBuffer2DView;
+template <typename T>
+class Buffer3DView;
+template <typename T>
+class CBuffer3DView;
+template <typename T>
+class ComputeGraphVar;
 
 class BufferLaunch : public LaunchBase<BufferLaunch>
 {
@@ -108,13 +125,22 @@ class BufferLaunch : public LaunchBase<BufferLaunch>
     * 
     **********************************************************************************************/
     template <typename T>
-    MUDA_HOST BufferLaunch& copy(VarView<T> dst, const VarViewBase<T>& src);
+    MUDA_HOST BufferLaunch& copy(VarView<T> dst, CVarView<T> src);
     template <typename T>
     MUDA_HOST BufferLaunch& copy(BufferView<T> dst, CBufferView<T> src);
     template <typename T>
     MUDA_HOST BufferLaunch& copy(Buffer2DView<T> dst, CBuffer2DView<T> src);
     template <typename T>
     MUDA_HOST BufferLaunch& copy(Buffer3DView<T> dst, CBuffer3DView<T> src);
+
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(VarView<T> dst, VarView<T> src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(BufferView<T> dst, BufferView<T> src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(Buffer2DView<T> dst, Buffer2DView<T> src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(Buffer3DView<T> dst, Buffer3DView<T> src);
 
     template <typename T>
     MUDA_HOST BufferLaunch& copy(ComputeGraphVar<VarView<T>>&       dst,
@@ -135,13 +161,22 @@ class BufferLaunch : public LaunchBase<BufferLaunch>
     * 
     **********************************************************************************************/
     template <typename T>
-    MUDA_HOST BufferLaunch& copy(T* dst, const VarViewBase<T>& src);
+    MUDA_HOST BufferLaunch& copy(T* dst, CVarView<T> src);
     template <typename T>
-    MUDA_HOST BufferLaunch& copy(T* dst, CBufferView<T>& src);
+    MUDA_HOST BufferLaunch& copy(T* dst, CBufferView<T> src);
     template <typename T>
-    MUDA_HOST BufferLaunch& copy(T* dst, CBuffer2DView<T>& src);
+    MUDA_HOST BufferLaunch& copy(T* dst, CBuffer2DView<T> src);
     template <typename T>
-    MUDA_HOST BufferLaunch& copy(T* dst, CBuffer3DView<T>& src);
+    MUDA_HOST BufferLaunch& copy(T* dst, CBuffer3DView<T> src);
+
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(T* dst, VarView<T> src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(T* dst, BufferView<T> src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(T* dst, Buffer2DView<T> src);
+    template <typename T>
+    MUDA_HOST BufferLaunch& copy(T* dst, Buffer3DView<T> src);
 
     template <typename T>
     MUDA_HOST BufferLaunch& copy(ComputeGraphVar<T*>&                  dst,
@@ -216,10 +251,6 @@ class BufferLaunch : public LaunchBase<BufferLaunch>
 
     template <typename T, typename FConstruct>
     MUDA_HOST BufferLaunch& resize(DeviceBuffer2D<T>& buffer, Extent2D new_extent, FConstruct&& fct);
-
-    MUDA_HOST BufferLaunch& resize(DeviceBuffer3D<float>& buffer,
-                                   Extent3D               new_extent,
-                                   std::function<void(Buffer3DView<float>)>&& fct);
 
     template <typename T, typename FConstruct>
     MUDA_HOST BufferLaunch& resize(DeviceBuffer3D<T>& buffer, Extent3D new_extent, FConstruct&& fct);

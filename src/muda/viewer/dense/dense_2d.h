@@ -192,13 +192,13 @@ struct read_write_viewer<CDense2D<T>>
 template <typename T>
 MUDA_INLINE MUDA_GENERIC auto make_cdense_2d(const T* data, const int2& dim) MUDA_NOEXCEPT
 {
-    return CDense2D<T>{data, make_int2(0, 0), dim, dim.y * sizeof(T)};
+    return CDense2D<T>{data, make_int2(0, 0), dim, static_cast<int>(dim.y * sizeof(T))};
 }
 
 template <typename T>
 MUDA_INLINE MUDA_GENERIC auto make_dense_2d(T* data, const int2& dim) MUDA_NOEXCEPT
 {
-    return Dense2D<T>{data, make_int2(0, 0), dim, dim.y * sizeof(T)};
+    return Dense2D<T>{data, make_int2(0, 0), dim, static_cast<int>(dim.y * sizeof(T))};
 }
 
 template <typename T>

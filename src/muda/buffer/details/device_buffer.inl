@@ -13,20 +13,7 @@ DeviceBuffer<T>::DeviceBuffer(size_t n)
 
 template <typename T>
 DeviceBuffer<T>::DeviceBuffer()
-    : m_data(nullptr)
-    , m_size(0)
-    , m_capacity(0)
 {
-}
-
-template <typename T>
-DeviceBuffer<T>::DeviceBuffer(DeviceBuffer<T>&& other) MUDA_NOEXCEPT
-    : m_data(other.m_data),
-      m_size(other.m_size),
-      m_capacity(other.m_capacity)
-{
-    other.m_data = nullptr;
-    other.m_size = 0;
 }
 
 template <typename T>
@@ -35,6 +22,64 @@ DeviceBuffer<T>::DeviceBuffer(const DeviceBuffer<T>& other)
     BufferLaunch()
         .alloc(*this, other.size())  //
         .copy(view(), other.view())  //
+        .wait();
+}
+
+template <typename T>
+DeviceBuffer<T>::DeviceBuffer(DeviceBuffer<T>&& other) MUDA_NOEXCEPT
+    : m_data(other.m_data),
+      m_size(other.m_size),
+      m_capacity(other.m_capacity)
+{
+    other.m_data     = nullptr;
+    other.m_size     = 0;
+    other.m_capacity = 0;
+}
+
+template <typename T>
+DeviceBuffer<T>& DeviceBuffer<T>::operator=(const DeviceBuffer<T>& other)
+{
+    if(this == &other)
+        return *this;
+
+    BufferLaunch()
+        .resize(*this, other.size())  //
+        .copy(view(), other.view())   //
+        .wait();
+
+    return *this;
+}
+
+template <typename T>
+DeviceBuffer<T>& DeviceBuffer<T>::operator=(DeviceBuffer<T>&& other)
+{
+    if(this == &other)
+        return *this;
+
+    if(m_data)
+    {
+        BufferLaunch()
+            .free(*this)  //
+            .wait();
+    }
+
+    m_data     = other.m_data;
+    m_size     = other.m_size;
+    m_capacity = other.m_capacity;
+
+    other.m_data     = nullptr;
+    other.m_size     = 0;
+    other.m_capacity = 0;
+
+    return *this;
+}
+
+template <typename T>
+DeviceBuffer<T>::DeviceBuffer(CBufferView<T> other)
+{
+    BufferLaunch()
+        .alloc(*this, other.size())  //
+        .copy(view(), other)         //
         .wait();
 }
 
@@ -48,19 +93,7 @@ DeviceBuffer<T>::DeviceBuffer(const std::vector<T>& host)
 }
 
 template <typename T>
-DeviceBuffer<T>& DeviceBuffer<T>::operator=(const DeviceBuffer<T>& other)
-{
-    if(this == &other)
-        return *this;
-    BufferLaunch()
-        .resize(*this, other.size())  //
-        .copy(view(), other.view())   //
-        .wait();
-    return *this;
-}
-
-template <typename T>
-DeviceBuffer<T>& DeviceBuffer<T>::operator=(BufferView<T> other)
+DeviceBuffer<T>& DeviceBuffer<T>::operator=(CBufferView<T> other)
 {
     BufferLaunch()
         .resize(*this, other.size())  //
@@ -80,12 +113,6 @@ DeviceBuffer<T>& DeviceBuffer<T>::operator=(const std::vector<T>& other)
 }
 
 template <typename T>
-void DeviceBuffer<T>::copy_to(T* host) const
-{
-    view().copy_to(host);
-}
-
-template <typename T>
 void DeviceBuffer<T>::copy_to(std::vector<T>& host) const
 {
     host.resize(size());
@@ -97,12 +124,6 @@ void DeviceBuffer<T>::copy_from(const std::vector<T>& host)
 {
     resize(host.size());
     view().copy_from(host.data());
-}
-
-template <typename T>
-void DeviceBuffer<T>::copy_from(const T* host)
-{
-    view().copy_from(host);
 }
 
 template <typename T>
@@ -157,6 +178,18 @@ CDense1D<T> DeviceBuffer<T>::cviewer() const MUDA_NOEXCEPT
 
 template <typename T>
 BufferView<T> DeviceBuffer<T>::view(size_t offset, size_t size) MUDA_NOEXCEPT
+{
+    return view().subview(offset, size);
+}
+
+template <typename T>
+BufferView<T> DeviceBuffer<T>::view() MUDA_NOEXCEPT
+{
+    return BufferView<T>{m_data, 0, m_size};
+}
+
+template <typename T>
+CBufferView<T> DeviceBuffer<T>::view(size_t offset, size_t size) const MUDA_NOEXCEPT
 {
     return view().subview(offset, size);
 }

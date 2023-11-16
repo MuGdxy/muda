@@ -18,11 +18,14 @@ class DeviceVar
 
     DeviceVar();
     DeviceVar(const T& value);
+
     DeviceVar(const DeviceVar& other);
     DeviceVar(DeviceVar&& other) MUDA_NOEXCEPT;
+    DeviceVar& operator=(const DeviceVar<T>& other);
+    DeviceVar& operator=(DeviceVar<T>&& other);
 
     // device transfer
-    DeviceVar& operator=(const DeviceVar<T>& other);
+    
     DeviceVar& operator=(VarView<T> other);
     void       copy_from(VarView<T> other);
 
@@ -40,6 +43,8 @@ class DeviceVar
 
     Dense<T>  viewer() MUDA_NOEXCEPT;
     CDense<T> cviewer() const MUDA_NOEXCEPT;
+
+    ~DeviceVar();
 };
 }  // namespace muda
 

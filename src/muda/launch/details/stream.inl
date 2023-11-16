@@ -47,6 +47,9 @@ MUDA_INLINE Stream& Stream::operator=(Stream&& o) MUDA_NOEXCEPT
     if(this == &o)
         return *this;
 
+    if(m_handle)
+        checkCudaErrors(cudaStreamDestroy(m_handle));
+
     m_handle   = o.m_handle;
     o.m_handle = nullptr;
     return *this;

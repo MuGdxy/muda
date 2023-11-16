@@ -17,8 +17,6 @@ class VarViewBase
 
     const T* data() const MUDA_NOEXCEPT { return m_data; }
 
-    void copy_to(T* data) const;
-
     CDense<T> cviewer() const MUDA_NOEXCEPT;
 };
 
@@ -33,6 +31,8 @@ class CVarView : public VarViewBase<T>
     CVarView(const T* data) MUDA_NOEXCEPT : VarViewBase<T>(const_cast<T*>(data))
     {
     }
+
+    void copy_to(T* data) const;
 };
 
 template <typename T>
@@ -42,14 +42,14 @@ class VarView : public VarViewBase<T>
     using VarViewBase::data;
     using VarViewBase::VarViewBase;
 
-    VarView(const VarViewBase<T>& base) MUDA_NOEXCEPT : VarViewBase<T>(base) {}
+    VarView(VarViewBase<T> base) MUDA_NOEXCEPT : VarViewBase<T>(base) {}
 
     operator CVarView<T>() const MUDA_NOEXCEPT { return CVarView<T>{*this}; }
 
     T* data() MUDA_NOEXCEPT { return this->m_data; }
 
     void copy_from(const T* data);
-    void copy_from(const VarViewBase<T>& data);
+    void copy_from(CVarView<T> data);
     void fill(const T& value);
 
     Dense<T> viewer() MUDA_NOEXCEPT;

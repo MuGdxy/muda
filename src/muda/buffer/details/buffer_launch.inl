@@ -1,7 +1,18 @@
+#include <muda/buffer/device_var.h>
 #include <muda/buffer/device_buffer.h>
 #include <muda/buffer/device_buffer_2d.h>
 #include <muda/buffer/device_buffer_3d.h>
-#include <muda/buffer/device_var.h>
+
+#include <muda/buffer/var_view.h>
+#include <muda/buffer/buffer_view.h>
+#include <muda/buffer/buffer_2d_view.h>
+#include <muda/buffer/buffer_3d_view.h>
+
+#include <muda/buffer/graph_var_view.h>
+#include <muda/buffer/graph_buffer_view.h>
+#include <muda/buffer/graph_buffer_2d_view.h>
+#include <muda/buffer/graph_buffer_3d_view.h>
+
 #include <muda/buffer/common.h>
 
 namespace muda
@@ -93,7 +104,7 @@ MUDA_HOST BufferLaunch& BufferLaunch::resize(DeviceBuffer3D<T>& buffer, Extent3D
 }
 
 template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new_size, const T& value)
+MUDA_HOST BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new_size, const T& val)
 {
     return resize(buffer, new_size, [&](BufferView<T> view) { fill(view, val); });
 }
@@ -246,8 +257,7 @@ MUDA_HOST BufferLaunch& BufferLaunch::shrink_to_fit(DeviceBuffer<T>& buffer)
     return *this;
 }
 
-using T = float;
-// template <typename T>
+template <typename T>
 MUDA_HOST BufferLaunch& BufferLaunch::shrink_to_fit(DeviceBuffer2D<T>& buffer)
 {
     MUDA_ASSERT(ComputeGraphBuilder::is_direct_launching(),
@@ -302,7 +312,7 @@ MUDA_HOST BufferLaunch& BufferLaunch::shrink_to_fit(DeviceBuffer3D<T>& buffer)
         {
 
             cudaPitchedPtr pitched_ptr;
-            mem.alloc_3d(&pitched_ptr, m_extent.cuda_extent<T>());
+            mem.alloc_3d(&pitched_ptr, m_extent.template cuda_extent<T>());
             ptr                         = reinterpret_cast<T*>(pitched_ptr.ptr);
             size_t new_pitch_bytes      = pitched_ptr.pitch;
             size_t new_pitch_bytes_area = new_pitch_bytes * m_extent.height();
@@ -331,7 +341,7 @@ MUDA_HOST BufferLaunch& BufferLaunch::shrink_to_fit(DeviceBuffer3D<T>& buffer)
 * 
 **********************************************************************************************/
 template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::copy(VarView<T> dst, const VarViewBase<T>& src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(VarView<T> dst, CVarView<T> src)
 {
     if constexpr(std::is_trivially_copyable_v<T>)
         Memory(m_stream).transfer(dst.data(), src.data(), sizeof(T));
@@ -360,10 +370,10 @@ MUDA_HOST BufferLaunch& BufferLaunch::copy(Buffer2DView<T> dst, CBuffer2DView<T>
         cudaMemcpy3DParms parms = {0};
 
         parms.srcPtr = src.cuda_pitched_ptr();
-        parms.srcPos = src.offset().cuda_pos<T>();
+        parms.srcPos = src.offset().template cuda_pos<T>();
         parms.dstPtr = dst.cuda_pitched_ptr();
-        parms.extent = dst.extent().cuda_extent<T>();
-        parms.dstPos = dst.offset().cuda_pos<T>();
+        parms.extent = dst.extent().template cuda_extent<T>();
+        parms.dstPos = dst.offset().template cuda_pos<T>();
 
         Memory(m_stream).transfer(parms);
     }
@@ -383,10 +393,10 @@ MUDA_HOST BufferLaunch& BufferLaunch::copy(Buffer3DView<T> dst, CBuffer3DView<T>
         cudaMemcpy3DParms parms = {0};
 
         parms.srcPtr = src.cuda_pitched_ptr();
-        parms.srcPos = src.offset().cuda_pos<T>();
+        parms.srcPos = src.offset().template cuda_pos<T>();
         parms.dstPtr = dst.cuda_pitched_ptr();
-        parms.extent = dst.extent().cuda_extent<T>();
-        parms.dstPos = dst.offset().cuda_pos<T>();
+        parms.extent = dst.extent().template cuda_extent<T>();
+        parms.dstPos = dst.offset().template cuda_pos<T>();
 
         Memory(m_stream).transfer(parms);
     }
@@ -395,6 +405,31 @@ MUDA_HOST BufferLaunch& BufferLaunch::copy(Buffer3DView<T> dst, CBuffer3DView<T>
         details::buffer::kernel_assign(m_grid_dim, m_block_dim, m_stream, dst, src);
     }
     return *this;
+}
+
+
+template <typename T>
+MUDA_HOST BufferLaunch& BufferLaunch::copy(VarView<T> dst, VarView<T> src)
+{
+    return copy(dst, src.operator CVarView<T>());
+}
+
+template <typename T>
+MUDA_HOST BufferLaunch& BufferLaunch::copy(BufferView<T> dst, BufferView<T> src)
+{
+    return copy(dst, src.operator CBufferView<T>());
+}
+
+template <typename T>
+MUDA_HOST BufferLaunch& BufferLaunch::copy(Buffer2DView<T> dst, Buffer2DView<T> src)
+{
+    return copy(dst, src.operator CBuffer2DView<T>());
+}
+
+template <typename T>
+MUDA_HOST BufferLaunch& BufferLaunch::copy(Buffer3DView<T> dst, Buffer3DView<T> src)
+{
+    return copy(dst, src.operator CBuffer3DView<T>());
 }
 
 
@@ -433,14 +468,14 @@ MUDA_HOST BufferLaunch& BufferLaunch::copy(ComputeGraphVar<Buffer3DView<T>>& dst
 * 
 **********************************************************************************************/
 template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, const VarViewBase<T>& src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, CVarView<T> src)
 {
     Memory(m_stream).download(dst, src.data(), sizeof(T));
     return *this;
 }
 
 template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, CBufferView<T>& src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, CBufferView<T> src)
 {
     Memory(m_stream).download(dst, src.data(), src.size() * sizeof(T));
     return *this;
@@ -448,15 +483,15 @@ MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, CBufferView<T>& src)
 
 
 template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, CBuffer2DView<T>& src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, CBuffer2DView<T> src)
 {
     cudaMemcpy3DParms parms = {0};
 
     parms.srcPtr = src.cuda_pitched_ptr();
-    parms.srcPos = src.offset().cuda_pos<T>();
+    parms.srcPos = src.offset().template cuda_pos<T>();
     parms.dstPtr = make_cudaPitchedPtr(
         dst, parms.srcPtr.xsize, parms.srcPtr.xsize, parms.srcPtr.ysize);
-    parms.extent = src.extent().cuda_extent<T>();
+    parms.extent = src.extent().template cuda_extent<T>();
     parms.dstPos = make_cudaPos(0, 0, 0);
 
     Memory(m_stream).download(parms);
@@ -464,19 +499,43 @@ MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, CBuffer2DView<T>& src)
 }
 
 template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, CBuffer3DView<T>& src)
+MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, CBuffer3DView<T> src)
 {
     cudaMemcpy3DParms parms = {0};
 
     parms.srcPtr = src.cuda_pitched_ptr();
-    parms.srcPos = src.offset().cuda_pos<T>();
+    parms.srcPos = src.offset().template cuda_pos<T>();
     parms.dstPtr = make_cudaPitchedPtr(
         dst, parms.srcPtr.xsize, parms.srcPtr.xsize, parms.srcPtr.ysize);
-    parms.extent = src.extent().cuda_extent<T>();
+    parms.extent = src.extent().template cuda_extent<T>();
     parms.dstPos = make_cudaPos(0, 0, 0);
 
     Memory(m_stream).download(parms);
     return *this;
+}
+
+template <typename T>
+MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, VarView<T> src)
+{
+    return copy(dst, src.operator CVarView<T>());
+}
+
+template <typename T>
+MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, BufferView<T> src)
+{
+    return copy(dst, src.operator CBufferView<T>());
+}
+
+template <typename T>
+MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, Buffer2DView<T> src)
+{
+    return copy(dst, src.operator CBuffer2DView<T>());
+}
+
+template <typename T>
+MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, Buffer3DView<T> src)
+{
+    return copy(dst, src.operator CBuffer3DView<T>());
 }
 
 template <typename T>
@@ -531,8 +590,8 @@ MUDA_HOST BufferLaunch& BufferLaunch::copy(Buffer2DView<T> dst, const T* src)
 {
     cudaMemcpy3DParms parms = {0};
 
-    parms.extent = dst.extent().cuda_extent<T>();
-    parms.dstPos = dst.offset().cuda_pos<T>();
+    parms.extent = dst.extent().template cuda_extent<T>();
+    parms.dstPos = dst.offset().template cuda_pos<T>();
 
     parms.srcPtr = make_cudaPitchedPtr(const_cast<T*>(src),
                                        parms.dstPtr.xsize,
@@ -552,8 +611,8 @@ MUDA_HOST BufferLaunch& BufferLaunch::copy(Buffer3DView<T> dst, const T* src)
 {
     cudaMemcpy3DParms parms = {0};
 
-    parms.extent = dst.extent().cuda_extent<T>();
-    parms.dstPos = dst.offset().cuda_pos<T>();
+    parms.extent = dst.extent().template cuda_extent<T>();
+    parms.dstPos = dst.offset().template cuda_pos<T>();
 
     parms.srcPtr = make_cudaPitchedPtr(const_cast<T*>(src),
                                        parms.dstPtr.xsize,
@@ -701,7 +760,7 @@ MUDA_HOST BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new
     if(new_size <= m_capacity)
     {
         // construct the new memory
-        auto to_construct = buffer.view(old_size, new_size);
+        auto to_construct = buffer.view(old_size, new_size - old_size);
         fct(to_construct);
         m_size = new_size;
     }
@@ -718,7 +777,7 @@ MUDA_HOST BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new
 
         // construct the new memory
         {
-            BufferView<T> to_construct{ptr, old_size, new_size};
+            BufferView<T> to_construct{ptr, old_size, new_size - old_size};
             fct(to_construct);
         }
 
@@ -796,9 +855,30 @@ MUDA_HOST BufferLaunch& BufferLaunch::resize(DeviceBuffer2D<T>& buffer,
 
         // construct the new memory
         {
-            Offset2D offset{old_extent.height(), old_extent.width()};
-            auto     to_construct = buffer.view(offset, new_extent);
-            fct(to_construct);
+            if(old_extent == Extent2D::Zero())
+            {
+                Buffer2DView<T> to_construct{ptr, new_pitch_bytes, Offset2D::Zero(), new_extent};
+                fct(to_construct);
+            }
+            else if(old_extent.width() == new_extent.width())
+            {
+                // there are 2 blocks:
+                //tex:
+                //$$
+                //\begin {bmatrix}
+                // O  \\
+                // N
+                //\end {bmatrix}
+                //$$
+                Offset2D offset{old_extent.height(), 0};
+                Buffer2DView<T> to_construct{ptr, new_pitch_bytes, offset, new_extent};
+                fct(to_construct);
+            }
+            else if (old_extent.height() == new_extent.height())
+            {
+
+            }
+
         }
 
         // if the old buffer was allocated, deallocate it
@@ -812,9 +892,9 @@ MUDA_HOST BufferLaunch& BufferLaunch::resize(DeviceBuffer2D<T>& buffer,
     }
     return *this;
 }
-using T          = float;
-using FConstruct = std::function<void(Buffer3DView<T>)>;
-//template <typename T, typename FConstruct>
+//using T          = float;
+//using FConstruct = std::function<void(Buffer3DView<T>)>;
+template <typename T, typename FConstruct>
 MUDA_HOST BufferLaunch& BufferLaunch::resize(DeviceBuffer3D<T>& buffer,
                                              Extent3D           new_extent,
                                              FConstruct&&       fct)
@@ -865,7 +945,7 @@ MUDA_HOST BufferLaunch& BufferLaunch::resize(DeviceBuffer3D<T>& buffer,
         auto           new_capacity = max(new_extent, m_capacity);
         cudaPitchedPtr pitched_ptr;
 
-        mem.alloc_3d(&pitched_ptr, new_capacity.cuda_extent<T>());
+        mem.alloc_3d(&pitched_ptr, new_capacity.template cuda_extent<T>());
         T*     ptr                  = reinterpret_cast<T*>(pitched_ptr.ptr);
         size_t new_pitch_bytes      = pitched_ptr.pitch;
         size_t new_pitch_bytes_area = new_pitch_bytes * new_capacity.height();
@@ -881,7 +961,8 @@ MUDA_HOST BufferLaunch& BufferLaunch::resize(DeviceBuffer3D<T>& buffer,
         // construct the new memory
         {
             Offset3D offset{old_extent.depth(), old_extent.height(), old_extent.width()};
-            auto to_construct = buffer.view(offset, new_extent);
+            Buffer3DView<T> to_construct{
+                ptr, new_pitch_bytes, new_pitch_bytes_area, offset, new_extent};
             fct(to_construct);
         }
 

@@ -34,14 +34,8 @@ class Buffer2DViewBase
     {
     }
 
-    //MUDA_GENERIC Buffer2DViewBase(T* data, size_t pitch_bytes, const Extent2D& extent) MUDA_NOEXCEPT
-    //    : Buffer2DViewBase(data, pitch_bytes, Offset2D::Zero(), extent)
-    //{
-    //}
-
-
-    MUDA_GENERIC auto extent() const MUDA_NOEXCEPT { return m_extent; }
-    MUDA_GENERIC auto pitch_bytes() const MUDA_NOEXCEPT
+    MUDA_GENERIC auto   extent() const MUDA_NOEXCEPT { return m_extent; }
+    MUDA_GENERIC size_t pitch_bytes() const MUDA_NOEXCEPT
     {
         return m_pitch_bytes;
     }
@@ -54,17 +48,11 @@ class Buffer2DViewBase
         return m_extent.width() * m_extent.height();
     }
 
-    MUDA_HOST void copy_to(T* host) const;
-
     MUDA_GENERIC Buffer2DViewBase<T> subview(Offset2D offset, Extent2D extent = {}) const MUDA_NOEXCEPT;
     MUDA_GENERIC CDense2D<T> cviewer() const MUDA_NOEXCEPT;
 
   protected:
-    MUDA_GENERIC cudaPitchedPtr cuda_pitched_ptr() const MUDA_NOEXCEPT
-    {
-        return make_cudaPitchedPtr(
-            m_data, m_pitch_bytes, m_extent.width() * sizeof(T), m_extent.height());
-    }
+    MUDA_GENERIC cudaPitchedPtr cuda_pitched_ptr() const MUDA_NOEXCEPT;
 };
 
 template <typename T>
@@ -85,15 +73,12 @@ class CBuffer2DView : public Buffer2DViewBase<T>
     {
     }
 
-    //MUDA_GENERIC CBuffer2DView(const T* data, size_t pitch_bytes, const Extent2D& extent) MUDA_NOEXCEPT
-    //    : Base(const_cast<T*>(data), pitch_bytes, extent)
-    //{
-    //}
-
     MUDA_GENERIC CBuffer2DView<T> subview(Offset2D offset, Extent2D extent = {}) const MUDA_NOEXCEPT
     {
         return CBuffer2DView<T>{Base::subview(offset, extent)};
     }
+
+    MUDA_HOST void copy_to(T* host) const;
 };
 
 template <typename T>
@@ -115,17 +100,14 @@ class Buffer2DView : public Buffer2DViewBase<T>
     {
         return CBuffer2DView<T>{*this};
     }
-
     MUDA_GENERIC T* data(size_t x, size_t y) const MUDA_NOEXCEPT
     {
         return const_cast<T*>(Base::data(x, y));
     }
-
     MUDA_GENERIC T* data(size_t flatten_i) const MUDA_NOEXCEPT
     {
         return const_cast<T*>(Base::data(flatten_i));
     }
-
     MUDA_GENERIC T* origin_data() MUDA_NOEXCEPT
     {
         return const_cast<T*>(Base::origin_data());
@@ -139,8 +121,12 @@ class Buffer2DView : public Buffer2DViewBase<T>
     MUDA_GENERIC Dense2D<T> viewer() const MUDA_NOEXCEPT;
 
     MUDA_HOST void fill(const T& v);
-    MUDA_HOST void copy_from(const Buffer2DView<T>& other);
+    MUDA_HOST void copy_from(CBuffer2DView<T> other);
     MUDA_HOST void copy_from(T* host);
+    MUDA_HOST void copy_to(T* host) const
+    {
+        return CBuffer2DView<T>{*this}.copy_to(host);
+    }
 
     MUDA_GENERIC cudaPitchedPtr cuda_pitched_ptr() const MUDA_NOEXCEPT
     {

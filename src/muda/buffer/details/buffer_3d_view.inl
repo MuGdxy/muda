@@ -1,9 +1,10 @@
 #include <muda/compute_graph/compute_graph_builder.h>
+#include <muda/buffer/buffer_launch.h>
 
 namespace muda
 {
 template <typename T>
-MUDA_GENERIC const T* Buffer3DViewBase<T>::data(size_t x, size_t y, size_t z) const
+MUDA_GENERIC const T* Buffer3DViewBase<T>::data(size_t x, size_t y, size_t z) const MUDA_NOEXCEPT
 {
     x += m_offset.offset_in_depth();
     y += m_offset.offset_in_height();
@@ -14,7 +15,7 @@ MUDA_GENERIC const T* Buffer3DViewBase<T>::data(size_t x, size_t y, size_t z) co
 }
 
 template <typename T>
-MUDA_GENERIC const T* Buffer3DViewBase<T>::data(size_t flatten_i) const
+MUDA_GENERIC const T* Buffer3DViewBase<T>::data(size_t flatten_i) const MUDA_NOEXCEPT
 {
     auto area       = m_extent.width() * m_extent.height();
     auto x          = flatten_i / area;
@@ -23,6 +24,12 @@ MUDA_GENERIC const T* Buffer3DViewBase<T>::data(size_t flatten_i) const
     auto i_in_width = i_in_area % m_extent.width();
     auto z          = i_in_width;
     return data(x, y, z);
+}
+
+template <typename T>
+MUDA_GENERIC size_t Buffer3DViewBase<T>::total_size() const MUDA_NOEXCEPT
+{
+    return m_extent.width() * m_extent.height() * m_extent.depth();
 }
 
 template <typename T>
@@ -58,6 +65,13 @@ MUDA_GENERIC CDense3D<T> Buffer3DViewBase<T>::cviewer() const MUDA_NOEXCEPT
                        m_pitch_bytes,
                        m_pitch_bytes_area};
 }
+
+template <typename T>
+MUDA_HOST void CBuffer3DView<T>::copy_to(T* host) const
+{
+    BufferLaunch().copy(host, *this).wait();
+}
+
 template <typename T>
 MUDA_GENERIC Dense3D<T> Buffer3DView<T>::viewer() const MUDA_NOEXCEPT
 {
@@ -68,5 +82,23 @@ MUDA_GENERIC Dense3D<T> Buffer3DView<T>::viewer() const MUDA_NOEXCEPT
                       make_int3(m_extent.depth(), m_extent.height(), m_extent.width()),
                       m_pitch_bytes,
                       m_pitch_bytes_area};
+}
+
+template <typename T>
+MUDA_HOST void Buffer3DView<T>::fill(const T& v)
+{
+    BufferLaunch().fill(*this, v).wait();
+}
+
+template <typename T>
+MUDA_HOST void Buffer3DView<T>::copy_from(const Buffer3DView<T>& other)
+{
+    BufferLaunch().copy(*this, other).wait();
+}
+
+template <typename T>
+MUDA_HOST void Buffer3DView<T>::copy_from(T* host)
+{
+    BufferLaunch().copy(*this, host).wait();
 }
 }  // namespace muda

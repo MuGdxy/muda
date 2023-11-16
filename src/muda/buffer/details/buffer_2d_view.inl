@@ -1,9 +1,10 @@
 #include <muda/compute_graph/compute_graph_builder.h>
+#include <muda/buffer/buffer_launch.h>
 
 namespace muda
 {
 template <typename T>
-MUDA_GENERIC const T* Buffer2DViewBase<T>::data(size_t x, size_t y) const
+MUDA_GENERIC const T* Buffer2DViewBase<T>::data(size_t x, size_t y) const MUDA_NOEXCEPT
 {
     x += m_offset.offset_in_height();
     y += m_offset.offset_in_width();
@@ -13,10 +14,10 @@ MUDA_GENERIC const T* Buffer2DViewBase<T>::data(size_t x, size_t y) const
 }
 
 template <typename T>
-MUDA_GENERIC const T* Buffer2DViewBase<T>::data(size_t flatten_i) const
+MUDA_GENERIC const T* Buffer2DViewBase<T>::data(size_t flatten_i) const MUDA_NOEXCEPT
 {
-    auto x = i / m_extent.width();
-    auto y = i % m_extent.width();
+    auto x = flatten_i / m_extent.width();
+    auto y = flatten_i % m_extent.width();
     return data(x, y);
 }
 
@@ -38,6 +39,12 @@ MUDA_GENERIC Buffer2DViewBase<T> Buffer2DViewBase<T>::subview(Offset2D offset,
                 (int)extent.width());
     return Buffer2DViewBase<T>{const_cast<T*>(m_data), m_pitch_bytes, offset, extent};
 }
+template <typename T>
+MUDA_GENERIC cudaPitchedPtr Buffer2DViewBase<T>::cuda_pitched_ptr() const MUDA_NOEXCEPT
+{
+    return make_cudaPitchedPtr(
+        m_data, m_pitch_bytes, m_extent.width() * sizeof(T), m_extent.height());
+}
 
 template <typename T>
 MUDA_GENERIC CDense2D<T> Buffer2DViewBase<T>::cviewer() const MUDA_NOEXCEPT
@@ -48,6 +55,14 @@ MUDA_GENERIC CDense2D<T> Buffer2DViewBase<T>::cviewer() const MUDA_NOEXCEPT
                        make_int2((int)m_extent.height(), (int)m_extent.width()),
                        m_pitch_bytes};
 }
+
+template <typename T>
+MUDA_HOST void CBuffer2DView<T>::copy_to(T* host) const
+{
+    BufferLaunch().copy<T>(host, *this).wait();
+}
+
+
 template <typename T>
 MUDA_GENERIC Dense2D<T> Buffer2DView<T>::viewer() const MUDA_NOEXCEPT
 {
@@ -57,4 +72,23 @@ MUDA_GENERIC Dense2D<T> Buffer2DView<T>::viewer() const MUDA_NOEXCEPT
                       make_int2((int)m_extent.height(), (int)m_extent.width()),
                       m_pitch_bytes};
 }
+
+template <typename T>
+MUDA_HOST void Buffer2DView<T>::fill(const T& val)
+{
+    BufferLaunch().fill(*this, val).wait();
+}
+
+template <typename T>
+MUDA_HOST void Buffer2DView<T>::copy_from(CBuffer2DView<T> other)
+{
+    BufferLaunch().copy(*this, other).wait();
+}
+
+template <typename T>
+MUDA_HOST void Buffer2DView<T>::copy_from(T* host)
+{
+    BufferLaunch().fill(*this, host).wait();
+}
+
 }  // namespace muda

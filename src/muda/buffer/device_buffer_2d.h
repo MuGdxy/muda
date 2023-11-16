@@ -23,21 +23,20 @@ class DeviceBuffer2D
 
     DeviceBuffer2D(const Extent2D& n);
     DeviceBuffer2D();
+
     DeviceBuffer2D(const DeviceBuffer2D<T>& other);
-    DeviceBuffer2D(const std::vector<T>& host);
     DeviceBuffer2D(DeviceBuffer2D&& other) MUDA_NOEXCEPT;
-
-    DeviceBuffer2D& operator=(Buffer2DView<T> view);
     DeviceBuffer2D& operator=(const DeviceBuffer2D<T>& other);
-    DeviceBuffer2D& operator=(const std::vector<T>& other);
+    DeviceBuffer2D& operator=(DeviceBuffer2D<T>&& other);
 
-    void copy_to(T* host) const;
+    DeviceBuffer2D(CBuffer2DView<T> other);
+    DeviceBuffer2D& operator=(CBuffer2DView<T> other);
+
     void copy_to(std::vector<T>& host) const;
-    void copy_from(const T* host);
     void copy_from(const std::vector<T>& host);
 
-    void resize(size_t new_size);
-    void resize(size_t new_size, const T& value);
+    void resize(Extent2D new_extent);
+    void resize(Extent2D new_extent, const T& value);
     void clear();
     void shrink_to_fit();
     void fill(const T& v);
@@ -47,7 +46,7 @@ class DeviceBuffer2D
 
     Buffer2DView<T> view(Offset2D offset, Extent2D extent = {}) MUDA_NOEXCEPT
     {
-        return Buffer2DView<T>{m_data, m_pitch_bytes, m_extent, offset, extent};
+        return view().subview(offset, extent);
     }
     Buffer2DView<T> view() MUDA_NOEXCEPT
     {
@@ -57,7 +56,7 @@ class DeviceBuffer2D
 
     CBuffer2DView<T> view(Offset2D offset, Extent2D extent = {}) const MUDA_NOEXCEPT
     {
-        return CBuffer2DView<T>{m_data, m_pitch_bytes, m_extent, offset, extent};
+        return view().subview(offset, extent);
     }
 
     CBuffer2DView<T> view() const MUDA_NOEXCEPT
@@ -68,9 +67,16 @@ class DeviceBuffer2D
 
     ~DeviceBuffer2D();
 
-    auto     extent() const MUDA_NOEXCEPT { return m_extent; }
-    auto     capacity() const MUDA_NOEXCEPT { return m_capacity; }
+    auto extent() const MUDA_NOEXCEPT { return m_extent; }
+    auto capacity() const MUDA_NOEXCEPT { return m_capacity; }
+    auto pitch_bytes() const MUDA_NOEXCEPT { return m_pitch_bytes; }
+    auto total_size() const MUDA_NOEXCEPT
+    {
+        return m_extent.width() * m_extent.height();
+    }
     T*       data() MUDA_NOEXCEPT { return m_data; }
     const T* data() const MUDA_NOEXCEPT { return m_data; }
 };
 }  // namespace muda
+
+#include "details/device_buffer_2d.inl"

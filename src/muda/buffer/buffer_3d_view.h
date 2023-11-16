@@ -50,15 +50,10 @@ class Buffer3DViewBase
     {
         return m_pitch_bytes_area;
     }
-    MUDA_GENERIC auto total_size() const MUDA_NOEXCEPT
-    {
-        return m_extent.width() * m_extent.height() * m_extent.depth();
-    }
+    MUDA_GENERIC size_t total_size() const MUDA_NOEXCEPT;
 
     MUDA_GENERIC Buffer3DViewBase<T> subview(Offset3D offset, Extent3D extent = {}) const MUDA_NOEXCEPT;
     MUDA_GENERIC CDense3D<T> cviewer() const MUDA_NOEXCEPT;
-
-    MUDA_HOST void copy_to(T* host) const;
 
   protected:
     MUDA_GENERIC cudaPitchedPtr cuda_pitched_ptr() const MUDA_NOEXCEPT
@@ -94,6 +89,8 @@ class CBuffer3DView : public Buffer3DViewBase<T>
     {
         return CBuffer3DView<T>{Base::subview(offset, extent)};
     }
+
+    MUDA_HOST void copy_to(T* host) const;
 };
 
 template <typename T>
@@ -138,9 +135,14 @@ class Buffer3DView : public Buffer3DViewBase<T>
 
     MUDA_GENERIC Dense3D<T> viewer() const MUDA_NOEXCEPT;
 
-    MUDA_HOST void              fill(const T& v);
-    MUDA_HOST void              copy_from(const Buffer3DView<T>& other);
-    MUDA_HOST void              copy_from(T* host);
+    MUDA_HOST void fill(const T& v);
+    MUDA_HOST void copy_from(const Buffer3DView<T>& other);
+    MUDA_HOST void copy_from(T* host);
+    MUDA_HOST void copy_to(T* host) const
+    {
+        CBuffer3DView<T>{*this}.copy_to(host);
+    }
+
     MUDA_GENERIC cudaPitchedPtr cuda_pitched_ptr() const MUDA_NOEXCEPT
     {
         return Base::cuda_pitched_ptr();

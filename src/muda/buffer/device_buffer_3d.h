@@ -16,29 +16,28 @@ class DeviceBuffer3D
     T*       m_data             = nullptr;
     size_t   m_pitch_bytes      = 0;
     size_t   m_pitch_bytes_area = 0;
-    Extent3D m_extent;
-    Extent3D m_capacity;
+    Extent3D m_extent           = Extent3D::Zero();
+    Extent3D m_capacity         = Extent3D::Zero();
 
   public:
     using value_type = T;
 
     DeviceBuffer3D(const Extent3D& n);
     DeviceBuffer3D();
+
     DeviceBuffer3D(const DeviceBuffer3D<T>& other);
-    DeviceBuffer3D(const std::vector<T>& host);
     DeviceBuffer3D(DeviceBuffer3D&& other) MUDA_NOEXCEPT;
-
-    DeviceBuffer3D& operator=(Buffer3DView<T> view);
     DeviceBuffer3D& operator=(const DeviceBuffer3D<T>& other);
-    DeviceBuffer3D& operator=(const std::vector<T>& other);
+    DeviceBuffer3D& operator=(DeviceBuffer3D<T>&& other);
 
-    void copy_to(T* host) const;
+    DeviceBuffer3D(CBuffer3DView<T> other);
+    DeviceBuffer3D& operator=(CBuffer3DView<T> other);
+
     void copy_to(std::vector<T>& host) const;
-    void copy_from(const T* host);
     void copy_from(const std::vector<T>& host);
 
-    void resize(size_t new_size);
-    void resize(size_t new_size, const T& value);
+    void resize(Extent3D new_size);
+    void resize(Extent3D new_size, const T& value);
     void clear();
     void shrink_to_fit();
     void fill(const T& v);
@@ -48,7 +47,7 @@ class DeviceBuffer3D
 
     Buffer3DView<T> view(Offset3D offset, Extent3D extent = {}) MUDA_NOEXCEPT
     {
-        return Buffer3DView<T>{m_data, m_pitch_bytes, m_pitch_bytes_area, m_extent, offset, extent};
+        return view().subview(offset, extent);
     }
     Buffer3DView<T> view() MUDA_NOEXCEPT
     {
@@ -59,7 +58,7 @@ class DeviceBuffer3D
 
     CBuffer3DView<T> view(Offset3D offset, Extent3D extent = {}) const MUDA_NOEXCEPT
     {
-        return CBuffer3DView<T>{m_data, m_pitch_bytes, m_pitch_bytes_area, m_extent, offset, extent};
+        return view().subview(offset, extent);
     }
 
     CBuffer3DView<T> view() const MUDA_NOEXCEPT
@@ -71,9 +70,17 @@ class DeviceBuffer3D
 
     ~DeviceBuffer3D();
 
-    auto     extent() const MUDA_NOEXCEPT { return m_extent; }
-    auto     capacity() const MUDA_NOEXCEPT { return m_capacity; }
+    auto extent() const MUDA_NOEXCEPT { return m_extent; }
+    auto capacity() const MUDA_NOEXCEPT { return m_capacity; }
+    auto pitch_bytes() const MUDA_NOEXCEPT { return m_pitch_bytes; }
+    auto pitch_bytes_area() const MUDA_NOEXCEPT { return m_pitch_bytes_area; }
+    auto total_size() const MUDA_NOEXCEPT
+    {
+        return m_extent.width() * m_extent.height() * m_extent.depth();
+    }
     T*       data() MUDA_NOEXCEPT { return m_data; }
     const T* data() const MUDA_NOEXCEPT { return m_data; }
 };
 }  // namespace muda
+
+#include "details/device_buffer_3d.inl"
