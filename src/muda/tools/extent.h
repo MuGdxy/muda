@@ -137,44 +137,24 @@ class Offset3D
     }
 };
 
-
-MUDA_INLINE MUDA_GENERIC Extent2D operator-(const Extent2D& lhs, const Offset2D& rhs)
+MUDA_INLINE MUDA_GENERIC Extent2D as_extent(const Offset2D& offset) MUDA_NOEXCEPT
 {
-    return Extent2D{lhs.height() - rhs.offset_in_height(),
-                    lhs.width() - rhs.offset_in_width()};
+    return Extent2D{offset.offset_in_height(), offset.offset_in_width()};
 }
 
-MUDA_INLINE MUDA_GENERIC Extent3D operator-(const Extent3D& lhs, const Offset3D& rhs)
+MUDA_INLINE MUDA_GENERIC Extent3D as_extent(const Offset3D& offset) MUDA_NOEXCEPT
 {
-    return Extent3D{lhs.depth() - rhs.offset_in_depth(),
-                    lhs.height() - rhs.offset_in_height(),
-                    lhs.width() - rhs.offset_in_width()};
+    return Extent3D{offset.offset_in_depth(), offset.offset_in_height(), offset.offset_in_width()};
 }
 
-MUDA_INLINE MUDA_GENERIC Extent2D operator+(const Extent2D& lhs, const Offset2D& rhs)
+MUDA_INLINE MUDA_GENERIC Offset2D as_offset(const Extent2D& extent) MUDA_NOEXCEPT
 {
-    return Extent2D{lhs.height() + rhs.offset_in_height(),
-                    lhs.width() + rhs.offset_in_width()};
+    return Offset2D{extent.height(), extent.width()};
 }
 
-MUDA_INLINE MUDA_GENERIC Extent3D operator+(const Extent3D& lhs, const Offset3D& rhs)
+MUDA_INLINE MUDA_GENERIC Offset3D as_offset(const Extent3D& extent) MUDA_NOEXCEPT
 {
-    return Extent3D{lhs.depth() + rhs.offset_in_depth(),
-                    lhs.height() + rhs.offset_in_height(),
-                    lhs.width() + rhs.offset_in_width()};
-}
-
-MUDA_INLINE MUDA_GENERIC Offset2D operator+(const Offset2D& lhs, const Offset2D& rhs)
-{
-    return Offset2D{lhs.offset_in_height() + rhs.offset_in_height(),
-                    lhs.offset_in_width() + rhs.offset_in_width()};
-}
-
-MUDA_INLINE MUDA_GENERIC Offset3D operator+(const Offset3D& lhs, const Offset3D& rhs)
-{
-    return Offset3D{lhs.offset_in_depth() + rhs.offset_in_depth(),
-                    lhs.offset_in_height() + rhs.offset_in_height(),
-                    lhs.offset_in_width() + rhs.offset_in_width()};
+    return Offset3D{extent.depth(), extent.height(), extent.width()};
 }
 
 MUDA_INLINE MUDA_GENERIC Extent2D max(const Extent2D& lhs, const Extent2D& rhs)
@@ -190,15 +170,15 @@ MUDA_INLINE MUDA_GENERIC Extent3D max(const Extent3D& lhs, const Extent3D& rhs)
                     std::max(lhs.width(), rhs.width())};
 }
 
-#define MUDA_DEFINE_COMPARISON_OPERATOR(op)                                             \
-    MUDA_INLINE MUDA_GENERIC bool operator op(const Extent2D& lhs, const Extent2D& rhs) \
-    {                                                                                   \
-        return (lhs.height() op rhs.height()) && (lhs.width() op rhs.width());          \
-    }                                                                                   \
-    MUDA_INLINE MUDA_GENERIC bool operator op(const Extent3D& lhs, const Extent3D& rhs) \
-    {                                                                                   \
-        return (lhs.depth() op rhs.depth()) && (lhs.height() op rhs.height())           \
-               && (lhs.width() op rhs.width());                                         \
+#define MUDA_DEFINE_COMPARISON_OPERATOR(op)                                                           \
+    MUDA_INLINE MUDA_GENERIC bool operator op(const Extent2D& lhs, const Extent2D& rhs) MUDA_NOEXCEPT \
+    {                                                                                                 \
+        return (lhs.height() op rhs.height()) && (lhs.width() op rhs.width());                        \
+    }                                                                                                 \
+    MUDA_INLINE MUDA_GENERIC bool operator op(const Extent3D& lhs, const Extent3D& rhs) MUDA_NOEXCEPT \
+    {                                                                                                 \
+        return (lhs.depth() op rhs.depth()) && (lhs.height() op rhs.height())                         \
+               && (lhs.width() op rhs.width());                                                       \
     }
 
 MUDA_DEFINE_COMPARISON_OPERATOR(<=);
@@ -206,4 +186,38 @@ MUDA_DEFINE_COMPARISON_OPERATOR(<);
 MUDA_DEFINE_COMPARISON_OPERATOR(==);
 
 #undef MUDA_DEFINE_COMPARISON_OPERATOR
+
+
+#define MUDA_DEFINE_ARITHMATIC_OPERATOR(op)                                          \
+    MUDA_INLINE MUDA_GENERIC Extent2D operator op(const Extent2D& lhs,               \
+                                                  const Extent2D& rhs) MUDA_NOEXCEPT \
+    {                                                                                \
+        return Extent2D{lhs.height() op rhs.height(), lhs.width() op rhs.width()};   \
+    }                                                                                \
+    MUDA_INLINE MUDA_GENERIC Extent3D operator op(const Extent3D& lhs,               \
+                                                  const Extent3D& rhs) MUDA_NOEXCEPT \
+    {                                                                                \
+        return Extent3D{lhs.depth() op  rhs.depth(),                                 \
+                        lhs.height() op rhs.height(),                                \
+                        lhs.width() op  rhs.width()};                                 \
+    }                                                                                \
+    MUDA_INLINE MUDA_GENERIC Offset2D operator op(const Offset2D& lhs,               \
+                                                  const Offset2D& rhs) MUDA_NOEXCEPT \
+    {                                                                                \
+        return Offset2D{lhs.offset_in_height() op rhs.offset_in_height(),            \
+                        lhs.offset_in_width() op  rhs.offset_in_width()};             \
+    }                                                                                \
+    MUDA_INLINE MUDA_GENERIC Offset3D operator op(const Offset3D& lhs,               \
+                                                  const Offset3D& rhs) MUDA_NOEXCEPT \
+    {                                                                                \
+        return Offset3D{lhs.offset_in_depth() op  rhs.offset_in_depth(),             \
+                        lhs.offset_in_height() op rhs.offset_in_height(),            \
+                        lhs.offset_in_width() op  rhs.offset_in_width()};             \
+    }
+
+MUDA_DEFINE_ARITHMATIC_OPERATOR(+);
+MUDA_DEFINE_ARITHMATIC_OPERATOR(-);
+#undef MUDA_DEFINE_ARITHMATIC_OPERATOR
+
+
 }  // namespace muda

@@ -2,12 +2,6 @@
 #include <muda/launch/launch_base.h>
 #include <muda/muda_config.h>
 #include <muda/tools/extent.h>
-//#include <muda/buffer/var_view.h>
-//#include <muda/buffer/buffer_view.h>
-//#include <muda/buffer/buffer_2d_view.h>
-//#include <muda/buffer/buffer_3d_view.h>
-//#include <muda/buffer/graph_buffer_view.h>
-//#include <muda/buffer/graph_var_view.h>
 
 namespace muda
 {

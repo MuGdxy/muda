@@ -8,6 +8,8 @@
 
 namespace muda
 {
+class NDReshaper;
+
 template <typename T>
 class DeviceVector;
 
@@ -19,6 +21,8 @@ class DeviceBuffer
 {
   private:
     friend class BufferLaunch;
+    friend class NDReshaper;
+
     size_t m_size     = 0;
     size_t m_capacity = 0;
     T*     m_data     = nullptr;
@@ -59,7 +63,6 @@ class DeviceBuffer
     operator CBufferView<T>() const MUDA_NOEXCEPT { return view(); }
 
     ~DeviceBuffer();
-
 
     auto     size() const MUDA_NOEXCEPT { return m_size; }
     auto     capacity() const MUDA_NOEXCEPT { return m_capacity; }

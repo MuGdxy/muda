@@ -13,6 +13,7 @@ class DeviceBuffer2D
 {
   private:
     friend class BufferLaunch;
+    friend class NDReshaper;
     T*       m_data        = nullptr;
     size_t   m_pitch_bytes = 0;
     Extent2D m_extent      = Extent2D::Zero();

@@ -16,7 +16,6 @@ struct TestStruct
     }
 };
 
-
 TEST_CASE("buffer_test", "[buffer]")
 {
     SECTION("trivial")
@@ -72,7 +71,6 @@ TEST_CASE("buffer_test", "[buffer]")
 
     SECTION("non-trivial")
     {
-
         REQUIRE(std::is_trivially_constructible_v<TestStruct> == false);
         REQUIRE(std::is_trivially_destructible_v<TestStruct> == false);
 
@@ -161,4 +159,63 @@ TEST_CASE("buffer_test", "[buffer]")
         buffer.copy_to(h_res);
         REQUIRE(h_res == gt);
     }
+}
+
+TEST_CASE("buffer_2d_test", "[buffer]")
+{
+    DeviceBuffer2D<int> buffer{};
+    buffer.resize(Extent2D{137, 137}, 1);
+    std::vector<int> gt(137 * 137, 1);
+    std::vector<int> h_res;
+
+    REQUIRE(buffer.view().total_size() == gt.size());
+
+
+    buffer.copy_to(h_res);
+
+    REQUIRE(h_res == gt);
+
+    buffer.resize(Extent2D{99, 99}, 2);
+    gt.resize(99 * 99, 2);
+    buffer.copy_to(h_res);
+    REQUIRE(h_res == gt);
+
+    buffer.shrink_to_fit();
+    gt.shrink_to_fit();
+
+    DeviceBuffer2D<int> buffer2 = buffer;
+    buffer2.copy_to(h_res);
+    REQUIRE(h_res == gt);
+
+    buffer2.resize(Extent2D{122, 122}, 3);
+    buffer2.copy_to(h_res);
+    auto dense2d = make_dense_2d(h_res.data(), 122, 122);
+    REQUIRE(dense2d(98, 98) == 1);
+    REQUIRE(dense2d(98, 99) == 3);
+}
+
+TEST_CASE("buffer_3d_test", "[buffer]")
+{
+    DeviceBuffer3D<int> buffer{};
+    buffer.resize(Extent3D{137, 137, 137}, 1);
+    std::vector<int> gt(137 * 137 * 137, 1);
+    std::vector<int> h_res;
+
+    REQUIRE(buffer.view().total_size() == gt.size());
+
+    buffer.copy_to(h_res);
+
+    REQUIRE(h_res == gt);
+
+    buffer.resize(Extent3D{99, 99, 99}, 2);
+    gt.resize(99 * 99 * 99, 2);
+    buffer.copy_to(h_res);
+    REQUIRE(h_res == gt);
+
+    buffer.shrink_to_fit();
+    gt.shrink_to_fit();
+
+    DeviceBuffer3D<int> buffer2 = buffer;
+    buffer2.copy_to(h_res);
+    REQUIRE(h_res == gt);
 }

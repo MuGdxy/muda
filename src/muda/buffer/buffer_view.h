@@ -11,6 +11,14 @@ namespace muda
 template <typename T>
 class BufferViewBase
 {
+    template <typename T, typename FConstruct>
+    friend void resize(int              grid_dim,
+                       int              block_dim,
+                       cudaStream_t     stream,
+                       DeviceBuffer<T>& buffer,
+                       size_t           new_size,
+                       FConstruct&&     fct);
+
   protected:
     T*     m_data   = nullptr;
     size_t m_offset = ~0;

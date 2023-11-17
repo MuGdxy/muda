@@ -13,7 +13,8 @@
 #include <muda/buffer/graph_buffer_2d_view.h>
 #include <muda/buffer/graph_buffer_3d_view.h>
 
-#include <muda/buffer/common.h>
+#include <muda/buffer/agent.h>
+#include <muda/buffer/reshape_nd/nd_reshaper.h>
 
 namespace muda
 {
@@ -343,10 +344,7 @@ MUDA_HOST BufferLaunch& BufferLaunch::shrink_to_fit(DeviceBuffer3D<T>& buffer)
 template <typename T>
 MUDA_HOST BufferLaunch& BufferLaunch::copy(VarView<T> dst, CVarView<T> src)
 {
-    if constexpr(std::is_trivially_copyable_v<T>)
-        Memory(m_stream).transfer(dst.data(), src.data(), sizeof(T));
-    else
-        details::buffer::kernel_assign(m_stream, dst, src);
+    details::buffer::kernel_assign(m_grid_dim, m_block_dim, m_stream, dst, src);
     return *this;
 }
 
@@ -354,10 +352,7 @@ template <typename T>
 MUDA_HOST BufferLaunch& BufferLaunch::copy(BufferView<T> dst, CBufferView<T> src)
 {
     MUDA_ASSERT(dst.size() == src.size(), "BufferView should have the same size");
-    if constexpr(std::is_trivially_copyable_v<T>)
-        Memory(m_stream).transfer(dst.data(), src.data(), dst.size() * sizeof(T));
-    else
-        details::buffer::kernel_assign(m_grid_dim, m_block_dim, m_stream, dst, src);
+    details::buffer::kernel_assign(m_grid_dim, m_block_dim, m_stream, dst, src);
     return *this;
 }
 
@@ -365,22 +360,7 @@ template <typename T>
 MUDA_HOST BufferLaunch& BufferLaunch::copy(Buffer2DView<T> dst, CBuffer2DView<T> src)
 {
     MUDA_ASSERT(dst.extent() == src.extent(), "BufferView should have the same size");
-    if constexpr(std::is_trivially_copyable_v<T>)
-    {
-        cudaMemcpy3DParms parms = {0};
-
-        parms.srcPtr = src.cuda_pitched_ptr();
-        parms.srcPos = src.offset().template cuda_pos<T>();
-        parms.dstPtr = dst.cuda_pitched_ptr();
-        parms.extent = dst.extent().template cuda_extent<T>();
-        parms.dstPos = dst.offset().template cuda_pos<T>();
-
-        Memory(m_stream).transfer(parms);
-    }
-    else
-    {
-        details::buffer::kernel_assign(m_grid_dim, m_block_dim, m_stream, dst, src);
-    }
+    details::buffer::kernel_assign(m_grid_dim, m_block_dim, m_stream, dst, src);
     return *this;
 }
 
@@ -388,22 +368,7 @@ template <typename T>
 MUDA_HOST BufferLaunch& BufferLaunch::copy(Buffer3DView<T> dst, CBuffer3DView<T> src)
 {
     MUDA_ASSERT(dst.extent() == src.extent(), "BufferView should have the same size");
-    if constexpr(std::is_trivially_copyable_v<T>)
-    {
-        cudaMemcpy3DParms parms = {0};
-
-        parms.srcPtr = src.cuda_pitched_ptr();
-        parms.srcPos = src.offset().template cuda_pos<T>();
-        parms.dstPtr = dst.cuda_pitched_ptr();
-        parms.extent = dst.extent().template cuda_extent<T>();
-        parms.dstPos = dst.offset().template cuda_pos<T>();
-
-        Memory(m_stream).transfer(parms);
-    }
-    else
-    {
-        details::buffer::kernel_assign(m_grid_dim, m_block_dim, m_stream, dst, src);
-    }
+    details::buffer::kernel_assign(m_grid_dim, m_block_dim, m_stream, dst, src);
     return *this;
 }
 
@@ -663,14 +628,7 @@ MUDA_HOST BufferLaunch& copy(ComputeGraphVar<Buffer3DView<T>>& dst,
 template <typename T>
 MUDA_HOST BufferLaunch& BufferLaunch::fill(VarView<T> view, const T& val)
 {
-    if constexpr(std::is_trivially_copyable_v<T>)
-    {
-        Memory(m_stream).upload(view.data(), &val, sizeof(T));
-    }
-    else
-    {
-        details::buffer::kernel_fill(m_stream, view, val);
-    }
+    details::buffer::kernel_fill(m_stream, view, val);
     return *this;
 }
 
@@ -733,61 +691,8 @@ MUDA_HOST BufferLaunch& BufferLaunch::resize(DeviceBuffer<T>& buffer, size_t new
 {
     MUDA_ASSERT(ComputeGraphBuilder::is_direct_launching(),
                 "cannot resize a buffer in a compute graph");
-
-    auto mem = Memory(m_stream);
-
-    auto& m_data     = buffer.m_data;
-    auto& m_size     = buffer.m_size;
-    auto& m_capacity = buffer.m_capacity;
-
-    if(new_size == m_size)
-        return *this;
-
-    auto old_size = m_size;
-
-    if(new_size < m_size)
-    {
-        // destruct the old memory
-        if constexpr(!std::is_trivially_destructible_v<T>)
-        {
-            auto to_destruct = buffer.view(new_size);
-            details::buffer::kernel_destruct(m_grid_dim, m_block_dim, m_stream, to_destruct);
-        }
-        m_size = new_size;
-        return *this;
-    }
-
-    if(new_size <= m_capacity)
-    {
-        // construct the new memory
-        auto to_construct = buffer.view(old_size, new_size - old_size);
-        fct(to_construct);
-        m_size = new_size;
-    }
-    else
-    {
-        T* ptr;
-        mem.alloc(&ptr, new_size * sizeof(T));
-        if(m_data)
-        {
-            // copy old data
-            BufferView<T> dst{ptr, 0, old_size};
-            copy<T>(dst, buffer.view(0, old_size));
-        }
-
-        // construct the new memory
-        {
-            BufferView<T> to_construct{ptr, old_size, new_size - old_size};
-            fct(to_construct);
-        }
-
-        if(m_data)
-            mem.free(m_data);
-
-        m_data     = ptr;
-        m_size     = new_size;
-        m_capacity = new_size;
-    }
+    details::buffer::NDReshaper::resize(
+        m_grid_dim, m_block_dim, m_stream, buffer, new_size, std::forward<FConstruct>(fct));
     return *this;
 }
 
@@ -850,7 +755,7 @@ MUDA_HOST BufferLaunch& BufferLaunch::resize(DeviceBuffer2D<T>& buffer,
         if(m_data)
         {
             Buffer2DView<T> dst{ptr, new_pitch_bytes, Offset2D::Zero(), old_extent};
-            BufferLaunch(m_stream).copy<T>(dst, buffer.view());
+            copy<T>(dst, buffer.view());
         }
 
         // construct the new memory
@@ -874,11 +779,9 @@ MUDA_HOST BufferLaunch& BufferLaunch::resize(DeviceBuffer2D<T>& buffer,
                 Buffer2DView<T> to_construct{ptr, new_pitch_bytes, offset, new_extent};
                 fct(to_construct);
             }
-            else if (old_extent.height() == new_extent.height())
+            else if(old_extent.height() == new_extent.height())
             {
-
             }
-
         }
 
         // if the old buffer was allocated, deallocate it
@@ -955,7 +858,7 @@ MUDA_HOST BufferLaunch& BufferLaunch::resize(DeviceBuffer3D<T>& buffer,
         {
             Buffer3DView<T> dst{
                 ptr, new_pitch_bytes, new_pitch_bytes_area, Offset3D::Zero(), old_extent};
-            BufferLaunch(m_stream).copy<T>(dst, buffer.view());
+            copy<T>(dst, buffer.view());
         }
 
         // construct the new memory

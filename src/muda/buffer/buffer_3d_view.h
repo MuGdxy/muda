@@ -6,6 +6,7 @@
 #include <muda/type_traits/type_modifier.h>
 #include <muda/viewer/dense/dense_3d.h>
 #include <muda/tools/extent.h>
+#include <muda/buffer/buffer_info_accessor.h>
 
 namespace muda
 {
@@ -13,6 +14,7 @@ template <typename T>
 class Buffer3DViewBase
 {
     friend class BufferLaunch;
+    friend class muda::details::buffer::BufferInfoAccessor<Buffer2DViewBase<T>>;
 
   protected:
     T*       m_data             = nullptr;
