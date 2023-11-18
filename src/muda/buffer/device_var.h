@@ -18,35 +18,34 @@ class DeviceVar
 
     DeviceVar();
     DeviceVar(const T& value);
+
     DeviceVar(const DeviceVar& other);
     DeviceVar(DeviceVar&& other) MUDA_NOEXCEPT;
+    DeviceVar& operator=(const DeviceVar<T>& other);
+    DeviceVar& operator=(DeviceVar<T>&& other);
 
     // device transfer
-    DeviceVar& operator=(const DeviceVar<T>& other);
+    
     DeviceVar& operator=(VarView<T> other);
-    void copy_from(VarView<T> other);
+    void       copy_from(VarView<T> other);
 
     DeviceVar& operator=(const T& val);  // copy from host
-    operator T() const;  // copy to host
+    operator T() const;                  // copy to host
 
     T*       data() MUDA_NOEXCEPT { return m_data; }
     const T* data() const MUDA_NOEXCEPT { return m_data; }
 
-    VarView<T> view() const MUDA_NOEXCEPT { return VarView<T>{m_data}; };
-    operator VarView<T>() const MUDA_NOEXCEPT { return view(); }
+    VarView<T>  view() MUDA_NOEXCEPT { return VarView<T>{m_data}; };
+    CVarView<T> view() const MUDA_NOEXCEPT { return CVarView<T>{m_data}; };
+
+    operator VarView<T>() MUDA_NOEXCEPT { return view(); }
+    operator CVarView<T>() const MUDA_NOEXCEPT { return view(); }
 
     Dense<T>  viewer() MUDA_NOEXCEPT;
     CDense<T> cviewer() const MUDA_NOEXCEPT;
-};
 
-template <typename T>
-Dense<T> make_dense(DeviceVar<T>& v) MUDA_NOEXCEPT;
-template <typename T>
-CDense<T> make_cdense(const DeviceVar<T>& v) MUDA_NOEXCEPT;
-template <typename T>
-Dense<T> make_viewer(DeviceVar<T>& v) MUDA_NOEXCEPT;
-template <typename T>
-CDense<T> make_cviewer(const DeviceVar<T>& v) MUDA_NOEXCEPT;
+    ~DeviceVar();
+};
 }  // namespace muda
 
 #include "details/device_var.inl"

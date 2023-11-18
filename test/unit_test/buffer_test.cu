@@ -5,6 +5,66 @@
 #include <Eigen/Core>
 using namespace muda;
 
+template <typename T>
+std::vector<T> visualize(const DeviceBuffer<T>& buffer, std::string_view sep = " ")
+{
+
+    std::vector<T> h_res;
+    buffer.copy_to(h_res);
+    auto dense = make_dense_1d(h_res.data(), h_res.size());
+
+    for(int i = 0; i < dense.dim(); ++i)
+    {
+        std::cout << dense(i) << sep;
+    }
+    std::cout << std::endl;
+    return h_res;
+}
+template <typename T>
+std::vector<T> visualize(const DeviceBuffer2D<T>& buffer, std::string_view sep = " ")
+{
+    std::vector<T> h_res;
+    buffer.copy_to(h_res);
+    auto dense =
+        make_dense_2d(h_res.data(), buffer.extent().height(), buffer.extent().width());
+
+    for(int i = 0; i < dense.dim().x; ++i)
+    {
+        for(int j = 0; j < dense.dim().y; ++j)
+        {
+            std::cout << dense(i, j) << sep;
+        }
+        std::cout << "\n";
+    }
+    std::cout << std::endl;
+    return h_res;
+}
+template <typename T>
+std::vector<T> visualize(const DeviceBuffer3D<T>& buffer, std::string_view sep = " ")
+{
+    std::vector<T> h_res;
+    buffer.copy_to(h_res);
+    auto dense = make_dense_3d(h_res.data(),
+                               buffer.extent().depth(),
+                               buffer.extent().height(),
+                               buffer.extent().width());
+
+    for(int k = 0; k < dense.dim().x; ++k)
+    {
+        for(int i = 0; i < dense.dim().y; ++i)
+        {
+            for(int j = 0; j < dense.dim().z; ++j)
+            {
+                std::cout << dense(k, i, j) << sep;
+            }
+            std::cout << "\n";
+        }
+        std::cout << "\n";
+    }
+    std::cout << std::endl;
+    return h_res;
+}
+
 struct TestStruct
 {
     int          a;
@@ -15,7 +75,6 @@ struct TestStruct
         return a == rhs.a;
     }
 };
-
 
 TEST_CASE("buffer_test", "[buffer]")
 {
@@ -72,7 +131,6 @@ TEST_CASE("buffer_test", "[buffer]")
 
     SECTION("non-trivial")
     {
-
         REQUIRE(std::is_trivially_constructible_v<TestStruct> == false);
         REQUIRE(std::is_trivially_destructible_v<TestStruct> == false);
 
@@ -161,4 +219,132 @@ TEST_CASE("buffer_test", "[buffer]")
         buffer.copy_to(h_res);
         REQUIRE(h_res == gt);
     }
+}
+
+TEST_CASE("buffer_2d_test", "[buffer]")
+{
+    SECTION("simple")
+    {
+        DeviceBuffer2D<int> buffer{};
+        buffer.resize(Extent2D{137, 137}, 1);
+        std::vector<int> gt(137 * 137, 1);
+        std::vector<int> h_res;
+
+        REQUIRE(buffer.view().total_size() == gt.size());
+
+
+        buffer.copy_to(h_res);
+
+        REQUIRE(h_res == gt);
+
+        buffer.resize(Extent2D{99, 99}, 2);
+        gt.resize(99 * 99, 2);
+        buffer.copy_to(h_res);
+        REQUIRE(h_res == gt);
+
+        buffer.shrink_to_fit();
+        gt.shrink_to_fit();
+
+        DeviceBuffer2D<int> buffer2 = buffer;
+        buffer2.copy_to(h_res);
+        REQUIRE(h_res == gt);
+
+        buffer2.resize(Extent2D{122, 122}, 3);
+        buffer2.copy_to(h_res);
+        auto dense2d = make_dense_2d(h_res.data(), 122, 122);
+        // inner boundary check
+        REQUIRE(dense2d(98, 98) == 1);
+        REQUIRE(dense2d(98, 97) == 1);
+        REQUIRE(dense2d(97, 98) == 1);
+
+        // outer boundary check
+        REQUIRE(dense2d(98, 99) == 3);
+        REQUIRE(dense2d(99, 98) == 3);
+        REQUIRE(dense2d(99, 99) == 3);
+    }
+
+    SECTION("vis")
+    {
+        DeviceBuffer2D<int> buffer;
+        buffer.resize(Extent2D{5, 5}, 1);
+        std::cout << "resize: 5x5 with 1" << std::endl;
+        auto res = visualize(buffer);
+        std::cout << "resize: 7x2 with 2" << std::endl;
+        buffer.resize(Extent2D{7, 2}, 2);
+
+        {
+            auto res = visualize(buffer);
+            REQUIRE(std::all_of(
+                res.begin(), res.end(), [](int v) { return v == 1 || v == 2; }));
+        }
+
+        std::cout << "resize: 2x7 with 3" << std::endl;
+        buffer.resize(Extent2D{2, 7}, 3);
+        {
+            // because we trim the height, so the values of 2 are gone
+            auto res = visualize(buffer);
+            REQUIRE(std::all_of(
+                res.begin(), res.end(), [](int v) { return v == 1 || v == 3; }));
+        }
+
+        std::cout << "resize: 9x9 with 4" << std::endl;
+        buffer.resize(Extent2D{9, 9}, 4);
+        {
+            auto res = visualize(buffer);
+            REQUIRE(std::all_of(res.begin(),
+                                res.end(),
+                                [](int v) { return v == 1 || v == 3 || v == 4; }));
+        }
+    }
+}
+
+
+TEST_CASE("buffer_3d_test", "[buffer]")
+{
+    DeviceBuffer3D<int> buffer{};
+    buffer.resize(Extent3D{137, 137, 137}, 1);
+    std::vector<int> gt(137 * 137 * 137, 1);
+    std::vector<int> h_res;
+
+    REQUIRE(buffer.view().total_size() == gt.size());
+
+    buffer.copy_to(h_res);
+
+    REQUIRE(h_res == gt);
+
+    buffer.resize(Extent3D{99, 99, 99}, 2);
+    gt.resize(99 * 99 * 99, 2);
+    buffer.copy_to(h_res);
+    REQUIRE(h_res == gt);
+
+    buffer.shrink_to_fit();
+    gt.shrink_to_fit();
+
+    DeviceBuffer3D<int> buffer2 = buffer;
+    buffer2.copy_to(h_res);
+    REQUIRE(h_res == gt);
+    REQUIRE(std::all_of(h_res.begin(), h_res.end(), [](int v) { return v == 1; }));
+
+    buffer2.resize(Extent3D{122, 122, 122}, 3);
+    buffer2.copy_to(h_res);
+    auto dense3d = make_dense_3d(h_res.data(), 122, 122, 122);
+
+    REQUIRE(std::all_of(
+        h_res.begin(), h_res.end(), [](int v) { return v == 1 || v == 3; }));
+
+    REQUIRE(dense3d(0, 0, 0) == 1);
+
+    // inner boundary check
+    REQUIRE(dense3d(98, 98, 98) == 1);
+    REQUIRE(dense3d(98, 97, 98) == 1);
+    REQUIRE(dense3d(97, 98, 98) == 1);
+
+    // outer boundary check
+    REQUIRE(dense3d(98, 99, 98) == 3);
+    REQUIRE(dense3d(99, 98, 98) == 3);
+    REQUIRE(dense3d(98, 98, 99) == 3);
+    REQUIRE(dense3d(99, 99, 98) == 3);
+    REQUIRE(dense3d(98, 99, 99) == 3);
+    REQUIRE(dense3d(99, 98, 99) == 3);
+    REQUIRE(dense3d(99, 99, 99) == 3);
 }

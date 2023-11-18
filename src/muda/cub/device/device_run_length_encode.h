@@ -26,15 +26,8 @@ class DeviceRunLengthEncode : public CubWrapper<DeviceRunLengthEncode>
                                   NumRunsOutputIteratorT   d_num_runs_out,
                                   int                      num_items)
     {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceRunLengthEncode::Encode(d_temp_storage,
-                                                                 temp_storage_bytes,
-                                                                 d_in,
-                                                                 d_unique_out,
-                                                                 d_counts_out,
-                                                                 d_num_runs_out,
-                                                                 num_items,
-                                                                 this->stream(),
-                                                                 false));
+        MUDA_CUB_WRAPPER_IMPL(cub::DeviceRunLengthEncode::Encode(
+            d_temp_storage, temp_storage_bytes, d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items, _stream, false));
     }
 
     template <typename InputIteratorT, typename OffsetsOutputIteratorT, typename LengthsOutputIteratorT, typename NumRunsOutputIteratorT>
@@ -45,16 +38,8 @@ class DeviceRunLengthEncode : public CubWrapper<DeviceRunLengthEncode>
                                           NumRunsOutputIteratorT d_num_runs_out,
                                           int                    num_items)
     {
-        MUDA_CUB_WRAPPER_IMPL(
-            cub::DeviceRunLengthEncode::NonTrivialRuns(d_temp_storage,
-                                                       temp_storage_bytes,
-                                                       d_in,
-                                                       d_offsets_out,
-                                                       d_lengths_out,
-                                                       d_num_runs_out,
-                                                       num_items,
-                                                       this->stream(),
-                                                       false));
+        MUDA_CUB_WRAPPER_IMPL(cub::DeviceRunLengthEncode::NonTrivialRuns(
+            d_temp_storage, temp_storage_bytes, d_in, d_offsets_out, d_lengths_out, d_num_runs_out, num_items, _stream, false));
     }
 
     // DeviceBuffer:
@@ -67,15 +52,8 @@ class DeviceRunLengthEncode : public CubWrapper<DeviceRunLengthEncode>
                                   NumRunsOutputIteratorT   d_num_runs_out,
                                   int                      num_items)
     {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceRunLengthEncode::Encode(d_temp_storage,
-                                                                 temp_storage_bytes,
-                                                                 d_in,
-                                                                 d_unique_out,
-                                                                 d_counts_out,
-                                                                 d_num_runs_out,
-                                                                 num_items,
-                                                                 this->stream(),
-                                                                 false));
+        MUDA_CUB_WRAPPER_IMPL(cub::DeviceRunLengthEncode::Encode(
+            d_temp_storage, temp_storage_bytes, d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items, _stream, false));
     }
 
     template <typename InputIteratorT, typename OffsetsOutputIteratorT, typename LengthsOutputIteratorT, typename NumRunsOutputIteratorT>
@@ -86,16 +64,8 @@ class DeviceRunLengthEncode : public CubWrapper<DeviceRunLengthEncode>
                                           NumRunsOutputIteratorT d_num_runs_out,
                                           int                    num_items)
     {
-        MUDA_CUB_WRAPPER_IMPL(
-            cub::DeviceRunLengthEncode::NonTrivialRuns(d_temp_storage,
-                                                       temp_storage_bytes,
-                                                       d_in,
-                                                       d_offsets_out,
-                                                       d_lengths_out,
-                                                       d_num_runs_out,
-                                                       num_items,
-                                                       this->stream(),
-                                                       false));
+        MUDA_CUB_WRAPPER_IMPL(cub::DeviceRunLengthEncode::NonTrivialRuns(
+            d_temp_storage, temp_storage_bytes, d_in, d_offsets_out, d_lengths_out, d_num_runs_out, num_items, _stream, false));
     }
 
     // Origin:
@@ -109,16 +79,8 @@ class DeviceRunLengthEncode : public CubWrapper<DeviceRunLengthEncode>
                                   NumRunsOutputIteratorT d_num_runs_out,
                                   int                    num_items)
     {
-        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(
-            cub::DeviceRunLengthEncode::Encode(d_temp_storage,
-                                               temp_storage_bytes,
-                                               d_in,
-                                               d_unique_out,
-                                               d_counts_out,
-                                               d_num_runs_out,
-                                               num_items,
-                                               this->stream(),
-                                               false));
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DeviceRunLengthEncode::Encode(
+            d_temp_storage, temp_storage_bytes, d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items, _stream, false));
     }
 
     template <typename InputIteratorT, typename OffsetsOutputIteratorT, typename LengthsOutputIteratorT, typename NumRunsOutputIteratorT>
@@ -130,16 +92,8 @@ class DeviceRunLengthEncode : public CubWrapper<DeviceRunLengthEncode>
                                           NumRunsOutputIteratorT d_num_runs_out,
                                           int                    num_items)
     {
-        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(
-            cub::DeviceRunLengthEncode::NonTrivialRuns(d_temp_storage,
-                                                       temp_storage_bytes,
-                                                       d_in,
-                                                       d_offsets_out,
-                                                       d_lengths_out,
-                                                       d_num_runs_out,
-                                                       num_items,
-                                                       this->stream(),
-                                                       false));
+        MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DeviceRunLengthEncode::NonTrivialRuns(
+            d_temp_storage, temp_storage_bytes, d_in, d_offsets_out, d_lengths_out, d_num_runs_out, num_items, _stream, false));
     }
 };
 }  // namespace muda

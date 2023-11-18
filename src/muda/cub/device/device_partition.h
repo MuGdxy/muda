@@ -26,15 +26,8 @@ class DevicePartition : public CubWrapper<DevicePartition>
                              NumSelectedIteratorT     d_num_selected_out,
                              int                      num_items)
     {
-        MUDA_CUB_WRAPPER_IMPL(cub::DevicePartition::Flagged(d_temp_storage,
-                                                            temp_storage_bytes,
-                                                            d_in,
-                                                            d_flags,
-                                                            d_out,
-                                                            d_num_selected_out,
-                                                            num_items,
-                                                            this->stream(),
-                                                            false));
+        MUDA_CUB_WRAPPER_IMPL(cub::DevicePartition::Flagged(
+            d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, _stream, false));
     }
 
     template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename SelectOp>
@@ -45,15 +38,8 @@ class DevicePartition : public CubWrapper<DevicePartition>
                         int                      num_items,
                         SelectOp                 select_op)
     {
-        MUDA_CUB_WRAPPER_IMPL(cub::DevicePartition::If(d_temp_storage,
-                                                       temp_storage_bytes,
-                                                       d_in,
-                                                       d_out,
-                                                       d_num_selected_out,
-                                                       num_items,
-                                                       select_op,
-                                                       this->stream(),
-                                                       false));
+        MUDA_CUB_WRAPPER_IMPL(cub::DevicePartition::If(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op, _stream, false));
     }
 
     template <typename InputIteratorT, typename FirstOutputIteratorT, typename SecondOutputIteratorT, typename UnselectedOutputIteratorT, typename NumSelectedIteratorT, typename SelectFirstPartOp, typename SelectSecondPartOp>
@@ -77,7 +63,7 @@ class DevicePartition : public CubWrapper<DevicePartition>
                                                        num_items,
                                                        select_first_part_op,
                                                        select_second_part_op,
-                                                       this->stream(),
+                                                       _stream,
                                                        false));
     }
 
@@ -91,15 +77,8 @@ class DevicePartition : public CubWrapper<DevicePartition>
                              NumSelectedIteratorT     d_num_selected_out,
                              int                      num_items)
     {
-        MUDA_CUB_WRAPPER_IMPL(cub::DevicePartition::Flagged(d_temp_storage,
-                                                            temp_storage_bytes,
-                                                            d_in,
-                                                            d_flags,
-                                                            d_out,
-                                                            d_num_selected_out,
-                                                            num_items,
-                                                            this->stream(),
-                                                            false));
+        MUDA_CUB_WRAPPER_IMPL(cub::DevicePartition::Flagged(
+            d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, _stream, false));
     }
 
     template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename SelectOp>
@@ -110,15 +89,8 @@ class DevicePartition : public CubWrapper<DevicePartition>
                         int                      num_items,
                         SelectOp                 select_op)
     {
-        MUDA_CUB_WRAPPER_IMPL(cub::DevicePartition::If(d_temp_storage,
-                                                       temp_storage_bytes,
-                                                       d_in,
-                                                       d_out,
-                                                       d_num_selected_out,
-                                                       num_items,
-                                                       select_op,
-                                                       this->stream(),
-                                                       false));
+        MUDA_CUB_WRAPPER_IMPL(cub::DevicePartition::If(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op, _stream, false));
     }
 
     template <typename InputIteratorT, typename FirstOutputIteratorT, typename SecondOutputIteratorT, typename UnselectedOutputIteratorT, typename NumSelectedIteratorT, typename SelectFirstPartOp, typename SelectSecondPartOp>
@@ -142,7 +114,7 @@ class DevicePartition : public CubWrapper<DevicePartition>
                                                        num_items,
                                                        select_first_part_op,
                                                        select_second_part_op,
-                                                       this->stream(),
+                                                       _stream,
                                                        false));
     }
 
@@ -158,7 +130,7 @@ class DevicePartition : public CubWrapper<DevicePartition>
                              int                  num_items)
     {
         MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DevicePartition::Flagged(
-            d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, this->stream(), false));
+            d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, _stream, false));
     }
 
     template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename SelectOp>
@@ -171,7 +143,7 @@ class DevicePartition : public CubWrapper<DevicePartition>
                         SelectOp             select_op)
     {
         MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DevicePartition::If(
-            d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op, this->stream(), false));
+            d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op, _stream, false));
     }
 
     template <typename InputIteratorT, typename FirstOutputIteratorT, typename SecondOutputIteratorT, typename UnselectedOutputIteratorT, typename NumSelectedIteratorT, typename SelectFirstPartOp, typename SelectSecondPartOp>
@@ -197,7 +169,7 @@ class DevicePartition : public CubWrapper<DevicePartition>
                                      num_items,
                                      select_first_part_op,
                                      select_second_part_op,
-                                     this->stream(),
+                                     _stream,
                                      false));
     }
 };

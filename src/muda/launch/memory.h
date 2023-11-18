@@ -71,6 +71,9 @@ class Memory : public LaunchBase<Memory>
                             bool              async = DEFAULT_ASYNC_ALLOC_FREE);
     MUDA_HOST Memory& free(cudaPitchedPtr pitched_ptr, bool async = DEFAULT_ASYNC_ALLOC_FREE);
     MUDA_HOST Memory& copy(const cudaMemcpy3DParms& parms);
+    MUDA_HOST Memory& transfer(cudaMemcpy3DParms parms);
+    MUDA_HOST Memory& download(cudaMemcpy3DParms parms);
+    MUDA_HOST Memory& upload(cudaMemcpy3DParms parms);
     MUDA_HOST Memory& set(cudaPitchedPtr pitched_ptr, cudaExtent extent, char value = 0);
 };
 

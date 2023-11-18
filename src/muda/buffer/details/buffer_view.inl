@@ -4,7 +4,7 @@
 namespace muda
 {
 template <typename T>
-BufferViewBase<T> BufferViewBase<T>::subview(size_t offset, size_t size) const MUDA_NOEXCEPT
+MUDA_GENERIC BufferViewBase<T> BufferViewBase<T>::subview(size_t offset, size_t size) const MUDA_NOEXCEPT
 {
     if(ComputeGraphBuilder::is_topo_building())
         return BufferViewBase<T>{};  // dummy
@@ -19,7 +19,7 @@ BufferViewBase<T> BufferViewBase<T>::subview(size_t offset, size_t size) const M
 }
 
 template <typename T>
-void BufferView<T>::fill(const T& v)
+MUDA_HOST void BufferView<T>::fill(const T& v)
 {
     BufferLaunch()
         .fill(*this, v)  //
@@ -27,7 +27,7 @@ void BufferView<T>::fill(const T& v)
 }
 
 template <typename T>
-void BufferView<T>::copy_from(const BufferView<T>& other)
+MUDA_HOST void BufferView<T>::copy_from(CBufferView<T> other)
 {
     BufferLaunch()
         .copy(*this, other)  //
@@ -35,7 +35,7 @@ void BufferView<T>::copy_from(const BufferView<T>& other)
 }
 
 template <typename T>
-void BufferView<T>::copy_from(T* host)
+MUDA_HOST void BufferView<T>::copy_from(T* host)
 {
     BufferLaunch()
         .copy(*this, host)  //
@@ -43,7 +43,7 @@ void BufferView<T>::copy_from(T* host)
 }
 
 template <typename T>
-void BufferViewBase<T>::copy_to(T* host) const
+MUDA_HOST void CBufferView<T>::copy_to(T* host) const
 {
     BufferLaunch()
         .copy(host, *this)  //
@@ -51,13 +51,13 @@ void BufferViewBase<T>::copy_to(T* host) const
 }
 
 template <typename T>
-Dense1D<T> BufferView<T>::viewer() const MUDA_NOEXCEPT
+MUDA_GENERIC Dense1D<T> BufferView<T>::viewer() const MUDA_NOEXCEPT
 {
     return Dense1D<T>{this->m_data, static_cast<int>(m_size)};
 }
 
 template <typename T>
-CDense1D<T> BufferViewBase<T>::cviewer() const MUDA_NOEXCEPT
+MUDA_GENERIC CDense1D<T> BufferViewBase<T>::cviewer() const MUDA_NOEXCEPT
 {
     return CDense1D<T>{m_data, static_cast<int>(m_size)};
 }

@@ -32,6 +32,22 @@ DeviceVar<T>& DeviceVar<T>::operator=(const DeviceVar<T>& other)
 }
 
 template <typename T>
+DeviceVar<T>& DeviceVar<T>::operator=(DeviceVar<T>&& other)
+{
+    if(this == &other)
+        return *this;
+
+    if(m_data)
+        Memory().free(m_data).wait();
+
+    m_data = other.m_data;
+
+    other.m_data = nullptr;
+
+    return *this;
+}
+
+template <typename T>
 DeviceVar<T>& DeviceVar<T>::operator=(VarView<T> other)
 {
     view().copy_from(other);
@@ -78,26 +94,9 @@ CDense<T> DeviceVar<T>::cviewer() const MUDA_NOEXCEPT
 }
 
 template <typename T>
-Dense<T> make_dense(DeviceVar<T>& v) MUDA_NOEXCEPT
+DeviceVar<T>::~DeviceVar()
 {
-    return v.viewer();
-}
-
-template <typename T>
-CDense<T> make_cdense(const DeviceVar<T>& v) MUDA_NOEXCEPT
-{
-    return v.cviewer();
-}
-
-template <typename T>
-Dense<T> make_viewer(DeviceVar<T>& v) MUDA_NOEXCEPT
-{
-    return make_dense(v);
-}
-
-template <typename T>
-CDense<T> make_cviewer(const DeviceVar<T>& v) MUDA_NOEXCEPT
-{
-    return make_cdense(v);
+    if(m_data)
+        Memory().free(m_data).wait();
 }
 }  // namespace muda

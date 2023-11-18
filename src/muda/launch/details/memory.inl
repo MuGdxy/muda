@@ -1,5 +1,6 @@
 #pragma once
 #include <muda/compute_graph/compute_graph.h>
+#include "memory.h"
 namespace muda
 {
 template <typename T>
@@ -206,10 +207,28 @@ MUDA_INLINE MUDA_HOST Memory& muda::Memory::free(cudaPitchedPtr pitched_ptr, boo
 
 MUDA_INLINE MUDA_HOST Memory& Memory::copy(const cudaMemcpy3DParms& parms)
 {
+    wait();
     ComputeGraphBuilder::invoke_phase_actions(
         [&] { checkCudaErrors(cudaMemcpy3DAsync(&parms, stream())); },
         [&] { details::ComputeGraphAccessor().set_memcpy_node(parms); });
     return *this;
+}
+
+MUDA_INLINE MUDA_HOST Memory& Memory::transfer(cudaMemcpy3DParms parms)
+{
+    parms.kind = cudaMemcpyDeviceToDevice;
+    return copy(parms);
+}
+
+MUDA_INLINE MUDA_HOST Memory& Memory::download(cudaMemcpy3DParms parms)
+{
+    parms.kind = cudaMemcpyDeviceToHost;
+    return copy(parms);
+}
+MUDA_INLINE MUDA_HOST Memory& Memory::upload(cudaMemcpy3DParms parms)
+{
+    parms.kind = cudaMemcpyHostToDevice;
+    return copy(parms);
 }
 
 MUDA_INLINE MUDA_HOST Memory& Memory::set(cudaPitchedPtr pitched_ptr, cudaExtent extent, char value)
@@ -221,19 +240,24 @@ MUDA_INLINE MUDA_HOST Memory& Memory::set(cudaPitchedPtr pitched_ptr, cudaExtent
         },
         [&]
         {
-            //// seems unable to set a 3D memory in cudaGraph (no depth parameter)
+            // seems unable to set a 3D memory in cudaGraph (no depth parameter)
+            // so we capture cudaMemset3DAsync instead
+            ComputeGraphBuilder::capture(
+                enum_name(ComputeGraphNodeType::MemsetNode),
+                [&](cudaStream_t stream)
+                { cudaMemset3DAsync(pitched_ptr, (int)value, extent, stream); });
+#if 0
+            cudaMemsetParams parms = {};
+            parms.dst              = pitched_ptr.ptr;
+            parms.value            = (int)value;
+            parms.elementSize      = sizeof(char);
 
-            //cudaMemsetParams parms = {};
-            //parms.dst              = pitched_ptr.ptr;
-            //parms.value            = (int)value;
-            //parms.elementSize      = sizeof(char);
+            parms.pitch  = pitched_ptr.pitch;
+            parms.width  = extent.width;
+            parms.height = extent.height;
 
-            //parms.pitch  = pitched_ptr.pitch;
-            //parms.width  = extent.width;
-            //parms.height = extent.height;
-            //details::ComputeGraphAccessor().set_memset_node(parms);
-
-            MUDA_ERROR_WITH_LOCATION("Memory3D not implemented!");
+            details::ComputeGraphAccessor().set_memset_node(parms);
+#endif
         });
     return *this;
 }

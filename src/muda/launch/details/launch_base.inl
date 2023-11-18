@@ -12,12 +12,19 @@ MUDA_INLINE MUDA_GENERIC LaunchCore::LaunchCore(cudaStream_t stream) MUDA_NOEXCE
 //Logger::instance();
 #ifdef __CUDA_ARCH__
 #else
-    if(ComputeGraphBuilder::is_phase_serial_launching())
+    if(!ComputeGraphBuilder::is_phase_none())
     {
-        MUDA_ASSERT(stream == nullptr
-                        || stream == details::ComputeGraphAccessor().current_stream(),
-                    "LaunchBase: stream must be nullptr or equals to current stream");
-        init_stream(details::ComputeGraphAccessor().current_stream());
+        if(ComputeGraphBuilder::is_phase_serial_launching())
+        {
+            MUDA_ASSERT(stream == nullptr
+                            || stream == details::ComputeGraphAccessor().current_stream(),
+                        "LaunchBase: stream must be nullptr or equals to current stream");
+            init_stream(details::ComputeGraphAccessor().current_stream());
+        }
+        else if(ComputeGraphBuilder::is_caturing())
+        {
+            init_stream(details::ComputeGraphAccessor().capture_stream());
+        }
     }
 #endif
 }

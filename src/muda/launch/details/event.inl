@@ -26,8 +26,7 @@ MUDA_INLINE Event::~Event()
         checkCudaErrors(cudaEventDestroy(m_handle));
 }
 
-MUDA_INLINE Event::Event(Event&& o) MUDA_NOEXCEPT
-    : m_handle(o.m_handle)
+MUDA_INLINE Event::Event(Event&& o) MUDA_NOEXCEPT : m_handle(o.m_handle)
 {
     o.m_handle = nullptr;
 }
@@ -36,6 +35,10 @@ MUDA_INLINE Event& Event::operator=(Event&& o) MUDA_NOEXCEPT
 {
     if(this == &o)
         return *this;
+
+    if(m_handle)
+        checkCudaErrors(cudaEventDestroy(m_handle));
+
     m_handle   = o.m_handle;
     o.m_handle = nullptr;
     return *this;

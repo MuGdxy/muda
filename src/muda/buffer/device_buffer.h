@@ -8,6 +8,8 @@
 
 namespace muda
 {
+class NDReshaper;
+
 template <typename T>
 class DeviceVector;
 
@@ -19,6 +21,8 @@ class DeviceBuffer
 {
   private:
     friend class BufferLaunch;
+    friend class NDReshaper;
+
     size_t m_size     = 0;
     size_t m_capacity = 0;
     T*     m_data     = nullptr;
@@ -28,21 +32,23 @@ class DeviceBuffer
 
     DeviceBuffer(size_t n);
     DeviceBuffer();
-    DeviceBuffer(const DeviceBuffer<T>& other);
-    DeviceBuffer(const std::vector<T>& host);
-    DeviceBuffer(DeviceBuffer&& other) MUDA_NOEXCEPT;
 
-    DeviceBuffer& operator=(BufferView<T> view);
+    DeviceBuffer(const DeviceBuffer<T>& other);
+    DeviceBuffer(DeviceBuffer&& other) MUDA_NOEXCEPT;
     DeviceBuffer& operator=(const DeviceBuffer<T>& other);
+    DeviceBuffer& operator=(DeviceBuffer<T>&& other);
+
+    DeviceBuffer(CBufferView<T> other);
+    DeviceBuffer(const std::vector<T>& host);
+    DeviceBuffer& operator=(CBufferView<T> other);
     DeviceBuffer& operator=(const std::vector<T>& other);
 
-    void copy_to(T* host) const;
     void copy_to(std::vector<T>& host) const;
-    void copy_from(const T* host);
     void copy_from(const std::vector<T>& host);
 
     void resize(size_t new_size);
     void resize(size_t new_size, const T& value);
+    void reserve(size_t new_capacity);
     void clear();
     void shrink_to_fit();
     void fill(const T& v);
@@ -50,56 +56,20 @@ class DeviceBuffer
     Dense1D<T>  viewer() MUDA_NOEXCEPT;
     CDense1D<T> cviewer() const MUDA_NOEXCEPT;
 
-    BufferView<T> view(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT;
-    BufferView<T> view() const MUDA_NOEXCEPT;
-    operator BufferView<T>() const MUDA_NOEXCEPT { return view(); }
+    BufferView<T>  view(size_t offset, size_t size = ~0) MUDA_NOEXCEPT;
+    BufferView<T>  view() MUDA_NOEXCEPT;
+    CBufferView<T> view(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT;
+    CBufferView<T> view() const MUDA_NOEXCEPT;
+    operator BufferView<T>() MUDA_NOEXCEPT { return view(); }
+    operator CBufferView<T>() const MUDA_NOEXCEPT { return view(); }
 
     ~DeviceBuffer();
 
-    size_t   size() const MUDA_NOEXCEPT { return m_size; }
+    auto     size() const MUDA_NOEXCEPT { return m_size; }
+    auto     capacity() const MUDA_NOEXCEPT { return m_capacity; }
     T*       data() MUDA_NOEXCEPT { return m_data; }
     const T* data() const MUDA_NOEXCEPT { return m_data; }
 };
 }  // namespace muda
-
-//namespace muda
-//{
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_dense(DeviceBuffer<T>& v) MUDA_NOEXCEPT;
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_cdense(const DeviceBuffer<T>& v) MUDA_NOEXCEPT;
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_viewer(DeviceBuffer<T>& v) MUDA_NOEXCEPT;
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_cviewer(const DeviceBuffer<T>& v) MUDA_NOEXCEPT;
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_dense2D(DeviceBuffer<T>& v, int dimy) MUDA_NOEXCEPT;
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_cdense2D(const DeviceBuffer<T>& v, int dimy) MUDA_NOEXCEPT;
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_dense2D(DeviceBuffer<T>& v, int dimx, int dimy) MUDA_NOEXCEPT;
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_cdense2D(const DeviceBuffer<T>& v, int dimx, int dimy) MUDA_NOEXCEPT;
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_dense2D(DeviceBuffer<T>& v, const int2& dim) MUDA_NOEXCEPT;
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_cdense2D(const DeviceBuffer<T>& v, const int2& dim) MUDA_NOEXCEPT;
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_dense3D(DeviceBuffer<T>& v, int dimy, int dimz) MUDA_NOEXCEPT;
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_cdense3D(const DeviceBuffer<T>& v, int dimy, int dimz) MUDA_NOEXCEPT;
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_dense3D(DeviceBuffer<T>& v, const int2& dimyz) MUDA_NOEXCEPT;
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_cdense3D(const DeviceBuffer<T>& v, const int2& dimyz) MUDA_NOEXCEPT;
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_dense3D(DeviceBuffer<T>& v, int dimx, int dimy, int dimz) MUDA_NOEXCEPT;
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_cdense3D(const DeviceBuffer<T>& v, int dimx, int dimy, int dimz) MUDA_NOEXCEPT;
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_dense3D(DeviceBuffer<T>& v, const int3& dim) MUDA_NOEXCEPT;
-//template <typename T>
-//MUDA_INLINE MUDA_HOST auto make_cdense3D(const DeviceBuffer<T>& v, const int3& dim) MUDA_NOEXCEPT;
-//}  // namespace muda
 
 #include "details/device_buffer.inl"

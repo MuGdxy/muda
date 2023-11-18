@@ -33,14 +33,20 @@ class DeviceVector : public thrust::device_vector<T, thrust::device_allocator<T>
 
     T* data() MUDA_NOEXCEPT { return thrust::raw_pointer_cast(Base::data()); }
 
-    auto view() const MUDA_NOEXCEPT
+    auto view() MUDA_NOEXCEPT
     {
         return BufferView<T>{const_cast<T*>(this->data()), Base::size()};
     }
 
-    operator BufferView<T>() const MUDA_NOEXCEPT { return view(); }
+    auto view() const MUDA_NOEXCEPT
+    {
+        return CBufferView<T>{const_cast<T*>(this->data()), Base::size()};
+    }
 
-    DeviceVector& operator=(BufferView<T> v)
+    operator BufferView<T>() const MUDA_NOEXCEPT { return view(); }
+    operator CBufferView<T>() const MUDA_NOEXCEPT { return view(); }
+
+    DeviceVector& operator=(CBufferView<T> v)
     {
         resize(v.size());
         view().copy_from(v);

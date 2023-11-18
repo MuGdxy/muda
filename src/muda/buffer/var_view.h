@@ -12,14 +12,12 @@ class VarViewBase
     T* m_data = nullptr;
 
   public:
-    VarViewBase() MUDA_NOEXCEPT : m_data(nullptr) {}
-    VarViewBase(T* data) MUDA_NOEXCEPT : m_data(data) {}
+    MUDA_GENERIC VarViewBase() MUDA_NOEXCEPT : m_data(nullptr) {}
+    MUDA_GENERIC VarViewBase(T* data) MUDA_NOEXCEPT : m_data(data) {}
 
-    const T* data() const MUDA_NOEXCEPT { return m_data; }
+    MUDA_GENERIC const T* data() const MUDA_NOEXCEPT { return m_data; }
 
-    void copy_to(T* data) const;
-
-    CDense<T> cviewer() const MUDA_NOEXCEPT;
+    MUDA_GENERIC CDense<T> cviewer() const MUDA_NOEXCEPT;
 };
 
 template <typename T>
@@ -28,11 +26,16 @@ class CVarView : public VarViewBase<T>
   public:
     using VarViewBase::VarViewBase;
 
-    CVarView(const VarViewBase<T>& base) MUDA_NOEXCEPT : VarViewBase<T>(base) {}
-
-    CVarView(const T* data) MUDA_NOEXCEPT : VarViewBase<T>(const_cast<T*>(data))
+    MUDA_GENERIC CVarView(const VarViewBase<T>& base) MUDA_NOEXCEPT : VarViewBase<T>(base)
     {
     }
+
+    MUDA_GENERIC CVarView(const T* data) MUDA_NOEXCEPT
+        : VarViewBase<T>(const_cast<T*>(data))
+    {
+    }
+
+    void copy_to(T* data) const;
 };
 
 template <typename T>
@@ -42,17 +45,22 @@ class VarView : public VarViewBase<T>
     using VarViewBase::data;
     using VarViewBase::VarViewBase;
 
-    VarView(const VarViewBase<T>& base) MUDA_NOEXCEPT : VarViewBase<T>(base) {}
+    MUDA_GENERIC VarView(VarViewBase<T> base) MUDA_NOEXCEPT : VarViewBase<T>(base)
+    {
+    }
 
-    operator CVarView<T>() const MUDA_NOEXCEPT { return CVarView<T>{*this}; }
+    MUDA_GENERIC operator CVarView<T>() const MUDA_NOEXCEPT
+    {
+        return CVarView<T>{*this};
+    }
 
-    T* data() MUDA_NOEXCEPT { return this->m_data; }
+    MUDA_GENERIC T* data() MUDA_NOEXCEPT { return this->m_data; }
 
     void copy_from(const T* data);
-    void copy_from(const VarViewBase<T>& data);
+    void copy_from(CVarView<T> data);
     void fill(const T& value);
 
-    Dense<T> viewer() MUDA_NOEXCEPT;
+    MUDA_GENERIC Dense<T> viewer() MUDA_NOEXCEPT;
 };
 
 // viewer traits

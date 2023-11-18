@@ -183,25 +183,25 @@ Dense1D(T*, int) -> Dense1D<T>;
 
 // make functions
 template <typename T>
-MUDA_INLINE MUDA_GENERIC auto make_cdense1D(const T* data, int dimx) MUDA_NOEXCEPT
+MUDA_INLINE MUDA_GENERIC auto make_cdense_1d(const T* data, int dimx) MUDA_NOEXCEPT
 {
     return CDense1D<T>(data, dimx);
 }
 
 template <typename T, int N>
-MUDA_INLINE MUDA_GENERIC auto make_cdense1D(const T (&data)[N]) MUDA_NOEXCEPT
+MUDA_INLINE MUDA_GENERIC auto make_cdense_1d(const T (&data)[N]) MUDA_NOEXCEPT
 {
     return CDense1D<T>(data, N);
 }
 
 template <typename T>
-MUDA_INLINE MUDA_GENERIC auto make_dense1D(T* data, int dimx) MUDA_NOEXCEPT
+MUDA_INLINE MUDA_GENERIC auto make_dense_1d(T* data, int dimx) MUDA_NOEXCEPT
 {
     return Dense1D<T>(data, dimx);
 }
 
 template <typename T, int N>
-MUDA_INLINE MUDA_GENERIC auto make_dense1D(T (&data)[N]) MUDA_NOEXCEPT
+MUDA_INLINE MUDA_GENERIC auto make_dense_1d(T (&data)[N]) MUDA_NOEXCEPT
 {
     return Dense1D<T>(data, N);
 }

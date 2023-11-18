@@ -2,8 +2,9 @@
 // because it should be inserted in multiple files
 
 #define MUDA_CUB_WRAPPER_IMPL(x)                                               \
-    size_t temp_storage_bytes = 0;                                             \
-    void*  d_temp_storage     = nullptr;                                       \
+    cudaStream_t _stream            = this->stream();                          \
+    size_t       temp_storage_bytes = 0;                                       \
+    void*        d_temp_storage     = nullptr;                                 \
                                                                                \
     checkCudaErrors(x);                                                        \
                                                                                \
@@ -17,7 +18,11 @@
 #define MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(x)                                                        \
     std::string_view name{__func__};                                                                      \
     ComputeGraphBuilder::invoke_phase_actions(                                                            \
-        [&] { checkCudaErrors(x); },                                                                      \
+        [&]                                                                                               \
+        {                                                                                                 \
+            cudaStream_t _stream = this->stream();                                                        \
+            checkCudaErrors(x);                                                                           \
+        },                                                                                                \
         [&]                                                                                               \
         {                                                                                                 \
             MUDA_ASSERT(!ComputeGraphBuilder::is_building() || d_temp_storage != nullptr,                 \
@@ -25,6 +30,6 @@
                         "query the temp_storage_size when building a compute graph, please do it outside" \
                         "a compute graph.");                                                              \
             ComputeGraphBuilder::capture(                                                                 \
-                name, [&](cudaStream_t) { checkCudaErrors(x); });                                         \
+                name, [&](cudaStream_t _stream) { checkCudaErrors(x); });                                 \
         });                                                                                               \
     return *this;

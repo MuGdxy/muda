@@ -23,7 +23,7 @@ void event_record_and_wait()
     on(s1)
         .next<Launch>(1, 1)
         .apply(
-            [v = make_viewer(v)] __device__() mutable
+            [v = v.viewer()] __device__() mutable
             {
                 int next = 2;
                 MUDA_KERNEL_PRINT("kernel A on stream 1, set v = %d -> %d", v, next);
@@ -40,7 +40,7 @@ void event_record_and_wait()
     on(s2)
         .when(set_value_done)
         .next<Launch>(1, 1)
-        .apply([v = make_viewer(v)] __device__()
+        .apply([v = v.viewer()] __device__()
                { MUDA_KERNEL_PRINT("kernel C on stream 2, get v = %d", v); });
 
     wait_device();

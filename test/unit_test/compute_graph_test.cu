@@ -543,7 +543,7 @@ void compute_graph_capture()
 
     std::vector<int> h_prefix(N_value);
 
-    prefix_buffer.copy_to(h_prefix.data());
+    prefix_buffer.copy_to(h_prefix);
 
     std::vector<int> ground_truth(N_value);
     std::iota(ground_truth.begin(), ground_truth.end(), 0);

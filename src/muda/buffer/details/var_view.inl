@@ -3,14 +3,6 @@
 namespace muda
 {
 template <typename T>
-void VarViewBase<T>::copy_to(T* val) const
-{
-    BufferLaunch()
-        .copy(val, *this)  //
-        .wait();
-}
-
-template <typename T>
 void VarView<T>::copy_from(const T* val)
 {
     BufferLaunch()
@@ -19,7 +11,15 @@ void VarView<T>::copy_from(const T* val)
 }
 
 template <typename T>
-void VarView<T>::copy_from(const VarViewBase<T>& val)
+void CVarView<T>::copy_to(T* val) const
+{
+    BufferLaunch()
+        .copy(val, *this)  //
+        .wait();
+}
+
+template <typename T>
+void VarView<T>::copy_from(CVarView<T> val)
 {
     BufferLaunch()
         .copy(*this, val)  //
@@ -35,13 +35,13 @@ void VarView<T>::fill(const T& val)
 }
 
 template <typename T>
-Dense<T> VarView<T>::viewer() MUDA_NOEXCEPT
+MUDA_GENERIC Dense<T> VarView<T>::viewer() MUDA_NOEXCEPT
 {
     return Dense<T>{m_data};
 }
 
 template <typename T>
-CDense<T> VarViewBase<T>::cviewer() const MUDA_NOEXCEPT
+MUDA_GENERIC CDense<T> VarViewBase<T>::cviewer() const MUDA_NOEXCEPT
 {
     return CDense<T>{m_data};
 }
