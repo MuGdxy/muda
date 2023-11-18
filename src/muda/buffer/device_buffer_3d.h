@@ -13,6 +13,8 @@ class DeviceBuffer3D
 {
   private:
     friend class BufferLaunch;
+    friend class NDReshaper;
+
     T*       m_data             = nullptr;
     size_t   m_pitch_bytes      = 0;
     size_t   m_pitch_bytes_area = 0;
@@ -38,6 +40,7 @@ class DeviceBuffer3D
 
     void resize(Extent3D new_size);
     void resize(Extent3D new_size, const T& value);
+    void reserve(Extent3D new_capacity);
     void clear();
     void shrink_to_fit();
     void fill(const T& v);

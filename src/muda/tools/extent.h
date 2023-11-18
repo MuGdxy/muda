@@ -2,7 +2,8 @@
 #include <cuda.h>
 #include <muda/muda_def.h>
 #include <cinttypes>
-
+#undef min
+#undef max
 namespace muda
 {
 class Extent2D
@@ -155,6 +156,19 @@ MUDA_INLINE MUDA_GENERIC Offset2D as_offset(const Extent2D& extent) MUDA_NOEXCEP
 MUDA_INLINE MUDA_GENERIC Offset3D as_offset(const Extent3D& extent) MUDA_NOEXCEPT
 {
     return Offset3D{extent.depth(), extent.height(), extent.width()};
+}
+
+MUDA_INLINE MUDA_GENERIC Offset2D min(const Offset2D& lhs, const Offset2D& rhs)
+{
+    return Offset2D{std::min(lhs.offset_in_height(), rhs.offset_in_height()),
+                    std::min(lhs.offset_in_width(), rhs.offset_in_width())};
+}
+
+MUDA_INLINE MUDA_GENERIC Offset3D min(const Offset3D& lhs, const Offset3D& rhs)
+{
+    return Offset3D{std::min(lhs.offset_in_depth(), rhs.offset_in_depth()),
+                    std::min(lhs.offset_in_height(), rhs.offset_in_height()),
+                    std::min(lhs.offset_in_width(), rhs.offset_in_width())};
 }
 
 MUDA_INLINE MUDA_GENERIC Extent2D max(const Extent2D& lhs, const Extent2D& rhs)

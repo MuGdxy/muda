@@ -14,12 +14,33 @@ template <typename T>
 class Buffer3DViewBase
 {
     friend class BufferLaunch;
-    friend class muda::details::buffer::BufferInfoAccessor<Buffer2DViewBase<T>>;
+    friend class muda::details::buffer::BufferInfoAccessor<Buffer3DViewBase<T>>;
+
+  private:
+    MUDA_GENERIC Buffer3DViewBase(T*              data,
+                                  size_t          pitch_bytes,
+                                  size_t          pitch_bytes_area,
+                                  size_t          origin_width,
+                                  size_t          origin_height,
+                                  const Offset3D& offset,
+                                  const Extent3D& extent) MUDA_NOEXCEPT
+        : m_data(data),
+          m_pitch_bytes(pitch_bytes),
+          m_pitch_bytes_area(pitch_bytes_area),
+          m_origin_width(origin_width),
+          m_origin_height(origin_height),
+          m_offset(offset),
+          m_extent(extent)
+    {
+    }
 
   protected:
-    T*       m_data             = nullptr;
-    size_t   m_pitch_bytes      = ~0;
-    size_t   m_pitch_bytes_area = ~0;
+    T*     m_data             = nullptr;
+    size_t m_pitch_bytes      = ~0;
+    size_t m_pitch_bytes_area = ~0;
+    size_t m_origin_width     = ~0;
+    size_t m_origin_height    = ~0;
+
     Offset3D m_offset;
     Extent3D m_extent;
 
@@ -31,11 +52,8 @@ class Buffer3DViewBase
                                   size_t          pitch_bytes_area,
                                   const Offset3D& offset,
                                   const Extent3D& extent) MUDA_NOEXCEPT
-        : m_data(data),
-          m_pitch_bytes(pitch_bytes),
-          m_pitch_bytes_area(pitch_bytes_area),
-          m_offset(offset),
-          m_extent(extent)
+        : Buffer3DViewBase(
+              data, pitch_bytes, pitch_bytes_area, extent.width(), extent.height(), offset, extent)
     {
     }
 
@@ -60,8 +78,7 @@ class Buffer3DViewBase
   protected:
     MUDA_GENERIC cudaPitchedPtr cuda_pitched_ptr() const MUDA_NOEXCEPT
     {
-        return make_cudaPitchedPtr(
-            m_data, m_pitch_bytes, m_extent.width() * sizeof(T), m_extent.height());
+        return make_cudaPitchedPtr(m_data, m_pitch_bytes, m_origin_width * sizeof(T), m_origin_height);
     }
 };
 

@@ -38,12 +38,13 @@ class DeviceBuffer2D
 
     void resize(Extent2D new_extent);
     void resize(Extent2D new_extent, const T& value);
+    void reserve(Extent2D new_capacity);
     void clear();
     void shrink_to_fit();
     void fill(const T& v);
 
-    Dense3D<T>  viewer() MUDA_NOEXCEPT { return view().viewer(); }
-    CDense3D<T> cviewer() const MUDA_NOEXCEPT { return view().viewer(); }
+    Dense2D<T>  viewer() MUDA_NOEXCEPT { return view().viewer(); }
+    CDense2D<T> cviewer() const MUDA_NOEXCEPT { return view().viewer(); }
 
     Buffer2DView<T> view(Offset2D offset, Extent2D extent = {}) MUDA_NOEXCEPT
     {

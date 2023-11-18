@@ -29,21 +29,21 @@ MUDA_GENERIC Buffer2DViewBase<T> Buffer2DViewBase<T>::subview(Offset2D offset,
         return Buffer2DViewBase<T>{};  // dummy
 
     if(!extent.valid())
-        extent = m_extent - offset;
+        extent = m_extent - as_extent(offset);
 
-    MUDA_ASSERT(extent + offset <= m_extent,
+    MUDA_ASSERT(extent + as_extent(offset) <= m_extent,
                 "Buffer2DView out of range, extent = (%d,%d), yours = (%d,%d)",
                 (int)m_extent.height(),
                 (int)m_extent.width(),
                 (int)extent.height(),
                 (int)extent.width());
-    return Buffer2DViewBase<T>{const_cast<T*>(m_data), m_pitch_bytes, offset, extent};
+    return Buffer2DViewBase<T>{
+        const_cast<T*>(m_data), m_pitch_bytes, m_origin_width, m_origin_height, offset, extent};
 }
 template <typename T>
 MUDA_GENERIC cudaPitchedPtr Buffer2DViewBase<T>::cuda_pitched_ptr() const MUDA_NOEXCEPT
 {
-    return make_cudaPitchedPtr(
-        m_data, m_pitch_bytes, m_extent.width() * sizeof(T), m_extent.height());
+    return make_cudaPitchedPtr(m_data, m_pitch_bytes, m_origin_width * sizeof(T), m_origin_height);
 }
 
 template <typename T>
@@ -53,7 +53,7 @@ MUDA_GENERIC CDense2D<T> Buffer2DViewBase<T>::cviewer() const MUDA_NOEXCEPT
                        make_int2((int)m_offset.offset_in_height(),
                                  (int)m_offset.offset_in_width()),
                        make_int2((int)m_extent.height(), (int)m_extent.width()),
-                       m_pitch_bytes};
+                       (int)m_pitch_bytes};
 }
 
 template <typename T>
@@ -70,7 +70,7 @@ MUDA_GENERIC Dense2D<T> Buffer2DView<T>::viewer() const MUDA_NOEXCEPT
                       make_int2((int)m_offset.offset_in_height(),
                                 (int)m_offset.offset_in_width()),
                       make_int2((int)m_extent.height(), (int)m_extent.width()),
-                      m_pitch_bytes};
+                      (int)m_pitch_bytes};
 }
 
 template <typename T>

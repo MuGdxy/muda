@@ -72,6 +72,13 @@ class BufferLaunch : public LaunchBase<BufferLaunch>
     template <typename T>
     MUDA_HOST BufferLaunch& resize(DeviceBuffer3D<T>& buffer, Extent3D extent);
 
+    template <typename T>
+    MUDA_HOST BufferLaunch& reserve(DeviceBuffer<T>& buffer, size_t capacity);
+    template <typename T>
+    MUDA_HOST BufferLaunch& reserve(DeviceBuffer2D<T>& buffer, Extent2D capacity);
+    template <typename T>
+    MUDA_HOST BufferLaunch& reserve(DeviceBuffer3D<T>& buffer, Extent3D capacity);
+
 
     template <typename T>
     MUDA_HOST BufferLaunch& resize(DeviceBuffer<T>& buffer, size_t size, const T& val);
@@ -111,7 +118,6 @@ class BufferLaunch : public LaunchBase<BufferLaunch>
     MUDA_HOST BufferLaunch& shrink_to_fit(DeviceBuffer2D<T>& buffer);
     template <typename T>
     MUDA_HOST BufferLaunch& shrink_to_fit(DeviceBuffer3D<T>& buffer);
-
 
     /**********************************************************************************************
     * 

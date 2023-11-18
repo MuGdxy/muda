@@ -16,9 +16,27 @@ class Buffer2DViewBase
     friend class BufferLaunch;
     friend class muda::details::buffer::BufferInfoAccessor<Buffer2DViewBase<T>>;
 
+  private:
+    MUDA_GENERIC Buffer2DViewBase(T*              data,
+                                  size_t          pitch_bytes,
+                                  size_t          origin_width,
+                                  size_t          origin_height,
+                                  const Offset2D& offset,
+                                  const Extent2D& extent) MUDA_NOEXCEPT
+        : m_data(data),
+          m_pitch_bytes(pitch_bytes),
+          m_origin_width(origin_width),
+          m_origin_height(origin_height),
+          m_offset(offset),
+          m_extent(extent)
+    {
+    }
+
   protected:
-    T*       m_data        = nullptr;
-    size_t   m_pitch_bytes = ~0;
+    T*       m_data          = nullptr;
+    size_t   m_pitch_bytes   = ~0;
+    size_t   m_origin_width  = 0;
+    size_t   m_origin_height = 0;
     Offset2D m_offset;
     Extent2D m_extent;
 
@@ -29,10 +47,7 @@ class Buffer2DViewBase
                                   size_t          pitch_bytes,
                                   const Offset2D& offset,
                                   const Extent2D& extent) MUDA_NOEXCEPT
-        : m_data(data),
-          m_pitch_bytes(pitch_bytes),
-          m_offset(offset),
-          m_extent(extent)
+        : Buffer2DViewBase(data, pitch_bytes, extent.width(), extent.height(), offset, extent)
     {
     }
 

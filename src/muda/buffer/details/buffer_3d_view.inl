@@ -40,9 +40,9 @@ MUDA_GENERIC Buffer3DViewBase<T> Buffer3DViewBase<T>::subview(Offset3D offset,
         return Buffer3DViewBase<T>{};  // dummy
 
     if(!extent.valid())
-        extent = m_extent - offset;
+        extent = m_extent - as_extent(offset);
 
-    MUDA_KERNEL_ASSERT(extent + offset <= m_extent,
+    MUDA_KERNEL_ASSERT(extent + as_extent(offset) <= m_extent,
                        "Buffer3DView out of range, extent = (%d,%d,%d), yours = (%d,%d,%d)",
                        (int)m_extent.depth(),
                        (int)m_extent.height(),
@@ -50,8 +50,13 @@ MUDA_GENERIC Buffer3DViewBase<T> Buffer3DViewBase<T>::subview(Offset3D offset,
                        (int)extent.depth(),
                        (int)extent.height(),
                        (int)extent.width());
-    return Buffer3DViewBase<T>{
-        const_cast<T*>(m_data), m_pitch_bytes, m_pitch_bytes_area, offset, extent};
+    return Buffer3DViewBase<T>{const_cast<T*>(m_data),
+                               m_pitch_bytes,
+                               m_pitch_bytes_area,
+                               m_origin_width,
+                               m_origin_height,
+                               offset,
+                               extent};
 }
 
 template <typename T>
@@ -62,8 +67,8 @@ MUDA_GENERIC CDense3D<T> Buffer3DViewBase<T>::cviewer() const MUDA_NOEXCEPT
                                  m_offset.offset_in_height(),
                                  m_offset.offset_in_width()),
                        make_int3(m_extent.depth(), m_extent.height(), m_extent.width()),
-                       m_pitch_bytes,
-                       m_pitch_bytes_area};
+                       (int)m_pitch_bytes,
+                       (int)m_pitch_bytes_area};
 }
 
 template <typename T>
@@ -80,8 +85,8 @@ MUDA_GENERIC Dense3D<T> Buffer3DView<T>::viewer() const MUDA_NOEXCEPT
                                 m_offset.offset_in_height(),
                                 m_offset.offset_in_width()),
                       make_int3(m_extent.depth(), m_extent.height(), m_extent.width()),
-                      m_pitch_bytes,
-                      m_pitch_bytes_area};
+                      (int)m_pitch_bytes,
+                      (int)m_pitch_bytes_area};
 }
 
 template <typename T>

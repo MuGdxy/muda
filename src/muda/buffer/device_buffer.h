@@ -48,6 +48,7 @@ class DeviceBuffer
 
     void resize(size_t new_size);
     void resize(size_t new_size, const T& value);
+    void reserve(size_t new_capacity);
     void clear();
     void shrink_to_fit();
     void fill(const T& v);

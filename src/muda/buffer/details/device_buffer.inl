@@ -143,6 +143,14 @@ void DeviceBuffer<T>::resize(size_t new_size, const value_type& value)
 }
 
 template <typename T>
+void DeviceBuffer<T>::reserve(size_t new_capacity)
+{
+    BufferLaunch()
+        .reserve(*this, new_capacity)  //
+        .wait();
+}
+
+template <typename T>
 void DeviceBuffer<T>::clear()
 {
     BufferLaunch()

@@ -4,6 +4,7 @@
 #include <muda/field/sub_field/aosoa_sub_field.h>
 #include <muda/field/sub_field/soa_sub_field.h>
 #include <muda/field/sub_field/aos_sub_field.h>
+#include <muda/type_traits/type_label.h>
 namespace muda
 {
 MUDA_INLINE SubField::SubField(Field& field, std::string_view name)
@@ -23,7 +24,7 @@ MUDA_INLINE FieldBuilder<Layout> SubField::builder(FieldEntryLayoutInfo layout)
     }
     else
     {
-        m_interface           = std::make_unique<SubFieldImpl<Layout>>(m_field);
+        m_interface = std::make_unique<SubFieldImpl<Layout>>(m_field);
         m_interface->m_layout_info = layout;
         return FieldBuilder<Layout>{*this, layout};
     }
@@ -56,6 +57,13 @@ auto SubField::create_entry(std::string_view     name,
                             FieldEntryType       type,
                             uint2 shape) -> FieldEntry<T, Layout, M, N>&
 {
+    static_assert(muda::is_trivial_v<T>, R"(T must be trivial type, such as int/float/...
+Or you need to label `YourType` as:
+template <>
+struct force_trivial<YourType>
+{
+    constexpr static bool value = true;
+};)");
     auto ptr = new FieldEntry<T, Layout, M, N>(*this, layout, type, shape, name);
     m_interface->m_name_to_index[std::string{name}] = m_interface->m_entries.size();
     m_interface->m_entries.emplace_back(ptr);

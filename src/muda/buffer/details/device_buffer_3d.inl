@@ -1,4 +1,5 @@
 #include <muda/buffer/buffer_launch.h>
+#include "device_buffer_3d.h"
 
 namespace muda
 {
@@ -128,6 +129,14 @@ void DeviceBuffer3D<T>::resize(Extent3D new_extent, const T& value)
 {
     BufferLaunch()
         .resize(*this, new_extent, value)  //
+        .wait();
+}
+
+template <typename T>
+void DeviceBuffer3D<T>::reserve(Extent3D new_capacity)
+{
+    BufferLaunch()
+        .reserve(*this, new_size)  //
         .wait();
 }
 
