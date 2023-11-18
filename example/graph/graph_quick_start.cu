@@ -42,16 +42,15 @@ void graph_quick_start()
     auto pH = HostCall().as_node_parms([&] __host__()
                                        { std::cout << "host call" << std::endl; });
 
-    auto pC =
-        ParallelFor(1).as_node_parms(1,
-                                     [value = make_viewer(value)] __device__(int i) mutable
-                                     {
-                                         print("kernel C, value=%d -> 2\n", value);
-                                         value = 2;
-                                     });
+    auto pC = ParallelFor(1).as_node_parms(1,
+                                           [value = value.viewer()] __device__(int i) mutable
+                                           {
+                                               print("kernel C, value=%d -> 2\n", value);
+                                               value = 2;
+                                           });
 
     auto pD =
-        Launch(1, 1).as_node_parms([value = make_viewer(value)] __device__() mutable
+        Launch(1, 1).as_node_parms([value = value.viewer()] __device__() mutable
                                    { print("kernel D, value=%d\n", value); },
                                    Tag<MyKernelD>{});
 

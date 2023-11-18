@@ -24,7 +24,7 @@ void kernel_name()
         ParallelFor(32, 32)
             .kernel_name("my_parallel_for")  // set a kernel name for debugging in kernel
             .apply(vec.size(),
-                   [s = vec.viewer(), v = make_viewer(v)] __device__(int i) mutable
+                   [s = vec.viewer(), v = v.viewer()] __device__(int i) mutable
                    {
                        __shared__ int b[64];
                        s(i)           = v;
