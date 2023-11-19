@@ -131,10 +131,10 @@ ROView ComputeGraphVarBase::_ceval(ROView& view) const
     auto phase = ComputeGraphBuilder::current_phase();
     switch(phase)
     {
-        case ComputeGraphPhase::None: {
-            MUDA_ERROR_WITH_LOCATION("ComputeGraphVar.eval() is not allowed outside Graph Closure");
-        }
-        break;
+        //case ComputeGraphPhase::None: {
+        //    MUDA_ERROR_WITH_LOCATION("ComputeGraphVar.eval() is not allowed outside Graph Closure");
+        //}
+        //break;
         case ComputeGraphPhase::TopoBuilding:
         case ComputeGraphPhase::Building: {
             auto acc = details::ComputeGraphAccessor();

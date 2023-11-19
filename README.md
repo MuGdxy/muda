@@ -230,7 +230,7 @@ void compute_graph_simple()
 }
 ```
 
-![graphviz](README.assets/graphviz.svg)
+![graphviz](README.assets/compute_graph.svg)
 
 Launch a muda compute graph:
 
@@ -256,6 +256,55 @@ void compute_graph_simple()
     graph.launch(true, stream);
 }
 ```
+
+### Dynamic Parallelism
+
+```c++
+void dynamic_parallelism_graph()
+{
+    std::vector<int> host(16);
+    std::iota(host.begin(), host.end(), 0);
+
+    ComputeGraphVarManager manager;
+    // create graph
+    ComputeGraph      graph{manager, "graph", ComputeGraphFlag::DeviceLaunch};
+    // create resource
+    DeviceBuffer<int> src = host;
+    DeviceBuffer<int> dst(host.size());
+	
+    // create graph var
+    auto& src_var = manager.create_var("src", src.view());
+    auto& dst_var = manager.create_var("dst", dst.view());
+	
+    // create graph node
+    graph.$node("copy")
+    {
+        BufferLaunch().copy(dst_var, src_var);
+    };
+    // build graph
+    graph.build();
+	
+    // create a scheduler graph
+    ComputeGraph launch_graph{manager, "launch_graph", ComputeGraphFlag::DeviceLaunch};
+    auto& graph_var = manager.create_var("graph", graph.viewer());
+	
+    // create a node to launch our graph
+    launch_graph.$node("launch")
+    {
+        Launch().apply(
+            [graph = graph_var.ceval()] $()
+            {
+                graph.tail_launch();
+            });
+    };
+	// graphviz all graph we created
+    manager.graphviz(std::cout);
+    // launch and wait
+    launch_graph.launch().wait();
+}
+```
+
+![image-20231119161837442](README.assets/dynamic_parallelism.svg)
 
 ### MUDA vs. CUDA
 

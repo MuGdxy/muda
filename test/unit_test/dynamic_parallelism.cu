@@ -62,11 +62,7 @@ void dynamic_parallelism_graph(std::vector<int>& gt, std::vector<int>& res)
 
     launch_graph.$node("launch")
     {
-        Launch().apply(
-            [graph = graph_var.ceval()] $()
-            {
-                graph.tail_launch();
-            });
+        Launch().apply([graph = graph_var.ceval()] $() { graph.tail_launch(); });
     };
 
     manager.graphviz(std::cout);
