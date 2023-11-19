@@ -86,7 +86,27 @@ buffer.view(0,4).copy_from(host.data());
 DeviceBuffer<int> dst_buffer{4};
 // use BufferView to copy sub-buffer
 buffer.view(0,4).copy_to(dst_buffer.view());
+
+// safe and easy resize
+DeviceBuffer2D<int> buffer2d;
+buffer.resize(Extent2D{5, 5}, 1);
+buffer.resize(Extent2D{7, 2}, 2);
+buffer.resize(Extent2D{2, 7}, 3);
+buffer.resize(Extent2D{9, 9}, 4);
+// subview 
+buffer2d.view(Offset2D{1,1}, Extent2D{3,3});
+buffer2d.copy_to(host);
+
+DeviceBuffer3D<int> buffer3d;
+buffer3d.resize(Extent3D{3, 4, 5}, 1);
+buffer3d.copy_to(host);
 ```
+
+result of buffer2d:
+
+| resize: 5x5 with 1                                           | resize: 7x2 with 2                                  | resize: 2x7 with 3              | resize: 9x9 with 4                                           |
+| ------------------------------------------------------------ | --------------------------------------------------- | ------------------------------- | ------------------------------------------------------------ |
+| 1 1 1 1 1<br/>1 1 1 1 1<br/>1 1 1 1 1<br/>1 1 1 1 1<br/>1 1 1 1 1<br/> | 1 1<br/>1 1<br/>1 1<br/>1 1<br/>1 1<br/>2 2<br/>2 2 | 1 1 3 3 3 3 3<br/>1 1 3 3 3 3 3 | 1 1 3 3 3 3 3 4 4<br/>1 1 3 3 3 3 3 4 4<br/>4 4 4 4 4 4 4 4 4<br/>4 4 4 4 4 4 4 4 4<br/>4 4 4 4 4 4 4 4 4<br/>4 4 4 4 4 4 4 4 4<br/>4 4 4 4 4 4 4 4 4<br/>4 4 4 4 4 4 4 4 4<br/>4 4 4 4 4 4 4 4 4 |
 
 ### Asynchronous Operation
 
@@ -102,9 +122,9 @@ GraphLaunch().launch(graph).wait();
 Memory(stream).copy(...).wait();
 Memory(stream).set(...).wait();
 
-// Buffer
-BufferLaunch(stream).copy(...).wait();
-BufferLaunch(stream).fill(...).wait();
+// Buffer: for BufferView/Buffer2DView/Buffer3DView
+BufferLaunch(stream).copy(BufferView, ...).wait();
+BufferLaunch(stream).fill(BufferView,...).wait();
 ```
 
 ###  Field Layout
