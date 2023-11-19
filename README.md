@@ -297,7 +297,7 @@ void dynamic_parallelism_graph()
                 graph.tail_launch();
             });
     };
-	// graphviz all graph we created
+    // graphviz all graph we created
     manager.graphviz(std::cout);
     // launch and wait
     launch_graph.launch().wait();
