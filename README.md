@@ -120,7 +120,7 @@ DeviceBuffer2D<int> array3d;
 Logger logger;
 Launch().apply(
 [
-	single  = single.viewer().name("single"), // give a name for more readable debug info
+    single  = single.viewer().name("single"), // give a name for more readable debug info
     array   = buffer.viewer().name("array"),
     array2d = buffer_2d.viewer().name("array2d"),
     array3d = buffer_3d.viewer().name("array3d"),
