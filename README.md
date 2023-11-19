@@ -7,6 +7,8 @@ MUDA is **μ-CUDA**, yet another painless CUDA programming **paradigm**.
 
 ### Launch
 
+Simple, self-explanatory, intellisense-friendly Launcher.
+
 ```c++
 #include <muda/muda.h>
 using namespace muda;
@@ -17,6 +19,7 @@ __global__ void raw_kernel()
 
 int main()
 {
+    // just launch
     Launch(1, 1)
         .apply(
         [] __device__() 
@@ -44,9 +47,10 @@ int main()
     
     // intellisense-friendly wrapper 
     Kernel{raw_kernel}();
+    Kernel{32/*grid size*/, 64/*block size*/,0/*shared memory*/, stream, other_kernel}(...)
     
-    // wait on nullptr stream
-    on(nullptr).wait();
+    Stream stream;
+    on(stream).wait();
 }
 ```
 
@@ -103,15 +107,87 @@ buffer3d.copy_to(host);
 ```
 
 result of buffer2d:
+$$
+\begin{bmatrix} 1 & 1 & 1 & 1 & 1\\1 & 1 & 1 & 1 & 1\\1 & 1 & 1 & 1 & 1\\1 & 1 & 1 & 1 & 1\\1 & 1 & 1 & 1 & 1\end{bmatrix}
+\xrightarrow{\text{(7,2); 2}}
+\begin{bmatrix}
+1 & 1 \\
+1 & 1 \\
+1 & 1 \\
+1 & 1 \\
+1 & 1 \\
+2 & 2 \\
+2 & 2
+\end{bmatrix}
+\xrightarrow{\text{(2,7); 3}}
+\begin{bmatrix}
+1 & 1 & 3 & 3 & 3 & 3 & 3\\
+1 & 1 & 3 & 3 & 3 & 3 & 3
+\end{bmatrix}
+\xrightarrow{\text{(9,9); 4}}
+\begin{bmatrix}1&1&3&3&3&3&3&4&4\\1&1&3&3&3&3&3&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\\end{bmatrix}
+$$
 
-|                      resize: 5x5 with 1                      |                      resize: 7x2 with 2                      |                      resize: 2x7 with 3                      |                      resize: 9x9 with 4                      |
-| :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-| $$\begin{bmatrix} 1 & 1 & 1 & 1 & 1\\1 & 1 & 1 & 1 & 1\\1 & 1 & 1 & 1 & 1\\1 & 1 & 1 & 1 & 1\\1 & 1 & 1 & 1 & 1\end{bmatrix}$$ | $$\begin{bmatrix}1 & 1 \\1 & 1 \\1 & 1 \\1 & 1 \\1 & 1 \\2 & 2 \\2 & 2 \\\end{bmatrix}$$ | $$\begin{bmatrix}1&1&3&3&3&3& 3\\1&1&3&3&3&3& 3\end{bmatrix}$$ | $$\begin{bmatrix}1&1&3&3&3&3&3&4&4\\1&1&3&3&3&3&3&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\\end{bmatrix}$$ |
+### Viewer In Kernel
+
+```c++
+DeviceVar<int> single;
+DeviceBuffer<int> array;
+DeviceBuffer2D<int> array2d;
+DeviceBuffer2D<int> array3d;
+Logger logger;
+Launch().apply(
+[
+	single  = single.viewer().name("single"), // give a name for more readable debug info
+    array   = buffer.viewer().name("array"),
+    array2d = buffer_2d.viewer().name("array2d"),
+    array3d = buffer_3d.viewer().name("array3d"),
+    logger  = logger.viewer().name("logger"),
+    ...
+] __device__ () mutable
+{
+    single = 1;
+    array(i) = 1;
+    array2d(offset_in_height, offset_in_width) = 1;
+    array3d(offset_in_depth, offset_in_height, offset_in_width) = 1;
+    logger << 1;
+});
+```
+
+### Event And Stream
+
+```c++
+Stream         s1, s2;
+Event          set_value_done;
+
+DeviceVar<int> v = 1;
+on(s1)
+    .next<Launch>(1, 1)
+    .apply(
+        [v = v.viewer()] __device__() mutable
+        {
+            int next = 2;
+            v = next;
+        })
+    .record(set_value_done)
+    .apply(
+        [] __device__()
+        {
+            some_work();
+        });
+
+on(s2)
+    .when(set_value_done)
+    .next<Launch>(1, 1)
+    .apply([v = v.viewer()] __device__()
+           { int res = v; });
+```
 
 ### Asynchronous Operation
 
 ```c++
 // kernel launch
+Kernel{..., f}(...);
 Launch(stream).apply(...).wait();
 ParallelFor(stream).apply(N, ...).wait();
 
@@ -128,6 +204,8 @@ BufferLaunch(stream).fill(BufferView,...).wait();
 ```
 
 ###  Field Layout
+
+A simple simulation code using `muda::Field`, with a `muda::eigen` extension for better performance and readability.
 
 ```c++
 // create a field
@@ -150,17 +228,21 @@ builder.build(); // finish building a subfield
 constexpr int N = 10;
 particle.resize(N);
 
+// to use muda eigen extension
+using namespace Eigen;
+using namespace muda::eigen;
+
 ParallelFor(256)
     .apply(N,
-           [m   = make_viewer(m),
-            pos = make_viewer(pos),
-            vel = make_viewer(vel),
-            f   = make_viewer(f)] $(int i) // : syntax sugar for : `__device__ (int i) mutable`
+           [m   = make_viewer(m),          // muda::eigen::make_viewer
+            pos = make_viewer(pos),        // muda::eigen::make_viewer
+            vel = make_viewer(vel),        // muda::eigen::make_viewer
+            f   = make_viewer(f)] $(int i) // syntax sugar for `__device__ (int i) mutable`
            {
                m(i)   = 1.0f;
                pos(i) = Vector3f::Zero();
                vel(i) = Vector3f::Zero();
-               f(i)   = Vector3f{0.0f, -9.8f, 0.0f};
+               f(i)   = Vector3f{0.0f, -9.8f, 0.0f}; // just gravity
            })
     .wait();
 
@@ -191,9 +273,11 @@ ParallelFor(256)
 logger.retrieve(std::cout);
 ```
 
+Note: every entry can be a separate `muda::ComputeGraphVar` so that it can also be used in `muda::ComputeGraph`
+
 ### Compute Graph
 
-**MUDA** can generate `cudaGraph` nodes and dependencies from your `eval()` call. And the `cudaGraphExec` will be automatically updated (minimally) if you update a `muda::ComputeGraphVar`, more details in [zhihu_ZH](https://zhuanlan.zhihu.com/p/658080362).
+**MUDA** can generate `cudaGraph` nodes and dependencies from your `eval()` call. And the `cudaGraphExec` will be automatically updated (minimally) if you update a `muda::ComputeGraphVar`. More details in [zhihu_ZH](https://zhuanlan.zhihu.com/p/658080362).
 
 Define a muda compute graph:
 
