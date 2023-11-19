@@ -37,7 +37,6 @@ class ViewerBase
     MUDA_GENERIC const char* name() const MUDA_NOEXCEPT
     {
 #if MUDA_CHECK_ON
-
         auto n = m_viewer_name.auto_select();
         if(n)
             return n;
@@ -65,6 +64,7 @@ class ViewerBase
     MUDA_INLINE MUDA_HOST void name(const char* n) MUDA_NOEXCEPT
     {
 #if MUDA_CHECK_ON
+        m_kernel_name = details::LaunchInfoCache::current_kernel_name();
         m_viewer_name = details::LaunchInfoCache::view_name(n);
 #endif
     }

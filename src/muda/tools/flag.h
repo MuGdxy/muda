@@ -17,14 +17,13 @@ template <typename BitType>
 class Flags
 {
   public:
-    using bit_type = BitType;
-	using mask_type = typename ::std::underlying_type<bit_type>::type;
-	
+    using bit_type  = BitType;
+    using mask_type = typename ::std::underlying_type<bit_type>::type;
+
     // constructors
     MUDA_CONSTEXPR Flags() MUDA_NOEXCEPT : m_mask(0) {}
 
-    MUDA_CONSTEXPR Flags(BitType bit) MUDA_NOEXCEPT
-        : m_mask(static_cast<mask_type>(bit))
+    MUDA_CONSTEXPR Flags(BitType bit) MUDA_NOEXCEPT : m_mask(static_cast<mask_type>(bit))
     {
     }
 
@@ -69,10 +68,7 @@ class Flags
 
 
     // logical operator
-    MUDA_CONSTEXPR bool operator!() const MUDA_NOEXCEPT
-    {
-        return !m_mask;
-    }
+    MUDA_CONSTEXPR bool operator!() const MUDA_NOEXCEPT { return !m_mask; }
 
     // bitwise operators
     MUDA_CONSTEXPR Flags<BitType> operator&(Flags<BitType> const& rhs) const MUDA_NOEXCEPT
@@ -127,6 +123,10 @@ class Flags
         return m_mask;
     }
 
+    bool has(BitType bit) const MUDA_NOEXCEPT
+    {
+        return (m_mask & static_cast<mask_type>(bit)) == static_cast<mask_type>(bit);
+    }
   private:
     mask_type m_mask;
 };
@@ -212,6 +212,4 @@ MUDA_INLINE MUDA_CONSTEXPR Flags<BitType> operator~(BitType bit) MUDA_NOEXCEPT
 {
     return ~(Flags<BitType>(bit));
 }
-}
-
-
+}  // namespace muda

@@ -2,19 +2,17 @@
 #include <string>
 #include <set>
 #include <map>
+#include <muda/launch/event.h>
+#include <muda/mstl/span.h>
 #include <muda/type_traits/type_modifier.h>
 #include <muda/compute_graph/compute_graph_closure_id.h>
 #include <muda/compute_graph/compute_graph_var_usage.h>
 #include <muda/compute_graph/compute_graph_var_id.h>
 #include <muda/compute_graph/graphviz_options.h>
-#include <muda/launch/event.h>
-#include <muda/mstl/span.h>
+#include <muda/compute_graph/compute_graph_fwd.h>
 
 namespace muda
 {
-class ComputeGraph;
-class ComputeGraphVarManager;
-
 class ComputeGraphVarBase
 {
     std::string_view        m_name;

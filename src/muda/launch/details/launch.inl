@@ -220,5 +220,4 @@ MUDA_INLINE MUDA_GENERIC void Launch::check_input() const MUDA_NOEXCEPT
     MUDA_ASSERT(m_grid_dim.x > 0 && m_grid_dim.y > 0 && m_grid_dim.z > 0,
                 "grid_dim should be non-zero");
 }
-
 }  // namespace muda

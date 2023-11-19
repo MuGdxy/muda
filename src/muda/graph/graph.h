@@ -12,6 +12,14 @@
 
 namespace muda
 {
+enum class GraphInstantiateFlagBit
+{
+    FreeOnLaunch = CUgraphInstantiate_flags::CUDA_GRAPH_INSTANTIATE_FLAG_AUTO_FREE_ON_LAUNCH,
+    Upload = CUgraphInstantiate_flags::CUDA_GRAPH_INSTANTIATE_FLAG_UPLOAD,
+    DeviceLaunch = CUgraphInstantiate_flags::CUDA_GRAPH_INSTANTIATE_FLAG_DEVICE_LAUNCH,
+    UseNodePriority = CUgraphInstantiate_flags::CUDA_GRAPH_INSTANTIATE_FLAG_USE_NODE_PRIORITY,
+};
+
 class Graph
 {
     template <typename T>
@@ -36,6 +44,7 @@ class Graph
     friend class std::shared_ptr<Graph>;
 
     MUDA_NODISCARD S<GraphExec> instantiate();
+    MUDA_NODISCARD S<GraphExec> instantiate(Flags<GraphInstantiateFlagBit> flags);
 
     template <typename T>
     S<KernelNode> add_kernel_node(const S<KernelNodeParms<T>>&     kernelParms,

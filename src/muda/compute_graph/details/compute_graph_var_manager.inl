@@ -61,6 +61,13 @@ MUDA_INLINE void ComputeGraphVarManager::sync(const ComputeGraphVar<T>&... vars)
     sync(span<const ComputeGraphVarBase*>{var_array});
 };
 
+MUDA_INLINE auto ComputeGraphVarManager::create_graph(std::string_view name,
+                                                      ComputeGraphFlag flags)
+    -> S<ComputeGraph>
+{
+    return std::make_shared<ComputeGraph>(*this, name, flags);
+}
+
 MUDA_INLINE bool ComputeGraphVarManager::is_using() const
 {
     return is_using(var_span());

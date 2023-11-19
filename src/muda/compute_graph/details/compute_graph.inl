@@ -116,7 +116,7 @@ MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraph
 
 MUDA_INLINE GraphViewer ComputeGraph::viewer()
 {
-    build();
+    MUDA_ASSERT(m_graph_exec, "graph is not built yet, call ComputeGraph::build() to build it.");
     return GraphViewer{m_graph_exec->handle()};
 }
 
@@ -163,7 +163,8 @@ MUDA_INLINE void ComputeGraph::build()
         build_deps();
     cuda_graph_add_deps();
 
-    m_graph_exec = m_graph.instantiate();
+    m_graph_exec = m_graph.instantiate(m_flags);
+    m_graph_exec->upload();
 }
 
 MUDA_INLINE void ComputeGraph::serial_launch()
@@ -336,11 +337,21 @@ MUDA_INLINE void ComputeGraph::emplace_related_var(ComputeGraphVarBase* var)
     }
 }
 
-MUDA_INLINE ComputeGraph::ComputeGraph(ComputeGraphVarManager& manager, std::string_view name)
+MUDA_INLINE ComputeGraph::ComputeGraph(ComputeGraphVarManager& manager,
+                                       std::string_view        name,
+                                       ComputeGraphFlag        flag)
     : m_var_manager(&manager)
     , m_name(name)
 {
     m_var_manager->m_graphs.insert(this);
+    switch(flag)
+    {
+        case ComputeGraphFlag::DeviceLaunch:
+            m_flags |= GraphInstantiateFlagBit::DeviceLaunch;
+            break;
+        default:
+            break;
+    }
 }
 
 

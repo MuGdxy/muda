@@ -291,6 +291,9 @@ namespace details
 
     MUDA_INLINE void ComputeGraphAccessor::add_event_record_node(cudaEvent_t event)
     {
+        MUDA_ASSERT(!m_cg.m_flags.has(muda::GraphInstantiateFlagBit::DeviceLaunch),
+                    "Event Record Node is not allowed in a graph that will be launched on device");
+
         access_graph(
             [&](Graph& g)
             {
@@ -364,6 +367,9 @@ namespace details
 
     MUDA_INLINE void ComputeGraphAccessor::add_event_wait_node(cudaEvent_t event)
     {
+        MUDA_ASSERT(!m_cg.m_flags.has(muda::GraphInstantiateFlagBit::DeviceLaunch),
+                    "Event Wait Node is not allowed in a graph that will be launched on device");
+
         access_graph(
             [&](Graph& g)
             {

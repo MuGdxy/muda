@@ -1,4 +1,3 @@
-#include "stream.h"
 namespace muda
 {
 MUDA_INLINE Stream::Stream(Stream::Flag f)
@@ -23,12 +22,30 @@ MUDA_INLINE void Stream::end_capture(cudaGraph_t* graph) const
 
 MUDA_INLINE MUDA_DEVICE Stream::TailLaunch::operator cudaStream_t() const
 {
+#ifdef __CUDA_ARCH__
     return cudaStreamTailLaunch;
+#endif
 }
 
 MUDA_INLINE MUDA_DEVICE Stream::FireAndForget::operator cudaStream_t() const
 {
+#ifdef __CUDA_ARCH__
     return cudaStreamFireAndForget;
+#endif
+}
+
+MUDA_INLINE MUDA_DEVICE Stream::GraphTailLaunch::operator cudaStream_t() const
+{
+#ifdef __CUDA_ARCH__
+    return cudaStreamGraphTailLaunch;
+#endif
+}
+
+MUDA_INLINE MUDA_DEVICE Stream::GraphFireAndForget::operator cudaStream_t() const
+{
+#ifdef __CUDA_ARCH__
+    return cudaStreamGraphFireAndForget;
+#endif
 }
 
 MUDA_INLINE Stream::~Stream()

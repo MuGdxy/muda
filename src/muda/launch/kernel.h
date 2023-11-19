@@ -22,6 +22,11 @@ class Kernel
         , m_stream(stream)
         , m_kernel(f)
     {
+#ifdef __CUDA_ARCH__
+        MUDA_KERNEL_ASSERT(stream == cudaStreamTailLaunch || stream == cudaStreamFireAndForget,
+                           "Kernel Launch on device with invalid stream! "
+                           "Only Stream::TailLaunch{} and Stream::FireAndForget{} are allowed");
+#endif
     }
 
     MUDA_GENERIC Kernel(F f)

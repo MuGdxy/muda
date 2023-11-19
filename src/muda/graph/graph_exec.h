@@ -27,6 +27,8 @@ class GraphExec
     GraphExec(GraphExec&& other);
     GraphExec& operator=(GraphExec&& other);
 
+    void upload(cudaStream_t stream = nullptr);
+
     void launch(cudaStream_t stream = nullptr);
 
     template <typename T>

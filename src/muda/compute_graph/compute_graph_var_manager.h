@@ -2,17 +2,23 @@
 #include <unordered_map>
 #include <vector>
 #include <muda/mstl/span.h>
+#include <muda/compute_graph/compute_graph_flag.h>
+#include <muda/compute_graph/compute_graph_fwd.h>
 namespace muda
 {
-class ComputeGraphVarBase;
-class ComputeGraph;
-class ComputeGraphGraphvizOptions;
-
 class ComputeGraphVarManager
 {
+    template <typename T>
+    using S = std::shared_ptr<T>;
+
   public:
     ComputeGraphVarManager() = default;
     ~ComputeGraphVarManager();
+
+    S<ComputeGraph> create_graph(std::string_view name  = "graph",
+                                 ComputeGraphFlag flags = {});
+
+
     /**************************************************************
     * 
     * GraphVar API

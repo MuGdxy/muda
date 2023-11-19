@@ -5,12 +5,10 @@
 #include <muda/compute_graph/compute_graph_node_id.h>
 #include <muda/compute_graph/compute_graph_var_usage.h>
 #include <muda/compute_graph/compute_graph_var_id.h>
+#include <muda/compute_graph/compute_graph_fwd.h>
+
 namespace muda
 {
-namespace details
-{
-    class ComputeGraphAccessor;
-}
 class ComputeGraphNodeBase
 {
   public:

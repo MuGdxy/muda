@@ -37,6 +37,14 @@ MUDA_INLINE auto Graph::instantiate() -> S<GraphExec>
     return ret;
 }
 
+MUDA_INLINE auto Graph::instantiate(Flags<GraphInstantiateFlagBit> flags) -> S<GraphExec>
+{
+    auto ret = std::make_shared<GraphExec>();
+    checkCudaErrors(
+        cudaGraphInstantiateWithFlags(&ret->m_handle, m_handle, static_cast<int>(flags)));
+    return ret;
+}
+
 template <typename T>
 auto Graph::add_kernel_node(const S<KernelNodeParms<T>>& kernelParms,
                             const std::vector<S<GraphNode>>& deps) -> S<KernelNode>

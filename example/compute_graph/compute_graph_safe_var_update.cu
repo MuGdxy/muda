@@ -64,7 +64,7 @@ graph vars when you don't know whether some graphs are using your graph var.
     // update x_value and N_value
     N = N_value;
     x = x_value;
-    
+
     std::cout << " >>> Graph2 Results:\n";
     graph2.launch(stream).wait();
 }
@@ -159,6 +159,8 @@ graph vars when you don't know whether some graphs are using your graph var or n
     y = y_value;
 
     std::cout << " >>> Graph3 Results:\n";
+
+    graph3.build();
 
     // this is a muda-style graph launch.
     // We keep graph launch and kernel launch consistent.

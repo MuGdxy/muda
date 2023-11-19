@@ -1,3 +1,4 @@
+#include "graph_exec.h"
 namespace muda
 {
 MUDA_INLINE GraphExec::GraphExec()
@@ -20,6 +21,11 @@ MUDA_INLINE GraphExec& GraphExec::operator=(GraphExec&& other)
     m_cached       = std::move(other.m_cached);
     other.m_handle = nullptr;
     return *this;
+}
+
+MUDA_INLINE void GraphExec::upload(cudaStream_t stream)
+{
+    checkCudaErrors(cudaGraphUpload(m_handle, stream));
 }
 
 MUDA_INLINE void GraphExec::launch(cudaStream_t stream)

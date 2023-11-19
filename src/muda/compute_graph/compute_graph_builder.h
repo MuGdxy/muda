@@ -1,14 +1,9 @@
 #pragma once
 #include <muda/compute_graph/compute_graph_phase.h>
+#include <muda/compute_graph/compute_graph_fwd.h>
 
-namespace muda::details
-{
-class ComputeGraphAccessor;
-}
 namespace muda
 {
-class ComputeGraph;
-
 class ComputeGraphBuilder
 {
     static ComputeGraphBuilder& instance();

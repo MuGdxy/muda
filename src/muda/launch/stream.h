@@ -53,6 +53,20 @@ class Stream
         MUDA_DEVICE FireAndForget(){};
         MUDA_DEVICE operator cudaStream_t() const;
     };
+
+    class GraphTailLaunch
+    {
+      public:
+        MUDA_DEVICE GraphTailLaunch(){};
+        MUDA_DEVICE operator cudaStream_t() const;
+    };
+
+    class GraphFireAndForget
+    {
+      public:
+        MUDA_DEVICE GraphFireAndForget(){};
+        MUDA_DEVICE operator cudaStream_t() const;
+    };
 };
 
 

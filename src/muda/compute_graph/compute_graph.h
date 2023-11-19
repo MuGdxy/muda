@@ -3,9 +3,11 @@
 #include <functional>
 #include <set>
 #include <muda/mstl/span.h>
+#include <muda/launch/stream.h>
 #include <muda/launch/event.h>
 #include <muda/graph/graph.h>
-#include <muda/launch/stream.h>
+#include <muda/graph/graph_viewer.h>
+#include <muda/compute_graph/compute_graph_flag.h>
 #include <muda/compute_graph/compute_graph_phase.h>
 #include <muda/compute_graph/compute_graph_node_type.h>
 #include <muda/compute_graph/compute_graph_node_id.h>
@@ -14,21 +16,10 @@
 #include <muda/compute_graph/compute_graph_var_usage.h>
 #include <muda/compute_graph/compute_graph_dependency.h>
 #include <muda/compute_graph/graphviz_options.h>
-#include <muda/graph/graph_viewer.h>
-namespace muda::details
-{
-class ComputeGraphAccessor;
-}
+#include <muda/compute_graph/compute_graph_fwd.h>
 
 namespace muda
 {
-class ComputeGraphVarBase;
-class ComputeGraphNodeBase;
-class ComputeGraphVarManager;
-class ComputeGraphClosure;
-template <typename T>
-class ComputeGraphVar;
-
 namespace details
 {
     class LocalVarId : public U64IdWithType
@@ -71,9 +62,9 @@ class ComputeGraph
     ComputeGraph(const ComputeGraph&)            = delete;
     ComputeGraph& operator=(const ComputeGraph&) = delete;
 
-    // move
-    ComputeGraph(ComputeGraph&&)            = default;
-    ComputeGraph& operator=(ComputeGraph&&) = default;
+    // delete move
+    ComputeGraph(ComputeGraph&&)            = delete;
+    ComputeGraph& operator=(ComputeGraph&&) = delete;
 
   private:
     //class TempNodeInfo
@@ -111,9 +102,12 @@ class ComputeGraph
 
     Event                      m_event;
     mutable Event::QueryResult m_event_result = Event::QueryResult::eFinished;
+    Flags<GraphInstantiateFlagBit> m_flags;
 
   public:
-    ComputeGraph(ComputeGraphVarManager& manager, std::string_view name = "graph");
+    ComputeGraph(ComputeGraphVarManager& manager,
+                 std::string_view        name = "graph",
+                 ComputeGraphFlag        flag = ComputeGraphFlag::HostLaunch);
 
     ~ComputeGraph();
 
@@ -141,6 +135,8 @@ class ComputeGraph
     ***************************************************************/
 
     void update();
+
+    void build();
 
     Empty launch(bool single_stream, cudaStream_t s = nullptr);
 
@@ -183,8 +179,6 @@ class ComputeGraph
 
   private:  // internal method
     void topo_build();
-
-    void build();
 
     void cuda_graph_add_deps();
 
