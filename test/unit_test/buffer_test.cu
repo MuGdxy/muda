@@ -245,7 +245,7 @@ TEST_CASE("buffer_2d_test", "[buffer]")
         buffer.shrink_to_fit();
         gt.shrink_to_fit();
 
-        DeviceBuffer2D<int> buffer2 = buffer;
+        DeviceBuffer2D<int> buffer2{buffer};
         buffer2.copy_to(h_res);
         REQUIRE(h_res == gt);
 

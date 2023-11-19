@@ -1,5 +1,4 @@
 #include <muda/buffer/buffer_launch.h>
-#include "device_buffer_2d.h"
 
 namespace muda
 {
@@ -7,12 +6,16 @@ template <typename T>
 DeviceBuffer2D<T>::DeviceBuffer2D(const Extent2D& n)
 {
     BufferLaunch()
-        .alloc(*this, n)  //
+        .resize(*this, n)  //
         .wait();
 }
 
 template <typename T>
 DeviceBuffer2D<T>::DeviceBuffer2D()
+    : m_data(nullptr)
+    , m_pitch_bytes(0)
+    , m_extent(Extent2D::Zero())
+    , m_capacity(Extent2D::Zero())
 {
 }
 
@@ -20,8 +23,8 @@ template <typename T>
 DeviceBuffer2D<T>::DeviceBuffer2D(const DeviceBuffer2D<T>& other)
 {
     BufferLaunch()
-        .alloc(*this, other.extent())  //
-        .copy(view(), other.view())    //
+        .resize(*this, other.extent())  //
+        .copy(view(), other.view())     //
         .wait();
 }
 
