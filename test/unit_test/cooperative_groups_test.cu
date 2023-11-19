@@ -17,7 +17,7 @@ void async_transfer(HostVector<int>& res, HostVector<int>& ground_thruth)
     DeviceVector<int> data(128, 1);
     Launch(2, 64)
         .apply(
-            [data = make_viewer(data)] __device__() mutable
+            [data = data.viewer()] __device__() mutable
             {
                 __shared__ int smem[64];
                 auto           block = cg::this_thread_block();

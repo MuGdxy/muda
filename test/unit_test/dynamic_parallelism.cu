@@ -25,7 +25,7 @@ void dynamic_parallelism(std::vector<int>& gt, std::vector<int>& res)
         .kernel_name(__FUNCTION__)
         .apply(
             [src = src.cviewer(), dst = dst.viewer()] __device__() mutable {
-                Kernel{1, 16, Stream::TailLaunch{}, copy}(dst.data(), src.data());
+                Kernel{1, 16, Stream::FireAndForget{}, copy}(dst.data(), src.data());
             });
 
     dst.copy_to(res);
@@ -35,6 +35,14 @@ __global__ void simple_kernel()
 {
     printf("simple_kernel\n");
 }
+
+TEST_CASE("dynamic_parallelism", "[dynamic_parallelism]")
+{
+    std::vector<int> gt, res;
+    dynamic_parallelism(gt, res);
+    REQUIRE(gt == res);
+}
+
 
 void dynamic_parallelism_graph(std::vector<int>& gt, std::vector<int>& res)
 {
@@ -62,7 +70,8 @@ void dynamic_parallelism_graph(std::vector<int>& gt, std::vector<int>& res)
 
     launch_graph.$node("launch")
     {
-        Launch().apply([graph = graph_var.ceval()] $() { graph.tail_launch(); });
+        Launch().apply([graph = graph_var.ceval()] $()
+                       { graph.fire_and_forget(); });
     };
 
     manager.graphviz(std::cout);
@@ -72,17 +81,11 @@ void dynamic_parallelism_graph(std::vector<int>& gt, std::vector<int>& res)
     dst.copy_to(res);
 }
 
-TEST_CASE("dynamic_parallelism", "[dynamic_parallelism]")
-{
-    std::vector<int> gt, res;
-    dynamic_parallelism(gt, res);
-    REQUIRE(gt == res);
-}
-
+#if MUDA_WITH_DEVICE_STREAM_MODEL
 TEST_CASE("dynamic_parallelism_graph", "[dynamic_parallelism]")
 {
-    // Error: invalid
     std::vector<int> gt, res;
     dynamic_parallelism_graph(gt, res);
     REQUIRE(gt == res);
 }
+#endif

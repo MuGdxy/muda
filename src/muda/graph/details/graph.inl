@@ -40,8 +40,13 @@ MUDA_INLINE auto Graph::instantiate() -> S<GraphExec>
 MUDA_INLINE auto Graph::instantiate(Flags<GraphInstantiateFlagBit> flags) -> S<GraphExec>
 {
     auto ret = std::make_shared<GraphExec>();
+#if MUDA_WITH_DEVICE_STREAM_MODEL
     checkCudaErrors(
         cudaGraphInstantiateWithFlags(&ret->m_handle, m_handle, static_cast<int>(flags)));
+#else
+    checkCudaErrors(cudaGraphInstantiateWithFlags(
+        &ret->m_handle, m_handle, static_cast<int>(flags & GraphInstantiateFlagBit::FreeOnLaunch)));
+#endif
     ret->m_flags = flags;
     return ret;
 }
