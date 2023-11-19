@@ -3,6 +3,7 @@
 #include <muda/graph/kernel_node.h>
 #include <muda/graph/memory_node.h>
 #include <muda/graph/event_node.h>
+#include <muda/graph/graph_viewer.h>
 
 namespace muda
 {
@@ -12,7 +13,8 @@ class GraphExec
     using S = std::shared_ptr<T>;
     template <typename T>
     using U = std::unique_ptr<T>;
-    cudaGraphExec_t m_handle;
+    cudaGraphExec_t                m_handle;
+    Flags<GraphInstantiateFlagBit> m_flags;
 
   public:
     friend class Graph;
@@ -51,6 +53,7 @@ class GraphExec
 
     cudaGraphExec_t handle() const { return m_handle; }
 
+    GraphViewer viewer() const;
   private:
     // keep the ref count > 0 for those whose data should be kept alive for the graph life.
     std::list<S<NodeParms>> m_cached;

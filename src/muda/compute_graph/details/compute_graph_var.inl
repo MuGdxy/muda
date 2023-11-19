@@ -15,6 +15,7 @@ MUDA_INLINE void ComputeGraphVarBase::base_update()
     }
     m_is_valid = true;
 }
+
 MUDA_INLINE void ComputeGraphVarBase::base_building_eval()
 {
     _building_eval(ComputeGraphVarUsage::ReadWrite);

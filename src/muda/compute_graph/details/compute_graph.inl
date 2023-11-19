@@ -117,7 +117,7 @@ MUDA_INLINE void ComputeGraph::graphviz(std::ostream& o, const ComputeGraphGraph
 MUDA_INLINE GraphViewer ComputeGraph::viewer()
 {
     MUDA_ASSERT(m_graph_exec, "graph is not built yet, call ComputeGraph::build() to build it.");
-    return GraphViewer{m_graph_exec->handle()};
+    return GraphViewer{m_graph_exec->handle(), m_flags};
 }
 
 MUDA_INLINE void ComputeGraph::topo_build()

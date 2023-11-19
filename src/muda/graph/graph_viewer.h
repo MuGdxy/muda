@@ -1,6 +1,7 @@
 #pragma once
 #include <cuda.h>
 #include <muda/viewer/viewer_base.h>
+#include <muda/graph/graph_instantiate_flag.h>
 namespace muda
 {
 class GraphViewer : public ViewerBase
@@ -8,18 +9,35 @@ class GraphViewer : public ViewerBase
     MUDA_VIEWER_COMMON_NAME(GraphViewer);
 
   public:
-    MUDA_GENERIC      GraphViewer(cudaGraphExec_t graph);
+    MUDA_GENERIC GraphViewer() = default;
+    MUDA_GENERIC GraphViewer(cudaGraphExec_t graph, Flags<GraphInstantiateFlagBit> flags);
+
     MUDA_GENERIC void launch(cudaStream_t stream = nullptr) const;
+
+    MUDA_DEVICE void tail_launch() const;
+    MUDA_DEVICE void fire_and_forget() const;
+
     MUDA_GENERIC auto handle() const { return m_graph; }
-
-    MUDA_DEVICE void  tail_launch() const;
-    MUDA_DEVICE void  fire_and_forget() const;
-
 
   private:
     friend class ComputeGraph;
-    cudaGraphExec_t m_graph;
+    cudaGraphExec_t                m_graph = nullptr;
+    Flags<GraphInstantiateFlagBit> m_flags;
 };
+
+template <>
+struct read_only_viewer<GraphViewer>
+{
+    using type = GraphViewer;
+};
+
+template <>
+struct read_write_viewer<GraphViewer>
+{
+    using type = GraphViewer;
+};
+
+static_assert(is_uniform_viewer_v<GraphViewer>);
 }  // namespace muda
 
 #include "details/graph_viewer.inl"

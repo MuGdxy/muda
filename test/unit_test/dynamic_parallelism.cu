@@ -65,14 +65,13 @@ void dynamic_parallelism_graph(std::vector<int>& gt, std::vector<int>& res)
         Launch().apply(
             [graph = graph_var.ceval()] $()
             {
-                // dynamic parallelism graph launch
                 graph.tail_launch();
             });
     };
 
     manager.graphviz(std::cout);
 
-    launch_graph.launch();
+    launch_graph.launch().wait();
 
     dst.copy_to(res);
 }

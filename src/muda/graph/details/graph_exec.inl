@@ -72,6 +72,11 @@ MUDA_INLINE void GraphExec::set_event_wait_node_parms(S<EventWaitNode> node, cud
     checkCudaErrors(cudaGraphExecEventWaitNodeSetEvent(m_handle, node->m_handle, event));
 }
 
+MUDA_INLINE GraphViewer GraphExec::viewer() const
+{
+    return GraphViewer{m_handle, m_flags};
+}
+
 MUDA_INLINE GraphExec::~GraphExec()
 {
     if(m_handle)

@@ -30,6 +30,9 @@ class ComputeGraphGraphvizOptions
     std::string event_style =
         R"(shape="rectangle", color="#8E44AD", style="filled,rounded", fillcolor="#BB8FCE",)";
 
+    std::string graph_viewer_style =
+        R"(shape="rectangle", color="#82B366", style="filled,rounded", fillcolor="#D5E8D4",)";
+
     std::string cluster_style =
         R"(fontcolor="#82B366" fontsize=18; color = "#82B366"; style = "dashed";)";
 
