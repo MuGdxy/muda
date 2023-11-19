@@ -107,26 +107,8 @@ buffer3d.copy_to(host);
 ```
 
 result of buffer2d:
-$$
-\begin{bmatrix} 1 & 1 & 1 & 1 & 1\\1 & 1 & 1 & 1 & 1\\1 & 1 & 1 & 1 & 1\\1 & 1 & 1 & 1 & 1\\1 & 1 & 1 & 1 & 1\end{bmatrix}
-\xrightarrow{\text{(7,2); 2}}
-\begin{bmatrix}
-1 & 1 \\
-1 & 1 \\
-1 & 1 \\
-1 & 1 \\
-1 & 1 \\
-2 & 2 \\
-2 & 2
-\end{bmatrix}
-\xrightarrow{\text{(2,7); 3}}
-\begin{bmatrix}
-1 & 1 & 3 & 3 & 3 & 3 & 3\\
-1 & 1 & 3 & 3 & 3 & 3 & 3
-\end{bmatrix}
-\xrightarrow{\text{(9,9); 4}}
-\begin{bmatrix}1&1&3&3&3&3&3&4&4\\1&1&3&3&3&3&3&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\4&4&4&4&4&4&4&4&4\\\end{bmatrix}
-$$
+
+![buffer2d_resize](README.assets/buffer2d_resize.svg)
 
 ### Viewer In Kernel
 
