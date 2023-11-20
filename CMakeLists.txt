@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 3.20)
 
 # build targets:
 option(MUDA_BUILD_EXAMPLE "build muda examples. if you want to see how to use muda, you could enable this option." ON)
-option(MUDA_BUILD_UNIT_TEST "build muda test. if you're the developer, you could enable this option." OFF)
+option(MUDA_BUILD_TEST "build muda test. if you're the developer, you could enable this option." OFF)
 
 # short cut
 option(MUDA_DEV "build muda example and unit test. if you're the developer, you could enable this option." OFF)
@@ -19,7 +19,7 @@ option(MUDA_WITH_CHECK "turn on muda runtime check" ON)
 if(MUDA_DEV)
   set(MUDA_BUILD_EXAMPLE ON)
   set(MUDA_PLAYGROUND ON)
-  set(MUDA_BUILD_UNIT_TEST ON)
+  set(MUDA_BUILD_TEST ON)
 endif()
 
 # to remove warning
@@ -73,33 +73,44 @@ if(MUDA_BUILD_EXAMPLE)
   target_include_directories(muda_example PRIVATE
     "${PROJECT_SOURCE_DIR}/example"
     "${PROJECT_SOURCE_DIR}/external")
-  target_link_libraries(muda_example PRIVATE muda)
+  target_link_libraries(muda_example PRIVATE muda Eigen3::Eigen)
   source_group(TREE "${PROJECT_SOURCE_DIR}/example" PREFIX "example" FILES ${MUDA_EXAMPLE_SOURCE_FILES})
   source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
 endif()
 
-if(MUDA_BUILD_UNIT_TEST)
+if(MUDA_BUILD_TEST)
+  find_package(Eigen3 REQUIRED)
   file (GLOB_RECURSE MUDA_UNIT_TEST_CU_SOURCE_FILES
     "${PROJECT_SOURCE_DIR}/test/unit_test/*.cu"
     "${PROJECT_SOURCE_DIR}/test/unit_test/*.h")
   file(GLOB_RECURSE MUDA_UNIT_TEST_SOURCE_FILES
     "${PROJECT_SOURCE_DIR}/test/unit_test/*.cpp"
     ${MUDA_UNIT_TEST_CU_SOURCE_FILES})
-  add_executable(muda_test ${MUDA_UNIT_TEST_SOURCE_FILES})
-  set_target_properties(muda_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-  target_include_directories(muda_test PRIVATE
+  add_executable(muda_unit_test ${MUDA_UNIT_TEST_SOURCE_FILES})
+  set_target_properties(muda_unit_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  target_include_directories(muda_unit_test PRIVATE
     "${PROJECT_SOURCE_DIR}/test"
     "${PROJECT_SOURCE_DIR}/external")
-  target_link_libraries(muda_test PRIVATE muda cusparse cublas)
-  target_compile_definitions(muda_test PRIVATE "-DMUDA_TEST_DATA_DIR=R\"(${PROJECT_SOURCE_DIR}/test/data)\"")
+  target_link_libraries(muda_unit_test PRIVATE muda cusparse cublas Eigen3::Eigen)
+  target_compile_definitions(muda_unit_test PRIVATE "-DMUDA_TEST_DATA_DIR=R\"(${PROJECT_SOURCE_DIR}/test/data)\"")
   source_group(TREE "${PROJECT_SOURCE_DIR}/test" PREFIX "test" FILES ${MUDA_UNIT_TEST_SOURCE_FILES})
   source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
 
-  # add_library(muda_test_ptx OBJECT ${MUDA_UNIT_TEST_CU_SOURCE_FILES})
-  # target_include_directories(muda_test_ptx PRIVATE
-  # "${PROJECT_SOURCE_DIR}/test"
-  # "${PROJECT_SOURCE_DIR}/external")
-  # set_property(TARGET muda_test_ptx PROPERTY CUDA_PTX_COMPILATION ON)
-  # target_link_libraries(muda_test_ptx PRIVATE muda cusparse cublas)
-  # target_compile_definitions(muda_test_ptx PRIVATE "-DMUDA_TEST_DATA_DIR=R\"(${PROJECT_SOURCE_DIR}/test/data)\"")
+
+
+  find_package(Eigen3 REQUIRED)
+  file (GLOB_RECURSE MUDA_EIGEN_TEST_CU_SOURCE_FILES
+    "${PROJECT_SOURCE_DIR}/test/eigen_test/*.cu"
+    "${PROJECT_SOURCE_DIR}/test/eigen_test/*.h")
+  file(GLOB_RECURSE MUDA_EIGEN_TEST_SOURCE_FILES
+    "${PROJECT_SOURCE_DIR}/test/eigen_test/*.cpp"
+    ${MUDA_EIGEN_TEST_CU_SOURCE_FILES})
+  add_executable(muda_eigen_test ${MUDA_EIGEN_TEST_SOURCE_FILES})
+  set_target_properties(muda_eigen_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  target_include_directories(muda_eigen_test PRIVATE
+    "${PROJECT_SOURCE_DIR}/test"
+    "${PROJECT_SOURCE_DIR}/external")
+  target_link_libraries(muda_eigen_test PRIVATE muda Eigen3::Eigen)
+  source_group(TREE "${PROJECT_SOURCE_DIR}/test" PREFIX "test" FILES ${MUDA_EIGEN_TEST_SOURCE_FILES})
+  source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
 endif()

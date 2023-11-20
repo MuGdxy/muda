@@ -41,8 +41,11 @@ class ComputeGraphVar<Buffer3DView<T>> : public ComputeGraphVarBase
 
     operator ROView() const { return ceval(); }
     operator RWView() { return eval(); }
-    auto cviewer() const { return ceval().cviewer(); };
-    auto viewer() { return eval().viewer(); };
+    auto cviewer() const
+    {
+        return ceval().cviewer().name(this->name().data());
+    };
+    auto viewer() { return eval().viewer().name(this->name().data()); };
 
     void                      update(const RWView& view);
     ComputeGraphVar<VarType>& operator=(const RWView& view);

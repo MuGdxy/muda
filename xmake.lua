@@ -38,6 +38,11 @@ if has_config("test") then
         add_defines("unit_test_DATA_DIR=R\"(".. test_data_dir..")\"")
         add_files("test/unit_test/**.cu","test/unit_test/**.cpp")
     target_end()
+    
+    target("muda_eigen_test")
+        muda_app_base("cui")
+        add_files("test/eigen_test/**.cu","test/eigen_test/**.cpp")
+    target_end()
 end
 
 if has_config("example") then
