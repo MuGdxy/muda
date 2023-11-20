@@ -25,18 +25,20 @@ template <typename T>
 MUDA_GENERIC Buffer2DViewBase<T> Buffer2DViewBase<T>::subview(Offset2D offset,
                                                               Extent2D extent) const MUDA_NOEXCEPT
 {
+#ifndef __CUDA_ARCH__
     if(ComputeGraphBuilder::is_topo_building())
         return Buffer2DViewBase<T>{};  // dummy
+#endif
 
     if(!extent.valid())
         extent = m_extent - as_extent(offset);
 
-    MUDA_ASSERT(extent + as_extent(offset) <= m_extent,
-                "Buffer2DView out of range, extent = (%d,%d), yours = (%d,%d)",
-                (int)m_extent.height(),
-                (int)m_extent.width(),
-                (int)extent.height(),
-                (int)extent.width());
+    MUDA_KERNEL_ASSERT(extent + as_extent(offset) <= m_extent,
+                       "Buffer2DView out of range, extent = (%d,%d), yours = (%d,%d)",
+                       (int)m_extent.height(),
+                       (int)m_extent.width(),
+                       (int)extent.height(),
+                       (int)extent.width());
     return Buffer2DViewBase<T>{
         const_cast<T*>(m_data), m_pitch_bytes, m_origin_width, m_origin_height, offset, extent};
 }

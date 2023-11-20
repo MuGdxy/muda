@@ -85,7 +85,7 @@ MUDA_INLINE MUDA_HOST auto Launch::as_node_parms(F&& f) -> S<NodeParms<F>>
     parms->func((void*)details::generic_kernel<CallableType, UserTag>);
     parms->grid_dim(m_grid_dim);
     parms->block_dim(m_block_dim);
-    parms->shared_mem_bytes(m_shared_mem_size);
+    parms->shared_mem_bytes(static_cast<uint32_t>(m_shared_mem_size));
     parms->parse([](details::LaunchCallable<CallableType>& p) -> std::vector<void*>
                  { return {&p}; });
     return parms;

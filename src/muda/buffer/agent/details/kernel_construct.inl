@@ -29,8 +29,8 @@ MUDA_INLINE MUDA_HOST void kernel_construct(int           grid_dim,
     if constexpr(muda::is_trivially_constructible_v<T>)
         return;
 
-    ParallelFor(grid_dim, block_dim, 0, stream)
-        .apply(buffer_view.size(),
+    ParallelFor(grid_dim, block_dim, size_t{0}, stream)
+        .apply(static_cast<int>(buffer_view.size()),
                [buffer_view] __device__(int i) mutable
                { new(buffer_view.data(i)) T(); });
 }

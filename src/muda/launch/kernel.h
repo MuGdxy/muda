@@ -1,6 +1,7 @@
 #pragma once
 #include <cuda.h>
 #include <muda/muda_def.h>
+#include <muda/launch/stream_define.h>
 #include <type_traits>
 
 namespace muda
@@ -23,7 +24,8 @@ class Kernel
         , m_kernel(f)
     {
 #ifdef __CUDA_ARCH__
-        MUDA_KERNEL_ASSERT(stream == cudaStreamTailLaunch || stream == cudaStreamFireAndForget,
+        MUDA_KERNEL_ASSERT(stream == details::stream::tail_launch()
+                               || stream == details::stream::fire_and_forget(),
                            "Kernel Launch on device with invalid stream! "
                            "Only Stream::TailLaunch{} and Stream::FireAndForget{} are allowed");
 #endif
@@ -58,9 +60,28 @@ class Kernel
     MUDA_GENERIC void operator()(Args&&... args) &&
     {
         static_assert(std::is_invocable_v<F, Args...>, "invalid arguments");
+#if MUDA_WITH_DEVICE_STREAM_MODEL
         m_kernel<<<m_grid_dim, m_block_dim, m_shared_memory_size, m_stream>>>(
             std::forward<Args>(args)...);
         checkCudaErrors(cudaGetLastError());
+#else
+        cudaStream_t stream = nullptr;
+        if(m_stream == details::stream::tail_launch())
+        {
+            checkCudaErrors(cudaDeviceSynchronize());
+        }
+        else if(m_stream == details::stream::fire_and_forget())
+        {
+            // do nothing
+        }
+        else
+        {
+            stream = m_stream;
+        }
+        m_kernel<<<m_grid_dim, m_block_dim, m_shared_memory_size, stream>>>(
+            std::forward<Args>(args)...);
+        checkCudaErrors(cudaGetLastError());
+#endif
     }
 
     // delete copy and move

@@ -9,47 +9,47 @@ MUDA_INLINE const T& LoggerMetaData::as()
 {
     if constexpr(std::is_same_v<T, int8_t>)
     {
-        MUDA_ASSERT(type == LoggerBasicType::Int8);
+        MUDA_ASSERT(type == LoggerBasicType::Int8, "");
     }
     else if constexpr(std::is_same_v<T, int16_t>)
     {
-        MUDA_ASSERT(type == LoggerBasicType::Int16);
+        MUDA_ASSERT(type == LoggerBasicType::Int16, "");
     }
     else if constexpr(std::is_same_v<T, int32_t>)
     {
-        MUDA_ASSERT(type == LoggerBasicType::Int32);
+        MUDA_ASSERT(type == LoggerBasicType::Int32, "");
     }
     else if constexpr(std::is_same_v<T, int64_t>)
     {
-        MUDA_ASSERT(type == LoggerBasicType::Int64);
+        MUDA_ASSERT(type == LoggerBasicType::Int64, "");
     }
     else if constexpr(std::is_same_v<T, uint8_t>)
     {
-        MUDA_ASSERT(type == LoggerBasicType::UInt8);
+        MUDA_ASSERT(type == LoggerBasicType::UInt8, "");
     }
     else if constexpr(std::is_same_v<T, uint16_t>)
     {
-        MUDA_ASSERT(type == LoggerBasicType::UInt16);
+        MUDA_ASSERT(type == LoggerBasicType::UInt16, "");
     }
     else if constexpr(std::is_same_v<T, uint32_t>)
     {
-        MUDA_ASSERT(type == LoggerBasicType::UInt32);
+        MUDA_ASSERT(type == LoggerBasicType::UInt32, "");
     }
     else if constexpr(std::is_same_v<T, uint64_t>)
     {
-        MUDA_ASSERT(type == LoggerBasicType::UInt64);
+        MUDA_ASSERT(type == LoggerBasicType::UInt64, "");
     }
     else if constexpr(std::is_same_v<T, float>)
     {
-        MUDA_ASSERT(type == LoggerBasicType::Float);
+        MUDA_ASSERT(type == LoggerBasicType::Float, "");
     }
     else if constexpr(std::is_same_v<T, double>)
     {
-        MUDA_ASSERT(type == LoggerBasicType::Double);
+        MUDA_ASSERT(type == LoggerBasicType::Double, "");
     }
     else
     {
-        MUDA_ASSERT(type == LoggerBasicType::Object)
+        MUDA_ASSERT(type == LoggerBasicType::Object, "");
     };
     return *reinterpret_cast<const T*>(data);
 }

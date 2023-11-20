@@ -137,7 +137,7 @@ MUDA_HOST MUDA_NODISCARD auto ParallelFor::as_node_parms(int count, F&& f)
     }
 
     parms->block_dim(m_block_dim);
-    parms->shared_mem_bytes(m_shared_mem_size);
+    parms->shared_mem_bytes(static_cast<uint32_t>(m_shared_mem_size));
     parms->parse([](details::ParallelForCallable<CallableType>& p) -> std::vector<void*>
                  { return {&p}; });
 

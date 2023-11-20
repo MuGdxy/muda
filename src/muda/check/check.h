@@ -11,7 +11,7 @@
 
 #include <cusparse.h>
 
-MUDA_INLINE MUDA_GENERIC inline const char* mudaCudaGetErrorEnum(cudaError_t error)
+MUDA_INLINE MUDA_GENERIC const char* mudaCudaGetErrorEnum(cudaError_t error)
 {
 //#ifdef __CUDA_ARCH__
 //    return "<muda: not impl yet>";

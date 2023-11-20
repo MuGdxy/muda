@@ -24,6 +24,7 @@ target("muda")
     -- add_packages("eigen", {public = true})
     add_cuflags("--extended-lambda", {public = true}) -- must be set for muda
     add_cuflags("--expt-relaxed-constexpr", {public = true}) -- must be set for muda
+    add_cuflags("-rdc=true", {public = true})
 target_end()
 
 

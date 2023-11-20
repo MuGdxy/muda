@@ -234,7 +234,6 @@ MUDA_HOST void NDReshaper::resize(int                grid_dim,
 
     Buffer2DView<T> old_buffer = buffer.view();
     Buffer2DView<T> new_buffer;
-
     if(new_extent <= m_capacity)
     {
         // all dimensions are bigger than the new extent
@@ -336,7 +335,7 @@ MUDA_HOST void NDReshaper::resize(int                grid_dim,
 
 
     // if the new buffer was allocated, deallocate the old one
-    if (new_buffer.origin_data() != old_buffer.origin_data())
+    if(new_buffer.origin_data() != old_buffer.origin_data())
     {
         kernel_destruct<T>(grid_dim, block_dim, stream, old_buffer);
         Memory(stream).free(old_buffer.origin_data());
