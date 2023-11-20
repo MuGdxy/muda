@@ -118,7 +118,6 @@ MUDA_INLINE MUDA_DEVICE LogProxy& operator<<(LogProxy& proxy, uint4 val)
 }
 MUDA_INLINE MUDA_DEVICE LogProxy& operator<<(LogProxy& proxy, ulong1 val)
 {
-    uint32_t;
     return proxy << (unsigned int)val.x;
 }
 MUDA_INLINE MUDA_DEVICE LogProxy& operator<<(LogProxy& proxy, ulong2 val)

@@ -6,15 +6,17 @@ namespace muda
 template <typename T>
 MUDA_GENERIC BufferViewBase<T> BufferViewBase<T>::subview(size_t offset, size_t size) const MUDA_NOEXCEPT
 {
+#ifndef __CUDA_ARCH__
     if(ComputeGraphBuilder::is_topo_building())
         return BufferViewBase<T>{};  // dummy
+#endif
 
     if(size == ~0)
         size = m_size - offset;
-    MUDA_ASSERT(offset + size <= m_size,
-                "BufferView out of range, size = %d, yours = %d",
-                m_size,
-                offset + size);
+    MUDA_KERNEL_ASSERT(offset + size <= m_size,
+                       "BufferView out of range, size = %d, yours = %d",
+                       m_size,
+                       offset + size);
     return BufferViewBase<T>{m_data, m_offset + offset, size};
 }
 

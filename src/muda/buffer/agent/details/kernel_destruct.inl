@@ -29,8 +29,8 @@ MUDA_INLINE MUDA_HOST void kernel_destruct(int           grid_dim,
     if constexpr(muda::is_trivially_destructible_v<T>)
         return;
 
-    ParallelFor(grid_dim, block_dim, 0, stream)
-        .apply(buffer_view.size(),
+    ParallelFor(grid_dim, block_dim, size_t{0}, stream)
+        .apply(static_cast<int>(buffer_view.size()),
                [buffer_view] __device__(int i) mutable
                { buffer_view.data(i)->~T(); });
 }

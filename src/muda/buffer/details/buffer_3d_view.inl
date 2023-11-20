@@ -36,8 +36,10 @@ template <typename T>
 MUDA_GENERIC Buffer3DViewBase<T> Buffer3DViewBase<T>::subview(Offset3D offset,
                                                               Extent3D extent) const MUDA_NOEXCEPT
 {
+#ifndef __CUDA_ARCH__
     if(ComputeGraphBuilder::is_topo_building())
         return Buffer3DViewBase<T>{};  // dummy
+#endif
 
     if(!extent.valid())
         extent = m_extent - as_extent(offset);
