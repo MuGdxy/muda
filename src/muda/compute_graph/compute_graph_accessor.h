@@ -1,5 +1,8 @@
 #pragma once
-#include <muda/compute_graph/compute_graph.h>
+#include <muda/compute_graph/compute_graph_fwd.h>
+#include <muda/graph/kernel_node.h>
+#include <muda/compute_graph/compute_graph_var_usage.h>
+#include <muda/compute_graph/compute_graph_var_id.h>
 
 namespace muda
 {
@@ -50,7 +53,7 @@ namespace details
         cudaStream_t                current_stream() const;
         cudaStream_t                capture_stream() const;
 
-        bool is_topo_built() const { return m_cg.m_is_topo_built; }
+        bool is_topo_built() const;
 
         /************************************************************************************
         * 

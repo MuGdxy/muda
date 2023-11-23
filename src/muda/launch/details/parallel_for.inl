@@ -1,6 +1,6 @@
 #include <muda/compute_graph/compute_graph.h>
 #include <muda/type_traits/always.h>
-
+#include <muda/launch/kernel_tag.h>
 namespace muda
 {
 namespace details

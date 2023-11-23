@@ -65,7 +65,8 @@ finally we launch the graph and get the result.
 
     std::cout << "\n\n";
     std::cout << " >>> Results:\n";
-    graph.launch(stream).wait();
+    graph.launch(stream);
+    wait_device();
 }
 
 TEST_CASE("compute_graph_simple", "[compute_graph]")

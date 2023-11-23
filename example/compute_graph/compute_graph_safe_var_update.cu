@@ -66,7 +66,8 @@ graph vars when you don't know whether some graphs are using your graph var.
     x = x_value;
 
     std::cout << " >>> Graph2 Results:\n";
-    graph2.launch(stream).wait();
+    graph2.launch(stream);
+    wait_device();
 }
 
 TEST_CASE("compute_graph_safe_var_update", "[compute_graph]")

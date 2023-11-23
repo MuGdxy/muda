@@ -1,3 +1,4 @@
+#include <muda/compute_graph/compute_graph.h>
 #include <muda/compute_graph/nodes/compute_graph_kernel_node.h>
 #include <muda/compute_graph/nodes/compute_graph_catpure_node.h>
 #include <muda/compute_graph/nodes/compute_graph_memory_node.h>
@@ -120,6 +121,11 @@ namespace details
     {
         MUDA_ASSERT(m_cg.m_is_capturing, "Not Capture Phase!");
         return m_cg.shared_capture_stream();
+    }
+
+    MUDA_INLINE bool ComputeGraphAccessor::is_topo_built() const
+    {
+        return m_cg.m_is_topo_built;
     }
 
     template <typename T>

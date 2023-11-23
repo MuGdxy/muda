@@ -1,9 +1,13 @@
 #pragma once
+#include <driver_types.h>
+#include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <muda/mstl/span.h>
 #include <muda/compute_graph/compute_graph_flag.h>
 #include <muda/compute_graph/compute_graph_fwd.h>
+#include <muda/compute_graph/graphviz_options.h>
 namespace muda
 {
 class ComputeGraphVarManager
@@ -33,14 +37,18 @@ class ComputeGraphVarManager
 
     bool is_using() const;
     void sync() const;
+    void sync_on(cudaStream_t stream) const;
 
     template <typename... T>
     bool is_using(const ComputeGraphVar<T>&... vars) const;
     template <typename... T>
     void sync(const ComputeGraphVar<T>&... vars) const;
+    template <typename... T>
+    void sync_on(cudaStream_t stream, const ComputeGraphVar<T>&... vars) const;
 
     bool is_using(const span<const ComputeGraphVarBase*> vars) const;
-    void sync(const span<const ComputeGraphVarBase*> vars, cudaStream_t stream = nullptr) const;
+    void sync(const span<const ComputeGraphVarBase*> vars) const;
+    void sync_on(cudaStream_t stream, const span<const ComputeGraphVarBase*> vars) const;
 
     const auto& graphs() const { return m_graphs; }
     void graphviz(std::ostream& os, const ComputeGraphGraphvizOptions& options = {}) const;

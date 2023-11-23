@@ -1,5 +1,5 @@
 #include <muda/exception.h>
-#include <muda/compute_graph/compute_graph.h>
+#include <muda/compute_graph/compute_graph_accessor.h>
 #include <muda/compute_graph/compute_graph_var.h>
 #include <muda/graph/graph.h>
 #include <iostream>

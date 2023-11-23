@@ -2,9 +2,9 @@
 #include <map>
 #include <functional>
 #include <set>
-#include <muda/mstl/span.h>
 #include <muda/launch/stream.h>
 #include <muda/launch/event.h>
+#include <muda/mstl/span.h>
 #include <muda/graph/graph.h>
 #include <muda/graph/graph_viewer.h>
 #include <muda/compute_graph/compute_graph_flag.h>
@@ -138,9 +138,9 @@ class ComputeGraph
 
     void build();
 
-    Empty launch(bool single_stream, cudaStream_t s = nullptr);
+    void launch(bool single_stream, cudaStream_t s = nullptr);
 
-    Empty launch(cudaStream_t s = nullptr) { return launch(false, s); }
+    void launch(cudaStream_t s = nullptr) { return launch(false, s); }
 
     /**************************************************************
     * 

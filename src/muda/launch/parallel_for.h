@@ -1,5 +1,6 @@
 #pragma once
 #include <muda/launch/launch_base.h>
+#include <muda/launch/kernel_tag.h>
 #include <stdexcept>
 #include <exception>
 

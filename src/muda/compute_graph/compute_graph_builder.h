@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <muda/compute_graph/compute_graph_phase.h>
 #include <muda/compute_graph/compute_graph_fwd.h>
 
