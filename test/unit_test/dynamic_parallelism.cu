@@ -76,7 +76,7 @@ void dynamic_parallelism_graph(std::vector<int>& gt, std::vector<int>& res)
 
     manager.graphviz(std::cout);
 
-    launch_graph.launch().wait();
+    launch_graph.launch();
 
     dst.copy_to(res);
 }
