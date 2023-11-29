@@ -139,7 +139,7 @@ class Buffer2DView : public Buffer2DViewBase<T>
 
     MUDA_HOST void fill(const T& v);
     MUDA_HOST void copy_from(CBuffer2DView<T> other);
-    MUDA_HOST void copy_from(T* host);
+    MUDA_HOST void copy_from(const T* host);
     MUDA_HOST void copy_to(T* host) const
     {
         return CBuffer2DView<T>{*this}.copy_to(host);

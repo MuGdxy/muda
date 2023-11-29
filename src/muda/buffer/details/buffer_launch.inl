@@ -500,14 +500,13 @@ MUDA_HOST BufferLaunch& BufferLaunch::copy(Buffer2DView<T> dst, const T* src)
 
     parms.extent = dst.extent().template cuda_extent<T>();
     parms.dstPos = dst.offset().template cuda_pos<T>();
+    parms.dstPtr = dst.cuda_pitched_ptr();
 
     parms.srcPtr = make_cudaPitchedPtr(const_cast<T*>(src),
                                        parms.dstPtr.xsize,
                                        parms.dstPtr.xsize,
                                        parms.dstPtr.ysize);
     parms.srcPos = make_cudaPos(0, 0, 0);
-
-    parms.dstPtr = dst.cuda_pitched_ptr();
 
     Memory(m_stream).upload(parms);
 
@@ -521,14 +520,13 @@ MUDA_HOST BufferLaunch& BufferLaunch::copy(Buffer3DView<T> dst, const T* src)
 
     parms.extent = dst.extent().template cuda_extent<T>();
     parms.dstPos = dst.offset().template cuda_pos<T>();
+    parms.dstPtr = dst.cuda_pitched_ptr();
 
     parms.srcPtr = make_cudaPitchedPtr(const_cast<T*>(src),
                                        parms.dstPtr.xsize,
                                        parms.dstPtr.xsize,
                                        parms.dstPtr.ysize);
     parms.srcPos = make_cudaPos(0, 0, 0);
-
-    parms.dstPtr = dst.cuda_pitched_ptr();
 
     Memory(m_stream).upload(parms);
 

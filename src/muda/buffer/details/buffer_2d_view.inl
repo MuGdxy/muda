@@ -88,9 +88,9 @@ MUDA_HOST void Buffer2DView<T>::copy_from(CBuffer2DView<T> other)
 }
 
 template <typename T>
-MUDA_HOST void Buffer2DView<T>::copy_from(T* host)
+MUDA_HOST void Buffer2DView<T>::copy_from(const T* host)
 {
-    BufferLaunch().fill(*this, host).wait();
+    BufferLaunch().copy(*this, host).wait();
 }
 
 }  // namespace muda

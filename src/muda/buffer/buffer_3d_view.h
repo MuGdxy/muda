@@ -156,7 +156,7 @@ class Buffer3DView : public Buffer3DViewBase<T>
 
     MUDA_HOST void fill(const T& v);
     MUDA_HOST void copy_from(const Buffer3DView<T>& other);
-    MUDA_HOST void copy_from(T* host);
+    MUDA_HOST void copy_from(const T* host);
     MUDA_HOST void copy_to(T* host) const
     {
         CBuffer3DView<T>{*this}.copy_to(host);
