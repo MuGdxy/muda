@@ -1,6 +1,6 @@
 #pragma once
-#include <muda/compute_graph/compute_graph.h>
-
+#include <cuda_runtime.h>
+#include <muda/compute_graph/compute_graph_fwd.h>
 namespace muda
 {
 namespace details

@@ -5,6 +5,7 @@
 #include <cinttypes>
 #include <muda/type_traits/type_modifier.h>
 #include <muda/viewer/dense/dense_1d.h>
+#include <muda/buffer/buffer_fwd.h>
 
 namespace muda
 {

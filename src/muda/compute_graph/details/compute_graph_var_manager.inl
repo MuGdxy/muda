@@ -61,8 +61,7 @@ MUDA_INLINE void ComputeGraphVarManager::sync(const ComputeGraphVar<T>&... vars)
     sync(span<const ComputeGraphVarBase*>{var_array});
 };
 
-MUDA_INLINE auto ComputeGraphVarManager::create_graph(std::string_view name,
-                                                      ComputeGraphFlag flags)
+MUDA_INLINE auto ComputeGraphVarManager::create_graph(std::string_view name, ComputeGraphFlag flags)
     -> S<ComputeGraph>
 {
     return std::make_shared<ComputeGraph>(*this, name, flags);
@@ -88,13 +87,13 @@ MUDA_INLINE bool ComputeGraphVarManager::is_using(const span<const ComputeGraphV
                        });
 }
 
-MUDA_INLINE void ComputeGraphVarManager::sync(const span<const ComputeGraphVarBase*> vars,
-                                              cudaStream_t stream) const
+MUDA_INLINE void ComputeGraphVarManager::sync(const span<const ComputeGraphVarBase*> vars) const
 {
     auto graphs = unique_graphs(vars);
     std::for_each(graphs.begin(),
                   graphs.end(),
-                  [&](ComputeGraph* graph) { on(stream).wait(graph->m_event); });
+                  [&](ComputeGraph* graph)
+                  { checkCudaErrors(cudaEventSynchronize(graph->m_event)); });
 }
 
 MUDA_INLINE void ComputeGraphVarManager::graphviz(std::ostream& o,

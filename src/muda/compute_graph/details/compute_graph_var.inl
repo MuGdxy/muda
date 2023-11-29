@@ -83,8 +83,10 @@ MUDA_INLINE bool ComputeGraphVarBase::is_using()
 
 MUDA_INLINE void ComputeGraphVarBase::sync()
 {
-    for(auto& [graph, info] : m_related_closure_infos)
-        on().wait(graph->m_event);
+    for (auto& [graph, info] : m_related_closure_infos)
+    {
+        checkCudaErrors(cudaEventSynchronize(graph->m_event));
+    }
 }
 
 template <typename RWView>

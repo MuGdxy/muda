@@ -138,9 +138,9 @@ class ComputeGraph
 
     void build();
 
-    Empty launch(bool single_stream, cudaStream_t s = nullptr);
+    void launch(bool single_stream, cudaStream_t s = nullptr);
 
-    Empty launch(cudaStream_t s = nullptr) { return launch(false, s); }
+    void launch(cudaStream_t s = nullptr) { return launch(false, s); }
 
     /**************************************************************
     * 

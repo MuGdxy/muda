@@ -20,7 +20,8 @@ void hello_compute_graph()
             });
     };
     graph.graphviz(std::cout);
-    graph.launch().wait();
+    graph.launch();
+    wait_device();
 }
 
 TEST_CASE("hello_compute_graph", "[compute_graph]")
@@ -61,7 +62,8 @@ void hello_compute_graph_variable()
 
     // update var value
     var = var_value;
-    graph.launch().wait();
+    graph.launch();
+    wait_device();
 }
 
 TEST_CASE("hello_compute_graph_variable", "[compute_graph]")

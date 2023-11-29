@@ -1,6 +1,7 @@
 #include <memory>
 #include <muda/exception.h>
 #include <muda/debug.h>
+#include <muda/compute_graph/compute_graph.h>
 #include <muda/compute_graph/compute_graph_builder.h>
 #include <muda/compute_graph/compute_graph_var.h>
 #include <muda/compute_graph/compute_graph_var_manager.h>
@@ -367,7 +368,7 @@ MUDA_INLINE void ComputeGraph::update()
     _update();
 }
 
-MUDA_INLINE Empty ComputeGraph::launch(bool single_stream, cudaStream_t s)
+MUDA_INLINE void ComputeGraph::launch(bool single_stream, cudaStream_t s)
 {
     m_allow_node_adding = false;
     if(single_stream)
@@ -383,12 +384,11 @@ MUDA_INLINE Empty ComputeGraph::launch(bool single_stream, cudaStream_t s)
         m_graph_exec->launch(s);
     }
     m_event_result = Event::QueryResult::eNotReady;
-    on(s).record(m_event);
+    checkCudaErrors(cudaEventRecord(m_event, s));
 #if MUDA_CHECK_ON
     if(Debug::is_debug_sync_all())
         checkCudaErrors(cudaStreamSynchronize(s));
 #endif
-    return Empty{s};
 }
 
 MUDA_INLINE Event::QueryResult ComputeGraph::query() const

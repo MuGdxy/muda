@@ -1,3 +1,4 @@
+#include <muda/compute_graph/compute_graph.h>
 #include <muda/compute_graph/nodes/compute_graph_kernel_node.h>
 #include <muda/compute_graph/nodes/compute_graph_catpure_node.h>
 #include <muda/compute_graph/nodes/compute_graph_memory_node.h>

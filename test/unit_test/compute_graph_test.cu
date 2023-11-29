@@ -328,14 +328,16 @@ void compute_graph_update()
     y.update(y_buffer.viewer());
 
 
-    graph.launch().wait();
+    graph.launch();
+    wait_device();
 
     N.update(N_value);
     x_0.update(x_0_buffer.viewer());
     x.update(x_buffer.viewer());
     y.update(y_buffer.viewer());
 
-    graph.launch().wait();
+    graph.launch();
+    wait_device();
 }
 
 TEST_CASE("compute_graph_update", "[compute_graph]")
