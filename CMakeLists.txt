@@ -45,6 +45,7 @@ file(GLOB_RECURSE MUDA_HEADER_FILES "${PROJECT_SOURCE_DIR}/src/*.h" "${PROJECT_S
 
 target_sources(muda PUBLIC ${MUDA_HEADER_FILES})
 target_link_libraries(muda INTERFACE ${CUDA_LIBRARIES})
+target_include_directories(muda INTERFACE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_include_directories(muda INTERFACE "${PROJECT_SOURCE_DIR}/src/")
 
 if(MUDA_WITH_CHECK)
