@@ -126,6 +126,8 @@ class Buffer3DView : public Buffer3DViewBase<T>
         : Base(base)
     {
     }
+    
+    MUDA_GENERIC Buffer3DView(const CBuffer3DView<T>&) = delete;
 
     MUDA_GENERIC operator CBuffer3DView<T>() const MUDA_NOEXCEPT
     {

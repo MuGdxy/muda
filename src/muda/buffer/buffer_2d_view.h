@@ -113,6 +113,8 @@ class Buffer2DView : public Buffer2DViewBase<T>
     {
     }
 
+    MUDA_GENERIC Buffer2DView(const CBuffer2DView<T>&) = delete;
+
     MUDA_GENERIC operator CBuffer2DView<T>() const MUDA_NOEXCEPT
     {
         return CBuffer2DView<T>{*this};
