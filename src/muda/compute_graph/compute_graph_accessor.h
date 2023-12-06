@@ -1,6 +1,9 @@
 #pragma once
 #include <cuda_runtime.h>
 #include <muda/compute_graph/compute_graph_fwd.h>
+#include <muda/graph/kernel_node.h>
+#include <muda/graph/memory_node.h>
+#include <muda/graph/event_node.h>
 namespace muda
 {
 namespace details

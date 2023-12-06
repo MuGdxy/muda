@@ -1,5 +1,8 @@
 #pragma once
-
+#include <muda/compute_graph/compute_graph_var_id.h>
+#include <muda/compute_graph/compute_graph_closure_id.h>
+#include <muda/compute_graph/compute_graph_node_id.h>
+#include <muda/compute_graph/compute_graph_var_usage.h>
 namespace muda
 {
 class ComputeGraphVarBase;

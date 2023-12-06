@@ -49,6 +49,7 @@ class ComputeGraphVarManager
 
     bool is_using(const span<const ComputeGraphVarBase*> vars) const;
     void sync(const span<const ComputeGraphVarBase*> vars) const;
+    void sync_on(cudaStream_t stream, const span<const ComputeGraphVarBase*> vars) const;
 
     const auto& graphs() const { return m_graphs; }
     void graphviz(std::ostream& os, const ComputeGraphGraphvizOptions& options = {}) const;
