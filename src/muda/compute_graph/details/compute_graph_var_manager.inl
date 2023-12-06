@@ -106,17 +106,6 @@ MUDA_INLINE void ComputeGraphVarManager::sync(const span<const ComputeGraphVarBa
                   { checkCudaErrors(cudaEventSynchronize(graph->m_event)); });
 }
 
-MUDA_INLINE void ComputeGraphVarManager::sync_on(cudaStream_t stream,
-                                                 const span<const ComputeGraphVarBase*> vars) const
-{
-    auto graphs = unique_graphs(vars);
-    std::for_each(graphs.begin(),
-                  graphs.end(),
-                  [&](ComputeGraph* graph) {
-                      checkCudaErrors(cudaStreamWaitEvent(stream, graph->m_event));
-                  });
-}
-
 MUDA_INLINE void ComputeGraphVarManager::graphviz(std::ostream& o,
                                                   const ComputeGraphGraphvizOptions& options) const
 {

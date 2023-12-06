@@ -1,5 +1,6 @@
+#ifdef __CUDA_ARCH__
 #include <muda/ext/eigen/svd/svd_impl.h>
-#include <Eigen/Dense>
+
 namespace muda::eigen
 {
 namespace details
@@ -41,7 +42,12 @@ namespace details
                                      V(2, 2));
     }
 }  // namespace details
+}  // namespace muda::eigen
+#endif
 
+#include <Eigen/Dense>
+namespace muda::eigen
+{
 MUDA_INLINE MUDA_GENERIC void svd(const Eigen::Matrix<float, 3, 3>& F,
                                   Eigen::Matrix<float, 3, 3>&       U,
                                   Eigen::Vector3<float>&            Sigma,

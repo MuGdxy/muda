@@ -126,6 +126,8 @@ class Buffer3DView : public Buffer3DViewBase<T>
         : Base(base)
     {
     }
+    
+    MUDA_GENERIC Buffer3DView(const CBuffer3DView<T>&) = delete;
 
     MUDA_GENERIC operator CBuffer3DView<T>() const MUDA_NOEXCEPT
     {
@@ -156,7 +158,7 @@ class Buffer3DView : public Buffer3DViewBase<T>
 
     MUDA_HOST void fill(const T& v);
     MUDA_HOST void copy_from(const Buffer3DView<T>& other);
-    MUDA_HOST void copy_from(T* host);
+    MUDA_HOST void copy_from(const T* host);
     MUDA_HOST void copy_to(T* host) const
     {
         CBuffer3DView<T>{*this}.copy_to(host);

@@ -1,6 +1,6 @@
 #pragma once
 #include <muda/muda_def.h>
-#include <cublas.h>
+#include <cublas_v2.h>
 
 MUDA_INLINE MUDA_GENERIC const char* mudaCudaGetErrorEnum(cublasStatus_t error)
 {

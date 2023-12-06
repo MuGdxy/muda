@@ -98,7 +98,8 @@ void NDReshaper::resize(int              grid_dim,
     if(new_size <= m_capacity)
     {
         // construct the new memory
-        auto to_construct = old_buffer.subview(old_size, new_size - old_size);
+        BufferView<T> to_construct = BufferView<T>{m_data + old_size, new_size - old_size};
+        //auto to_construct = old_buffer.subview(old_size, new_size - old_size);
         fct(to_construct);
         m_size     = new_size;
         new_buffer = old_buffer;

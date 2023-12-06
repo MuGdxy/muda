@@ -113,6 +113,8 @@ class Buffer2DView : public Buffer2DViewBase<T>
     {
     }
 
+    MUDA_GENERIC Buffer2DView(const CBuffer2DView<T>&) = delete;
+
     MUDA_GENERIC operator CBuffer2DView<T>() const MUDA_NOEXCEPT
     {
         return CBuffer2DView<T>{*this};
@@ -139,7 +141,7 @@ class Buffer2DView : public Buffer2DViewBase<T>
 
     MUDA_HOST void fill(const T& v);
     MUDA_HOST void copy_from(CBuffer2DView<T> other);
-    MUDA_HOST void copy_from(T* host);
+    MUDA_HOST void copy_from(const T* host);
     MUDA_HOST void copy_to(T* host) const
     {
         return CBuffer2DView<T>{*this}.copy_to(host);

@@ -104,7 +104,7 @@ MUDA_HOST void Buffer3DView<T>::copy_from(const Buffer3DView<T>& other)
 }
 
 template <typename T>
-MUDA_HOST void Buffer3DView<T>::copy_from(T* host)
+MUDA_HOST void Buffer3DView<T>::copy_from(const T* host)
 {
     BufferLaunch().copy(*this, host).wait();
 }

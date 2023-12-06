@@ -4,6 +4,7 @@
 #include <cinttypes>
 #include <muda/literal/unit.h>
 #include <muda/logger/logger_viewer.h>
+#include <muda/buffer/device_var.h>
 #include <vector>
 
 namespace muda
