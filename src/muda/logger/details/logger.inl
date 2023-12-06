@@ -198,7 +198,7 @@ MUDA_INLINE void Logger::upload()
         checkCudaErrors(cudaMemcpyAsync(
             m_log_viewer_ptr, &m_viewer, sizeof(m_viewer), cudaMemcpyHostToDevice));
     }
-    Launch().wait();
+    on().wait();
 }
 
 MUDA_INLINE void Logger::download()
@@ -228,7 +228,7 @@ MUDA_INLINE void Logger::download()
         BufferLaunch().copy(m_h_buffer.data(), m_buffer.view(0, m_h_offset.buffer_offset));
     }
 
-    Launch().wait();
+    on().wait();
 }
 
 MUDA_INLINE void Logger::expand_if_needed()

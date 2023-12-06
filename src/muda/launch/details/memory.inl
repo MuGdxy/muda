@@ -207,7 +207,6 @@ MUDA_INLINE MUDA_HOST Memory& muda::Memory::free(cudaPitchedPtr pitched_ptr, boo
 
 MUDA_INLINE MUDA_HOST Memory& Memory::copy(const cudaMemcpy3DParms& parms)
 {
-    wait();
     ComputeGraphBuilder::invoke_phase_actions(
         [&] { checkCudaErrors(cudaMemcpy3DAsync(&parms, stream())); },
         [&] { details::ComputeGraphAccessor().set_memcpy_node(parms); });

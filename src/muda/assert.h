@@ -8,6 +8,7 @@
 #include <cuda_runtime_api.h>
 #include <cuda_device_runtime_api.h>
 #include <muda/exception.h>
+#include <muda/check/check.h>
 
 namespace muda
 {
@@ -16,7 +17,7 @@ MUDA_INLINE MUDA_GENERIC void trap()
 #ifdef __CUDA_ARCH__
     __trap();
 #else
-    throw exception("trap");
+    debug_break();
 #endif
 }
 

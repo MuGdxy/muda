@@ -81,7 +81,7 @@ MUDA_INLINE bool ComputeGraphVarBase::is_using()
 
 MUDA_INLINE void ComputeGraphVarBase::sync()
 {
-    for(auto& [graph, info] : m_related_closure_infos)
+    for (auto& [graph, info] : m_related_closure_infos)
     {
         checkCudaErrors(cudaEventSynchronize(graph->m_event));
     }

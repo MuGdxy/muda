@@ -113,6 +113,8 @@ class BufferView : public BufferViewBase<T>
     {
     }
 
+    MUDA_GENERIC BufferView(const CBufferView<T>&) = delete;
+
     MUDA_GENERIC BufferView(Dense1D<T> viewer) MUDA_NOEXCEPT
         : Base(viewer.data(), 0, (size_t)viewer.total_size())
     {

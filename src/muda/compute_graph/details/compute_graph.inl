@@ -1,6 +1,7 @@
 #include <memory>
 #include <muda/exception.h>
 #include <muda/debug.h>
+#include <muda/compute_graph/compute_graph.h>
 #include <muda/compute_graph/compute_graph_builder.h>
 #include <muda/compute_graph/compute_graph_var.h>
 #include <muda/compute_graph/compute_graph_var_manager.h>

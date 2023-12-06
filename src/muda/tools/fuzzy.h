@@ -2,14 +2,15 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
+#include <muda/muda_def.h>
 
 namespace muda
 {
 template <typename FHost, typename FDevice>
-MUDA_INLINE MUDA_GENERIC auto invoke(FHost&& host, FDevice&& device) MUDA_NOEXCEPT
+MUDA_INLINE MUDA_GENERIC decltype(auto) invoke(FHost&& host, FDevice&& device) MUDA_NOEXCEPT
 {
-    if constexpr(std::is_same_v<std::invoke_result_t<FHost>, void> && 
-        std::is_same_v<std::invoke_result_t<FDevice>, void>)
+    if constexpr(std::is_same_v<std::invoke_result_t<FHost>, void>
+                 && std::is_same_v<std::invoke_result_t<FDevice>, void>)
     {
 #ifdef __CUDA_ARCH__
         device();

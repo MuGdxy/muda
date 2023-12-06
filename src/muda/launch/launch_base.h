@@ -18,6 +18,7 @@
 #include <muda/check/check_cuda_errors.h>
 #include <muda/muda_def.h>
 #include <muda/launch/event.h>
+#include <muda/launch/kernel_tag.h>
 
 namespace muda
 {
