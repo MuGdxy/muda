@@ -15,7 +15,7 @@ MUDA_GENERIC Eigen::Matrix<T, M, N> atomic_add(Eigen::Matrix<T, M, N>& dst,
 #pragma unroll
         for(int i = 0; i < M; ++i)
         {
-            ret(i, j) = atomic_add(dst(i, j), src(i, j));
+            ret(i, j) = muda::atomic_add(&dst(i, j), src(i, j));
         }
 }
 
