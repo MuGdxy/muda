@@ -37,7 +37,7 @@ MUDA_HOST void BufferView<T>::copy_from(CBufferView<T> other)
 }
 
 template <typename T>
-MUDA_HOST void BufferView<T>::copy_from(T* host)
+MUDA_HOST void BufferView<T>::copy_from(const T* host)
 {
     BufferLaunch()
         .copy(*this, host)  //

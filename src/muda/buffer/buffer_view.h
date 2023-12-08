@@ -147,7 +147,7 @@ class BufferView : public BufferViewBase<T>
 
     MUDA_HOST void fill(const T& v);
     MUDA_HOST void copy_from(CBufferView<T> other);
-    MUDA_HOST void copy_from(T* host);
+    MUDA_HOST void copy_from(const T* host);
     MUDA_HOST void copy_to(T* host) const
     {
         CBufferView<T>{*this}.copy_to(host);
