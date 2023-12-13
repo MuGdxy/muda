@@ -9,3 +9,6 @@
 #include <muda/cub/device/device_partition.h>
 #include <muda/cub/device/device_select.h>
 #include <muda/cub/device/device_spmv.h>
+#include <muda/cub/device/device_segmented_sort.h>
+#include <muda/cub/device/device_segmented_radix_sort.h>
+#include <muda/cub/device/device_segmented_reduce.h>
