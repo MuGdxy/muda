@@ -88,4 +88,29 @@ MUDA_INLINE MUDA_GENERIC void pd(const Eigen::Matrix<float, 3, 3>& F,
     S = V * Sigma.asDiagonal() * V.transpose();
 }
 
+MUDA_GENERIC void svd(const Eigen::Matrix<double, 3, 3>& F,
+                      Eigen::Matrix<double, 3, 3>&       U,
+                      Eigen::Vector3<double>&            Sigma,
+                      Eigen::Matrix<double, 3, 3>&       V)
+{
+    Eigen::Matrix3f fU;
+    Eigen::Vector3f fSigma;
+    Eigen::Matrix3f fV;
+    svd(F.cast<float>(), fU, fSigma, fV);
+    U     = fU.cast<double>();
+    Sigma = fSigma.cast<double>();
+    V     = fV.cast<double>();
+}
+
+MUDA_GENERIC void pd(const Eigen::Matrix<double, 3, 3>& F,
+                     Eigen::Matrix<double, 3, 3>&       R,
+                     Eigen::Matrix<double, 3, 3>&       S)
+{
+    Eigen::Matrix3f fR;
+    Eigen::Matrix3f fS;
+    pd(F.cast<float>(), fR, fS);
+    R = fR.cast<double>();
+    S = fS.cast<double>();
+}
+
 }  // namespace muda::eigen
