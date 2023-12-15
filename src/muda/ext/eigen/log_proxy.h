@@ -21,6 +21,9 @@ MUDA_DEVICE LogProxy& operator<<(LogProxy& o, const Eigen::MatrixX<T>& val);
 
 template <typename T>
 MUDA_DEVICE LogProxy& operator<<(LogProxy& o, const Eigen::VectorX<T>& val);
+
+template <typename T>
+MUDA_DEVICE LogProxy& operator<<(LogProxy& o, const Eigen::RowVectorX<T>& val);
 }  // namespace muda
 
 #include "details/log_proxy.inl"

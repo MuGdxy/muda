@@ -104,7 +104,9 @@ class CDense1D : public Dense1DBase<T>
   public:
     using Dense1DBase<T>::Dense1DBase;
     using Dense1DBase<T>::operator();
-    CDense1D(const Dense1DBase<T>& base) MUDA_NOEXCEPT : Dense1DBase<T>(base) {}
+    MUDA_GENERIC CDense1D(const Dense1DBase<T>& base) MUDA_NOEXCEPT : Dense1DBase<T>(base)
+    {
+    }
 
     MUDA_GENERIC CDense1D(const T* p, int dim) MUDA_NOEXCEPT
         : Dense1DBase<T>(const_cast<T*>(p), dim)
