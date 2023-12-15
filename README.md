@@ -116,7 +116,7 @@ result of buffer2d:
 DeviceVar<int> single;
 DeviceBuffer<int> array;
 DeviceBuffer2D<int> array2d;
-DeviceBuffer2D<int> array3d;
+DeviceBuffer3D<int> array3d;
 Logger logger;
 Launch().apply(
 [
