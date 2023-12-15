@@ -15,6 +15,12 @@ template <typename T, int M, int N, int MapOptions, typename StrideType>
 MUDA_DEVICE LogProxy& operator<<(
     LogProxy& o,
     const Eigen::Map<const Eigen::Matrix<T, M, N>, MapOptions, StrideType>& val);
+
+template <typename T>
+MUDA_DEVICE LogProxy& operator<<(LogProxy& o, const Eigen::MatrixX<T>& val);
+
+template <typename T>
+MUDA_DEVICE LogProxy& operator<<(LogProxy& o, const Eigen::VectorX<T>& val);
 }  // namespace muda
 
 #include "details/log_proxy.inl"
