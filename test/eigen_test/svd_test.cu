@@ -23,7 +23,7 @@ void svd_failed()
 {
     Matrix3f F, U, S, V;
     F << 1, 2, 3, 4, 5, 6, 7, 8, 9;
-    SVD(F, U, S, V);
+    SVD<float, 3>(F, U, S, V);
 
     DeviceVar<Matrix3f> d_F = F;
     Launch()

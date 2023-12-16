@@ -16,7 +16,7 @@ void evd_test()
     Matrix M, U;
     Vector eigen_values;
     M = Matrix::Identity();
-    eigen::evd(M, eigen_values, U);
+    eigen::evd<T, N>(M, eigen_values, U);
 
     DeviceVar<Matrix> d_M = M;
     DeviceVar<Matrix> d_U = U;
