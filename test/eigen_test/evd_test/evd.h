@@ -27,7 +27,7 @@ void evd_test()
         {
             Matrix MM = *M;
             Matrix UU;
-            eigen::evd(MM, *eigen_values, UU);
+            eigen::evd<T, N>(MM, *eigen_values, UU);
         });
     Vector res_eigen_values = d_eigen_values;
     REQUIRE(approx_equal(eigen_values, res_eigen_values));
