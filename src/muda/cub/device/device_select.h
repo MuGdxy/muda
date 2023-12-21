@@ -52,7 +52,7 @@ class DeviceSelect : public CubWrapper<DeviceSelect>
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceSelect::Unique(
             d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, _stream, false));
     }
-#if 0
+#if CUB_VERSION >= 200200
     template <typename KeyInputIteratorT, typename ValueInputIteratorT, typename KeyOutputIteratorT, typename ValueOutputIteratorT, typename NumSelectedIteratorT>
     DeviceSelect& UniqueByKey(DeviceVector<std::byte>& external_buffer,
                               KeyInputIteratorT         d_keys_in,
@@ -111,7 +111,7 @@ class DeviceSelect : public CubWrapper<DeviceSelect>
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceSelect::Unique(
             d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, _stream, false));
     }
-#if 0
+#if CUB_VERSION >= 200200
     template <typename KeyInputIteratorT, typename ValueInputIteratorT, typename KeyOutputIteratorT, typename ValueOutputIteratorT, typename NumSelectedIteratorT>
     DeviceSelect& UniqueByKey(DeviceBuffer<std::byte>& external_buffer,
                               KeyInputIteratorT         d_keys_in,
@@ -173,7 +173,7 @@ class DeviceSelect : public CubWrapper<DeviceSelect>
         MUDA_CUB_WRAPPER_FOR_COMPUTE_GRAPH_IMPL(cub::DeviceSelect::Unique(
             d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, _stream, false));
     }
-#if 0
+#if CUB_VERSION >= 200200
     template <typename KeyInputIteratorT, typename ValueInputIteratorT, typename KeyOutputIteratorT, typename ValueOutputIteratorT, typename NumSelectedIteratorT>
     DeviceSelect& UniqueByKey(void*  d_temp_storage, size_t& temp_storage_bytes,
                               KeyInputIteratorT         d_keys_in,
