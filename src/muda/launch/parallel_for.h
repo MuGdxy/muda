@@ -110,6 +110,20 @@ class ParallelFor : public LaunchBase<ParallelFor>
   public:
     template <typename F>
     using NodeParms = KernelNodeParms<details::ParallelForCallable<raw_type_t<F>>>;
+    /// <summary>
+    /// calculate grid dim automatically to cover the range, 
+    /// block size will be calculated automatically
+    /// </summary>
+    /// <param name="sharedMemSize"></param>
+    /// <param name="stream"></param>
+    MUDA_HOST ParallelFor(size_t shared_mem_size = 0, cudaStream_t stream = nullptr) MUDA_NOEXCEPT
+        : LaunchBase(stream),
+          m_grid_dim(0),
+          m_block_dim(-1),
+          m_shared_mem_size(shared_mem_size)
+    {
+    }
+
 
     /// <summary>
     /// calculate grid dim automatically to cover the range
@@ -166,7 +180,12 @@ class ParallelFor : public LaunchBase<ParallelFor>
     template <typename F, typename UserTag>
     MUDA_HOST void invoke(int count, F&& f);
 
+    template <typename F, typename UserTag>
+    MUDA_GENERIC int calculate_block_dim(int count) const MUDA_NOEXCEPT;
+
     MUDA_GENERIC int calculate_grid_dim(int count) const MUDA_NOEXCEPT;
+
+    static MUDA_GENERIC int calculate_grid_dim(int count, int block_dim) MUDA_NOEXCEPT;
 
     MUDA_GENERIC void check_input(int count) const MUDA_NOEXCEPT;
 };

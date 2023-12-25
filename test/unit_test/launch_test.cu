@@ -45,6 +45,16 @@ void launch_test()
 
     res.copy_to(h_res);
     REQUIRE(h_res == gt);
+
+    DeviceVar<int> block_dim;
+
+    ParallelFor()
+        .apply(100,
+               [block_dim = block_dim.viewer()] $(int i)
+               { block_dim = blockDim.x; })
+        .wait();
+
+    int h_block_dim = block_dim;
 }
 
 TEST_CASE("launch_test", "[launch]")

@@ -125,8 +125,8 @@ MUDA_HOST MUDA_NODISCARD auto ParallelFor::as_node_parms(int count, F&& f)
     auto parms = std::make_shared<NodeParms<F>>(std::forward<F>(f), count);
     if(m_grid_dim <= 0)  // dynamic grid dim
     {
-
-        auto n_blocks = calculate_grid_dim(count);
+        int  best_block_size = calculate_block_dim<F, UserTag>(count);
+        auto n_blocks        = calculate_grid_dim(count, best_block_size);
         parms->func((void*)details::parallel_for_kernel<CallableType, UserTag>);
         parms->grid_dim(n_blocks);
     }
@@ -161,10 +161,11 @@ MUDA_HOST void ParallelFor::invoke(int count, F&& f)
         if(m_grid_dim <= 0)  // parallel for
         {
             // calculate the blocks we need
-            auto n_blocks = calculate_grid_dim(count);
+            int best_block_size = calculate_block_dim<F, UserTag>(count);
+            auto n_blocks = calculate_grid_dim(count, best_block_size);
             auto callable = details::ParallelForCallable<CallableType>{f, count};
             details::parallel_for_kernel<CallableType, UserTag>
-                <<<n_blocks, m_block_dim, m_shared_mem_size, m_stream>>>(callable);
+                <<<n_blocks, best_block_size, m_shared_mem_size, m_stream>>>(callable);
         }
         else  // grid stride loop
         {
@@ -175,10 +176,37 @@ MUDA_HOST void ParallelFor::invoke(int count, F&& f)
     }
 }
 
+template <typename F, typename UserTag>
+MUDA_INLINE MUDA_GENERIC int ParallelFor::calculate_block_dim(int count) const MUDA_NOEXCEPT
+{
+    using CallableType  = raw_type_t<F>;
+    int best_block_size = -1;
+    if(m_block_dim <= 0)  // automatic choose
+    {
+        int min_grid_size = -1;
+        checkCudaErrors(cudaOccupancyMaxPotentialBlockSize(
+            &min_grid_size,
+            &best_block_size,
+            details::parallel_for_kernel<CallableType, UserTag>,
+            m_shared_mem_size));
+    }
+    else
+    {
+        best_block_size = m_block_dim;
+    }
+    MUDA_ASSERT(best_block_size >= 0, "Invalid block dim");
+    return best_block_size;
+}
+
 MUDA_INLINE MUDA_GENERIC int ParallelFor::calculate_grid_dim(int count) const MUDA_NOEXCEPT
 {
+    return calculate_grid_dim(count, m_grid_dim);
+}
+
+MUDA_INLINE MUDA_GENERIC int ParallelFor::calculate_grid_dim(int count, int block_dim) MUDA_NOEXCEPT
+{
     auto min_threads = count;
-    auto min_blocks  = (min_threads + m_block_dim - 1) / m_block_dim;
+    auto min_blocks  = (min_threads + block_dim - 1) / block_dim;
     return min_blocks;
 }
 
