@@ -49,13 +49,15 @@ class LaunchCore
     MUDA_HOST void pop_kernel_name();
 
   public:
+    static void kernel_name(std::string_view name);
+
     MUDA_GENERIC LaunchCore(::cudaStream_t stream) MUDA_NOEXCEPT;
 
     void init_stream(::cudaStream_t s) { m_stream = s; }
 
     void push_range(const std::string& name);
     void pop_range();
-    void kernel_name(std::string_view name);
+
     void record(cudaEvent_t e, int flag = cudaEventRecordDefault);
     void record(ComputeGraphVar<cudaEvent_t>&            e,
                 const std::vector<ComputeGraphVarBase*>& vars);
