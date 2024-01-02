@@ -86,24 +86,31 @@ namespace details
 template <typename F, typename UserTag>
 MUDA_HOST ParallelFor& ParallelFor::apply(int count, F&& f)
 {
-    using CallableType = raw_type_t<F>;
+    if constexpr(COMPUTE_GRAPH_ON)
+    {
+        using CallableType = raw_type_t<F>;
 
-    ComputeGraphBuilder::invoke_phase_actions(
-        [&] {  // direct invoke
-            invoke<F, UserTag>(count, std::forward<F>(f));
-        },
-        [&]
-        {
-            // as node parms
-            auto parms = as_node_parms<F, UserTag>(count, std::forward<F>(f));
-            details::ComputeGraphAccessor().set_kernel_node(parms);
-        },
-        [&]
-        {
-            // topo build
-            details::ComputeGraphAccessor().set_kernel_node<details::ParallelForCallable<CallableType>>(
-                nullptr);
-        });
+        ComputeGraphBuilder::invoke_phase_actions(
+            [&] {  // direct invoke
+                invoke<F, UserTag>(count, std::forward<F>(f));
+            },
+            [&]
+            {
+                // as node parms
+                auto parms = as_node_parms<F, UserTag>(count, std::forward<F>(f));
+                details::ComputeGraphAccessor().set_kernel_node(parms);
+            },
+            [&]
+            {
+                // topo build
+                details::ComputeGraphAccessor().set_kernel_node<details::ParallelForCallable<CallableType>>(
+                    nullptr);
+            });
+    }
+    else
+    {
+        invoke<F, UserTag>(count, std::forward<F>(f));
+    }
     pop_kernel_name();
     return *this;
 }
@@ -161,8 +168,8 @@ MUDA_HOST void ParallelFor::invoke(int count, F&& f)
         if(m_grid_dim <= 0)  // parallel for
         {
             // calculate the blocks we need
-            int best_block_size = calculate_block_dim<F, UserTag>(count);
-            auto n_blocks = calculate_grid_dim(count, best_block_size);
+            int  best_block_size = calculate_block_dim<F, UserTag>(count);
+            auto n_blocks        = calculate_grid_dim(count, best_block_size);
             auto callable = details::ParallelForCallable<CallableType>{f, count};
             details::parallel_for_kernel<CallableType, UserTag>
                 <<<n_blocks, best_block_size, m_shared_mem_size, m_stream>>>(callable);

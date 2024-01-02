@@ -43,7 +43,7 @@ TEST_CASE("dynamic_parallelism", "[dynamic_parallelism]")
     REQUIRE(gt == res);
 }
 
-
+#if MUDA_COMPUTE_GRAPH_ON
 void dynamic_parallelism_graph(std::vector<int>& gt, std::vector<int>& res)
 {
     gt.resize(16);
@@ -89,4 +89,5 @@ TEST_CASE("dynamic_parallelism_graph", "[dynamic_parallelism]")
     dynamic_parallelism_graph(gt, res);
     REQUIRE(gt == res);
 }
+#endif
 #endif

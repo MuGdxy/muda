@@ -40,14 +40,22 @@ MUDA_INLINE MUDA_HOST Memory& Memory::free(void* ptr, bool async)
 
 MUDA_INLINE MUDA_HOST Memory& Memory::copy(void* dst, const void* src, size_t byte_size, cudaMemcpyKind kind)
 {
-    ComputeGraphBuilder::invoke_phase_actions(
-        [&] {
-            checkCudaErrors(cudaMemcpyAsync(dst, src, byte_size, kind, stream()));
-        },
-        [&]
-        {
-            details::ComputeGraphAccessor().set_memcpy_node(dst, src, byte_size, kind);
-        });
+    if constexpr(COMPUTE_GRAPH_ON)
+    {
+        ComputeGraphBuilder::invoke_phase_actions(
+            [&] {
+                checkCudaErrors(cudaMemcpyAsync(dst, src, byte_size, kind, stream()));
+            },
+            [&]
+            {
+                details::ComputeGraphAccessor().set_memcpy_node(dst, src, byte_size, kind);
+            });
+    }
+    else
+    {
+        checkCudaErrors(cudaMemcpyAsync(dst, src, byte_size, kind, stream()));
+    }
+
     return *this;
 }
 
@@ -68,22 +76,29 @@ MUDA_INLINE MUDA_HOST Memory& Memory::upload(void* dst, const void* src, size_t 
 
 MUDA_INLINE MUDA_HOST Memory& Memory::set(void* data, size_t byte_size, char byte)
 {
-    ComputeGraphBuilder::invoke_phase_actions(
-        [&] {
-            checkCudaErrors(cudaMemsetAsync(data, (int)byte, byte_size, stream()));
-        },
-        [&]
-        {
-            cudaMemsetParams parms = {};
-            parms.dst              = data;
-            parms.value            = (int)byte;
-            parms.elementSize      = 1;
+    if constexpr(COMPUTE_GRAPH_ON)
+    {
+        ComputeGraphBuilder::invoke_phase_actions(
+            [&] {
+                checkCudaErrors(cudaMemsetAsync(data, (int)byte, byte_size, stream()));
+            },
+            [&]
+            {
+                cudaMemsetParams parms = {};
+                parms.dst              = data;
+                parms.value            = (int)byte;
+                parms.elementSize      = 1;
 
-            parms.pitch  = byte_size;
-            parms.width  = byte_size;
-            parms.height = 1;
-            details::ComputeGraphAccessor().set_memset_node(parms);
-        });
+                parms.pitch  = byte_size;
+                parms.width  = byte_size;
+                parms.height = 1;
+                details::ComputeGraphAccessor().set_memset_node(parms);
+            });
+    }
+    else
+    {
+        checkCudaErrors(cudaMemsetAsync(data, (int)byte, byte_size, stream()));
+    }
     return *this;
 }
 
@@ -110,21 +125,31 @@ MUDA_INLINE MUDA_HOST Memory& Memory::copy(void*          dst,
                                            size_t         height,
                                            cudaMemcpyKind kind)
 {
-    ComputeGraphBuilder::invoke_phase_actions(
-        [&]
-        {
-            checkCudaErrors(cudaMemcpy2DAsync(
-                dst, dst_pitch, src, src_pitch, width_bytes, height, kind, stream()));
-        },
-        [&]
-        {
-            cudaMemcpy3DParms parms = {};
-            parms.srcPtr = make_cudaPitchedPtr((void*)src, src_pitch, width_bytes, height);
-            parms.dstPtr = make_cudaPitchedPtr(dst, dst_pitch, width_bytes, height);
-            parms.extent = make_cudaExtent(width_bytes, height, 1);
-            parms.kind   = kind;
-            details::ComputeGraphAccessor().set_memcpy_node(parms);
-        });
+    if constexpr(COMPUTE_GRAPH_ON)
+    {
+        ComputeGraphBuilder::invoke_phase_actions(
+            [&]
+            {
+                checkCudaErrors(cudaMemcpy2DAsync(
+                    dst, dst_pitch, src, src_pitch, width_bytes, height, kind, stream()));
+            },
+            [&]
+            {
+                cudaMemcpy3DParms parms = {};
+                parms.srcPtr =
+                    make_cudaPitchedPtr((void*)src, src_pitch, width_bytes, height);
+                parms.dstPtr = make_cudaPitchedPtr(dst, dst_pitch, width_bytes, height);
+                parms.extent = make_cudaExtent(width_bytes, height, 1);
+                parms.kind   = kind;
+                details::ComputeGraphAccessor().set_memcpy_node(parms);
+            });
+    }
+    else
+    {
+        checkCudaErrors(cudaMemcpy2DAsync(
+            dst, dst_pitch, src, src_pitch, width_bytes, height, kind, stream()));
+    }
+
     return *this;
 }
 
@@ -161,24 +186,32 @@ MUDA_INLINE MUDA_HOST Memory& Memory::upload(void*       dst,
 MUDA_INLINE MUDA_HOST Memory& Memory::set(
     void* data, size_t pitch, size_t width_bytes, size_t height, char value)
 {
-    ComputeGraphBuilder::invoke_phase_actions(
-        [&]
-        {
-            checkCudaErrors(cudaMemset2DAsync(
-                data, (int)value, width_bytes, height, pitch, stream()));
-        },
-        [&]
-        {
-            cudaMemsetParams parms = {};
-            parms.dst              = data;
-            parms.value            = (int)value;
-            parms.elementSize      = sizeof(char);
+    if constexpr(COMPUTE_GRAPH_ON)
+    {
+        ComputeGraphBuilder::invoke_phase_actions(
+            [&]
+            {
+                checkCudaErrors(cudaMemset2DAsync(
+                    data, (int)value, width_bytes, height, pitch, stream()));
+            },
+            [&]
+            {
+                cudaMemsetParams parms = {};
+                parms.dst              = data;
+                parms.value            = (int)value;
+                parms.elementSize      = sizeof(char);
 
-            parms.pitch  = pitch;
-            parms.width  = width_bytes;
-            parms.height = height;
-            details::ComputeGraphAccessor().set_memset_node(parms);
-        });
+                parms.pitch  = pitch;
+                parms.width  = width_bytes;
+                parms.height = height;
+                details::ComputeGraphAccessor().set_memset_node(parms);
+            });
+    }
+    else
+    {
+        checkCudaErrors(
+            cudaMemset2DAsync(data, (int)value, width_bytes, height, pitch, stream()));
+    }
     return *this;
 }
 
@@ -207,9 +240,16 @@ MUDA_INLINE MUDA_HOST Memory& muda::Memory::free(cudaPitchedPtr pitched_ptr, boo
 
 MUDA_INLINE MUDA_HOST Memory& Memory::copy(const cudaMemcpy3DParms& parms)
 {
-    ComputeGraphBuilder::invoke_phase_actions(
-        [&] { checkCudaErrors(cudaMemcpy3DAsync(&parms, stream())); },
-        [&] { details::ComputeGraphAccessor().set_memcpy_node(parms); });
+    if constexpr(COMPUTE_GRAPH_ON)
+    {
+        ComputeGraphBuilder::invoke_phase_actions(
+            [&] { checkCudaErrors(cudaMemcpy3DAsync(&parms, stream())); },
+            [&] { details::ComputeGraphAccessor().set_memcpy_node(parms); });
+    }
+    else
+    {
+        checkCudaErrors(cudaMemcpy3DAsync(&parms, stream()));
+    }
     return *this;
 }
 
@@ -232,32 +272,28 @@ MUDA_INLINE MUDA_HOST Memory& Memory::upload(cudaMemcpy3DParms parms)
 
 MUDA_INLINE MUDA_HOST Memory& Memory::set(cudaPitchedPtr pitched_ptr, cudaExtent extent, char value)
 {
-    ComputeGraphBuilder::invoke_phase_actions(
-        [&]
-        {
-            checkCudaErrors(cudaMemset3DAsync(pitched_ptr, (int)value, extent, stream()));
-        },
-        [&]
-        {
-            // seems unable to set a 3D memory in cudaGraph (no depth parameter)
-            // so we capture cudaMemset3DAsync instead
-            ComputeGraphBuilder::capture(
-                enum_name(ComputeGraphNodeType::MemsetNode),
-                [&](cudaStream_t stream)
-                { cudaMemset3DAsync(pitched_ptr, (int)value, extent, stream); });
-#if 0
-            cudaMemsetParams parms = {};
-            parms.dst              = pitched_ptr.ptr;
-            parms.value            = (int)value;
-            parms.elementSize      = sizeof(char);
-
-            parms.pitch  = pitched_ptr.pitch;
-            parms.width  = extent.width;
-            parms.height = extent.height;
-
-            details::ComputeGraphAccessor().set_memset_node(parms);
-#endif
-        });
+    if constexpr(COMPUTE_GRAPH_ON)
+    {
+        ComputeGraphBuilder::invoke_phase_actions(
+            [&]
+            {
+                checkCudaErrors(cudaMemset3DAsync(pitched_ptr, (int)value, extent, stream()));
+            },
+            [&]
+            {
+                // seems unable to set a 3D memory in cudaGraph (no depth parameter)
+                // so we capture cudaMemset3DAsync instead
+                ComputeGraphBuilder::capture(
+                    enum_name(ComputeGraphNodeType::MemsetNode),
+                    [&](cudaStream_t stream) {
+                        cudaMemset3DAsync(pitched_ptr, (int)value, extent, stream);
+                    });
+            });
+    }
+    else
+    {
+        checkCudaErrors(cudaMemset3DAsync(pitched_ptr, (int)value, extent, stream()));
+    }
     return *this;
 }
 }  // namespace muda

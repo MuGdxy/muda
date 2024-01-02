@@ -32,6 +32,8 @@ class HostCall : public LaunchBase<HostCall>
     template <typename F, typename UserTag = DefaultTag>
     MUDA_HOST HostCall& apply(F&& f, UserTag tag = {})
     {
+        MUDA_ASSERT(ComputeGraphBuilder::is_phase_none(),
+                    "HostCall must be can't appear in a compute graph");
         using CallableType = raw_type_t<F>;
         static_assert(std::is_invocable_v<CallableType>, "f:void (void)");
         auto userdata = new CallableType(std::forward<F>(f));

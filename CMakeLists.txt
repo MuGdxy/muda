@@ -15,6 +15,7 @@ option(MUDA_BUILD_TEST "build muda test. if you're the developer, you could enab
 # short cut
 option(MUDA_DEV "build muda example and unit test. if you're the developer, you could enable this option." OFF)
 option(MUDA_WITH_CHECK "turn on muda runtime check" ON)
+option(MUDA_WITH_COMPUTE_GRAPH "turn on muda compute graph" OFF)
 
 if(MUDA_DEV)
   set(MUDA_BUILD_EXAMPLE ON)
@@ -50,7 +51,15 @@ target_include_directories(muda INTERFACE "${PROJECT_SOURCE_DIR}/src/")
 
 if(MUDA_WITH_CHECK)
   target_compile_definitions(muda INTERFACE "-DMUDA_CHECK_ON=1")
+else()
+  target_compile_definitions(muda INTERFACE "-DMUDA_CHECK_ON=0")
 endif()
+if (MUDA_WITH_COMPUTE_GRAPH)
+  target_compile_definitions(muda INTERFACE "-DMUDA_COMPUTE_GRAPH_ON=1")
+else()
+  target_compile_definitions(muda INTERFACE "-DMUDA_COMPUTE_GRAPH_ON=0")
+endif()
+
 
 if(MUDA_BUILD_EXAMPLE)
   find_package(Eigen3 REQUIRED)

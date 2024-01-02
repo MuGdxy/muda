@@ -19,7 +19,14 @@ target("muda")
     add_includedirs("src/", {public = true})
     if(has_config("with_check")) then
         add_defines("MUDA_CHECK_ON=1", {public = true})
+    else
+        add_defines("MUDA_CHECK_ON=0", {public = true})
     end
+    if(has_config("with_compute_graph")) then
+        add_defines("MUDA_COMPUTE_GRAPH_ON=1", {public = true})
+    else
+        add_defines("MUDA_COMPUTE_GRAPH_ON=0", {public = true})
+    end 
     add_packages("cuda", {public = true})
     -- add_packages("eigen", {public = true})
     add_cuflags("--extended-lambda", {public = true}) -- must be set for muda

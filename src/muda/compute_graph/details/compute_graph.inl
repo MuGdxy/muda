@@ -344,6 +344,10 @@ MUDA_INLINE ComputeGraph::ComputeGraph(ComputeGraphVarManager& manager,
     : m_var_manager(&manager)
     , m_name(name)
 {
+    if constexpr(!COMPUTE_GRAPH_ON)
+    {
+        MUDA_ERROR_WITH_LOCATION("ComputeGraph is disabled, please define MUDA_COMPUTE_GRAPH_ON=1 to enable it.");
+    }
     m_var_manager->m_graphs.insert(this);
     switch(flag)
     {

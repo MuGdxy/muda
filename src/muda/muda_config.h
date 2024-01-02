@@ -2,10 +2,14 @@
 #ifndef MUDA_CHECK_ON
 #define MUDA_CHECK_ON 0
 #endif
+#ifndef MUDA_COMPUTE_GRAPH_ON
+#define MUDA_COMPUTE_GRAPH_ON 0
+#endif
 
 namespace muda
 {
 constexpr bool RUNTIME_CHECK_ON = MUDA_CHECK_ON;
+constexpr bool COMPUTE_GRAPH_ON = MUDA_COMPUTE_GRAPH_ON;
 namespace config
 {
     constexpr bool on(bool cond = false)

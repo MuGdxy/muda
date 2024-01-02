@@ -486,9 +486,10 @@ Because **muda** is header-only, just copy the `src/muda/` folder to your projec
 
 ### Macro
 
-| Macro           | Value               | Details                                                      |
-| --------------- | ------------------- | ------------------------------------------------------------ |
-| `MUDA_CHECK_ON` | `1`(default) or `0` | `MUDA_CHECK_ON=1` for turn on all muda runtime check(for safety) |
+| Macro                     | Value               | Details                                                      |
+| ------------------------- | ------------------- | ------------------------------------------------------------ |
+| `MUDA_CHECK_ON`           | `1`(default) or `0` | `MUDA_CHECK_ON=1` for turn on all muda runtime check(for safety) |
+| `MUDA_WITH_COMPUTE_GRAPH` | `1`or`0`(default)   | `MUDA_WITH_COMPUTE_GRAPH=1` for turn on muda compute graph feature |
 
 If you manually copy the header files, don't forget to define the macros yourself. If you use cmake or xmake, just set the project dependency to muda.
 

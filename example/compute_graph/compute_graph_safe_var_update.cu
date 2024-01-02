@@ -1,3 +1,4 @@
+#if MUDA_COMPUTE_GRAPH_ON
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
 #include "../example_common.h"
@@ -177,3 +178,4 @@ TEST_CASE("compute_graph_var_manager_update_var", "[compute_graph]")
 {
     compute_graph_var_manager_update_var();
 }
+#endif

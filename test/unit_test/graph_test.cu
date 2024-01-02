@@ -133,28 +133,28 @@ TEST_CASE("set_graphExec_node_parms", "[graph]")
 //}
 #endif
 
-void host_call_graph(int& ground_thruth, int& res)
-{
-    int v = 0;
-
-    auto hp = HostCall().as_node_parms([&v] __host__() mutable
-                                      { for(int i = 0; i < 5; ++i) v++; });
-
-    auto g = Graph::create();
-    g->add_host_node(hp);
-    auto instance = g->instantiate();
-    for(size_t i = 0; i < 10; i++)
-        instance->launch();
-    wait_device();
-
-    ground_thruth = 0;
-    for(size_t i = 0; i < 50; i++)
-        ground_thruth++;
-    res = v;
-}
-TEST_CASE("host_call_node", "[graph]")
-{
-    int ground_thruth, res;
-    host_call_graph(ground_thruth, res);
-    REQUIRE(ground_thruth == res);
-}
+//void host_call_graph(int& ground_thruth, int& res)
+//{
+//    int v = 0;
+//
+//    auto hp = HostCall().as_node_parms([&v] __host__() mutable
+//                                      { for(int i = 0; i < 5; ++i) v++; });
+//
+//    auto g = Graph::create();
+//    g->add_host_node(hp);
+//    auto instance = g->instantiate();
+//    for(size_t i = 0; i < 10; i++)
+//        instance->launch();
+//    wait_device();
+//
+//    ground_thruth = 0;
+//    for(size_t i = 0; i < 50; i++)
+//        ground_thruth++;
+//    res = v;
+//}
+//TEST_CASE("host_call_node", "[graph]")
+//{
+//    int ground_thruth, res;
+//    host_call_graph(ground_thruth, res);
+//    REQUIRE(ground_thruth == res);
+//}

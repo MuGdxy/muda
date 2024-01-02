@@ -1,3 +1,4 @@
+#if MUDA_COMPUTE_GRAPH_ON
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
 #include <muda/container.h>
@@ -73,3 +74,4 @@ TEST_CASE("compute_graph_simple", "[compute_graph]")
 {
     compute_graph_simple();
 }
+#endif

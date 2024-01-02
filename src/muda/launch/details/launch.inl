@@ -152,20 +152,26 @@ MUDA_HOST void Launch::invoke(const dim3& active_dim, F&& f)
 template <typename F, typename UserTag>
 MUDA_HOST Launch& Launch::apply(F&& f)
 {
-    using CallableType = raw_type_t<F>;
-    ComputeGraphBuilder::invoke_phase_actions(
-        [&] { invoke<F, UserTag>(std::forward<F>(f)); },
-        [&]
-        {
-            auto parms = this->as_node_parms<F, UserTag>(std::forward<F>(f));
-            details::ComputeGraphAccessor().set_kernel_node(parms);
-        },
-        [&]
-        {
-            details::ComputeGraphAccessor().set_kernel_node<KernelNodeParms<CallableType>>(nullptr);
-        });
+    if constexpr(COMPUTE_GRAPH_ON)
+    {
+        using CallableType = raw_type_t<F>;
+        ComputeGraphBuilder::invoke_phase_actions(
+            [&] { invoke<F, UserTag>(std::forward<F>(f)); },
+            [&]
+            {
+                auto parms = this->as_node_parms<F, UserTag>(std::forward<F>(f));
+                details::ComputeGraphAccessor().set_kernel_node(parms);
+            },
+            [&]
+            {
+                details::ComputeGraphAccessor().set_kernel_node<KernelNodeParms<CallableType>>(nullptr);
+            });
+    }
+    else
+    {
+        invoke<F, UserTag>(std::forward<F>(f));
+    }
     pop_kernel_name();
-
     return *this;
 }
 
@@ -177,19 +183,26 @@ MUDA_HOST Launch& Launch::apply(F&& f, Tag<UserTag>)
 template <typename F, typename UserTag>
 MUDA_HOST Launch& muda::Launch::apply(const dim3& active_dim, F&& f)
 {
-    using CallableType = raw_type_t<F>;
-    ComputeGraphBuilder::invoke_phase_actions(
-        [&] { invoke<F, UserTag>(active_dim, std::forward<F>(f)); },
-        [&]
-        {
-            auto parms =
-                this->as_node_parms<F, UserTag>(active_dim, std::forward<F>(f));
-            details::ComputeGraphAccessor().set_kernel_node(parms);
-        },
-        [&]
-        {
-            details::ComputeGraphAccessor().set_kernel_node<KernelNodeParms<CallableType>>(nullptr);
-        });
+    if constexpr(COMPUTE_GRAPH_ON)
+    {
+        using CallableType = raw_type_t<F>;
+        ComputeGraphBuilder::invoke_phase_actions(
+            [&] { invoke<F, UserTag>(active_dim, std::forward<F>(f)); },
+            [&]
+            {
+                auto parms =
+                    this->as_node_parms<F, UserTag>(active_dim, std::forward<F>(f));
+                details::ComputeGraphAccessor().set_kernel_node(parms);
+            },
+            [&]
+            {
+                details::ComputeGraphAccessor().set_kernel_node<KernelNodeParms<CallableType>>(nullptr);
+            });
+    }
+    else
+    {
+        invoke<F, UserTag>(active_dim, std::forward<F>(f));
+    }
     pop_kernel_name();
 
     return *this;

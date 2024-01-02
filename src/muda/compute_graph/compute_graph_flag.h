@@ -1,5 +1,4 @@
 #pragma once
-
 namespace muda
 {
 enum class ComputeGraphFlag

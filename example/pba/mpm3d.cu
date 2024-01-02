@@ -1,3 +1,4 @@
+#if MUDA_COMPUTE_GRAPH_ON
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
 #include <Eigen/Dense>
@@ -130,3 +131,4 @@ TEST_CASE("mpm3d", "[pba]")
 {
     mpm3d();
 }
+#endif
