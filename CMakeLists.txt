@@ -101,7 +101,7 @@ if(MUDA_BUILD_TEST)
   target_include_directories(muda_unit_test PRIVATE
     "${PROJECT_SOURCE_DIR}/test"
     "${PROJECT_SOURCE_DIR}/external")
-  target_link_libraries(muda_unit_test PRIVATE muda cusparse cublas Eigen3::Eigen)
+  target_link_libraries(muda_unit_test PRIVATE muda cusparse cublas cusolver Eigen3::Eigen)
   target_compile_definitions(muda_unit_test PRIVATE "-DMUDA_TEST_DATA_DIR=R\"(${PROJECT_SOURCE_DIR}/test/data)\"")
   source_group(TREE "${PROJECT_SOURCE_DIR}/test" PREFIX "test" FILES ${MUDA_UNIT_TEST_SOURCE_FILES})
   source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
