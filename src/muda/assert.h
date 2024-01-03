@@ -17,7 +17,7 @@ MUDA_INLINE MUDA_GENERIC void trap()
 #ifdef __CUDA_ARCH__
     __trap();
 #else
-    // std::abort();
+    std::abort();
 #endif
 }
 
