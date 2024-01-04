@@ -4,7 +4,7 @@
 #include <muda/buffer/device_buffer.h>
 #include <Eigen/Core>
 
-namespace gipc
+namespace muda
 {
 template <typename T, int N>
 class TripletMatrixViewerBase : public muda::ViewerBase
@@ -352,7 +352,7 @@ class TripletMatrixViewerBase<T, 1> : public muda::ViewerBase
         return CTriplet{m_row_indices[index], m_col_indices[index], m_values[index]};
     }
 
-    MUDA_GENERIC TripletMatrixViewerBase<1> sub_view(int offset, int count) const
+    MUDA_GENERIC TripletMatrixViewerBase<T, 1> sub_view(int offset, int count) const
     {
         return TripletMatrixViewerBase{m_rows,
                                        m_cols,
@@ -364,7 +364,7 @@ class TripletMatrixViewerBase<T, 1> : public muda::ViewerBase
                                        m_values};
     }
 
-    MUDA_GENERIC TripletMatrixViewerBase<1> sub_view(int offset) const
+    MUDA_GENERIC TripletMatrixViewerBase<T, 1> sub_view(int offset) const
     {
         MUDA_KERNEL_ASSERT(offset < m_triplet_count,
                            "TripletMatrixViewer [%s:%s]: offset is out of range, size=%d, your offset=%d",
@@ -466,7 +466,7 @@ class TripletMatrixViewer<T, 1> : public TripletMatrixViewerBase<T, 1>
                             m_viewer.m_values[m_index]};
         }
 
-        MUDA_GENERIC void write(int row_index, int col_index, const T& block) &&
+        MUDA_GENERIC void write(int row_index, int col_index, const T& value) &&
         {
             MUDA_KERNEL_ASSERT(row_index >= 0 && row_index < m_viewer.m_rows,
                                "TripletMatrixViewer [%s:%s]: row_index out of range, m_rows=%d, yours=%d",
@@ -484,7 +484,7 @@ class TripletMatrixViewer<T, 1> : public TripletMatrixViewerBase<T, 1>
 
             m_viewer.m_row_indices[m_index] = row_index;
             m_viewer.m_col_indices[m_index] = col_index;
-            m_viewer.m_values[m_index]      = block;
+            m_viewer.m_values[m_index]      = value;
         }
 
         MUDA_GENERIC ~Proxy() = default;
@@ -509,6 +509,6 @@ class TripletMatrixViewer<T, 1> : public TripletMatrixViewerBase<T, 1>
     }
 };
 
-}  // namespace gipc
+}  // namespace muda
 
 #include "details/triplet_matrix_viewer.inl"
