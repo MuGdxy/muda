@@ -159,7 +159,7 @@ class DeviceBCOOMatrix<T, 1> : public DeviceTripletMatrix<T, 1>
     }
 
   private:
-    void destroy_all_descr() const
+    void destroy_all_descr()
     {
         if(m_legacy_descr != nullptr)
         {
