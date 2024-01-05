@@ -3,14 +3,10 @@
 namespace muda
 {
 template <typename T, int N>
-class BCOOMatrixViewer : public TripletMatrixViewer<T, N>
-{
-};
+using BCOOMatrixViewer = CTripletMatrixViewer<T, N>;
 
 template <typename T, int N>
-class CBCOOMatrixViewer : public CTripletMatrixViewer<T, N>
-{
-};
+using CBCOOMatrixViewer = CTripletMatrixViewer<T, N>;
 
 template <typename T>
 using COOMatrixViewer = BCOOMatrixViewer<T, 1>;

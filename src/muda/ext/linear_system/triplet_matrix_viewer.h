@@ -90,7 +90,7 @@ class TripletMatrixViewerBase : public muda::ViewerBase
                         m_block_values[index]};
     }
 
-    MUDA_GENERIC TripletMatrixViewerBase<T, N> sub_view(int offset, int count) const
+    MUDA_GENERIC TripletMatrixViewerBase<T, N> subview(int offset, int count) const
     {
         return TripletMatrixViewerBase{m_block_rows,
                                        m_block_cols,
@@ -102,7 +102,7 @@ class TripletMatrixViewerBase : public muda::ViewerBase
                                        m_block_values};
     }
 
-    MUDA_GENERIC TripletMatrixViewerBase<T, N> sub_view(int offset) const
+    MUDA_GENERIC TripletMatrixViewerBase<T, N> subview(int offset) const
     {
         MUDA_KERNEL_ASSERT(offset < m_triplet_count,
                            "TripletMatrixViewer [%s:%s]: offset is out of range, size=%d, your offset=%d",
@@ -110,7 +110,7 @@ class TripletMatrixViewerBase : public muda::ViewerBase
                            kernel_name(),
                            m_triplet_count,
                            offset);
-        return sub_view(offset, m_triplet_count - offset);
+        return subview(offset, m_triplet_count - offset);
     }
 
   protected:
@@ -159,14 +159,14 @@ class CTripletMatrixViewer : public TripletMatrixViewerBase<T, N>
     {
     }
 
-    MUDA_GENERIC CTripletMatrixViewer<T, N> sub_view(int offset, int count) const
+    MUDA_GENERIC CTripletMatrixViewer<T, N> subview(int offset, int count) const
     {
-        return CTripletMatrixViewer{Base::sub_view(offset, count)};
+        return CTripletMatrixViewer{Base::subview(offset, count)};
     }
 
-    MUDA_GENERIC CTripletMatrixViewer<T, N> sub_view(int offset) const
+    MUDA_GENERIC CTripletMatrixViewer<T, N> subview(int offset) const
     {
-        return CTripletMatrixViewer{Base::sub_view(offset)};
+        return CTripletMatrixViewer{Base::subview(offset)};
     }
 };
 
@@ -238,14 +238,14 @@ class TripletMatrixViewer : public TripletMatrixViewerBase<T, N>
         return Proxy{*this, index};
     }
 
-    MUDA_GENERIC TripletMatrixViewer<T, N> sub_view(int offset, int count) const
+    MUDA_GENERIC TripletMatrixViewer<T, N> subview(int offset, int count) const
     {
-        return TripletMatrixViewer{Base::sub_view(offset, count)};
+        return TripletMatrixViewer{Base::subview(offset, count)};
     }
 
-    MUDA_GENERIC TripletMatrixViewer<T, N> sub_view(int offset) const
+    MUDA_GENERIC TripletMatrixViewer<T, N> subview(int offset) const
     {
-        return TripletMatrixViewer{Base::sub_view(offset)};
+        return TripletMatrixViewer{Base::subview(offset)};
     }
 };
 
@@ -352,7 +352,7 @@ class TripletMatrixViewerBase<T, 1> : public muda::ViewerBase
         return CTriplet{m_row_indices[index], m_col_indices[index], m_values[index]};
     }
 
-    MUDA_GENERIC TripletMatrixViewerBase<T, 1> sub_view(int offset, int count) const
+    MUDA_GENERIC TripletMatrixViewerBase<T, 1> subview(int offset, int count) const
     {
         return TripletMatrixViewerBase{m_rows,
                                        m_cols,
@@ -364,7 +364,7 @@ class TripletMatrixViewerBase<T, 1> : public muda::ViewerBase
                                        m_values};
     }
 
-    MUDA_GENERIC TripletMatrixViewerBase<T, 1> sub_view(int offset) const
+    MUDA_GENERIC TripletMatrixViewerBase<T, 1> subview(int offset) const
     {
         MUDA_KERNEL_ASSERT(offset < m_triplet_count,
                            "TripletMatrixViewer [%s:%s]: offset is out of range, size=%d, your offset=%d",
@@ -372,7 +372,7 @@ class TripletMatrixViewerBase<T, 1> : public muda::ViewerBase
                            kernel_name(),
                            m_triplet_count,
                            offset);
-        return sub_view(offset, m_triplet_count - offset);
+        return subview(offset, m_triplet_count - offset);
     }
 
   private:
@@ -421,14 +421,14 @@ class CTripletMatrixViewer<T, 1> : public TripletMatrixViewerBase<T, 1>
     {
     }
 
-    MUDA_GENERIC CTripletMatrixViewer<T, 1> sub_view(int offset, int count) const
+    MUDA_GENERIC CTripletMatrixViewer<T, 1> subview(int offset, int count) const
     {
-        return CTripletMatrixViewer{Base::sub_view(offset, count)};
+        return CTripletMatrixViewer{Base::subview(offset, count)};
     }
 
-    MUDA_GENERIC CTripletMatrixViewer<T, 1> sub_view(int offset) const
+    MUDA_GENERIC CTripletMatrixViewer<T, 1> subview(int offset) const
     {
-        return CTripletMatrixViewer{Base::sub_view(offset)};
+        return CTripletMatrixViewer{Base::subview(offset)};
     }
 };
 
@@ -498,14 +498,14 @@ class TripletMatrixViewer<T, 1> : public TripletMatrixViewerBase<T, 1>
         return Proxy{*this, index};
     }
 
-    MUDA_GENERIC TripletMatrixViewer<T, 1> sub_view(int offset, int count) const
+    MUDA_GENERIC TripletMatrixViewer<T, 1> subview(int offset, int count) const
     {
-        return TripletMatrixViewer{Base::sub_view(offset, count)};
+        return TripletMatrixViewer{Base::subview(offset, count)};
     }
 
-    MUDA_GENERIC TripletMatrixViewer<T, 1> sub_view(int offset) const
+    MUDA_GENERIC TripletMatrixViewer<T, 1> subview(int offset) const
     {
-        return TripletMatrixViewer{Base::sub_view(offset)};
+        return TripletMatrixViewer{Base::subview(offset)};
     }
 };
 

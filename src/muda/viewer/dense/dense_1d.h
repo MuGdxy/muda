@@ -53,13 +53,13 @@ class Dense1DBase : public ViewerBase
 
     MUDA_GENERIC int dim() const MUDA_NOEXCEPT { return m_dim; }
 
-    MUDA_GENERIC Dense1DBase sub_view(int offset) const MUDA_NOEXCEPT
+    MUDA_GENERIC Dense1DBase subview(int offset) const MUDA_NOEXCEPT
     {
         auto size = this->m_dim - offset;
         if constexpr(DEBUG_VIEWER)
         {
             if(offset < 0)
-                MUDA_KERNEL_ERROR("dense1D[%s:%s]: sub_view out of range, offset=%d size=%d m_dim=(%d)",
+                MUDA_KERNEL_ERROR("dense1D[%s:%s]: subview out of range, offset=%d size=%d m_dim=(%d)",
                                   this->name(),
                                   this->kernel_name(),
                                   offset,
@@ -69,12 +69,12 @@ class Dense1DBase : public ViewerBase
         return Dense1DBase{this->m_data + offset, size};
     }
 
-    MUDA_GENERIC Dense1DBase sub_view(int offset, int size) const MUDA_NOEXCEPT
+    MUDA_GENERIC Dense1DBase subview(int offset, int size) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
         {
             if(offset < 0 || offset + size > m_dim)
-                MUDA_KERNEL_ERROR("dense1D[%s:%s]: sub_view out of range, offset=%d size=%d m_dim=(%d)",
+                MUDA_KERNEL_ERROR("dense1D[%s:%s]: subview out of range, offset=%d size=%d m_dim=(%d)",
                                   this->name(),
                                   this->kernel_name(),
                                   offset,
@@ -113,14 +113,14 @@ class CDense1D : public Dense1DBase<T>
     {
     }
 
-    MUDA_GENERIC this_type sub_view(int offset) const MUDA_NOEXCEPT
+    MUDA_GENERIC this_type subview(int offset) const MUDA_NOEXCEPT
     {
-        return this_type{Dense1DBase<T>::sub_view(offset)};
+        return this_type{Dense1DBase<T>::subview(offset)};
     }
 
-    MUDA_GENERIC this_type sub_view(int offset, int size) const MUDA_NOEXCEPT
+    MUDA_GENERIC this_type subview(int offset, int size) const MUDA_NOEXCEPT
     {
-        return this_type{Dense1DBase<T>::sub_view(offset, size)};
+        return this_type{Dense1DBase<T>::subview(offset, size)};
     }
 };
 
@@ -152,14 +152,14 @@ class Dense1D : public Dense1DBase<T>
 
     MUDA_GENERIC T* data() MUDA_NOEXCEPT { return this->m_data; }
 
-    MUDA_GENERIC this_type sub_view(int offset) const MUDA_NOEXCEPT
+    MUDA_GENERIC this_type subview(int offset) const MUDA_NOEXCEPT
     {
-        return this_type{Dense1DBase<T>::sub_view(offset)};
+        return this_type{Dense1DBase<T>::subview(offset)};
     }
 
-    MUDA_GENERIC this_type sub_view(int offset, int size) const MUDA_NOEXCEPT
+    MUDA_GENERIC this_type subview(int offset, int size) const MUDA_NOEXCEPT
     {
-        return this_type{Dense1DBase<T>::sub_view(offset, size)};
+        return this_type{Dense1DBase<T>::subview(offset, size)};
     }
 };
 

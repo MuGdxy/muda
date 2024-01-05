@@ -1,6 +1,6 @@
 #pragma once
 #include <muda/buffer/device_buffer.h>
-#include <muda/ext/linear_system/triplet_matrix_viewer.h>
+#include <muda/ext/linear_system/triplet_matrix_view.h>
 namespace details
 {
 template <typename T, int N>
@@ -66,29 +66,36 @@ class DeviceTripletMatrix
     auto block_cols() const { return m_block_cols; }
     auto triplet_count() const { return m_block_values.size(); }
 
-    auto viewer()
+    auto view() const
     {
-        return TripletMatrixViewer<T, N>{m_block_rows,
-                                         m_block_cols,
-                                         0,
-                                         (int)m_block_values.size(),
-                                         (int)m_block_values.size(),
-                                         m_block_row_indices.data(),
-                                         m_block_col_indices.data(),
-                                         m_block_values.data()};
+        return CTripletMatrixView<T, N>{m_block_rows,
+                                        m_block_cols,
+                                        0,
+                                        (int)m_block_values.size(),
+                                        (int)m_block_values.size(),
+                                        m_block_row_indices.data(),
+                                        m_block_col_indices.data(),
+                                        m_block_values.data()};
     }
 
-    auto cviewer() const
+    auto view()
     {
-        return CTripletMatrixViewer<T, N>{m_block_rows,
-                                          m_block_cols,
-                                          0,
-                                          (int)m_block_values.size(),
-                                          (int)m_block_values.size(),
-                                          m_block_row_indices.data(),
-                                          m_block_col_indices.data(),
-                                          m_block_values.data()};
+        return TripletMatrixView<T, N>{m_block_rows,
+                                       m_block_cols,
+                                       0,
+                                       (int)m_block_values.size(),
+                                       (int)m_block_values.size(),
+                                       m_block_row_indices.data(),
+                                       m_block_col_indices.data(),
+                                       m_block_values.data()};
     }
+
+    auto viewer() { return view().viewer(); }
+
+    auto cviewer() const { return view().cviewer(); }
+
+    operator TripletMatrixView<T, N>() { return view(); }
+    operator CTripletMatrixView<T, N>() const { return view(); }
 };
 
 template <typename T>
@@ -145,29 +152,35 @@ class DeviceTripletMatrix<T, 1>
     auto cols() const { return m_cols; }
     auto triplet_count() const { return m_values.size(); }
 
-    auto viewer()
+    auto view() const
     {
-        return TripletMatrixViewer<T, 1>{m_rows,
-                                         m_cols,
-                                         0,
-                                         (int)m_values.size(),
-                                         (int)m_values.size(),
-                                         m_row_indices.data(),
-                                         m_col_indices.data(),
-                                         m_values.data()};
+        return CTripletMatrixView<T, 1>{m_rows,
+                                        m_cols,
+                                        0,
+                                        (int)m_values.size(),
+                                        (int)m_values.size(),
+                                        m_row_indices.data(),
+                                        m_col_indices.data(),
+                                        m_values.data()};
     }
 
-    auto cviewer() const
+    auto view()
     {
-        return CTripletMatrixViewer<T, 1>{m_rows,
-                                          m_cols,
-                                          0,
-                                          (int)m_values.size(),
-                                          (int)m_values.size(),
-                                          m_row_indices.data(),
-                                          m_col_indices.data(),
-                                          m_values.data()};
+        return TripletMatrixView<T, 1>{m_rows,
+                                       m_cols,
+                                       0,
+                                       (int)m_values.size(),
+                                       (int)m_values.size(),
+                                       m_row_indices.data(),
+                                       m_col_indices.data(),
+                                       m_values.data()};
     }
+
+    auto viewer() { return view().viewer(); }
+    auto cviewer() const { return view().cviewer(); }
+
+    operator TripletMatrixView<T, 1>() { return view(); }
+    operator CTripletMatrixView<T, 1>() const { return view(); }
 };
 }  // namespace muda
 #include "details/device_triplet_matrix.inl"

@@ -1,6 +1,6 @@
 #pragma once
 #include <muda/buffer/device_buffer.h>
-#include <muda/ext/linear_system/bcoo_matrix_viewer.h>
+#include <muda/ext/linear_system/bcoo_matrix_view.h>
 #include <muda/ext/linear_system/device_triplet_matrix.h>
 
 namespace muda
@@ -47,15 +47,13 @@ class DeviceBCOOMatrix : public DeviceTripletMatrix<T, N>
     auto non_zero_blocks() const { return m_block_values.size(); }
 };
 
-template <typename T>
-class DeviceBCOOMatrix<T, 1> : public DeviceTripletMatrix<T, 1>
+template <typename Ty>
+class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
 {
-    template <typename T, int N>
+    template <typename Ty, int N>
     friend class details::MatrixFormatConverter;
 
   public:
-    using T = double;  // for flexibility
-
     DeviceBCOOMatrix() = default;
     ~DeviceBCOOMatrix() { destroy_all_descr(); }
 
@@ -102,30 +100,39 @@ class DeviceBCOOMatrix<T, 1> : public DeviceTripletMatrix<T, 1>
     mutable cusparseMatDescr_t   m_legacy_descr = nullptr;
     mutable cusparseSpMatDescr_t m_descr        = nullptr;
 
-    auto viewer()
+    auto view()
     {
-        return COOMatrixViewer{m_rows,
-                               m_cols,
-                               0,
-                               (int)m_values.size(),
-                               (int)m_values.size(),
-                               m_row_indices.data(),
-                               m_col_indices.data(),
-                               m_values.data()};
+        return COOMatrixView<Ty>{m_rows,
+                                 m_cols,
+                                 0,
+                                 (int)m_values.size(),
+                                 (int)m_values.size(),
+                                 m_row_indices.data(),
+                                 m_col_indices.data(),
+                                 m_values.data(),
+                                 legacy_descr(),
+                                 descr(),
+                                 false};
     }
 
-    auto cviewer() const
+    auto view() const
     {
-        return CCOOMatrixViewer{m_rows,
-                                m_cols,
-                                0,
-                                (int)m_values.size(),
-                                (int)m_values.size(),
-                                m_row_indices.data(),
-                                m_col_indices.data(),
-                                m_values.data()};
+        return CCOOMatrixView<Ty>{m_rows,
+                                  m_cols,
+                                  0,
+                                  (int)m_values.size(),
+                                  (int)m_values.size(),
+                                  m_row_indices.data(),
+                                  m_col_indices.data(),
+                                  m_values.data(),
+                                  legacy_descr(),
+                                  descr(),
+                                  false};
     }
 
+    auto viewer() { return view().viewer(); }
+
+    auto cviewer() const { return view().cviewer(); }
 
     auto non_zeros() const { return m_values.size(); }
 
@@ -153,10 +160,16 @@ class DeviceBCOOMatrix<T, 1> : public DeviceTripletMatrix<T, 1>
                                               (void*)m_values.data(),
                                               CUSPARSE_INDEX_32I,
                                               CUSPARSE_INDEX_BASE_ZERO,
-                                              cuda_data_type<T>()));
+                                              cuda_data_type<Ty>()));
         }
         return m_descr;
     }
+
+    auto T() const { return view().T(); }
+    auto T() { return view().T(); }
+
+    operator COOMatrixView<Ty>() { return view(); }
+    operator CCOOMatrixView<Ty>() const { return view(); }
 
   private:
     void destroy_all_descr()

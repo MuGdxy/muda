@@ -43,4 +43,18 @@ constexpr bool is_read_write_viewer_v = std::is_same_v<T, read_write_viewer_t<T>
 template <typename T>
 constexpr bool is_uniform_viewer_v =
     is_read_only_viewer_v<T> && is_read_write_viewer_v<T>;
+
+#pragma once
+
+template <typename T>
+inline T* remove_const(const T* ptr)
+{
+    return const_cast<T*>(ptr);
+}
+
+template <typename T>
+inline T& remove_const(const T& ref)
+{
+    return const_cast<T&>(ref);
+}
 }  // namespace muda
