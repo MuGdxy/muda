@@ -92,6 +92,7 @@ class CTripletMatrixView : public TripletMatrixViewBase<T, N>
     using Base = TripletMatrixViewBase<T, N>;
 
   public:
+    using BlockMatrix = typename Base::BlockMatrix;
     MUDA_GENERIC CTripletMatrixView(int                rows,
                                     int                cols,
                                     int                triplet_index_offset,
@@ -156,14 +157,14 @@ class TripletMatrixView : public TripletMatrixViewBase<T, N>
     using Base::cviewer;
     auto viewer() const
     {
-        return TripletMatrixView<T, N>{m_block_rows,
-                                       m_block_cols,
-                                       m_triplet_index_offset,
-                                       m_triplet_count,
-                                       m_total_triplet_count,
-                                       m_block_row_indices,
-                                       m_block_col_indices,
-                                       m_block_values};
+        return TripletMatrixViewer<T, N>{m_block_rows,
+                                         m_block_cols,
+                                         m_triplet_index_offset,
+                                         m_triplet_count,
+                                         m_total_triplet_count,
+                                         m_block_row_indices,
+                                         m_block_col_indices,
+                                         m_block_values};
     }
 };
 
@@ -329,14 +330,14 @@ class TripletMatrixView<T, 1> : public TripletMatrixViewBase<T, 1>
     using Base::cviewer;
     auto viewer() const
     {
-        return TripletMatrixView<T, 1>{m_rows,
-                                       m_cols,
-                                       m_triplet_index_offset,
-                                       m_triplet_count,
-                                       m_total_triplet_count,
-                                       m_row_indices,
-                                       m_col_indices,
-                                       m_values};
+        return TripletMatrixViewer<T, 1>{m_rows,
+                                         m_cols,
+                                         m_triplet_index_offset,
+                                         m_triplet_count,
+                                         m_total_triplet_count,
+                                         m_row_indices,
+                                         m_col_indices,
+                                         m_values};
     }
 };
 }  // namespace muda

@@ -5,14 +5,7 @@ namespace muda
 template <typename T, int N>
 DeviceBSRMatrix<T, N>::~DeviceBSRMatrix()
 {
-    if(m_legacy_descr)
-    {
-        checkCudaErrors(cusparseDestroyMatDescr(m_legacy_descr));
-    }
-    if(m_descr)
-    {
-        checkCudaErrors(cusparseDestroySpMat(m_descr));
-    }
+    destroy_all_descr();
 }
 
 template <typename T, int N>
@@ -50,8 +43,11 @@ DeviceBSRMatrix<T, N>& DeviceBSRMatrix<T, N>::operator=(const DeviceBSRMatrix& o
         m_block_row_offsets = other.m_block_row_offsets;
         m_block_col_indices = other.m_block_col_indices;
         m_block_values      = other.m_block_values;
-        m_legacy_descr      = nullptr;
-        m_descr             = nullptr;
+
+        destroy_all_descr();
+
+        m_legacy_descr = nullptr;
+        m_descr        = nullptr;
     }
     return *this;
 }
@@ -66,8 +62,11 @@ DeviceBSRMatrix<T, N>& DeviceBSRMatrix<T, N>::operator=(DeviceBSRMatrix&& other)
         m_block_row_offsets = std::move(other.m_block_row_offsets);
         m_block_col_indices = std::move(other.m_block_col_indices);
         m_block_values      = std::move(other.m_block_values);
-        m_legacy_descr      = other.m_legacy_descr;
-        m_descr             = other.m_descr;
+
+        destroy_all_descr();
+
+        m_legacy_descr = other.m_legacy_descr;
+        m_descr        = other.m_descr;
 
         other.m_row          = 0;
         other.m_col          = 0;
@@ -93,6 +92,21 @@ cusparseMatDescr_t DeviceBSRMatrix<T, N>::legacy_descr() const
         checkCudaErrors(cusparseCreateMatDescr(&m_legacy_descr));
     }
     return m_legacy_descr;
+}
+
+template <typename Ty, int N>
+void DeviceBSRMatrix<Ty, N>::destroy_all_descr() const
+{
+    if(m_legacy_descr)
+    {
+        checkCudaErrors(cusparseDestroyMatDescr(m_legacy_descr));
+        m_legacy_descr = nullptr;
+    }
+    if(m_descr)
+    {
+        checkCudaErrors(cusparseDestroySpMat(m_descr));
+        m_descr = nullptr;
+    }
 }
 
 template <typename T, int N>

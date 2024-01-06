@@ -89,6 +89,9 @@ class DeviceBSRMatrix
 
     auto T() const { return view().T(); }
     auto T() { return view().T(); }
+
+  private:
+    void destroy_all_descr() const;
 };
 }  // namespace muda
 

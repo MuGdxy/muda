@@ -22,26 +22,26 @@ class DeviceBCOOMatrix : public DeviceTripletMatrix<T, N>
 
     auto viewer()
     {
-        return BCOOMatrixViewer<T, N>{m_block_rows,
-                                      m_block_cols,
-                                      0,
-                                      (int)m_block_values.size(),
-                                      (int)m_block_values.size(),
-                                      m_block_row_indices.data(),
-                                      m_block_col_indices.data(),
-                                      m_block_values.data()};
+        return BCOOMatrixView<T, N>{m_block_rows,
+                                    m_block_cols,
+                                    0,
+                                    (int)m_block_values.size(),
+                                    (int)m_block_values.size(),
+                                    m_block_row_indices.data(),
+                                    m_block_col_indices.data(),
+                                    m_block_values.data()};
     }
 
-    auto cviewer() const
+    auto view() const
     {
-        return BCOOMatrixViewer<T, N>{m_block_rows,
-                                      m_block_cols,
-                                      0,
-                                      (int)m_block_values.size(),
-                                      (int)m_block_values.size(),
-                                      m_block_row_indices.data(),
-                                      m_block_col_indices.data(),
-                                      m_block_values.data()};
+        return BCOOMatrixView<T, N>{m_block_rows,
+                                    m_block_cols,
+                                    0,
+                                    (int)m_block_values.size(),
+                                    (int)m_block_values.size(),
+                                    m_block_row_indices.data(),
+                                    m_block_col_indices.data(),
+                                    m_block_values.data()};
     }
 
     auto non_zero_blocks() const { return m_block_values.size(); }
@@ -58,14 +58,14 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
     ~DeviceBCOOMatrix() { destroy_all_descr(); }
 
     DeviceBCOOMatrix(const DeviceBCOOMatrix& other)
-        : DeviceTripletMatrix{other}
+        : DeviceTripletMatrix<Ty, 1>{other}
         , m_legacy_descr{nullptr}
         , m_descr{nullptr}
     {
     }
 
     DeviceBCOOMatrix(DeviceBCOOMatrix&& other)
-        : DeviceTripletMatrix{std::move(other)}
+        : DeviceTripletMatrix<Ty, 1>{std::move(other)}
         , m_legacy_descr{other.m_legacy_descr}
         , m_descr{other.m_descr}
     {
@@ -77,7 +77,7 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
     {
         if(this == &other)
             return *this;
-        DeviceTripletMatrix::operator=(other);
+        DeviceTripletMatrix<Ty, 1>::operator=(other);
         destroy_all_descr();
         m_legacy_descr = nullptr;
         m_descr        = nullptr;
@@ -88,7 +88,7 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
     {
         if(this == &other)
             return *this;
-        DeviceTripletMatrix::operator=(std::move(other));
+        DeviceTripletMatrix<Ty, 1>::operator=(std::move(other));
         destroy_all_descr();
         m_legacy_descr       = other.m_legacy_descr;
         m_descr              = other.m_descr;

@@ -133,6 +133,7 @@ class CTripletMatrixViewer : public TripletMatrixViewerBase<T, N>
 {
     using Base = TripletMatrixViewerBase<T, N>;
     MUDA_VIEWER_COMMON_NAME(CTripletMatrixViewer);
+    using BlockMatrix = typename Base::BlockMatrix;
 
   public:
     MUDA_GENERIC CTripletMatrixViewer(int                rows,
@@ -178,6 +179,7 @@ class TripletMatrixViewer : public TripletMatrixViewerBase<T, N>
 
   public:
     using Base::Base;
+    using CTriplet = typename Base::CTriplet;
     MUDA_GENERIC TripletMatrixViewer(const Base& base)
         : Base(base)
     {
@@ -440,6 +442,7 @@ class TripletMatrixViewer<T, 1> : public TripletMatrixViewerBase<T, 1>
 
   public:
     using Base::Base;
+    using CTriplet = typename Base::CTriplet;
     MUDA_GENERIC TripletMatrixViewer(const Base& base)
         : Base(base)
     {

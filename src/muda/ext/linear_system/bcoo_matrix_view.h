@@ -1,5 +1,6 @@
 #pragma once
 #include <muda/ext/linear_system/triplet_matrix_view.h>
+#include <muda/ext/linear_system/bcoo_matrix_viewer.h>
 namespace muda
 {
 template <typename T, int N>
@@ -194,16 +195,16 @@ class COOMatrixView : public COOMatrixViewBase<Ty>
 
 namespace muda
 {
-template <typename T, int N>
-struct read_only_viewer<BCOOMatrixView<T, N>>
+template <typename T>
+struct read_only_viewer<COOMatrixView<T>>
 {
-    using type = CBCOOMatrixView<T, N>;
+    using type = CCOOMatrixView<T>;
 };
 
-template <typename T, int N>
-struct read_write_viewer<CBCOOMatrixView<T, N>>
+template <typename T>
+struct read_write_viewer<CCOOMatrixView<T>>
 {
-    using type = BCOOMatrixView<T, N>;
+    using type = COOMatrixView<T>;
 };
 }  // namespace muda
 #include "details/bcoo_matrix_view.inl"

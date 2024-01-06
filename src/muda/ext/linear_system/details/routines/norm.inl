@@ -1,3 +1,4 @@
+#include <muda/ext/linear_system/type_mapper/data_type_mapper.h>
 namespace muda
 {
 namespace details::linear_system
