@@ -132,9 +132,14 @@ class Buffer2DView : public Buffer2DViewBase<T>
         return const_cast<T*>(Base::origin_data());
     }
 
-    MUDA_GENERIC Buffer2DView<T> subview(Offset2D offset, Extent2D extent = {}) const MUDA_NOEXCEPT
+    MUDA_GENERIC Buffer2DView<T> subview(Offset2D offset, Extent2D extent = {}) MUDA_NOEXCEPT
     {
         return Buffer2DView<T>{Base::subview(offset, extent)};
+    }
+
+    MUDA_GENERIC CBuffer2DView<T> subview(Offset2D offset, Extent2D extent = {}) const MUDA_NOEXCEPT
+    {
+        return CBuffer2DView<T>{Base::subview(offset, extent)};
     }
 
     MUDA_GENERIC Dense2D<T> viewer() const MUDA_NOEXCEPT;

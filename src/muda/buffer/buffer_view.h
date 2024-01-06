@@ -140,9 +140,14 @@ class BufferView : public BufferViewBase<T>
         return const_cast<T*>(Base::origin_data());
     }
 
-    MUDA_GENERIC BufferView subview(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT
+    MUDA_GENERIC BufferView subview(size_t offset, size_t size = ~0) MUDA_NOEXCEPT
     {
         return BufferView{Base::subview(offset, size)};
+    }
+
+    MUDA_GENERIC CBufferView subview(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT
+    {
+        return CBufferView{Base::subview(offset, size)};
     }
 
     MUDA_HOST void fill(const T& v);
@@ -153,7 +158,7 @@ class BufferView : public BufferViewBase<T>
         CBufferView<T>{*this}.copy_to(host);
     }
 
-    MUDA_GENERIC Dense1D<T> viewer() const MUDA_NOEXCEPT;
+    MUDA_GENERIC Dense1D<T> viewer() MUDA_NOEXCEPT;
 };
 
 template <typename T>

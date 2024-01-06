@@ -126,7 +126,7 @@ class Buffer3DView : public Buffer3DViewBase<T>
         : Base(base)
     {
     }
-    
+
     MUDA_GENERIC Buffer3DView(const CBuffer3DView<T>&) = delete;
 
     MUDA_GENERIC operator CBuffer3DView<T>() const MUDA_NOEXCEPT
@@ -149,9 +149,14 @@ class Buffer3DView : public Buffer3DViewBase<T>
         return const_cast<T*>(Base::origin_data());
     }
 
-    MUDA_GENERIC Buffer3DView<T> subview(Offset3D offset, Extent3D extent = {}) const MUDA_NOEXCEPT
+    MUDA_GENERIC Buffer3DView<T> subview(Offset3D offset, Extent3D extent = {}) MUDA_NOEXCEPT
     {
         return Buffer3DView<T>{Base::subview(offset, extent)};
+    }
+
+    MUDA_GENERIC CBuffer3DView<T> subview(Offset3D offset, Extent3D extent = {}) const MUDA_NOEXCEPT
+    {
+        return CBuffer3DView<T>{Base::subview(offset, extent)};
     }
 
     MUDA_GENERIC Dense3D<T> viewer() const MUDA_NOEXCEPT;

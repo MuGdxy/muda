@@ -53,15 +53,15 @@ MUDA_HOST void CBufferView<T>::copy_to(T* host) const
 }
 
 template <typename T>
-MUDA_GENERIC Dense1D<T> BufferView<T>::viewer() const MUDA_NOEXCEPT
+MUDA_GENERIC Dense1D<T> BufferView<T>::viewer() MUDA_NOEXCEPT
 {
-    return Dense1D<T>{this->m_data, static_cast<int>(m_size)};
+    return Dense1D<T>{this->data(), static_cast<int>(m_size)};
 }
 
 template <typename T>
 MUDA_GENERIC CDense1D<T> BufferViewBase<T>::cviewer() const MUDA_NOEXCEPT
 {
-    return CDense1D<T>{m_data, static_cast<int>(m_size)};
+    return CDense1D<T>{data(), static_cast<int>(m_size)};
 }
 }  // namespace muda
 
