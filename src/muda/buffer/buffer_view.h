@@ -55,7 +55,7 @@ class BufferViewBase
     MUDA_GENERIC const T* origin_data() const MUDA_NOEXCEPT { return m_data; }
     MUDA_GENERIC size_t   offset() const MUDA_NOEXCEPT { return m_offset; }
 
-    MUDA_GENERIC BufferViewBase subview(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT;
+    MUDA_GENERIC BufferViewBase<T> subview(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT;
     MUDA_GENERIC CDense1D<T> cviewer() const MUDA_NOEXCEPT;
 };
 
@@ -90,7 +90,7 @@ class CBufferView : public BufferViewBase<T>
     {
     }
 
-    MUDA_GENERIC CBufferView subview(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT
+    MUDA_GENERIC CBufferView<T> subview(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT
     {
         return CBufferView{Base::subview(offset, size)};
     }
@@ -140,12 +140,12 @@ class BufferView : public BufferViewBase<T>
         return const_cast<T*>(Base::origin_data());
     }
 
-    MUDA_GENERIC BufferView subview(size_t offset, size_t size = ~0) MUDA_NOEXCEPT
+    MUDA_GENERIC BufferView<T> subview(size_t offset, size_t size = ~0) MUDA_NOEXCEPT
     {
         return BufferView{Base::subview(offset, size)};
     }
 
-    MUDA_GENERIC CBufferView subview(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT
+    MUDA_GENERIC CBufferView<T> subview(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT
     {
         return CBufferView{Base::subview(offset, size)};
     }
