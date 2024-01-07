@@ -4,21 +4,13 @@
 namespace muda
 {
 template <bool IsConst, typename Ty>
-class CSRMatrixViewBase
+class CSRMatrixViewBase : public ViewBase<IsConst>
 {
   public:
     static_assert(!std::is_const_v<Ty>, "Ty must be non-const");
-    using ConstView                  = CSRMatrixViewBase<true, Ty>;
-    using NonConstView               = CSRMatrixViewBase<false, Ty>;
-    using ThisView                   = CSRMatrixViewBase<IsConst, Ty>;
-    constexpr static bool IsConst    = IsConst;
-    constexpr static bool IsNonConst = !IsConst;
-
-  private:
-    template <typename T>
-    using auto_const_t = auto_const_t<IsConst, T>;
-    template <typename T>
-    using non_const_enable_t = std::enable_if_t<IsNonConst, T>;
+    using ConstView    = CSRMatrixViewBase<true, Ty>;
+    using NonConstView = CSRMatrixViewBase<false, Ty>;
+    using ThisView     = CSRMatrixViewBase<IsConst, Ty>;
 
   protected:
     // data
@@ -38,16 +30,16 @@ class CSRMatrixViewBase
     bool m_trans = false;
 
   public:
-    ThisView() = default;
-    ThisView(int                  row,
-             int                  col,
-             auto_const_t<int>*   row_offsets,
-             auto_const_t<int>*   col_indices,
-             auto_const_t<Ty>*    values,
-             int                  non_zero,
-             cusparseSpMatDescr_t descr,
-             cusparseMatDescr_t   legacy_descr,
-             bool                 trans)
+    CSRMatrixViewBase() = default;
+    CSRMatrixViewBase(int                  row,
+                      int                  col,
+                      auto_const_t<int>*   row_offsets,
+                      auto_const_t<int>*   col_indices,
+                      auto_const_t<Ty>*    values,
+                      int                  non_zero,
+                      cusparseSpMatDescr_t descr,
+                      cusparseMatDescr_t   legacy_descr,
+                      bool                 trans)
         : m_row(row)
         , m_col(col)
         , m_row_offsets(row_offsets)

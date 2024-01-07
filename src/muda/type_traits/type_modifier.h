@@ -57,7 +57,4 @@ inline T& remove_const(const T& ref)
 {
     return const_cast<T&>(ref);
 }
-
-template <bool IsConst, typename T>
-using auto_const_t = std::conditional_t<IsConst, const T, T>;
 }  // namespace muda
