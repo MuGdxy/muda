@@ -1,6 +1,7 @@
 #pragma once
 #include <muda/buffer/device_buffer.h>
 #include <cusparse.h>
+#include <muda/ext/linear_system/csr_matrix_view.h>
 
 namespace muda::details
 {
@@ -10,21 +11,22 @@ class MatrixFormatConverter;
 
 namespace muda
 {
-template <typename T>
+template <typename Ty>
 class DeviceCSRMatrix
 {
-    template <typename T, int N>
+    template <typename Ty, int N>
     friend class details::MatrixFormatConverter;
 
   public:
-    muda::DeviceBuffer<double>   m_values;
-    muda::DeviceBuffer<int>      m_row_offsets;
-    muda::DeviceBuffer<int>      m_col_indices;
-    mutable cusparseSpMatDescr_t m_descr        = nullptr;
-    mutable cusparseMatDescr_t   m_legacy_descr = nullptr;
-
     int m_row = 0;
     int m_col = 0;
+
+    muda::DeviceBuffer<int> m_row_offsets;
+    muda::DeviceBuffer<int> m_col_indices;
+    muda::DeviceBuffer<Ty>  m_values;
+
+    mutable cusparseSpMatDescr_t m_descr        = nullptr;
+    mutable cusparseMatDescr_t   m_legacy_descr = nullptr;
 
   public:
     DeviceCSRMatrix() = default;
@@ -53,6 +55,37 @@ class DeviceCSRMatrix
 
     cusparseSpMatDescr_t descr() const;
     cusparseMatDescr_t   legacy_descr() const;
+
+    auto view()
+    {
+        return CSRMatrixView<Ty>{m_row,
+                                 m_col,
+                                 m_row_offsets.data(),
+                                 m_col_indices.data(),
+                                 m_values.data(),
+                                 (int)non_zeros(),
+                                 descr(),
+                                 legacy_descr(),
+                                 false};
+    }
+
+    auto view() const
+    {
+        return CCSRMatrixView<Ty>{m_row,
+                                  m_col,
+                                  m_row_offsets.data(),
+                                  m_col_indices.data(),
+                                  m_values.data(),
+                                  (int)non_zeros(),
+                                  descr(),
+                                  legacy_descr(),
+                                  false};
+    }
+
+    auto T() const { return view().T(); }
+    auto T() { return view().T(); }
+    operator CSRMatrixView<Ty>() { return view(); }
+    operator CCSRMatrixView<Ty>() const { return view(); }
 
   private:
     void destroy_all_descr() const;

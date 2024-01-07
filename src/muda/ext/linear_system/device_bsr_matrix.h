@@ -68,9 +68,9 @@ class DeviceBSRMatrix
                                     m_block_row_offsets.data(),
                                     m_block_col_indices.data(),
                                     m_block_values.data(),
-                                    m_block_values.size(),
-                                    m_legacy_descr,
+                                    (int)m_block_values.size(),
                                     m_descr,
+                                    m_legacy_descr,
                                     false};
     }
 
@@ -81,9 +81,9 @@ class DeviceBSRMatrix
                                      m_block_row_offsets.data(),
                                      m_block_col_indices.data(),
                                      m_block_values.data(),
-                                     m_block_values.size(),
-                                     m_legacy_descr,
+                                     (int)m_block_values.size(),
                                      m_descr,
+                                     m_legacy_descr,
                                      false};
     }
 

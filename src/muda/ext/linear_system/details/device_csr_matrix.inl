@@ -1,15 +1,16 @@
 #include <muda/check/check_cusparse.h>
+#include <muda/ext/linear_system/type_mapper/data_type_mapper.h>
 
 namespace muda
 {
-template <typename T>
-DeviceCSRMatrix<T>::~DeviceCSRMatrix()
+template <typename Ty>
+DeviceCSRMatrix<Ty>::~DeviceCSRMatrix()
 {
     destroy_all_descr();
 }
 
-template <typename T>
-DeviceCSRMatrix<T>::DeviceCSRMatrix(const DeviceCSRMatrix& other)
+template <typename Ty>
+DeviceCSRMatrix<Ty>::DeviceCSRMatrix(const DeviceCSRMatrix& other)
     : m_row(other.m_row)
     , m_col(other.m_col)
     , m_row_offsets(other.m_row_offsets)
@@ -19,8 +20,8 @@ DeviceCSRMatrix<T>::DeviceCSRMatrix(const DeviceCSRMatrix& other)
 }
 
 
-template <typename T>
-DeviceCSRMatrix<T>::DeviceCSRMatrix(DeviceCSRMatrix&& other) noexcept
+template <typename Ty>
+DeviceCSRMatrix<Ty>::DeviceCSRMatrix(DeviceCSRMatrix&& other) noexcept
     : m_row(other.m_row)
     , m_col(other.m_col)
     , m_row_offsets(std::move(other.m_row_offsets))
@@ -35,8 +36,8 @@ DeviceCSRMatrix<T>::DeviceCSRMatrix(DeviceCSRMatrix&& other) noexcept
 }
 
 
-template <typename T>
-DeviceCSRMatrix<T>& DeviceCSRMatrix<T>::operator=(const DeviceCSRMatrix& other)
+template <typename Ty>
+DeviceCSRMatrix<Ty>& DeviceCSRMatrix<Ty>::operator=(const DeviceCSRMatrix& other)
 {
     if(this != &other)
     {
@@ -54,8 +55,8 @@ DeviceCSRMatrix<T>& DeviceCSRMatrix<T>::operator=(const DeviceCSRMatrix& other)
 }
 
 
-template <typename T>
-DeviceCSRMatrix<T>& DeviceCSRMatrix<T>::operator=(DeviceCSRMatrix&& other) noexcept
+template <typename Ty>
+DeviceCSRMatrix<Ty>& DeviceCSRMatrix<Ty>::operator=(DeviceCSRMatrix&& other) noexcept
 {
     if(this != &other)
     {
@@ -77,16 +78,17 @@ DeviceCSRMatrix<T>& DeviceCSRMatrix<T>::operator=(DeviceCSRMatrix&& other) noexc
     return *this;
 }
 
-template <typename T>
-void DeviceCSRMatrix<T>::reshape(int row, int col)
+template <typename Ty>
+void DeviceCSRMatrix<Ty>::reshape(int row, int col)
 {
     m_row = row;
     m_row_offsets.resize(row + 1);
     m_col   = col;
     m_descr = nullptr;
 }
-template <typename T>
-cusparseSpMatDescr_t DeviceCSRMatrix<T>::descr() const
+
+template <typename Ty>
+cusparseSpMatDescr_t DeviceCSRMatrix<Ty>::descr() const
 {
     if(m_descr == nullptr)
     {
@@ -101,12 +103,12 @@ cusparseSpMatDescr_t DeviceCSRMatrix<T>::descr() const
             cusparse_index_type<decltype(m_row_offsets)::value_type>(),
             cusparse_index_type<decltype(m_col_indices)::value_type>(),
             CUSPARSE_INDEX_BASE_ZERO,
-            cuda_data_type<T>()));
+            cuda_data_type<Ty>()));
     }
     return m_descr;
 }
-template <typename T>
-cusparseMatDescr_t DeviceCSRMatrix<T>::legacy_descr() const
+template <typename Ty>
+cusparseMatDescr_t DeviceCSRMatrix<Ty>::legacy_descr() const
 {
     if(m_legacy_descr == nullptr)
     {
@@ -117,8 +119,8 @@ cusparseMatDescr_t DeviceCSRMatrix<T>::legacy_descr() const
     }
     return m_legacy_descr;
 }
-template <typename T>
-void muda::DeviceCSRMatrix<T>::destroy_all_descr() const
+template <typename Ty>
+void muda::DeviceCSRMatrix<Ty>::destroy_all_descr() const
 {
     if(m_descr)
     {

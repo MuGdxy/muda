@@ -21,6 +21,27 @@ void linear_system_test()
     b.copy_to(h_b2);
 
     REQUIRE(h_b2.isApprox(h_b));
+
+    {
+        DeviceBSRMatrix<float, 3> bsr_A;
+        auto                      view  = bsr_A.view();
+        auto                      cview = std::as_const(bsr_A).view();
+        cview                           = view;
+    }
+
+    {
+        DeviceCSRMatrix<float> csr_A;
+        auto                   view  = csr_A.view();
+        auto                   cview = std::as_const(csr_A).view();
+        cview                        = view;
+    }
+
+    {
+        DeviceTripletMatrix<float, 1> triplet_A;
+        auto                          view  = triplet_A.view();
+        auto                          cview = std::as_const(triplet_A).view();
+        cview                               = view;
+    }
 }
 
 TEST_CASE("linear_system_test", "[linear_system]")

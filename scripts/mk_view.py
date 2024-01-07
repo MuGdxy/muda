@@ -1,166 +1,68 @@
-viewer_template='''#include <muda/viewer/viewer_base.h>
+view_template='''#include <muda/view/view_base.h>
 
-namespace muda
-{
-template <typename T, int N>
-class $NAME$ViewerBase : public muda::ViewerBase
-{
-  protected:
-    // data
-    T* m_data;
-
-  public:
-    MUDA_GENERIC $NAME$ViewerBase() = default;
-    MUDA_GENERIC $NAME$ViewerBase(T* data)
-        : m_data(data)
-    {
-        MUDA_KERNEL_ASSERT(data != nullptr,
-                           "$NAME$Viewer [%s:%s]: data is nullptr",
-                           name(),
-                           kernel_name());
-    }
-
-    MUDA_GENERIC $NAME$ViewerBase<T, N> subview(int offset, int count) const
-    {
-        return $NAME$ViewerBase{};
-    }
-};
-
-template <typename T, int N>
-class C$NAME$Viewer : public $NAME$ViewerBase<T, N>
-{
-    using Base = $NAME$ViewerBase<T, N>;
-    MUDA_VIEWER_COMMON_NAME(C$NAME$Viewer);
-
-  public:
-    MUDA_GENERIC C$NAME$Viewer(const T* data)
-        : Base(const_cast<T*>(data))
-    {
-    }
-
-    MUDA_GENERIC C$NAME$Viewer(const Base& base)
-        : Base(base)
-    {
-    }
-
-    MUDA_GENERIC C$NAME$Viewer<T, N> subview(int offset, int count) const
-    {
-        return C$NAME$Viewer{Base::subview(offset, count)};
-    }
-};
-
-template <typename T, int N>
-class $NAME$Viewer : public $NAME$ViewerBase<T, N>
-{
-    using Base = $NAME$ViewerBase<T, N>;
-    MUDA_VIEWER_COMMON_NAME($NAME$Viewer);
-
-  public:
-    using Base::Base;
-    MUDA_GENERIC $NAME$Viewer(const Base& base)
-        : Base(base)
-    {
-    }
-
-    MUDA_GENERIC $NAME$Viewer(const C$NAME$Viewer<T, N>&) = delete;
-
-    MUDA_GENERIC $NAME$Viewer<T, N> subview(int offset, int count) const
-    {
-        return $NAME$Viewer{Base::subview(offset, count)};
-    }
-};
-}  // namespace muda
-'''
-
-view_template='''
-#include "$NAME$Viewer.h"
-
-namespace muda
-{
-template <typename T, int N>
-class $NAME$ViewBase
+template <bool IsConst, typename Ty>
+class $VIEW_NAME$ViewBase
 {
   public:
-    using BlockMatrix = Eigen::Matrix<T, N, N>;
+    static_assert(!std::is_const_v<Ty>, "Ty must be non-const");
+    using ConstView                  = $VIEW_NAME$ViewBase<true, Ty>;
+    using NonConstView               = $VIEW_NAME$ViewBase<false, Ty>;
+    using ThisView                   = $VIEW_NAME$ViewBase<IsConst, Ty>;
+    constexpr static bool IsConst    = IsConst;
+    constexpr static bool IsNonConst = !IsConst;
+  private:
+    template <typename T>
+    using auto_const_t = auto_const_t<IsConst, T>;
+    template <typename T>
+    using non_const_enable_t = std::enable_if_t<IsNonConst, T>;
 
   protected:
     // data
-    T* m_data;
-
-
+    auto_const_t<Ty>* m_values = nullptr;
   public:
-    MUDA_GENERIC $NAME$ViewBase() = default;
-    MUDA_GENERIC $NAME$ViewBase(T* data) {}
-
-    MUDA_GENERIC $NAME$ViewBase<T, N> subview(int offset, int count) const
+    ThisView() = default;
+    ThisView(auto_const_t<IsConst, Ty>*  values)
+        : m_values(values)
     {
-		return $NAME$ViewBase{};
+    }
+    
+    // explicit conversion to non-const
+    non_const_enable_t<ConstView> as_const() const
+    {
+        return ConstView{m_values};
     }
 
-    auto cviewer() const { return C$NAME$Viewer<T, N>{}; }
+    // implicit conversion to const
+    operator non_const_enable_t<ConstView>() const
+    {
+        return as_const();
+    }
+
+    // non-const access
+    auto_const_t<Ty>* values() { return m_values; }
+
+    // const access
+    auto values() const { return m_values; }
 };
 
-template <typename T, int N>
-class C$NAME$View : public $NAME$ViewBase<T, N>
-{
-    using Base = $NAME$ViewBase<T, N>;
-
-  public:
-    using Base::Base;
-    MUDA_GENERIC C$NAME$View(const T* data)
-        : Base(const_cast<T*>(data))
-    {
-    }
-
-    MUDA_GENERIC C$NAME$View(const Base& base)
-        : Base(base)
-    {
-    }
-
-    MUDA_GENERIC C$NAME$View<T, N> subview(int offset, int count) const
-    {
-        return C$NAME$View{Base::subview(offset, count)};
-    }
-
-    using Base::cviewer;
-};
-
-template <typename T, int N>
-class $NAME$View : public $NAME$ViewBase<T, N>
-{
-    using Base = $NAME$ViewBase<T, N>;
-
-  public:
-    using Base::Base;
-    MUDA_GENERIC $NAME$View(const Base& base)
-        : Base(base)
-    {
-    }
-
-    MUDA_GENERIC $NAME$View(const C$NAME$View<T, N>&) = delete;
-
-    MUDA_GENERIC $NAME$View<T, N> subview(int offset, int count) const
-    {
-        return $NAME$View{Base::subview(offset, count)};
-    }
-
-    using Base::cviewer;
-    auto viewer() const { return $NAME$Viewer<T, N>{}; }
-};
+template <typename Ty>
+using $VIEW_NAME$View = $VIEW_NAME$ViewBase<false, Ty>;
+template <typename Ty>
+using C$VIEW_NAME$View = $VIEW_NAME$ViewBase<true, Ty>;
 }  // namespace muda
 
 namespace muda
 {
-template <typename T, int N>
-struct read_only_viewer<$NAME$View<T, N>>
+template <typename Ty>
+struct read_only_viewer<$VIEW_NAME$View<Ty>>
 {
-    using type = C$NAME$View<T, N>;
+    using type = C$VIEW_NAME$View<Ty>;
 };
 
-template <typename T, int N>
-struct read_write_viewer<$NAME$View<T, N>>
+template <typename Ty>
+struct read_write_viewer<$VIEW_NAME$View<Ty>>
 {
-    using type = $NAME$View<T, N>;
+    using type = $VIEW_NAME$View<Ty>;
 };
 }  // namespace muda
 '''
@@ -171,17 +73,4 @@ if __name__ == '__main__':
     parser.add_argument('name', type=str, help='name of the view')
     args = parser.parse_args()
 
-    # make name snake case
-    # CamelCase -> camel_case
-    name = args.name
-    name = name[0].lower() + name[1:]
-    name = "".join(map(lambda x: "_" + x.lower() if x.isupper() else x, name))
-
-
-    f = open(name + "_view.h", "w")
-    f.write(view_template.replace("$NAME$", args.name))
-    f.close()
-
-    f = open(name + "_viewer.h", "w")
-    f.write(viewer_template.replace("$NAME$", args.name))
-    f.close()
+    print(view_template.replace('$VIEW_NAME$', args.name))

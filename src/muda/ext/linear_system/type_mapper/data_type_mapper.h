@@ -5,7 +5,7 @@
 namespace muda
 {
 template <typename T>
-constexpr cudaDataType_t cuda_data_type()
+inline constexpr cudaDataType_t cuda_data_type()
 {
     if constexpr(std::is_same_v<T, float>)
     {
