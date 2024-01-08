@@ -5,32 +5,43 @@
 #include <cublas_v2.h>
 namespace muda
 {
-template <typename T>
-class DenseMatrixViewerBase : public ViewerBase
+template <bool IsConst, typename T>
+class DenseMatrixViewerBase : public ViewerBase<IsConst>
 {
     static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>,
                   "now only support real number");
-
-  protected:
-    Buffer2DView<T> m_view;
-    size_t          m_row_offset = 0;
-    size_t          m_col_offset = 0;
-    size_t          m_row_size   = 0;
-    size_t          m_col_size   = 0;
+    static_assert(!std::is_const_v<T>, "T must be non-const type");
 
   public:
+    using CBuffer2DView = CBuffer2DView<T>;
+    using Buffer2DView  = Buffer2DView<T>;
+    using ThisBuffer2DView = std::conditional_t<IsConst, CBuffer2DView, Buffer2DView>;
+
+    using ConstViewer    = DenseMatrixViewerBase<true, T>;
+    using NonConstViewer = DenseMatrixViewerBase<false, T>;
+    using ThisViewer = std::conditional_t<IsConst, ConstViewer, NonConstViewer>;
+
     using MatrixType = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
     template <typename T>
     using MapMatrixT =
         Eigen::Map<T, Eigen::AlignmentType::Unaligned, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>;
-    using MapMatrix  = MapMatrixT<MatrixType>;
-    using CMapMatrix = MapMatrixT<const MatrixType>;
+    using MapMatrix     = MapMatrixT<MatrixType>;
+    using CMapMatrix    = MapMatrixT<const MatrixType>;
+    using ThisMapMatrix = std::conditional_t<IsConst, CMapMatrix, MapMatrix>;
 
-    MUDA_GENERIC DenseMatrixViewerBase(const Buffer2DView<T>& view,
-                                       size_t                 row_offset,
-                                       size_t                 col_offset,
-                                       size_t                 row_size,
-                                       size_t                 col_size)
+  protected:
+    ThisBuffer2DView m_view;
+    size_t           m_row_offset = 0;
+    size_t           m_col_offset = 0;
+    size_t           m_row_size   = 0;
+    size_t           m_col_size   = 0;
+
+  public:
+    MUDA_GENERIC DenseMatrixViewerBase(ThisBuffer2DView view,
+                                       size_t           row_offset,
+                                       size_t           col_offset,
+                                       size_t           row_size,
+                                       size_t           col_size)
         : m_view(view)
         , m_row_offset(row_offset)
         , m_col_offset(col_offset)
@@ -39,22 +50,48 @@ class DenseMatrixViewerBase : public ViewerBase
     {
     }
 
-    MUDA_GENERIC DenseMatrixViewerBase block(size_t row_offset,
-                                             size_t col_offset,
-                                             size_t row_size,
-                                             size_t col_size) const;
+    // implicit conversion
 
+    MUDA_GENERIC auto as_const() const
+    {
+        return ConstViewer{m_view, m_row_offset, m_col_offset, m_row_size, m_col_size};
+    }
+
+    MUDA_GENERIC operator ConstViewer() const { return as_const(); }
+
+    // non-const accessor
+
+    MUDA_GENERIC ThisViewer block(size_t row_offset, size_t col_offset, size_t row_size, size_t col_size);
     template <int M, int N>
-    MUDA_GENERIC DenseMatrixViewerBase block(int row_offset, int col_offset) const
+    MUDA_GENERIC ThisViewer block(int row_offset, int col_offset)
     {
         return block(row_offset, col_offset, M, N);
     }
+    MUDA_GENERIC Eigen::Block<ThisMapMatrix> as_eigen();
+    MUDA_GENERIC operator Eigen::Block<CMapMatrix>();
+    MUDA_GENERIC auto_const_t<T>& operator()(size_t i, size_t j);
+    MUDA_GENERIC auto             buffer_view() { return m_view; }
 
-    MUDA_GENERIC operator Eigen::Block<CMapMatrix>() const;
+    // const accessor
 
+    MUDA_GENERIC ConstViewer block(size_t row_offset, size_t col_offset, size_t row_size, size_t col_size) const
+    {
+        return remove_const(*this).block(row_offset, col_offset, row_size, col_size);
+    }
+    template <int M, int N>
+    MUDA_GENERIC ConstViewer block(int row_offset, int col_offset) const
+    {
+        return remove_const(*this).block<M, N>(row_offset, col_offset);
+    }
     MUDA_GENERIC Eigen::Block<CMapMatrix> as_eigen() const;
-
-    MUDA_GENERIC const T& operator()(size_t i, size_t j) const;
+    MUDA_GENERIC operator Eigen::Block<CMapMatrix>() const
+    {
+        return as_eigen();
+    }
+    MUDA_GENERIC const T& operator()(size_t i, size_t j) const
+    {
+        return remove_const(*this)(i, j);
+    }
 
     MUDA_GENERIC size_t row() const { return m_row_size; }
     MUDA_GENERIC size_t col() const { return m_col_size; }
@@ -66,24 +103,15 @@ class DenseMatrixViewerBase : public ViewerBase
 };
 
 template <typename T>
-class CDenseMatrixViewer : public DenseMatrixViewerBase<T>
+class CDenseMatrixViewer : public DenseMatrixViewerBase<true, T>
 {
     MUDA_VIEWER_COMMON_NAME(CDenseMatrixViewer);
 
-    using Base       = DenseMatrixViewerBase<T>;
+    using Base       = DenseMatrixViewerBase<true, T>;
     using CMapMatrix = typename Base::CMapMatrix;
 
   public:
     using Base::Base;
-
-    MUDA_GENERIC CDenseMatrixViewer(const CBuffer2DView<T>& view,
-                                    size_t                  row_offset,
-                                    size_t                  col_offset,
-                                    size_t                  row_size,
-                                    size_t                  col_size)
-        : Base(Buffer2DViewBase{view}, row_offset, col_offset, row_size, col_size)
-    {
-    }
 
     MUDA_GENERIC CDenseMatrixViewer(const Base& base)
         : Base(base)
@@ -93,18 +121,24 @@ class CDenseMatrixViewer : public DenseMatrixViewerBase<T>
     MUDA_GENERIC CDenseMatrixViewer block(size_t row_offset,
                                           size_t col_offset,
                                           size_t row_size,
-                                          size_t col_size) const;
+                                          size_t col_size) const
+    {
+        return Base::block(row_offset, col_offset, row_size, col_size);
+    }
 
     template <size_t M, size_t N>
-    MUDA_GENERIC CDenseMatrixViewer block(size_t row_offset, size_t col_offset) const;
+    MUDA_GENERIC CDenseMatrixViewer block(size_t row_offset, size_t col_offset) const
+    {
+        return Base::template block<M, N>(row_offset, col_offset);
+    }
 };
 
 template <typename T>
-class DenseMatrixViewer : public DenseMatrixViewerBase<T>
+class DenseMatrixViewer : public DenseMatrixViewerBase<false, T>
 {
     MUDA_VIEWER_COMMON_NAME(DenseMatrixViewer);
 
-    using Base       = DenseMatrixViewerBase<T>;
+    using Base       = DenseMatrixViewerBase<false, T>;
     using MapMatrix  = typename Base::MapMatrix;
     using CMapMatrix = typename Base::CMapMatrix;
 
@@ -121,12 +155,16 @@ class DenseMatrixViewer : public DenseMatrixViewerBase<T>
     MUDA_GENERIC DenseMatrixViewer block(size_t row_offset,
                                          size_t col_offset,
                                          size_t row_size,
-                                         size_t col_size) const;
+                                         size_t col_size) const
+    {
+        return Base::block(row_offset, col_offset, row_size, col_size);
+    }
 
     template <size_t M, size_t N>
-    MUDA_GENERIC DenseMatrixViewer block(size_t row_offset, size_t col_offset) const;
-
-    MUDA_GENERIC T& operator()(size_t i, size_t j);
+    MUDA_GENERIC DenseMatrixViewer block(size_t row_offset, size_t col_offset) const
+    {
+        return Base::template block<M, N>(row_offset, col_offset);
+    }
 
     MUDA_DEVICE T atomic_add(size_t i, size_t j, T val);
 
@@ -135,12 +173,6 @@ class DenseMatrixViewer : public DenseMatrixViewerBase<T>
 
     template <int M, int N>
     MUDA_GENERIC DenseMatrixViewer& operator=(const Eigen::Matrix<T, M, N>& other);
-
-    MUDA_GENERIC operator Eigen::Block<MapMatrix>();
-
-    using Base::as_eigen;
-    MUDA_GENERIC Eigen::Block<MapMatrix> as_eigen();
-
   private:
     MUDA_GENERIC void check_size_matching(int M, int N) const;
 };

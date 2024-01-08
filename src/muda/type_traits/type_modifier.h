@@ -47,13 +47,13 @@ constexpr bool is_uniform_viewer_v =
 #pragma once
 
 template <typename T>
-inline T* remove_const(const T* ptr)
+inline T* remove_const(const T* ptr) noexcept
 {
     return const_cast<T*>(ptr);
 }
 
 template <typename T>
-inline T& remove_const(const T& ref)
+inline T& remove_const(const T& ref) noexcept
 {
     return const_cast<T&>(ref);
 }

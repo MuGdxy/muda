@@ -38,13 +38,16 @@ class DenseVectorViewBase : public ViewBase<IsConst>
     ConstView as_const() const { return ConstView{m_view, m_inc}; }
     operator ConstView() const { return as_const(); }
 
-    auto           size() const { return m_view.size(); }
-    auto           data() const { return m_view.data(); }
-    CBufferView    buffer_view() const { return m_view; }
-    ThisBufferView buffer_view() { return m_view; }
-    auto           cviewer() const { return CViewer{m_view, 0, m_view.size()}; }
-    auto           viewer() { return ThisViewer{m_view, 0, m_view.size()}; }
-    auto           inc() const { return m_inc; }
+    // non-const accessor
+    auto viewer() { return ThisViewer{m_view, 0, m_view.size()}; }
+    auto buffer_view() { return m_view; }
+
+    // const accessor
+    auto        size() const { return m_view.size(); }
+    auto        data() const { return m_view.data(); }
+    CBufferView buffer_view() const { return m_view; }
+    auto        cviewer() const { return CViewer{m_view, 0, m_view.size()}; }
+    auto        inc() const { return m_inc; }
 };
 
 template <typename Ty>

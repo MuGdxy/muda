@@ -262,18 +262,18 @@ class TripletMatrixViewBase<IsConst, Ty, 1> : public ViewBase<IsConst>
     }
 
     // non-const access
-    auto_const_t<Ty>*  block_values() { return m_values; }
-    auto_const_t<int>* block_row_indices() { return m_row_indices; }
-    auto_const_t<int>* block_col_indices() { return m_col_indices; }
+    auto_const_t<Ty>*  values() { return m_values; }
+    auto_const_t<int>* row_indices() { return m_row_indices; }
+    auto_const_t<int>* col_indices() { return m_col_indices; }
 
 
     // const access
-    auto block_values() const { return m_values; }
-    auto block_row_indices() const { return m_row_indices; }
-    auto block_col_indices() const { return m_col_indices; }
+    auto values() const { return m_values; }
+    auto row_indices() const { return m_row_indices; }
+    auto col_indices() const { return m_col_indices; }
 
-    auto block_rows() const { return m_rows; }
-    auto block_cols() const { return m_cols; }
+    auto rows() const { return m_rows; }
+    auto cols() const { return m_cols; }
     auto triplet_count() const { return m_triplet_count; }
     auto tripet_index_offset() const { return m_triplet_index_offset; }
     auto total_triplet_count() const { return m_total_triplet_count; }

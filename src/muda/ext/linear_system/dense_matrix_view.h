@@ -1,54 +1,95 @@
 #pragma once
 #include <muda/ext/linear_system/dense_matrix_viewer.h>
 #include <muda/buffer/buffer_2d_view.h>
+#include <muda/view/view_base.h>
 namespace muda
 {
-template <typename Ty>
-class DenseMatrixViewBase
+template <bool IsConst, typename Ty>
+class DenseMatrixViewBase : public ViewBase<IsConst>
 {
+  public:
     static_assert(std::is_same_v<Ty, float> || std::is_same_v<Ty, double>,
                   "now only support real number");
+    static_assert(!std::is_const_v<Ty>, "Ty must be non-const");
+    using ConstView    = DenseMatrixViewBase<true, Ty>;
+    using NonConstView = DenseMatrixViewBase<false, Ty>;
+    using ThisView     = DenseMatrixViewBase<IsConst, Ty>;
+
+    using CBuffer2DView = CBuffer2DView<Ty>;
+    using Buffer2DView  = Buffer2DView<Ty>;
+    using ThisBuffer2DView = std::conditional_t<IsConst, CBuffer2DView, Buffer2DView>;
+
+    using CViewer    = CDenseMatrixViewer<Ty>;
+    using Viewer     = DenseMatrixViewer<Ty>;
+    using ThisViewer = std::conditional_t<IsConst, CViewer, Viewer>;
 
   protected:
-    Buffer2DView<Ty> m_view;
+    ThisBuffer2DView m_view;
     size_t           m_row   = 0;
     size_t           m_col   = 0;
     bool             m_trans = false;
     bool             m_sym   = false;
 
   public:
-    using value_type = Ty;
-    DenseMatrixViewBase(const Buffer2DView<Ty>& view, size_t row, size_t col, bool trans, bool sym)
-        : m_view(view)
-        , m_row(row)
-        , m_col(col)
-        , m_trans(trans)
-        , m_sym(sym)
+    MUDA_GENERIC DenseMatrixViewBase(ThisBuffer2DView view,
+                                     size_t           row,
+                                     size_t           col,
+                                     bool             trans = false,
+                                     bool             sym = false) MUDA_NOEXCEPT
+        : m_view(view),
+          m_row(row),
+          m_col(col),
+          m_trans(trans),
+          m_sym(sym)
     {
     }
 
-    bool   is_trans() const { return m_trans; }
-    bool   is_sym() const { return m_sym; }
-    size_t row() const { return m_row; }
-    size_t col() const { return m_col; }
-    size_t lda() const { return m_view.pitch_bytes() / sizeof(value_type); }
-    DenseMatrixViewBase<value_type> T() const;
-    auto                   data() const { return m_view.origin_data(); }
-    CDenseMatrixViewer<Ty> cviewer() const;
+    // implicit conversion
+    MUDA_GENERIC auto as_const() const MUDA_NOEXCEPT
+    {
+        return ConstView{m_view, m_row, m_col, m_trans, m_sym};
+    }
+    MUDA_GENERIC operator ConstView() const MUDA_NOEXCEPT { return as_const(); }
+
+    // non-const accessor
+    MUDA_GENERIC auto     data() MUDA_NOEXCEPT { return m_view.origin_data(); }
+    MUDA_GENERIC ThisView T() MUDA_NOEXCEPT;
+    MUDA_GENERIC ThisViewer viewer() MUDA_NOEXCEPT;
+    MUDA_GENERIC auto       buffer_view() MUDA_NOEXCEPT { return m_view; }
+
+    // const accessor
+    MUDA_GENERIC bool   is_trans() const MUDA_NOEXCEPT { return m_trans; }
+    MUDA_GENERIC bool   is_sym() const MUDA_NOEXCEPT { return m_sym; }
+    MUDA_GENERIC size_t row() const MUDA_NOEXCEPT { return m_row; }
+    MUDA_GENERIC size_t col() const MUDA_NOEXCEPT { return m_col; }
+    MUDA_GENERIC size_t lda() const MUDA_NOEXCEPT
+    {
+        return m_view.pitch_bytes() / sizeof(Ty);
+    }
+    MUDA_GENERIC ConstView T() const MUDA_NOEXCEPT
+    {
+        return remove_const(*this).T();
+    }
+    MUDA_GENERIC auto data() const MUDA_NOEXCEPT
+    {
+        return m_view.origin_data();
+    }
+    MUDA_GENERIC CViewer cviewer() const MUDA_NOEXCEPT
+    {
+        return remove_const(*this).viewer();
+    }
+    MUDA_GENERIC CBuffer2DView buffer_view() const MUDA_NOEXCEPT
+    {
+        return m_view;
+    }
 };
 
 template <typename Ty>
-class CDenseMatrixView : public DenseMatrixViewBase<Ty>
+class CDenseMatrixView : public DenseMatrixViewBase<true, Ty>
 {
-    using Base = DenseMatrixViewBase<Ty>;
+    using Base = DenseMatrixViewBase<true, Ty>;
 
   public:
-    using value_type = Ty;
-    CDenseMatrixView(const CBuffer2DView<value_type>& view, size_t row, size_t col, bool trans, bool sym)
-        : Base(Buffer2DViewBase<value_type>{view}, row, col, trans, sym)
-    {
-    }
-
     CDenseMatrixView(const Base& base)
         : Base(base)
     {
@@ -58,25 +99,19 @@ class CDenseMatrixView : public DenseMatrixViewBase<Ty>
 };
 
 template <typename Ty>
-class DenseMatrixView : public DenseMatrixViewBase<Ty>
+class DenseMatrixView : public DenseMatrixViewBase<false, Ty>
 {
-    using Base = DenseMatrixViewBase<Ty>;
+    using Base = DenseMatrixViewBase<false, Ty>;
 
   public:
-    using value_type = Ty;
     DenseMatrixView(const Base& base)
         : Base(base)
     {
     }
 
-    DenseMatrixView(const CDenseMatrixView<value_type>&) = delete;
+    DenseMatrixView(const CDenseMatrixView<Ty>&) = delete;
 
     auto T() const { return Base::T(); }
-
-    DenseMatrixViewer<Ty> viewer();
-
-    using Base::data;
-    auto data() { return m_view.origin_data(); }
 };
 }  // namespace muda
 

@@ -12,9 +12,9 @@ namespace muda
 template <typename T, int N>
 class DeviceTripletMatrix
 {
-    friend class details::MatrixFormatConverter<T, N>;
-
   public:
+    template<typename T, int N>
+    friend class details::MatrixFormatConverter;
     using BlockMatrix = Eigen::Matrix<T, N, N>;
 
   protected:
@@ -66,18 +66,6 @@ class DeviceTripletMatrix
     auto block_cols() const { return m_block_cols; }
     auto triplet_count() const { return m_block_values.size(); }
 
-    auto view() const
-    {
-        return CTripletMatrixView<T, N>{m_block_rows,
-                                        m_block_cols,
-                                        0,
-                                        (int)m_block_values.size(),
-                                        (int)m_block_values.size(),
-                                        m_block_row_indices.data(),
-                                        m_block_col_indices.data(),
-                                        m_block_values.data()};
-    }
-
     auto view()
     {
         return TripletMatrixView<T, N>{m_block_rows,
@@ -88,6 +76,11 @@ class DeviceTripletMatrix
                                        m_block_row_indices.data(),
                                        m_block_col_indices.data(),
                                        m_block_values.data()};
+    }
+
+    auto view() const
+    {
+        return CTripletMatrixView<T, N>{remove_const(*this).view()};
     }
 
     auto viewer() { return view().viewer(); }
@@ -101,7 +94,9 @@ class DeviceTripletMatrix
 template <typename T>
 class DeviceTripletMatrix<T, 1>
 {
-    friend class details::MatrixFormatConverter<T, 1>;
+  public:
+    template <typename T, int N>
+    friend class details::MatrixFormatConverter;
 
   protected:
     DeviceBuffer<T>   m_values;

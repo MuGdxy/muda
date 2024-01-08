@@ -46,18 +46,7 @@ class DenseVectorViewerBase : public ViewerBase<IsConst>
         return ConstViewer{m_view, m_offset, m_size};
     }
 
-    operator ConstViewer() const { return as_const(); }
-
-
-    MUDA_GENERIC auto segment(size_t offset, size_t size) const
-    {
-        check_segment(offset, size);
-        auto ret             = ConstViewer{m_view, m_offset + offset, size};
-        auto acc             = muda::details::ViewerBaseAccessor();
-        acc.kernel_name(ret) = acc.kernel_name(*this);
-        acc.viewer_name(ret) = acc.viewer_name(*this);
-        return ret;
-    }
+    MUDA_GENERIC operator ConstViewer() const { return as_const(); }
 
     MUDA_GENERIC auto segment(size_t offset, size_t size)
     {
@@ -68,6 +57,12 @@ class DenseVectorViewerBase : public ViewerBase<IsConst>
         acc.viewer_name(ret) = acc.viewer_name(*this);
         return ret;
     }
+
+    MUDA_GENERIC auto segment(size_t offset, size_t size) const
+    {
+        return remove_const(*this).segment(offset, size);
+    }
+
 
     MUDA_GENERIC Eigen::VectorBlock<CMapVector> as_eigen() const
     {

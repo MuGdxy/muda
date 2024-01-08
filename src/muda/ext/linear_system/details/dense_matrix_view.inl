@@ -1,25 +1,17 @@
 namespace muda
 {
-template <typename Ty>
-auto DenseMatrixViewBase<Ty>::T() const -> DenseMatrixViewBase<value_type>
+template <bool IsConst, typename Ty>
+MUDA_GENERIC auto DenseMatrixViewBase<IsConst, Ty>::T() MUDA_NOEXCEPT->ThisView
 {
-    return DenseMatrixViewBase<value_type>{m_view, m_row, m_col, !m_trans, m_sym};
-}
-template <typename Ty>
-CDenseMatrixViewer<Ty> DenseMatrixViewBase<Ty>::cviewer() const
-{
-    MUDA_ASSERT(!m_trans,
-                "DenseMatrixViewer doesn't support transpose, "
-                "please use the original matrix to create a viewer");
-    return CDenseMatrixViewer<value_type>{m_view, 0, 0, m_row, m_col};
+    return ThisView{m_view, m_row, m_col, !m_trans, m_sym};
 }
 
-template <typename Ty>
-auto DenseMatrixView<Ty>::viewer() -> DenseMatrixViewer<value_type>
+template <bool IsConst, typename Ty>
+auto DenseMatrixViewBase<IsConst, Ty>::viewer() -> ThisViewer
 {
     MUDA_ASSERT(!m_trans,
                 "DenseMatrixViewer doesn't support transpose, "
                 "please use the original matrix to create a viewer");
-    return DenseMatrixViewer<value_type>{m_view, 0, 0, m_row, m_col};
+    return ThisViewer{m_view, 0, 0, m_row, m_col};
 }
 }  // namespace muda
