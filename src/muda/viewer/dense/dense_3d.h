@@ -16,7 +16,7 @@ namespace muda
  ****************************************************************************************/
 
 template <typename T>
-class Dense3DBase : public ViewerBase
+class Dense3DBase : public ViewerBase<false> // TODO
 {
   protected:
     T*   m_data;

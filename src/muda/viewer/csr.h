@@ -9,7 +9,7 @@ namespace muda
 /// </summary>
 /// <typeparam name="T"></typeparam>
 template <typename T>
-class CCSRViewer : public ViewerBase
+class CCSRViewer : public ViewerBase<false> // TODO
 {
     MUDA_VIEWER_COMMON_NAME(CCSRViewer);
 

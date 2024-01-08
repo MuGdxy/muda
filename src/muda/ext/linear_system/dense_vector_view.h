@@ -1,71 +1,72 @@
 #pragma once
 #include <muda/ext/linear_system/dense_vector_viewer.h>
 #include <muda/buffer/buffer_view.h>
-
+#include <muda/view/view_base.h>
 namespace muda
 {
-template <typename T>
-class DenseVectorViewBase
+template <bool IsConst, typename T>
+class DenseVectorViewBase : public ViewBase<IsConst>
 {
     static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>,
                   "now only support real number");
 
+  public:
+    using NonConstView = DenseVectorViewBase<false, T>;
+    using ConstView    = DenseVectorViewBase<true, T>;
+    using ThisView     = DenseVectorViewBase<IsConst, T>;
+
+    using CBufferView    = CBufferView<T>;
+    using BufferView     = BufferView<T>;
+    using ThisBufferView = std::conditional_t<IsConst, CBufferView, BufferView>;
+
+    using CViewer    = CDenseVectorViewer<T>;
+    using Viewer     = DenseVectorViewer<T>;
+    using ThisViewer = std::conditional_t<IsConst, CViewer, Viewer>;
+
   protected:
-    BufferView<T> m_view;
-    int           m_inc;
+    ThisBufferView m_view;
+    int            m_inc;
 
   public:
-    DenseVectorViewBase(const BufferView<T>& view, int inc = 1)
+    DenseVectorViewBase(ThisBufferView view, int inc = 1)
         : m_view(view)
         , m_inc(inc)
 
     {
     }
 
-    auto                  size() const { return m_view.size(); }
-    auto                  data() const { return m_view.data(); }
-    CBufferView<T>        buffer_view() const { return m_view; }
-    CDenseVectorViewer<T> cviewer() const;
-    auto                  inc() const { return m_inc; }
+    ConstView as_const() const { return ConstView{m_view, m_inc}; }
+    operator ConstView() const { return as_const(); }
+
+    auto           size() const { return m_view.size(); }
+    auto           data() const { return m_view.data(); }
+    CBufferView    buffer_view() const { return m_view; }
+    ThisBufferView buffer_view() { return m_view; }
+    auto           cviewer() const { return CViewer{m_view, 0, m_view.size()}; }
+    auto           viewer() { return ThisViewer{m_view, 0, m_view.size()}; }
+    auto           inc() const { return m_inc; }
 };
 
-template <typename T>
-class CDenseVectorView : public DenseVectorViewBase<T>
+template <typename Ty>
+using DenseVectorView = DenseVectorViewBase<false, Ty>;
+template <typename Ty>
+using CDenseVectorView = DenseVectorViewBase<true, Ty>;
+}  // namespace muda
+
+namespace muda
 {
-    using Base = DenseVectorViewBase<T>;
-
-  public:
-    CDenseVectorView(const CBufferView<T>& view, int inc = 1)
-        : Base(BufferViewBase<T>{view}, inc)
-    {
-    }
-
-    CDenseVectorView(const Base& base)
-        : Base(base)
-    {
-    }
+template <typename Ty>
+struct read_only_viewer<DenseVectorView<Ty>>
+{
+    using type = CDenseVectorView<Ty>;
 };
 
-template <typename T>
-class DenseVectorView : public DenseVectorViewBase<T>
+template <typename Ty>
+struct read_write_viewer<DenseVectorView<Ty>>
 {
-    using Base = DenseVectorViewBase<T>;
-
-  public:
-    using Base::Base;
-    DenseVectorView(const Base& base)
-        : Base(base)
-    {
-    }
-
-    DenseVectorView(const CDenseVectorView<T>&) = delete;
-
-    DenseVectorViewer<T> viewer();
-
-    using Base::data;
-    auto data() { return m_view.data(); }
-    auto buffer_view() const { return m_view; }
+    using type = DenseVectorView<Ty>;
 };
 }  // namespace muda
+
 
 #include "details/dense_vector_view.inl"

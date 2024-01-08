@@ -9,7 +9,7 @@ namespace muda
 template <typename T, FieldEntryLayout Layout, int M, int N>
 class FieldEntry;
 
-class FieldEntryViewerBase : protected ViewerBase
+class FieldEntryViewerBase : protected ViewerBase<false> // TODO
 {
   public:
     MUDA_GENERIC FieldEntryViewerBase() {}

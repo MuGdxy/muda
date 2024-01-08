@@ -6,7 +6,7 @@
 namespace muda
 {
 template <typename T>
-class CCSEViewer : public ViewerBase
+class CCSEViewer : public ViewerBase<false> // TODO
 {
     MUDA_VIEWER_COMMON_NAME(CCSEViewer);
     const T* m_data;
