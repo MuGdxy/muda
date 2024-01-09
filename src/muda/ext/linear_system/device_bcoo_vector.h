@@ -20,7 +20,7 @@ class DeviceBCOOVector : public DeviceDoubletVector<T, N>
     DeviceBCOOVector& operator=(const DeviceBCOOVector&) = default;
     DeviceBCOOVector& operator=(DeviceBCOOVector&&)      = default;
 
-    auto non_zero_segments() const { this->m_segment_values.size(); }
+    auto non_zero_segments() const { return this->m_segment_values.size(); }
 };
 
 template <typename T>

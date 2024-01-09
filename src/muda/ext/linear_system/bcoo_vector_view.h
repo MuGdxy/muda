@@ -6,9 +6,9 @@
 namespace muda
 {
 template <typename T, int N>
-using BCOOVectorView = DoubleVectorView<T, N>;
+using BCOOVectorView = DoubletVectorView<T, N>;
 template <typename T, int N>
-using CBCOOVectorView = CDoubleVectorView<T, N>;
+using CBCOOVectorView = CDoubletVectorView<T, N>;
 }  // namespace muda
 
 namespace muda

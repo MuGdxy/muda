@@ -25,6 +25,8 @@ class Buffer2DViewBase : public ViewBase<IsConst>
     using ThisViewer = std::conditional_t<IsConst, CViewer, Viewer>;
 
   private:
+    template <typename T>
+    using auto_const_t = typename ViewBase<IsConst>::template auto_const_t<T>;
     friend class BufferLaunch;
     friend class OtherView;
     friend class details::buffer::BufferInfoAccessor<ThisView>;
@@ -143,7 +145,7 @@ class Buffer2DView : public Buffer2DViewBase<false, T>
 
     MUDA_GENERIC operator CBuffer2DView<T>() const MUDA_NOEXCEPT
     {
-        return CBuffer2DView<T>{*this};
+        return CBuffer2DView<T>{this->as_const()};
     }
 
     MUDA_GENERIC Buffer2DView<T> subview(Offset2D offset, Extent2D extent = {}) MUDA_NOEXCEPT

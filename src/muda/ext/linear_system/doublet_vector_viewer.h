@@ -10,10 +10,10 @@ template <bool IsConst, typename T, int N>
 class DoubletVectorViewerBase : public ViewerBase<IsConst>
 {
   public:
-    using SegmentVector = Eigen::Matrix<T, N, 1>;
-    using ConstViewer   = DoubletVectorViewerBase<true, T, N>;
-    using Viewer        = DoubletVectorViewerBase<false, T, N>;
-    using ThisViewer    = DoubletVectorViewerBase<IsConst, T, N>;
+    using SegmentVector  = Eigen::Matrix<T, N, 1>;
+    using ConstViewer    = DoubletVectorViewerBase<true, T, N>;
+    using NonConstViewer = DoubletVectorViewerBase<false, T, N>;
+    using ThisViewer     = DoubletVectorViewerBase<IsConst, T, N>;
 
 
     struct CDoublet
@@ -167,7 +167,8 @@ class DoubletVectorViewer : public DoubletVectorViewerBase<false, T, N>
     MUDA_VIEWER_COMMON_NAME(DoubletVectorViewer);
 
   public:
-    using CDoublet = typename Base::CDoublet;
+    using SegmentVector = typename Base::SegmentVector;
+    using CDoublet      = typename Base::CDoublet;
     using Base::Base;
     MUDA_GENERIC DoubletVectorViewer(const Base& base)
         : Base(base)

@@ -12,13 +12,17 @@ MUDA_GENERIC constexpr bool operator==(const int2& a, const int2& b)
 
 namespace muda::details
 {
+//using T         = float;
+//constexpr int N = 3;
+
 template <typename T, int N>
 void MatrixFormatConverter<T, N>::convert(const DeviceTripletMatrix<T, N>& from,
                                           DeviceBCOOMatrix<T, N>&          to)
 {
     to.reshape(from.block_rows(), from.block_cols());
-    to.m_block_row_indices.resize(from.m_block_row_indices.size());
-    to.m_block_col_indices.resize(from.m_block_col_indices.size());
+    //to.m_block_row_indices.resize(from.m_block_row_indices.size());
+    //to.m_block_col_indices.resize(from.m_block_col_indices.size());
+    to.resize_triplets(from.triplet_count());
     merge_sort_indices_and_blocks(from, to);
     make_unique_indices(from, to);
     make_unique_blocks(from, to);
@@ -115,7 +119,7 @@ void MatrixFormatConverter<T, N>::make_unique_indices(const DeviceTripletMatrix<
     unique_ij_pairs.resize(h_count);
     unique_counts.resize(h_count);
 
-    offsets.resize(unique_counts.size());
+    offsets.resize(unique_counts.size() + 1);  // +1 for the last offset_end
 
     DeviceScan().ExclusiveSum(
         workspace, unique_counts.data(), offsets.data(), unique_counts.size());
@@ -147,12 +151,12 @@ void MatrixFormatConverter<T, N>::make_unique_blocks(const DeviceTripletMatrix<T
     blocks.resize(row_indices.size());
     // first we add the offsets to counts, to get the offset_ends
 
-    ParallelFor(256)
+    Launch()
         .kernel_name("calculate offset_ends")
-        .apply(unique_counts.size(),
-               [offset = offsets.cviewer().name("offset"),
-                counts = unique_counts.viewer().name("counts")] __device__(int i) mutable
-               { counts(i) += offset(i); });
+        .apply([offsets = offsets.viewer().name("offset"),
+                counts  = unique_counts.cviewer().name("counts"),
+                last    = unique_counts.size() - 1] __device__() mutable
+               { offsets(last + 1) = offsets(last) + counts(last); });
 
     auto& begin_offset = offsets;
     auto& end_offset   = unique_counts;  // already contains the offset_ends
@@ -164,7 +168,7 @@ void MatrixFormatConverter<T, N>::make_unique_blocks(const DeviceTripletMatrix<T
         blocks.data(),
         blocks.size(),
         offsets.data(),
-        end_offset.data(),
+        offsets.data() + 1,
         [] __host__ __device__(const BlockMatrix& a, const BlockMatrix& b) -> BlockMatrix
         { return a + b; },
         BlockMatrix::Zero().eval());
@@ -182,18 +186,16 @@ void MatrixFormatConverter<T, N>::convert(const DeviceBCOOMatrix<T, N>& from,
     if(clear_dense_matrix)
         to.fill(0);
 
-    auto& cast = const_cast<DeviceBCOOMatrix<T, N>&>(from);
-
     ParallelFor(256)
         .kernel_name(__FUNCTION__)
         .apply(from.block_values().size(),
-               [blocks = cast.viewer().name("src_sparse_matrix"),
+               [blocks = from.cviewer().name("src_sparse_matrix"),
                 dst = to.viewer().name("dst_dense_matrix")] __device__(int i) mutable
                {
                    auto block                = blocks(i);
                    auto row                  = block.block_row_index * N;
                    auto col                  = block.block_col_index * N;
-                   dst.block<N, N>(row, col) = block.block;
+                   dst.block<N, N>(row, col) = block.block_value;
                });
 }
 
@@ -263,60 +265,70 @@ void MatrixFormatConverter<T, N>::calculate_block_offsets(const DeviceBCOOMatrix
                               col_counts_per_row.size());
 }
 template <typename T, int N>
-void MatrixFormatConverter<T, N>::convert(const DeviceDoubletVector<T, N>& from,
-                                          DeviceDenseVector<T>&            to,
+void MatrixFormatConverter<T, N>::convert(const DeviceBCOOVector<T, N>& from,
+                                          DeviceDenseVector<T>&         to,
                                           bool clear_dense_vector)
 {
     to.resize(N * from.segment_count());
-    merge_sort_indices_and_segments(from, to);
-    make_unique_indices(from, to);
-    make_unique_segments(from, to);
     set_unique_segments_to_dense_vector(from, to, clear_dense_vector);
 }
 
 template <typename T, int N>
+void MatrixFormatConverter<T, N>::convert(const DeviceDoubletVector<T, N>& from,
+                                          DeviceBCOOVector<T, N>&          to)
+{
+    to.reshape(from.segment_count());
+    to.resize_doublet(N * from.doublet_count());
+    merge_sort_indices_and_segments(from, to);
+    make_unique_indices(from, to);
+    make_unique_segments(from, to);
+}
+
+template <typename T, int N>
 void MatrixFormatConverter<T, N>::merge_sort_indices_and_segments(
-    const DeviceDoubletVector<T, N>& from, DeviceDenseVector<T>& to)
+    const DeviceDoubletVector<T, N>& from, DeviceBCOOVector<T, N>& to)
 {
     using namespace muda;
 
-    auto& index = sort_index;  // alias sort_index to index
+    auto& indices = sort_index;  // alias sort_index to index
+
     // copy as temp
-    index         = from.m_segment_indices;
+    indices       = from.m_segment_indices;
     temp_segments = from.m_segment_values;
 
     DeviceMergeSort().SortPairs(workspace,
-                                index.data(),
+                                indices.data(),
                                 temp_segments.data(),
-                                index.size(),
+                                indices.size(),
                                 [] __device__(const int& a, const int& b)
                                 { return a < b; });
 }
 
 template <typename T, int N>
 void MatrixFormatConverter<T, N>::make_unique_indices(const DeviceDoubletVector<T, N>& from,
-                                                      DeviceDenseVector<T>& to)
+                                                      DeviceBCOOVector<T, N>& to)
 {
     using namespace muda;
 
-    auto& index = sort_index;  // alias sort_index to index
+    auto& indices        = sort_index;  // alias sort_index to index
+    auto& unique_indices = to.m_segment_indices;
 
-    unique_indices.resize(index.size());
-    unique_counts.resize(index.size());
+    unique_indices.resize(indices.size());
+    unique_counts.resize(indices.size());
 
     DeviceRunLengthEncode().Encode(workspace,
-                                   index.data(),
+                                   indices.data(),
                                    unique_indices.data(),
                                    unique_counts.data(),
                                    count.data(),
-                                   index.size());
+                                   indices.size());
 
     int h_count = count;
 
     unique_indices.resize(h_count);
     unique_counts.resize(h_count);
 
-    offsets.resize(unique_counts.size());
+    offsets.resize(unique_counts.size() + 1);
 
     DeviceScan().ExclusiveSum(
         workspace, unique_counts.data(), offsets.data(), unique_counts.size());
@@ -324,24 +336,26 @@ void MatrixFormatConverter<T, N>::make_unique_indices(const DeviceDoubletVector<
     // calculate the offset_ends, and set to the unique_counts
 
     auto& begin_offset = offsets;
-    auto& end_offset   = unique_counts;
 
-    ParallelFor(256)
+    Launch()
         .kernel_name("calculate offset_ends")
-        .apply(unique_counts.size(),
-               [offset = offsets.cviewer().name("offset"),
-                counts = unique_counts.viewer().name("counts")] __device__(int i) mutable
-               { counts(i) += offset(i); });
+        .apply([offset = offsets.viewer().name("offset"),
+                count  = unique_counts.cviewer().name("counts"),
+                last   = unique_counts.size() - 1] __device__() mutable
+               { offset(last + 1) = offset(last) + count(last); });
 }
 
 template <typename T, int N>
 void MatrixFormatConverter<T, N>::make_unique_segments(const DeviceDoubletVector<T, N>& from,
-                                                       DeviceDenseVector<T>& to)
+                                                       DeviceBCOOVector<T, N>& to)
 {
     using namespace muda;
 
     auto& begin_offset = offsets;
     auto& end_offset   = unique_counts;
+
+    auto& unique_indices  = to.m_segment_indices;
+    auto& unique_segments = to.m_segment_values;
 
     unique_segments.resize(unique_indices.size());
 
@@ -351,14 +365,15 @@ void MatrixFormatConverter<T, N>::make_unique_segments(const DeviceDoubletVector
         unique_segments.data(),
         unique_segments.size(),
         begin_offset.data(),
-        end_offset.data(),
+        begin_offset.data() + 1,
         [] __host__ __device__(const SegmentVector& a, const SegmentVector& b) -> SegmentVector
         { return a + b; },
         SegmentVector::Zero().eval());
 }
+
 template <typename T, int N>
 void MatrixFormatConverter<T, N>::set_unique_segments_to_dense_vector(
-    const DeviceDoubletVector<T, N>& from, DeviceDenseVector<T>& to, bool clear_dense_vector)
+    const DeviceBCOOVector<T, N>& from, DeviceDenseVector<T>& to, bool clear_dense_vector)
 {
     using namespace muda;
 
@@ -367,51 +382,70 @@ void MatrixFormatConverter<T, N>::set_unique_segments_to_dense_vector(
 
     ParallelFor(256)
         .kernel_name("set unique segments to dense vector")
-        .apply(unique_segments.size(),
-               [unique_segments = unique_segments.viewer().name("unique_segments"),
-                unique_indices = unique_indices.viewer().name("unique_indices"),
+        .apply(from.non_zero_segments(),
+               [unique_segments = from.m_segment_values.cviewer().name("unique_segments"),
+                unique_indices = from.m_segment_indices.cviewer().name("unique_indices"),
                 dst = to.viewer().name("dst_dense_vector")] __device__(int i) mutable
                {
-                   auto index                   = unique_indices(i);
-                   dst.segment<T, N>(index * N) = unique_segments(i);
+                   auto index                = unique_indices(i);
+                   dst.segment<N>(index * N) = unique_segments(i);
                });
 }
 
 template <typename T>
-void bsr2csr(int                         mb,
-             int                         nb,
-             int                         blockDim,
-             cusparseMatDescr_t          descrA,
-             const double*               bsrValA,
-             const int*                  bsrRowPtrA,
-             const int*                  bsrColIndA,
-             int                         nnzb,
-             DeviceCSRMatrix<T>&         to,
-             muda::DeviceBuffer<int>&    row_offsets,
-             muda::DeviceBuffer<int>&    col_indices,
-             muda::DeviceBuffer<double>& values)
+void bsr2csr(cusparseHandle_t         handle,
+             int                      mb,
+             int                      nb,
+             int                      blockDim,
+             cusparseMatDescr_t       descrA,
+             const T*                 bsrValA,
+             const int*               bsrRowPtrA,
+             const int*               bsrColIndA,
+             int                      nnzb,
+             DeviceCSRMatrix<T>&      to,
+             muda::DeviceBuffer<int>& row_offsets,
+             muda::DeviceBuffer<int>& col_indices,
+             muda::DeviceBuffer<T>&   values)
 {
     using namespace muda;
-    auto                handle = LinearSystemContext::current().cusparse();
-    cusparseDirection_t dir    = CUSPARSE_DIRECTION_COLUMN;
-    int                 m      = mb * blockDim;
+    cusparseDirection_t dir = CUSPARSE_DIRECTION_COLUMN;
+    int                 m   = mb * blockDim;
     int                 nnz = nnzb * blockDim * blockDim;  // number of elements
     to.reshape(m, m);
     col_indices.resize(nnz);
     values.resize(nnz);
-    checkCudaErrors(cusparseDbsr2csr(handle,
-                                     dir,
-                                     mb,
-                                     nb,
-                                     descrA,
-                                     bsrValA,
-                                     bsrRowPtrA,
-                                     bsrColIndA,
-                                     blockDim,
-                                     to.legacy_descr(),
-                                     values.data(),
-                                     row_offsets.data(),
-                                     col_indices.data()));
+    if constexpr(std::is_same_v<T, float>)
+    {
+        checkCudaErrors(cusparseSbsr2csr(handle,
+                                         dir,
+                                         mb,
+                                         nb,
+                                         descrA,
+                                         bsrValA,
+                                         bsrRowPtrA,
+                                         bsrColIndA,
+                                         blockDim,
+                                         to.legacy_descr(),
+                                         values.data(),
+                                         row_offsets.data(),
+                                         col_indices.data()));
+    }
+    else if constexpr(std::is_same_v<T, double>)
+    {
+        checkCudaErrors(cusparseDbsr2csr(handle,
+                                         dir,
+                                         mb,
+                                         nb,
+                                         descrA,
+                                         bsrValA,
+                                         bsrRowPtrA,
+                                         bsrColIndA,
+                                         blockDim,
+                                         to.legacy_descr(),
+                                         values.data(),
+                                         row_offsets.data(),
+                                         col_indices.data()));
+    }
 }
 
 
@@ -530,14 +564,15 @@ void MatrixFormatConverter<T, N>::convert(const DeviceBSRMatrix<T, N>& from,
 {
     using namespace muda;
 
-    bsr2csr(from.block_rows(),
+    bsr2csr(cusparse(),
+            from.block_rows(),
             from.block_cols(),
             N,
             from.legacy_descr(),
-            (const double*)from.m_block_values.data(),
+            (const T*)from.m_block_values.data(),
             from.m_block_row_offsets.data(),
             from.m_block_col_indices.data(),
-            from.non_zeros(),
+            from.non_zero_blocks(),
             to,
             to.m_row_offsets,
             to.m_col_indices,

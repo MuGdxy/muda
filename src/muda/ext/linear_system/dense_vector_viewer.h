@@ -2,7 +2,9 @@
 #include <Eigen/Core>
 #include <muda/buffer/buffer_2d_view.h>
 #include <muda/viewer/viewer_base.h>
+#include <muda/viewer/viewer_base_accessor.h>
 #include <cublas_v2.h>
+#include <muda/atomic.h>
 namespace muda
 {
 template <bool IsConst, typename T>
@@ -10,6 +12,7 @@ class DenseVectorViewerBase : public ViewerBase<IsConst>
 {
     static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>,
                   "now only support real number");
+    // MUDA_VIEWER_COMMON_NAME(DenseVectorViewerBase);
 
   public:
     using CBufferView    = CBufferView<T>;
@@ -58,19 +61,15 @@ class DenseVectorViewerBase : public ViewerBase<IsConst>
         return ret;
     }
 
+    template <int N>
+    MUDA_GENERIC auto segment(size_t offset)
+    {
+        return segment(offset, N);
+    }
+
     MUDA_GENERIC auto segment(size_t offset, size_t size) const
     {
         return remove_const(*this).segment(offset, size);
-    }
-
-
-    MUDA_GENERIC Eigen::VectorBlock<CMapVector> as_eigen() const
-    {
-        check_data();
-        return CMapVector{m_view.origin_data(),
-                          (int)origin_size(),
-                          Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>{1, 1}}
-            .segment(m_offset, m_size);
     }
 
     MUDA_GENERIC operator Eigen::VectorBlock<CMapVector>() const
@@ -92,7 +91,6 @@ class DenseVectorViewerBase : public ViewerBase<IsConst>
         return as_eigen();
     }
 
-
     MUDA_GENERIC const T& operator()(size_t i) const
     {
         return *m_view.data(index(i));
@@ -102,13 +100,28 @@ class DenseVectorViewerBase : public ViewerBase<IsConst>
         return *m_view.data(index(i));
     }
 
+    template <int N>
+    MUDA_GENERIC auto segment(size_t offset) const
+    {
+        return remove_const(*this).segment(offset, N);
+    }
+
+    MUDA_GENERIC Eigen::VectorBlock<CMapVector> as_eigen() const
+    {
+        check_data();
+        return CMapVector{m_view.origin_data(),
+                          (int)origin_size(),
+                          Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>{1, 1}}
+            .segment(m_offset, m_size);
+    }
+
     MUDA_GENERIC auto           size() const { return m_size; }
     MUDA_GENERIC auto           offset() const { return m_offset; }
     MUDA_GENERIC auto           origin_size() const { return m_view.size(); }
     MUDA_GENERIC CBufferView    buffer_view() const { return m_view; }
     MUDA_GENERIC ThisBufferView buffer_view() { return m_view; }
 
-  private:
+  protected:
     MUDA_INLINE MUDA_GENERIC void check_size_matching(int N)
     {
         MUDA_KERNEL_ASSERT(m_size == N,
@@ -154,10 +167,100 @@ class DenseVectorViewerBase : public ViewerBase<IsConst>
     }
 };
 
+//template <typename T>
+//using CDenseVectorViewer = DenseVectorViewerBase<true, T>;
+//template <typename T>
+//using DenseVectorViewer = DenseVectorViewerBase<false, T>;
+
 template <typename T>
-using CDenseVectorViewer = DenseVectorViewerBase<true, T>;
+class CDenseVectorViewer : public DenseVectorViewerBase<true, T>
+{
+    MUDA_VIEWER_COMMON_NAME(CDenseVectorViewer);
+
+    using Base       = DenseVectorViewerBase<true, T>;
+    using MapVector  = typename Base::MapVector;
+    using CMapVector = typename Base::CMapVector;
+
+  public:
+    using Base::Base;
+
+    MUDA_GENERIC CDenseVectorViewer(const Base& base)
+        : Base(base)
+    {
+    }
+
+    MUDA_GENERIC CDenseVectorViewer segment(size_t offset, size_t size) const
+    {
+        return CDenseVectorViewer{Base::segment(offset, size)};
+    }
+
+    template <int N>
+    MUDA_GENERIC auto segment(size_t offset) const
+    {
+        return segment(offset, N);
+    }
+};
+
 template <typename T>
-using DenseVectorViewer = DenseVectorViewerBase<false, T>;
+class DenseVectorViewer : public DenseVectorViewerBase<false, T>
+{
+    MUDA_VIEWER_COMMON_NAME(DenseVectorViewer);
+
+    using Base       = DenseVectorViewerBase<false, T>;
+    using MapVector  = typename Base::MapVector;
+    using CMapVector = typename Base::CMapVector;
+
+  public:
+    using Base::Base;
+
+    MUDA_GENERIC DenseVectorViewer(const Base& base)
+        : Base(base)
+    {
+    }
+
+    MUDA_GENERIC DenseVectorViewer segment(size_t offset, size_t size)
+    {
+        return DenseVectorViewer{Base::segment(offset, size)};
+    }
+
+    template <int N>
+    MUDA_GENERIC auto segment(size_t offset)
+    {
+        return segment(offset, N);
+    }
+
+    MUDA_DEVICE T atomic_add(size_t i, T val)
+    {
+        auto ptr = &operator()(i);
+        return muda::atomic_add(ptr, val);
+    }
+
+    template <int N>
+    MUDA_DEVICE Eigen::Vector<T, N> atomic_add(const Eigen::Vector<T, N>& val)
+    {
+        check_size_matching(N);
+        Eigen::Vector<T, N> ret;
+#pragma unroll
+        for(int i = 0; i < N; ++i)
+        {
+            ret(i) = atomic_add(i, val(i));
+        }
+        return ret;
+    }
+
+
+    template <int N>
+    MUDA_GENERIC DenseVectorViewer& operator=(const Eigen::Vector<T, N>& other)
+    {
+        check_size_matching(N);
+#pragma unroll
+        for(int i = 0; i < N; ++i)
+        {
+            operator()(i) = other(i);
+        }
+        return *this;
+    }
+};
 }  // namespace muda
 
 namespace muda

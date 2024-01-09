@@ -1,7 +1,7 @@
 #pragma once
 #include <muda/buffer/device_buffer.h>
 #include <muda/ext/linear_system/triplet_matrix_view.h>
-namespace details
+namespace muda::details
 {
 template <typename T, int N>
 class MatrixFormatConverter;
@@ -13,7 +13,7 @@ template <typename T, int N>
 class DeviceTripletMatrix
 {
   public:
-    template<typename T, int N>
+    template <typename T, int N>
     friend class details::MatrixFormatConverter;
     using BlockMatrix = Eigen::Matrix<T, N, N>;
 
@@ -82,6 +82,8 @@ class DeviceTripletMatrix
     {
         return CTripletMatrixView<T, N>{remove_const(*this).view()};
     }
+
+    auto cview() const { return view(); }
 
     auto viewer() { return view().viewer(); }
 

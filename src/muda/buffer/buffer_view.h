@@ -30,6 +30,9 @@ class BufferViewBase : public ViewBase<IsConst>
     using Viewer     = Dense1D<T>;
     using ThisViewer = std::conditional_t<IsConst, CViewer, Viewer>;
 
+    template <typename T>
+    using auto_const_t = ViewBase<IsConst>::template auto_const_t<T>;
+
   protected:
     auto_const_t<T>* m_data   = nullptr;
     size_t           m_offset = ~0;
@@ -97,7 +100,7 @@ class CBufferView : public BufferViewBase<true, T>
   public:
     using Base::Base;
 
-    MUDA_GENERIC CBufferView(const BufferViewBase<T>& base)
+    MUDA_GENERIC CBufferView(const Base& base)
         : Base(base)
     {
     }
@@ -139,7 +142,7 @@ class BufferView : public BufferViewBase<false, T>
 
     MUDA_GENERIC operator CBufferView<T>() const MUDA_NOEXCEPT
     {
-        return CBufferView<T>{*this};
+        return CBufferView<T>{this->as_const()};
     }
 
     MUDA_GENERIC BufferView<T> subview(size_t offset, size_t size = ~0) MUDA_NOEXCEPT

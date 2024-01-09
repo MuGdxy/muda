@@ -106,52 +106,28 @@ MUDA_GENERIC size_t DenseMatrixViewerBase<IsConst, T>::origin_col() const
     return ret;
 }
 
-
-/**************************************************************************
-*
-*                           CDenseMatrixViewer
-* 
-**************************************************************************/
-
-template <typename T>
-MUDA_GENERIC CDenseMatrixViewer<T> CDenseMatrixViewer<T>::block(size_t row_offset,
-                                                                size_t col_offset,
-                                                                size_t row_size,
-                                                                size_t col_size) const
-{
-    return Base::block(row_offset, col_offset, row_size, col_size);
-}
-
-template <typename T>
-template <size_t M, size_t N>
-MUDA_GENERIC CDenseMatrixViewer<T> CDenseMatrixViewer<T>::block(size_t row_offset,
-                                                                size_t col_offset) const
-{
-    return Base::block<M, N>(row_offset, col_offset);
-}
-
 /**************************************************************************
 * 
 *                           DenseMatrixViewer
 * 
 **************************************************************************/
 
-template <typename T>
-MUDA_GENERIC DenseMatrixViewer<T> DenseMatrixViewer<T>::block(size_t row_offset,
-                                                              size_t col_offset,
-                                                              size_t row_size,
-                                                              size_t col_size) const
-{
-    return Base::block(row_offset, col_offset, row_size, col_size);
-}
-
-template <typename T>
-template <size_t M, size_t N>
-MUDA_GENERIC DenseMatrixViewer<T> DenseMatrixViewer<T>::block(size_t row_offset,
-                                                              size_t col_offset) const
-{
-    return Base::block<M, N>(row_offset, col_offset);
-}
+//template <typename T>
+//MUDA_GENERIC DenseMatrixViewer<T> DenseMatrixViewer<T>::block(size_t row_offset,
+//                                                              size_t col_offset,
+//                                                              size_t row_size,
+//                                                              size_t col_size) const
+//{
+//    return Base::block(row_offset, col_offset, row_size, col_size);
+//}
+//
+//template <typename T>
+//template <size_t M, size_t N>
+//MUDA_GENERIC DenseMatrixViewer<T> DenseMatrixViewer<T>::block(size_t row_offset,
+//                                                              size_t col_offset) const
+//{
+//    return Base::block<M, N>(row_offset, col_offset);
+//}
 
 template <typename T>
 template <int M, int N>

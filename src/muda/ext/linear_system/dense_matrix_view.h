@@ -90,6 +90,7 @@ class CDenseMatrixView : public DenseMatrixViewBase<true, Ty>
     using Base = DenseMatrixViewBase<true, Ty>;
 
   public:
+    using Base::Base;
     CDenseMatrixView(const Base& base)
         : Base(base)
     {
@@ -104,6 +105,8 @@ class DenseMatrixView : public DenseMatrixViewBase<false, Ty>
     using Base = DenseMatrixViewBase<false, Ty>;
 
   public:
+    using Base::Base;
+
     DenseMatrixView(const Base& base)
         : Base(base)
     {

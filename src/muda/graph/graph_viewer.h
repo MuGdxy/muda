@@ -4,7 +4,7 @@
 #include <muda/graph/graph_instantiate_flag.h>
 namespace muda
 {
-class GraphViewer : public ViewerBase
+class GraphViewer : public ViewerBase<true>
 {
     MUDA_VIEWER_COMMON_NAME(GraphViewer);
 

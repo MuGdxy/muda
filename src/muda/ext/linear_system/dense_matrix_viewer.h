@@ -152,16 +152,13 @@ class DenseMatrixViewer : public DenseMatrixViewerBase<false, T>
 
     MUDA_GENERIC DenseMatrixViewer(const CDenseMatrixViewer<T>&) = delete;
 
-    MUDA_GENERIC DenseMatrixViewer block(size_t row_offset,
-                                         size_t col_offset,
-                                         size_t row_size,
-                                         size_t col_size) const
+    MUDA_GENERIC DenseMatrixViewer block(size_t row_offset, size_t col_offset, size_t row_size, size_t col_size)
     {
         return Base::block(row_offset, col_offset, row_size, col_size);
     }
 
     template <size_t M, size_t N>
-    MUDA_GENERIC DenseMatrixViewer block(size_t row_offset, size_t col_offset) const
+    MUDA_GENERIC DenseMatrixViewer block(size_t row_offset, size_t col_offset)
     {
         return Base::template block<M, N>(row_offset, col_offset);
     }
@@ -173,25 +170,26 @@ class DenseMatrixViewer : public DenseMatrixViewerBase<false, T>
 
     template <int M, int N>
     MUDA_GENERIC DenseMatrixViewer& operator=(const Eigen::Matrix<T, M, N>& other);
+
   private:
     MUDA_GENERIC void check_size_matching(int M, int N) const;
 };
 
 }  // namespace muda
 
-namespace muda
-{
-template <typename T>
-struct read_only_viewer<DenseMatrixViewer<T>>
-{
-    using type = CDenseMatrixViewer<T>;
-};
-
-template <typename T>
-struct read_write_viewer<CDenseMatrixViewer<T>>
-{
-    using type = DenseMatrixViewer<T>;
-};
-}  // namespace muda
+//namespace muda
+//{
+//template <typename T>
+//struct read_only_viewer<DenseMatrixViewer<T>>
+//{
+//    using type = CDenseMatrixViewer<T>;
+//};
+//
+//template <typename T>
+//struct read_write_viewer<CDenseMatrixViewer<T>>
+//{
+//    using type = DenseMatrixViewer<T>;
+//};
+//}  // namespace muda
 
 #include "details/dense_matrix_viewer.inl"

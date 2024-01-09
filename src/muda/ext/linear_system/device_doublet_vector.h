@@ -52,7 +52,7 @@ class DeviceDoubletVector
     auto segment_indices() { return m_segment_indices.view(); }
     auto segment_indices() const { return m_segment_indices.view(); }
 
-    auto doublet_size() const { return m_segment_values.size(); }
+    auto doublet_count() const { return m_segment_values.size(); }
 
     auto view()
     {

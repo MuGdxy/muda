@@ -171,6 +171,9 @@ class COOMatrixViewBase : public ViewBase<IsConst>
     auto tripet_index_offset() const { return m_triplet_index_offset; }
     auto total_triplet_count() const { return m_total_triplet_count; }
     auto is_trans() const { return m_trans; }
+
+    auto legacy_descr() const { return m_legacy_descr; }
+    auto descr() const { return m_descr; }
 };
 
 template <typename Ty>

@@ -2,14 +2,14 @@
 #include <muda/ext/linear_system/type_mapper/data_type_mapper.h>
 namespace muda
 {
-template <typename T, int N>
-DeviceBSRMatrix<T, N>::~DeviceBSRMatrix()
+template <typename Ty, int N>
+DeviceBSRMatrix<Ty, N>::~DeviceBSRMatrix()
 {
     destroy_all_descr();
 }
 
-template <typename T, int N>
-DeviceBSRMatrix<T, N>::DeviceBSRMatrix(const DeviceBSRMatrix& other)
+template <typename Ty, int N>
+DeviceBSRMatrix<Ty, N>::DeviceBSRMatrix(const DeviceBSRMatrix& other)
     : m_row(other.m_row)
     , m_col(other.m_col)
     , m_block_row_offsets(other.m_block_row_offsets)
@@ -18,8 +18,8 @@ DeviceBSRMatrix<T, N>::DeviceBSRMatrix(const DeviceBSRMatrix& other)
 {
 }
 
-template <typename T, int N>
-DeviceBSRMatrix<T, N>::DeviceBSRMatrix(DeviceBSRMatrix&& other)
+template <typename Ty, int N>
+DeviceBSRMatrix<Ty, N>::DeviceBSRMatrix(DeviceBSRMatrix&& other)
     : m_row(other.m_row)
     , m_col(other.m_col)
     , m_block_row_offsets(std::move(other.m_block_row_offsets))
@@ -33,8 +33,8 @@ DeviceBSRMatrix<T, N>::DeviceBSRMatrix(DeviceBSRMatrix&& other)
     other.m_descr        = nullptr;
 }
 
-template <typename T, int N>
-DeviceBSRMatrix<T, N>& DeviceBSRMatrix<T, N>::operator=(const DeviceBSRMatrix& other)
+template <typename Ty, int N>
+DeviceBSRMatrix<Ty, N>& DeviceBSRMatrix<Ty, N>::operator=(const DeviceBSRMatrix& other)
 {
     if(this != &other)
     {
@@ -52,8 +52,8 @@ DeviceBSRMatrix<T, N>& DeviceBSRMatrix<T, N>::operator=(const DeviceBSRMatrix& o
     return *this;
 }
 
-template <typename T, int N>
-DeviceBSRMatrix<T, N>& DeviceBSRMatrix<T, N>::operator=(DeviceBSRMatrix&& other)
+template <typename Ty, int N>
+DeviceBSRMatrix<Ty, N>& DeviceBSRMatrix<Ty, N>::operator=(DeviceBSRMatrix&& other)
 {
     if(this != &other)
     {
@@ -76,16 +76,16 @@ DeviceBSRMatrix<T, N>& DeviceBSRMatrix<T, N>::operator=(DeviceBSRMatrix&& other)
     return *this;
 }
 
-template <typename T, int N>
-void DeviceBSRMatrix<T, N>::reshape(int row, int col)
+template <typename Ty, int N>
+void DeviceBSRMatrix<Ty, N>::reshape(int row, int col)
 {
     m_row = row;
     m_block_row_offsets.resize(row + 1);
     m_col   = col;
     m_descr = nullptr;
 }
-template <typename T, int N>
-cusparseMatDescr_t DeviceBSRMatrix<T, N>::legacy_descr() const
+template <typename Ty, int N>
+cusparseMatDescr_t DeviceBSRMatrix<Ty, N>::legacy_descr() const
 {
     if(m_legacy_descr == nullptr)
     {
@@ -109,8 +109,8 @@ void DeviceBSRMatrix<Ty, N>::destroy_all_descr() const
     }
 }
 
-template <typename T, int N>
-cusparseSpMatDescr_t DeviceBSRMatrix<T, N>::descr() const
+template <typename Ty, int N>
+cusparseSpMatDescr_t DeviceBSRMatrix<Ty, N>::descr() const
 {
     if(m_descr == nullptr)
     {
@@ -128,7 +128,7 @@ cusparseSpMatDescr_t DeviceBSRMatrix<T, N>::descr() const
             cusparse_index_type<decltype(m_block_row_offsets)::value_type>(),
             cusparse_index_type<decltype(m_block_col_indices)::value_type>(),
             CUSPARSE_INDEX_BASE_ZERO,
-            cuda_data_type<T>(),
+            cuda_data_type<Ty>(),
             cusparseOrder_t::CUSPARSE_ORDER_COL));
     }
     return m_descr;

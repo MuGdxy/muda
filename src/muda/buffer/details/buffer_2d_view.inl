@@ -10,7 +10,7 @@ MUDA_GENERIC auto Buffer2DViewBase<IsConst, T>::data(size_t x,
     x += m_offset.offset_in_height();
     y += m_offset.offset_in_width();
 
-    auto height_begin = reinterpret_cast<std::byte*>(m_data) + m_pitch_bytes * x;
+    auto height_begin = reinterpret_cast<std::byte*>(remove_const(m_data)) + m_pitch_bytes * x;
     return reinterpret_cast<auto_const_t<T>*>(height_begin) + y;
 }
 template <bool IsConst, typename T>
@@ -56,7 +56,10 @@ MUDA_GENERIC auto Buffer2DViewBase<IsConst, T>::viewer() MUDA_NOEXCEPT->ThisView
 template <bool IsConst, typename T>
 MUDA_GENERIC cudaPitchedPtr Buffer2DViewBase<IsConst, T>::cuda_pitched_ptr() const MUDA_NOEXCEPT
 {
-    return make_cudaPitchedPtr(m_data, m_pitch_bytes, m_origin_width * sizeof(T), m_origin_height);
+    return make_cudaPitchedPtr(remove_const(m_data),
+                               remove_const(m_pitch_bytes),
+                               m_origin_width * sizeof(T),
+                               m_origin_height);
 }
 
 template <bool IsConst, typename T>

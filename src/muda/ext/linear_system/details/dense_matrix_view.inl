@@ -7,7 +7,7 @@ MUDA_GENERIC auto DenseMatrixViewBase<IsConst, Ty>::T() MUDA_NOEXCEPT->ThisView
 }
 
 template <bool IsConst, typename Ty>
-auto DenseMatrixViewBase<IsConst, Ty>::viewer() -> ThisViewer
+auto DenseMatrixViewBase<IsConst, Ty>::viewer() MUDA_NOEXCEPT->ThisViewer
 {
     MUDA_ASSERT(!m_trans,
                 "DenseMatrixViewer doesn't support transpose, "

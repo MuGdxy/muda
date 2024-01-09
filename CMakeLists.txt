@@ -62,65 +62,9 @@ endif()
 
 
 if(MUDA_BUILD_EXAMPLE)
-  find_package(Eigen3 REQUIRED)
-
-  if(Eigen3_FOUND)
-    message(STATUS "Eigen3 found (include: ${EIGEN3_INCLUDE_DIR}, version: ${EIGEN3_VERSION_STRING})")
-  else()
-    message(FATAL_ERROR "Eigen3 not found")
-  endif()
-
-  # find_package(fmt REQUIRED)
-  file(GLOB_RECURSE MUDA_EXAMPLE_SOURCE_FILES
-    "${PROJECT_SOURCE_DIR}/example/*.cu"
-    "${PROJECT_SOURCE_DIR}/example/*.cpp"
-    "${PROJECT_SOURCE_DIR}/example/*.h")
-
-  add_executable(muda_example ${MUDA_EXAMPLE_SOURCE_FILES})
-  set_target_properties(muda_example PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-  # target_link_libraries(muda_example PRIVATE fmt::fmt-header-only)
-  target_include_directories(muda_example PRIVATE
-    "${PROJECT_SOURCE_DIR}/example"
-    "${PROJECT_SOURCE_DIR}/external")
-  target_link_libraries(muda_example PRIVATE muda Eigen3::Eigen)
-  source_group(TREE "${PROJECT_SOURCE_DIR}/example" PREFIX "example" FILES ${MUDA_EXAMPLE_SOURCE_FILES})
-  source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
+  add_subdirectory("example")
 endif()
 
 if(MUDA_BUILD_TEST)
-  find_package(Eigen3 REQUIRED)
-  file (GLOB_RECURSE MUDA_UNIT_TEST_CU_SOURCE_FILES
-    "${PROJECT_SOURCE_DIR}/test/unit_test/*.cu"
-    "${PROJECT_SOURCE_DIR}/test/unit_test/*.h")
-  file(GLOB_RECURSE MUDA_UNIT_TEST_SOURCE_FILES
-    "${PROJECT_SOURCE_DIR}/test/unit_test/*.cpp"
-    ${MUDA_UNIT_TEST_CU_SOURCE_FILES})
-  add_executable(muda_unit_test ${MUDA_UNIT_TEST_SOURCE_FILES})
-  set_target_properties(muda_unit_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-  target_include_directories(muda_unit_test PRIVATE
-    "${PROJECT_SOURCE_DIR}/test"
-    "${PROJECT_SOURCE_DIR}/external")
-  target_link_libraries(muda_unit_test PRIVATE muda cusparse cublas cusolver Eigen3::Eigen)
-  target_compile_definitions(muda_unit_test PRIVATE "-DMUDA_TEST_DATA_DIR=R\"(${PROJECT_SOURCE_DIR}/test/data)\"")
-  source_group(TREE "${PROJECT_SOURCE_DIR}/test" PREFIX "test" FILES ${MUDA_UNIT_TEST_SOURCE_FILES})
-  source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
-
-
-
-  find_package(Eigen3 REQUIRED)
-  file (GLOB_RECURSE MUDA_EIGEN_TEST_CU_SOURCE_FILES
-    "${PROJECT_SOURCE_DIR}/test/eigen_test/*.cu"
-    "${PROJECT_SOURCE_DIR}/test/eigen_test/*.h")
-  file(GLOB_RECURSE MUDA_EIGEN_TEST_SOURCE_FILES
-    "${PROJECT_SOURCE_DIR}/test/eigen_test/*.cpp"
-    ${MUDA_EIGEN_TEST_CU_SOURCE_FILES})
-  add_executable(muda_eigen_test ${MUDA_EIGEN_TEST_SOURCE_FILES})
-  set_target_properties(muda_eigen_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-  target_include_directories(muda_eigen_test PRIVATE
-    "${PROJECT_SOURCE_DIR}/test"
-    "${PROJECT_SOURCE_DIR}/external")
-  target_link_libraries(muda_eigen_test PRIVATE muda Eigen3::Eigen)
-  source_group(TREE "${PROJECT_SOURCE_DIR}/test" PREFIX "test" FILES ${MUDA_EIGEN_TEST_SOURCE_FILES})
-  source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
+  add_subdirectory("test")
 endif()

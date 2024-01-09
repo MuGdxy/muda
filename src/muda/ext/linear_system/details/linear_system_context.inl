@@ -1,52 +1,24 @@
 #include <muda/check/check_cublas.h>
 #include <muda/check/check_cusolver.h>
 #include <muda/check/check_cusparse.h>
+
 namespace muda
 {
 MUDA_INLINE LinearSystemContext::LinearSystemContext(const LinearSystemContextCreateInfo& info)
-    : m_stream(info.stream)
-    , m_create_info(info)
+    : m_create_info(info)
+    , m_handles(info.stream)
+    , m_converter(m_handles)
 {
-    checkCudaErrors(cusparseCreate(&m_cusparse));
-    checkCudaErrors(cublasCreate(&m_cublas));
-    checkCudaErrors(cusolverDnCreate(&m_cusolver_dn));
-    checkCudaErrors(cusparseSetStream(m_cusparse, m_stream));
-    checkCudaErrors(cublasSetStream(m_cublas, m_stream));
-    checkCudaErrors(cusolverDnSetStream(m_cusolver_dn, m_stream));
-    checkCudaErrors(cusolverSpCreate(&m_cusolver_sp));
-    checkCudaErrors(cusolverSpSetStream(m_cusolver_sp, m_stream));
-
-    checkCudaErrors(cusparseSetPointerMode(m_cusparse, CUSPARSE_POINTER_MODE_HOST));
-    checkCudaErrors(cublasSetPointerMode(m_cublas, CUBLAS_POINTER_MODE_HOST));
-    m_pointer_mode_device = false;
-
     m_buffers.emplace_back(info.buffer_byte_size_base);
 }
 
-MUDA_INLINE LinearSystemContext::~LinearSystemContext()
-{
-    if(m_cusparse)
-        checkCudaErrors(cusparseDestroy(m_cusparse));
-    if(m_cublas)
-        checkCudaErrors(cublasDestroy(m_cublas));
-    if(m_cusolver_dn)
-        checkCudaErrors(cusolverDnDestroy(m_cusolver_dn));
-    if(m_cusolver_sp)
-        checkCudaErrors(cusolverSpDestroy(m_cusolver_sp));
-}
+MUDA_INLINE LinearSystemContext::~LinearSystemContext() {}
 
-MUDA_INLINE void LinearSystemContext::stream(cudaStream_t stream)
-{
-    m_stream = stream;
-    checkCudaErrors(cusparseSetStream(m_cusparse, m_stream));
-    checkCudaErrors(cublasSetStream(m_cublas, m_stream));
-    checkCudaErrors(cusolverDnSetStream(m_cusolver_dn, m_stream));
-    checkCudaErrors(cusolverSpSetStream(m_cusolver_sp, m_stream));
-}
+MUDA_INLINE void LinearSystemContext::stream(cudaStream_t stream) {}
 
 MUDA_INLINE void LinearSystemContext::shrink_temp_buffers()
 {
-    checkCudaErrors(cudaStreamSynchronize(m_stream));
+    checkCudaErrors(cudaStreamSynchronize(m_handles.stream()));
     // get the largest buffer
     auto first = m_buffers.begin();
     auto last  = std::prev(m_buffers.end());
@@ -57,17 +29,11 @@ MUDA_INLINE void LinearSystemContext::shrink_temp_buffers()
 
 MUDA_INLINE void LinearSystemContext::set_pointer_mode_device()
 {
-    if(m_pointer_mode_device)
-        return;
-    checkCudaErrors(cusparseSetPointerMode(m_cusparse, CUSPARSE_POINTER_MODE_DEVICE));
-    checkCudaErrors(cublasSetPointerMode(m_cublas, CUBLAS_POINTER_MODE_DEVICE));
+    m_handles.set_pointer_mode_device();
 }
 MUDA_INLINE void LinearSystemContext::set_pointer_mode_host()
 {
-    if(!m_pointer_mode_device)
-        return;
-    checkCudaErrors(cusparseSetPointerMode(m_cusparse, CUSPARSE_POINTER_MODE_HOST));
-    checkCudaErrors(cublasSetPointerMode(m_cublas, CUBLAS_POINTER_MODE_HOST));
+    m_handles.set_pointer_mode_host();
 }
 MUDA_INLINE void LinearSystemContext::add_sync_callback(std::function<void()>&& callback)
 {
@@ -132,7 +98,7 @@ std::vector<T*> LinearSystemContext::temp_host_buffers(size_t size_in_buffer, si
 
 MUDA_INLINE void LinearSystemContext::sync()
 {
-    on(m_stream).wait();
+    on(stream()).wait();
     // wait and reduce temp buffers
     if(m_buffers.size() > 1)
         shrink_temp_buffers();
@@ -141,5 +107,4 @@ MUDA_INLINE void LinearSystemContext::sync()
         cb();
     m_sync_callbacks.clear();
 }
-
 }  // namespace muda

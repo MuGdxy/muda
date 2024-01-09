@@ -87,8 +87,8 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
                                  m_row_indices.data(),
                                  m_col_indices.data(),
                                  m_values.data(),
-                                 legacy_descr(),
                                  descr(),
+                                 legacy_descr(),
                                  false};
     }
 
@@ -102,10 +102,12 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
                                   m_row_indices.data(),
                                   m_col_indices.data(),
                                   m_values.data(),
-                                  legacy_descr(),
                                   descr(),
+                                  legacy_descr(),
                                   false};
     }
+
+    auto cview() const { return view(); }
 
     auto viewer() { return view().viewer(); }
 

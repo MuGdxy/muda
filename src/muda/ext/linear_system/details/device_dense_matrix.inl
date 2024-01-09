@@ -117,13 +117,13 @@ CDenseMatrixView<Ty> DeviceDenseMatrix<Ty>::T() const
 template <typename Ty>
 DenseMatrixView<Ty> DeviceDenseMatrix<Ty>::view()
 {
-    return DenseMatrixView{m_data, m_row, m_col, false, m_sym};
+    return DenseMatrixView<Ty>{m_data.view(), m_row, m_col, false, m_sym};
 }
 
 template <typename Ty>
 CDenseMatrixView<Ty> DeviceDenseMatrix<Ty>::view() const
 {
-    return CDenseMatrixView<Ty>{m_data, m_row, m_col, false, m_sym};
+    return CDenseMatrixView<Ty>{m_data.view(), m_row, m_col, false, m_sym};
 }
 
 template <typename Ty>

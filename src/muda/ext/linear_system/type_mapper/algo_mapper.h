@@ -6,6 +6,7 @@ namespace muda
 {
 class LinearSystemAlgorithm
 {
+  public:
     // convert for compatibility
     constexpr static cusparseSpMVAlg_t SPMV_ALG_DEFAULT = (cusparseSpMVAlg_t)0;
 };

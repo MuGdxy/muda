@@ -76,7 +76,7 @@ MUDA_INLINE MUDA_HOST void kernel_copy_construct(int              grid_dim,
     {
         // trivially copy constructible, use cudaMemcpy
         cudaMemcpy3DParms parms = {0};
-        parms.srcPtr = BufferInfoAccessor<Buffer2DViewBase<T>>::cuda_pitched_ptr(src);
+        parms.srcPtr = src.cuda_pitched_ptr();
         parms.srcPos = src.offset().template cuda_pos<T>();
         parms.dstPtr = dst.cuda_pitched_ptr();
         parms.extent = dst.extent().template cuda_extent<T>();
@@ -116,7 +116,7 @@ MUDA_INLINE MUDA_HOST void kernel_copy_construct(int              grid_dim,
     {
         // trivially copy constructible, use cudaMemcpy
         cudaMemcpy3DParms parms = {0};
-        parms.srcPtr = BufferInfoAccessor<Buffer3DViewBase<T>>::cuda_pitched_ptr(src);
+        parms.srcPtr = src.cuda_pitched_ptr();
         parms.srcPos = src.offset().template cuda_pos<T>();
         parms.dstPtr = dst.cuda_pitched_ptr();
         parms.extent = dst.extent().template cuda_extent<T>();

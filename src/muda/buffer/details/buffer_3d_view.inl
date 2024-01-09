@@ -10,7 +10,8 @@ MUDA_GENERIC auto Buffer3DViewBase<IsConst, T>::data(size_t x, size_t y, size_t 
     x += m_offset.offset_in_depth();
     y += m_offset.offset_in_height();
     z += m_offset.offset_in_width();
-    auto depth_begin = reinterpret_cast<std::byte*>(m_data) + m_pitch_bytes_area * x;
+    auto depth_begin =
+        reinterpret_cast<std::byte*>(remove_const(m_data)) + m_pitch_bytes_area * x;
     auto height_begin = depth_begin + m_pitch_bytes * y;
     return reinterpret_cast<T*>(height_begin) + z;
 }

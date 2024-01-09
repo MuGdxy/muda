@@ -104,7 +104,10 @@ class Buffer3DViewBase : public ViewBase<IsConst>
     MUDA_GENERIC CViewer        cviewer() const MUDA_NOEXCEPT;
     MUDA_GENERIC cudaPitchedPtr cuda_pitched_ptr() const MUDA_NOEXCEPT
     {
-        return make_cudaPitchedPtr(m_data, m_pitch_bytes, m_origin_width * sizeof(T), m_origin_height);
+        return make_cudaPitchedPtr(remove_const(m_data),
+                                   remove_const(m_pitch_bytes),
+                                   m_origin_width * sizeof(T),
+                                   m_origin_height);
     }
 };
 
@@ -146,7 +149,7 @@ class Buffer3DView : public Buffer3DViewBase<false, T>
 
     MUDA_GENERIC operator CBuffer3DView<T>() const MUDA_NOEXCEPT
     {
-        return CBuffer3DView<T>{*this};
+        return CBuffer3DView<T>{this->as_const()};
     }
 
     MUDA_HOST void fill(const T& v);

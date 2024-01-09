@@ -82,6 +82,8 @@ class DeviceCSRMatrix
                                   false};
     }
 
+    auto cview() const { return view(); }
+
     auto T() const { return view().T(); }
     auto T() { return view().T(); }
     operator CSRMatrixView<Ty>() { return view(); }
