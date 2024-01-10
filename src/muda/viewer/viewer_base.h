@@ -17,8 +17,20 @@ namespace details
 {
     class ViewerBaseAccessor;
 }
+template <bool IsConst = false>
 class ViewerBase
 {
+  public:
+    constexpr static bool IsConst    = IsConst;
+    constexpr static bool IsNonConst = !IsConst;
+
+  protected:
+    template <typename T>
+    using auto_const_t = std::conditional_t<IsConst, const T, T>;
+    template <typename T>
+    using non_const_enable_t = std::enable_if_t<IsNonConst, T>;
+
+  private:
     friend class details::ViewerBaseAccessor;
 #if MUDA_CHECK_ON
     details::StringPointer m_viewer_name;
@@ -38,7 +50,7 @@ class ViewerBase
     {
 #if MUDA_CHECK_ON
         auto n = m_viewer_name.auto_select();
-        if(n)
+        if(n && *n != '\0')
             return n;
 #endif
         return "~";
@@ -48,7 +60,7 @@ class ViewerBase
     {
 #if MUDA_CHECK_ON
         auto n = m_kernel_name.auto_select();
-        if(n)
+        if(n && n != '\0')
             return n;
 #endif
         return "~";
@@ -76,13 +88,13 @@ class ViewerBase
                                                                                \
     MUDA_INLINE MUDA_HOST this_type& name(const char* n) noexcept              \
     {                                                                          \
-        ViewerBase::name(n);                                                   \
+        ViewerBase<IsConst>::name(n);                                          \
         return *this;                                                          \
     }                                                                          \
                                                                                \
     MUDA_INLINE MUDA_GENERIC const char* name() const noexcept                 \
     {                                                                          \
-        return ViewerBase::name();                                             \
+        return ViewerBase<IsConst>::name();                                    \
     }                                                                          \
                                                                                \
   private:

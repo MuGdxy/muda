@@ -36,6 +36,6 @@ void LinearSystemContext::norm(CDenseVectorView<T> x, T* result)
     details::linear_system::norm_common_check(x);
     auto type = cuda_data_type<T>();
     checkCudaErrors(cublasNrm2Ex(
-        cublas(), x.size() / x.inc(), x.data(), type, x.inc(), &result, type, type));
+        cublas(), x.size() / x.inc(), x.data(), type, x.inc(), result, type, type));
 }
 }  // namespace muda

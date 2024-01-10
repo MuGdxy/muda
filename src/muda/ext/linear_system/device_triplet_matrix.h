@@ -1,7 +1,7 @@
 #pragma once
 #include <muda/buffer/device_buffer.h>
 #include <muda/ext/linear_system/triplet_matrix_view.h>
-namespace details
+namespace muda::details
 {
 template <typename T, int N>
 class MatrixFormatConverter;
@@ -12,9 +12,9 @@ namespace muda
 template <typename T, int N>
 class DeviceTripletMatrix
 {
-    friend class details::MatrixFormatConverter<T, N>;
-
   public:
+    template <typename T, int N>
+    friend class details::MatrixFormatConverter;
     using BlockMatrix = Eigen::Matrix<T, N, N>;
 
   protected:
@@ -46,13 +46,6 @@ class DeviceTripletMatrix
         m_block_col_indices.resize(nonzero_count);
     }
 
-    void clear()
-    {
-        m_block_values.clear();
-        m_block_row_indices.clear();
-        m_block_col_indices.clear();
-    }
-
     static constexpr int block_dim() { return N; }
 
     auto block_values() { return m_block_values.view(); }
@@ -66,18 +59,6 @@ class DeviceTripletMatrix
     auto block_cols() const { return m_block_cols; }
     auto triplet_count() const { return m_block_values.size(); }
 
-    auto view() const
-    {
-        return CTripletMatrixView<T, N>{m_block_rows,
-                                        m_block_cols,
-                                        0,
-                                        (int)m_block_values.size(),
-                                        (int)m_block_values.size(),
-                                        m_block_row_indices.data(),
-                                        m_block_col_indices.data(),
-                                        m_block_values.data()};
-    }
-
     auto view()
     {
         return TripletMatrixView<T, N>{m_block_rows,
@@ -90,18 +71,36 @@ class DeviceTripletMatrix
                                        m_block_values.data()};
     }
 
+    auto view() const
+    {
+        return CTripletMatrixView<T, N>{remove_const(*this).view()};
+    }
+
+    auto cview() const { return view(); }
+
     auto viewer() { return view().viewer(); }
 
     auto cviewer() const { return view().cviewer(); }
 
     operator TripletMatrixView<T, N>() { return view(); }
     operator CTripletMatrixView<T, N>() const { return view(); }
+
+    void clear()
+    {
+        m_block_rows = 0;
+        m_block_cols = 0;
+        m_block_values.clear();
+        m_block_row_indices.clear();
+        m_block_col_indices.clear();
+    }
 };
 
 template <typename T>
 class DeviceTripletMatrix<T, 1>
 {
-    friend class details::MatrixFormatConverter<T, 1>;
+  public:
+    template <typename T, int N>
+    friend class details::MatrixFormatConverter;
 
   protected:
     DeviceBuffer<T>   m_values;
@@ -130,13 +129,6 @@ class DeviceTripletMatrix<T, 1>
         m_values.resize(nonzero_count);
         m_row_indices.resize(nonzero_count);
         m_col_indices.resize(nonzero_count);
-    }
-
-    void clear()
-    {
-        m_values.clear();
-        m_row_indices.clear();
-        m_col_indices.clear();
     }
 
     static constexpr int block_size() { return 1; }
@@ -181,6 +173,15 @@ class DeviceTripletMatrix<T, 1>
 
     operator TripletMatrixView<T, 1>() { return view(); }
     operator CTripletMatrixView<T, 1>() const { return view(); }
+
+    void clear()
+    {
+        m_rows = 0;
+        m_cols = 0;
+        m_values.clear();
+        m_row_indices.clear();
+        m_col_indices.clear();
+    }
 };
 }  // namespace muda
 #include "details/device_triplet_matrix.inl"

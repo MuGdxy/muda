@@ -1,5 +1,6 @@
 #pragma once
 #include <type_traits>
+#include <muda/muda_def.h>
 
 namespace muda
 {
@@ -47,13 +48,13 @@ constexpr bool is_uniform_viewer_v =
 #pragma once
 
 template <typename T>
-inline T* remove_const(const T* ptr)
+MUDA_GENERIC MUDA_INLINE T* remove_const(const T* ptr) noexcept
 {
     return const_cast<T*>(ptr);
 }
 
 template <typename T>
-inline T& remove_const(const T& ref)
+MUDA_GENERIC MUDA_INLINE T& remove_const(const T& ref) noexcept
 {
     return const_cast<T&>(ref);
 }

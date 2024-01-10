@@ -26,7 +26,7 @@ void LinearSystemContext::dot(CDenseVectorView<T> x, CDenseVectorView<T> y, T* r
     auto size = x.size() / x.inc();
 
     checkCudaErrors(cublasDotEx(
-        cublas(), size, x.data(), type, x.inc(), y.data(), type, y.inc(), &result, type, type));
+        cublas(), size, x.data(), type, x.inc(), y.data(), type, y.inc(), result, type, type));
 }
 
 template <typename T>

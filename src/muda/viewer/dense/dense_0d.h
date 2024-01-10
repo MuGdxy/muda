@@ -4,7 +4,7 @@
 namespace muda
 {
 template <typename T>
-class DenseBase : public ViewerBase
+class DenseBase : public ViewerBase<false> // TODO
 {
   protected:
     T* m_data;

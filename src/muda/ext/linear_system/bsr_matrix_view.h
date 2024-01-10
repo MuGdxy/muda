@@ -117,7 +117,7 @@ struct read_only_viewer<BSRMatrixView<Ty, N>>
 };
 
 template <typename Ty, int N>
-struct read_write_viewer<BSRMatrixView<Ty, N>>
+struct read_write_viewer<CBSRMatrixView<Ty, N>>
 {
     using type = BSRMatrixView<Ty, N>;
 };

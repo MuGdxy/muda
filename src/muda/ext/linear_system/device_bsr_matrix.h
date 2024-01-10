@@ -69,8 +69,8 @@ class DeviceBSRMatrix
                                     m_block_col_indices.data(),
                                     m_block_values.data(),
                                     (int)m_block_values.size(),
-                                    m_descr,
-                                    m_legacy_descr,
+                                    descr(),
+                                    legacy_descr(),
                                     false};
     }
 
@@ -82,13 +82,17 @@ class DeviceBSRMatrix
                                      m_block_col_indices.data(),
                                      m_block_values.data(),
                                      (int)m_block_values.size(),
-                                     m_descr,
-                                     m_legacy_descr,
+                                     descr(),
+                                     legacy_descr(),
                                      false};
     }
 
+    auto cview() const { return view(); }
+
     auto T() const { return view().T(); }
     auto T() { return view().T(); }
+
+    void clear();
 
   private:
     void destroy_all_descr() const;

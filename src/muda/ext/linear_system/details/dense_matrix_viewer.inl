@@ -1,10 +1,13 @@
 #include <muda/viewer/viewer_base_accessor.h>
 #include <muda/atomic.h>
+
 namespace muda
 {
-template <typename T>
-MUDA_GENERIC DenseMatrixViewerBase<T> DenseMatrixViewerBase<T>::block(
-    size_t row_offset, size_t col_offset, size_t row_size, size_t col_size) const
+template <bool IsConst, typename T>
+MUDA_GENERIC auto DenseMatrixViewerBase<IsConst, T>::block(size_t row_offset,
+                                                           size_t col_offset,
+                                                           size_t row_size,
+                                                           size_t col_size) -> ThisViewer
 {
     MUDA_KERNEL_ASSERT(row_offset + row_size <= m_row_size && col_offset + col_size <= m_col_size,
                        "DenseMatrixViewerBase [%s:%s]: block index out of range, shape=(%lld,%lld), yours index=(%lld,%lld)",
@@ -23,25 +26,22 @@ MUDA_GENERIC DenseMatrixViewerBase<T> DenseMatrixViewerBase<T>::block(
     return ret;
 }
 
-template <typename T>
-MUDA_GENERIC DenseMatrixViewerBase<T>::operator Eigen::Block<CMapMatrix>() const
-{
-    return as_eigen();
-}
-
-template <typename T>
-MUDA_GENERIC auto DenseMatrixViewerBase<T>::as_eigen() const -> Eigen::Block<CMapMatrix>
+template <bool IsConst, typename T>
+MUDA_GENERIC auto DenseMatrixViewerBase<IsConst, T>::as_eigen()
+    -> Eigen::Block<ThisMapMatrix>
 {
     auto outer = m_view.pitch_bytes() / sizeof(T);
 
-    return CMapMatrix{m_view.origin_data(),
-                      (int)origin_row(),
-                      (int)origin_col(),
-                      Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>{(int)outer, 1}}
+    return ThisMapMatrix{m_view.origin_data(),
+                         (int)origin_row(),
+                         (int)origin_col(),
+                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>{(int)outer, 1}}
         .block(m_row_offset, m_col_offset, m_row_size, m_col_size);
 }
-template <typename T>
-MUDA_GENERIC const T& DenseMatrixViewerBase<T>::operator()(size_t i, size_t j) const
+
+template <bool IsConst, typename T>
+MUDA_GENERIC auto DenseMatrixViewerBase<IsConst, T>::operator()(size_t i, size_t j)
+    -> auto_const_t<T>&
 {
     if constexpr(DEBUG_VIEWER)
     {
@@ -77,44 +77,33 @@ MUDA_GENERIC const T& DenseMatrixViewerBase<T>::operator()(size_t i, size_t j) c
     return *m_view.data(j, i);
 }
 
-template <typename T>
-MUDA_GENERIC size_t DenseMatrixViewerBase<T>::origin_row() const
+template <bool IsConst, typename T>
+MUDA_GENERIC auto DenseMatrixViewerBase<IsConst, T>::as_eigen() const
+    -> Eigen::Block<CMapMatrix>
+{
+    auto outer = m_view.pitch_bytes() / sizeof(T);
+
+    return CMapMatrix{m_view.origin_data(),
+                      (int)origin_row(),
+                      (int)origin_col(),
+                      Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>{(int)outer, 1}}
+        .block(m_row_offset, m_col_offset, m_row_size, m_col_size);
+}
+
+template <bool IsConst, typename T>
+MUDA_GENERIC size_t DenseMatrixViewerBase<IsConst, T>::origin_row() const
 {
     size_t ret;
     ret = m_view.extent().width();
     return ret;
 }
 
-template <typename T>
-MUDA_GENERIC size_t DenseMatrixViewerBase<T>::origin_col() const
+template <bool IsConst, typename T>
+MUDA_GENERIC size_t DenseMatrixViewerBase<IsConst, T>::origin_col() const
 {
     size_t ret;
     ret = m_view.extent().height();
     return ret;
-}
-
-
-/**************************************************************************
-*
-*                           CDenseMatrixViewer
-* 
-**************************************************************************/
-
-template <typename T>
-MUDA_GENERIC CDenseMatrixViewer<T> CDenseMatrixViewer<T>::block(size_t row_offset,
-                                                                size_t col_offset,
-                                                                size_t row_size,
-                                                                size_t col_size) const
-{
-    return Base::block(row_offset, col_offset, row_size, col_size);
-}
-
-template <typename T>
-template <size_t M, size_t N>
-MUDA_GENERIC CDenseMatrixViewer<T> CDenseMatrixViewer<T>::block(size_t row_offset,
-                                                                size_t col_offset) const
-{
-    return Base::block<M, N>(row_offset, col_offset);
 }
 
 /**************************************************************************
@@ -123,28 +112,22 @@ MUDA_GENERIC CDenseMatrixViewer<T> CDenseMatrixViewer<T>::block(size_t row_offse
 * 
 **************************************************************************/
 
-template <typename T>
-MUDA_GENERIC DenseMatrixViewer<T>::operator Eigen::Block<MapMatrix>()
-{
-    return as_eigen();
-}
-
-template <typename T>
-MUDA_GENERIC DenseMatrixViewer<T> DenseMatrixViewer<T>::block(size_t row_offset,
-                                                              size_t col_offset,
-                                                              size_t row_size,
-                                                              size_t col_size) const
-{
-    return Base::block(row_offset, col_offset, row_size, col_size);
-}
-
-template <typename T>
-template <size_t M, size_t N>
-MUDA_GENERIC DenseMatrixViewer<T> DenseMatrixViewer<T>::block(size_t row_offset,
-                                                              size_t col_offset) const
-{
-    return Base::block<M, N>(row_offset, col_offset);
-}
+//template <typename T>
+//MUDA_GENERIC DenseMatrixViewer<T> DenseMatrixViewer<T>::block(size_t row_offset,
+//                                                              size_t col_offset,
+//                                                              size_t row_size,
+//                                                              size_t col_size) const
+//{
+//    return Base::block(row_offset, col_offset, row_size, col_size);
+//}
+//
+//template <typename T>
+//template <size_t M, size_t N>
+//MUDA_GENERIC DenseMatrixViewer<T> DenseMatrixViewer<T>::block(size_t row_offset,
+//                                                              size_t col_offset) const
+//{
+//    return Base::block<M, N>(row_offset, col_offset);
+//}
 
 template <typename T>
 template <int M, int N>
@@ -176,29 +159,11 @@ MUDA_GENERIC DenseMatrixViewer<T>& DenseMatrixViewer<T>::operator=(const Eigen::
 }
 
 template <typename T>
-MUDA_GENERIC T& DenseMatrixViewer<T>::operator()(size_t i, size_t j)
-{
-    return const_cast<T&>(Base::operator()(i, j));
-}
-
-template <typename T>
 MUDA_DEVICE T DenseMatrixViewer<T>::atomic_add(size_t i, size_t j, T val)
 {
     auto ptr = &operator()(i, j);
     muda::atomic_add(ptr, val);
     return val;
-}
-
-template <typename T>
-MUDA_GENERIC auto DenseMatrixViewer<T>::as_eigen() -> Eigen::Block<MapMatrix>
-{
-    auto outer = m_view.pitch_bytes() / sizeof(T);
-
-    return MapMatrix(const_cast<T*>(m_view.origin_data()),
-                     (int)origin_row(),
-                     (int)origin_col(),
-                     Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>{(int)outer, 1})
-        .block(m_row_offset, m_col_offset, m_row_size, m_col_size);
 }
 
 template <typename T>

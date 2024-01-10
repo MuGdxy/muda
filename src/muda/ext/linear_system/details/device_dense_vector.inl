@@ -17,8 +17,8 @@ template <typename T>
 DeviceDenseVector<T>::DeviceDenseVector(const DeviceDenseVector<T>& other)
     : m_data{other.m_data}
 {
-    checkCudaErrors(
-        cusparseCreateDnVec(&m_descr, m_data.size(), m_data.data(), cuda_data_type<T>()));
+    checkCudaErrors(cusparseCreateDnVec(
+        &m_descr, m_data.size(), m_data.data(), cuda_data_type<T>()));
 }
 template <typename T>
 DeviceDenseVector<T>::DeviceDenseVector(DeviceDenseVector<T>&& other)
@@ -61,7 +61,8 @@ void DeviceDenseVector<T>::resize(size_t size)
 
     m_data.resize(size);
 
-    checkCudaErrors(cusparseCreateDnVec(&m_descr, size, m_data.data(), cuda_data_type<T>()));
+    checkCudaErrors(
+        cusparseCreateDnVec(&m_descr, size, m_data.data(), cuda_data_type<T>()));
 }
 template <typename T>
 void DeviceDenseVector<T>::fill(T value)
@@ -96,11 +97,11 @@ DeviceDenseVector<T>& DeviceDenseVector<T>::operator=(const Eigen::VectorX<T>& v
 template <typename T>
 CDenseVectorView<T> DeviceDenseVector<T>::view() const
 {
-    return CDenseVectorView<T>{m_data, 1};
+    return CDenseVectorView<T>{m_data, descr(), 1};
 }
 template <typename T>
 DenseVectorView<T> DeviceDenseVector<T>::view()
 {
-    return DenseVectorView<T>{m_data, 1};
+    return DenseVectorView<T>{m_data, descr(), 1};
 }
 }  // namespace muda

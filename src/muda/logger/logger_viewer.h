@@ -6,7 +6,7 @@
 #include <muda/viewer/dense.h>
 namespace muda
 {
-class LoggerViewer : public ViewerBase
+class LoggerViewer : public ViewerBase<false>
 {
     MUDA_VIEWER_COMMON_NAME(LoggerViewer);
 

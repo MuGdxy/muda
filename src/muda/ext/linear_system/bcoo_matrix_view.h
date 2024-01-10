@@ -7,27 +7,36 @@ template <typename T, int N>
 using BCOOMatrixView = TripletMatrixView<T, N>;
 template <typename T, int N>
 using CBCOOMatrixView = CTripletMatrixView<T, N>;
-
-template <typename Ty>
-class COOMatrixViewBase
+}  // namespace muda
+namespace muda
 {
-  protected:
-    // data
-    int* m_row_indices;
-    int* m_col_indices;
-    Ty*  m_values;
+template <bool IsConst, typename Ty>
+class COOMatrixViewBase : public ViewBase<IsConst>
+{
+  public:
+    static_assert(!std::is_const_v<Ty>, "Ty must be non-const");
+    using NonConstView = COOMatrixViewBase<false, Ty>;
+    using ConstView    = COOMatrixViewBase<true, Ty>;
+    using ThisView     = COOMatrixViewBase<IsConst, Ty>;
 
+  protected:
     // matrix info
     int m_rows = 0;
     int m_cols = 0;
 
     // triplet info
-    int                  m_triplet_index_offset = 0;
-    int                  m_triplet_count        = 0;
-    int                  m_total_triplet_count  = 0;
-    cusparseMatDescr_t   m_legacy_descr         = nullptr;
-    cusparseSpMatDescr_t m_descr                = nullptr;
-    bool                 m_trans                = false;
+    int m_triplet_index_offset = 0;
+    int m_triplet_count        = 0;
+    int m_total_triplet_count  = 0;
+
+    // data
+    auto_const_t<int>* m_row_indices;
+    auto_const_t<int>* m_col_indices;
+    auto_const_t<Ty>*  m_values;
+
+    mutable cusparseMatDescr_t   m_legacy_descr = nullptr;
+    mutable cusparseSpMatDescr_t m_descr        = nullptr;
+    bool                         m_trans        = false;
 
   public:
     MUDA_GENERIC COOMatrixViewBase() = default;
@@ -36,11 +45,11 @@ class COOMatrixViewBase
                                    int                  triplet_index_offset,
                                    int                  triplet_count,
                                    int                  total_triplet_count,
-                                   int*                 row_indices,
-                                   int*                 col_indices,
-                                   Ty*                  values,
-                                   cusparseMatDescr_t   legacy_descr,
+                                   auto_const_t<int>*   row_indices,
+                                   auto_const_t<int>*   col_indices,
+                                   auto_const_t<Ty>*    values,
                                    cusparseSpMatDescr_t descr,
+                                   cusparseMatDescr_t   legacy_descr,
                                    bool                 trans)
 
         : m_rows(rows)
@@ -51,43 +60,41 @@ class COOMatrixViewBase
         , m_row_indices(row_indices)
         , m_col_indices(col_indices)
         , m_values(values)
-        , m_legacy_descr(legacy_descr)
         , m_descr(descr)
+        , m_legacy_descr(legacy_descr)
         , m_trans(trans)
     {
-        MUDA_ASSERT(triplet_index_offset + triplet_count <= total_triplet_count,
-                    "TripletMatrixView: out of range, m_total_triplet_count=%d, "
-                    "your triplet_index_offset=%d, triplet_count=%d",
-                    total_triplet_count,
-                    triplet_index_offset,
-                    triplet_count);
+        MUDA_KERNEL_ASSERT(triplet_index_offset + triplet_count <= total_triplet_count,
+                           "COOMatrixView: out of range, m_total_triplet_count=%d, "
+                           "your triplet_index_offset=%d, triplet_count=%d",
+                           total_triplet_count,
+                           triplet_index_offset,
+                           triplet_count);
     }
 
-    MUDA_GENERIC auto block_rows() const { return m_rows; }
-    MUDA_GENERIC auto block_cols() const { return m_cols; }
-    MUDA_GENERIC auto triplet_count() const { return m_triplet_count; }
-    MUDA_GENERIC auto tripet_index_offset() const
+
+    MUDA_GENERIC auto as_const() const
     {
-        return m_triplet_index_offset;
+        return ConstView{m_rows,
+                         m_cols,
+                         m_triplet_index_offset,
+                         m_triplet_count,
+                         m_total_triplet_count,
+                         m_row_indices,
+                         m_col_indices,
+                         m_values,
+                         m_descr,
+                         m_legacy_descr,
+                         m_trans};
     }
-    MUDA_GENERIC auto total_triplet_count() const
-    {
-        return m_total_triplet_count;
-    }
 
-    MUDA_GENERIC auto row_indices() const { return m_row_indices; }
-    MUDA_GENERIC auto col_indices() const { return m_col_indices; }
-    MUDA_GENERIC auto values() const { return m_values; }
-
-    MUDA_GENERIC auto legacy_descr() const { return m_legacy_descr; }
-    MUDA_GENERIC auto descr() const { return m_descr; }
-
+    MUDA_GENERIC operator ConstView() const { return as_const(); }
 
     MUDA_GENERIC auto cviewer() const
     {
-        MUDA_ASSERT(!m_trans,
-                    "COOMatrixView: viewer() is not supported for "
-                    "transposed matrix, please use a non-transposed view of this matrix");
+        MUDA_KERNEL_ASSERT(!m_trans,
+                           "COOMatrixView: cviewer() is not supported for "
+                           "transposed matrix, please use a non-transposed view of this matrix");
         return CTripletMatrixViewer<Ty, 1>{m_rows,
                                            m_cols,
                                            m_triplet_index_offset,
@@ -98,87 +105,11 @@ class COOMatrixViewBase
                                            m_values};
     }
 
-  protected:
-    MUDA_GENERIC auto T() const
+    MUDA_GENERIC auto viewer()
     {
-        return COOMatrixViewBase{m_rows,
-                                 m_cols,
-                                 m_triplet_index_offset,
-                                 m_triplet_count,
-                                 m_total_triplet_count,
-                                 m_col_indices,
-                                 m_row_indices,
-                                 m_values,
-                                 m_legacy_descr,
-                                 m_descr,
-                                 !m_trans};
-    }
-};
-
-template <typename Ty>
-class CCOOMatrixView : public COOMatrixViewBase<Ty>
-{
-    using Base = COOMatrixViewBase<Ty>;
-
-  public:
-    using Base::Base;
-    MUDA_GENERIC CCOOMatrixView(const Base& base)
-        : Base(base)
-    {
-    }
-
-    MUDA_GENERIC CCOOMatrixView(int                  rows,
-                                int                  cols,
-                                int                  triplet_index_offset,
-                                int                  triplet_count,
-                                int                  total_triplet_count,
-                                const int*           row_indices,
-                                const int*           col_indices,
-                                const Ty*            values,
-                                cusparseMatDescr_t   legacy_descr,
-                                cusparseSpMatDescr_t descr,
-                                bool                 trans)
-        : Base(rows,
-               cols,
-               triplet_index_offset,
-               triplet_count,
-               total_triplet_count,
-               const_cast<int*>(row_indices),
-               const_cast<int*>(col_indices),
-               const_cast<Ty*>(values),
-               legacy_descr,
-               descr,
-               trans)
-    {
-    }
-
-    using Base::cviewer;
-
-    auto T() const { return CCOOMatrixView{Base::T()}; }
-};
-
-
-template <typename Ty>
-class COOMatrixView : public COOMatrixViewBase<Ty>
-{
-    using Base = COOMatrixViewBase<Ty>;
-
-  public:
-    using Base::Base;
-
-    MUDA_GENERIC COOMatrixView(const Base& base)
-        : Base(base)
-    {
-    }
-
-    MUDA_GENERIC COOMatrixView(const CCOOMatrixView<Ty>&) = delete;
-
-    using Base::cviewer;
-
-    MUDA_GENERIC auto T() const { return CCOOMatrixView{Base::T()}; }
-
-    MUDA_GENERIC auto viewer() const
-    {
+        MUDA_ASSERT(!m_trans,
+                    "COOMatrixView: viewer() is not supported for "
+                    "transposed matrix, please use a non-transposed view of this matrix");
         return TripletMatrixViewer<Ty, 1>{m_rows,
                                           m_cols,
                                           m_triplet_index_offset,
@@ -188,9 +119,67 @@ class COOMatrixView : public COOMatrixViewBase<Ty>
                                           m_col_indices,
                                           m_values};
     }
+
+    MUDA_GENERIC auto subview(int offset, int count)
+    {
+        return ThisView{m_rows,
+                        m_cols,
+                        m_triplet_index_offset + offset,
+                        count,
+                        m_total_triplet_count,
+                        m_row_indices,
+                        m_col_indices,
+                        m_values,
+                        m_descr,
+                        m_legacy_descr,
+                        m_trans};
+    }
+
+    MUDA_GENERIC auto subview(int offset)
+    {
+        MUDA_ASSERT(offset < m_triplet_count,
+                    "TripletMatrixView: offset is out of range, size=%d, your offset=%d",
+                    m_triplet_count,
+                    offset);
+        return subview(offset, m_triplet_count - offset);
+    }
+
+    MUDA_GENERIC ConstView subview(int offset, int count) const
+    {
+        return remove_const(*this).subview(offset, count);
+    }
+
+    MUDA_GENERIC ConstView subview(int offset) const
+    {
+        return remove_const(*this).subview(offset);
+    }
+
+    // non-const access
+    auto_const_t<Ty>*  block_values() { return m_values; }
+    auto_const_t<int>* block_row_indices() { return m_row_indices; }
+    auto_const_t<int>* block_col_indices() { return m_col_indices; }
+
+
+    // const access
+    auto block_values() const { return m_values; }
+    auto block_row_indices() const { return m_row_indices; }
+    auto block_col_indices() const { return m_col_indices; }
+
+    auto block_rows() const { return m_rows; }
+    auto block_cols() const { return m_cols; }
+    auto triplet_count() const { return m_triplet_count; }
+    auto tripet_index_offset() const { return m_triplet_index_offset; }
+    auto total_triplet_count() const { return m_total_triplet_count; }
+    auto is_trans() const { return m_trans; }
+
+    auto legacy_descr() const { return m_legacy_descr; }
+    auto descr() const { return m_descr; }
 };
 
-
+template <typename Ty>
+using COOMatrixView = COOMatrixViewBase<false, Ty>;
+template <typename Ty>
+using CCOOMatrixView = COOMatrixViewBase<true, Ty>;
 }  // namespace muda
 
 namespace muda

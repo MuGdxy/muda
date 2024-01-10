@@ -8,19 +8,23 @@ namespace details
     class ViewerBaseAccessor
     {
       public:
-        MUDA_GENERIC static auto& kernel_name(ViewerBase& viewer)
+        template <bool IsConst>
+        MUDA_GENERIC static auto& kernel_name(ViewerBase<IsConst>& viewer)
         {
             return viewer.m_kernel_name;
         }
-        MUDA_GENERIC static const auto& kernel_name(const ViewerBase& viewer)
+        template <bool IsConst>
+        MUDA_GENERIC static const auto& kernel_name(const ViewerBase<IsConst>& viewer)
         {
             return viewer.m_kernel_name;
         }
-        MUDA_GENERIC static auto& viewer_name(ViewerBase& viewer)
+        template <bool IsConst>
+        MUDA_GENERIC static auto& viewer_name(ViewerBase<IsConst>& viewer)
         {
             return viewer.m_viewer_name;
         }
-        MUDA_GENERIC static const auto& viewer_name(const ViewerBase& viewer)
+        template <bool IsConst>
+        MUDA_GENERIC static const auto& viewer_name(const ViewerBase<IsConst>& viewer)
         {
             return viewer.m_viewer_name;
         }

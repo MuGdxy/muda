@@ -9,8 +9,6 @@ class ViewBase
   public:
     constexpr static bool IsConst    = IsConst;
     constexpr static bool IsNonConst = !IsConst;
-
-  protected:
     template <typename T>
     using auto_const_t = std::conditional_t<IsConst, const T, T>;
     template <typename T>

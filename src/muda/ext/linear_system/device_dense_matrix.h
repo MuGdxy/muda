@@ -11,10 +11,10 @@ class DeviceDenseMatrix
     static_assert(std::is_same_v<Ty, float> || std::is_same_v<Ty, double>,
                   "now only support real number");
 
-    muda::DeviceBuffer2D<Ty> m_data;
-    size_t                   m_row = 0;
-    size_t                   m_col = 0;
-    bool                     m_sym = false;
+    DeviceBuffer2D<Ty> m_data;
+    size_t             m_row = 0;
+    size_t             m_col = 0;
+    bool               m_sym = false;
 
   public:
     using value_type    = Ty;
@@ -51,6 +51,7 @@ class DeviceDenseMatrix
 
     DenseMatrixView<Ty>  view();
     CDenseMatrixView<Ty> view() const;
+    CDenseMatrixView<Ty> cview() const { return view(); }
 
     operator DenseMatrixView<Ty>();
     operator CDenseMatrixView<Ty>() const;

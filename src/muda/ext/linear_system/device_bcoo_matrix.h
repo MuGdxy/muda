@@ -13,38 +13,13 @@ class DeviceBCOOMatrix : public DeviceTripletMatrix<T, N>
   public:
     using BlockMatrix = Eigen::Matrix<T, N, N>;
 
-    DeviceBCOOMatrix()                                         = default;
-    ~DeviceBCOOMatrix()                                        = default;
-    DeviceBCOOMatrix(const DeviceBCOOMatrix& other)            = default;
-    DeviceBCOOMatrix(DeviceBCOOMatrix&& other)                 = default;
-    DeviceBCOOMatrix& operator=(const DeviceBCOOMatrix& other) = default;
-    DeviceBCOOMatrix& operator=(DeviceBCOOMatrix&& other)      = default;
-
-    auto viewer()
-    {
-        return BCOOMatrixView<T, N>{m_block_rows,
-                                    m_block_cols,
-                                    0,
-                                    (int)m_block_values.size(),
-                                    (int)m_block_values.size(),
-                                    m_block_row_indices.data(),
-                                    m_block_col_indices.data(),
-                                    m_block_values.data()};
-    }
-
-    auto view() const
-    {
-        return BCOOMatrixView<T, N>{m_block_rows,
-                                    m_block_cols,
-                                    0,
-                                    (int)m_block_values.size(),
-                                    (int)m_block_values.size(),
-                                    m_block_row_indices.data(),
-                                    m_block_col_indices.data(),
-                                    m_block_values.data()};
-    }
-
-    auto non_zero_blocks() const { return m_block_values.size(); }
+    DeviceBCOOMatrix()                                   = default;
+    ~DeviceBCOOMatrix()                                  = default;
+    DeviceBCOOMatrix(const DeviceBCOOMatrix&)            = default;
+    DeviceBCOOMatrix(DeviceBCOOMatrix&&)                 = default;
+    DeviceBCOOMatrix& operator=(const DeviceBCOOMatrix&) = default;
+    DeviceBCOOMatrix& operator=(DeviceBCOOMatrix&&)      = default;
+    auto non_zero_blocks() const { return this->m_block_values.size(); }
 };
 
 template <typename Ty>
@@ -52,6 +27,10 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
 {
     template <typename Ty, int N>
     friend class details::MatrixFormatConverter;
+
+  protected:
+    mutable cusparseMatDescr_t   m_legacy_descr = nullptr;
+    mutable cusparseSpMatDescr_t m_descr        = nullptr;
 
   public:
     DeviceBCOOMatrix() = default;
@@ -97,8 +76,6 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
         return *this;
     }
 
-    mutable cusparseMatDescr_t   m_legacy_descr = nullptr;
-    mutable cusparseSpMatDescr_t m_descr        = nullptr;
 
     auto view()
     {
@@ -110,8 +87,8 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
                                  m_row_indices.data(),
                                  m_col_indices.data(),
                                  m_values.data(),
-                                 legacy_descr(),
                                  descr(),
+                                 legacy_descr(),
                                  false};
     }
 
@@ -125,10 +102,12 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
                                   m_row_indices.data(),
                                   m_col_indices.data(),
                                   m_values.data(),
-                                  legacy_descr(),
                                   descr(),
+                                  legacy_descr(),
                                   false};
     }
+
+    auto cview() const { return view(); }
 
     auto viewer() { return view().viewer(); }
 
@@ -170,6 +149,12 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
 
     operator COOMatrixView<Ty>() { return view(); }
     operator CCOOMatrixView<Ty>() const { return view(); }
+
+    void clear()
+    {
+        DeviceTripletMatrix<Ty, 1>::clear();
+        destroy_all_descr();
+    }
 
   private:
     void destroy_all_descr()

@@ -41,6 +41,7 @@ class DeviceDenseVector
 
     CDenseVectorView<T> view() const;
     DenseVectorView<T>  view();
+    CDenseVectorView<T> cview() const { return view(); }
 
     operator CDenseVectorView<T>() const { return view(); }
     operator DenseVectorView<T>() { return view(); }
