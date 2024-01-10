@@ -38,7 +38,7 @@ namespace details::linear_system
 
 
 template <typename T>
-void LinearSystemContext::solve(CCSRMatrixView<T> A, DenseVectorView<T> x, CDenseVectorView<T> b)
+void LinearSystemContext::solve(DenseVectorView<T> x, CCSRMatrixView<T> A, CDenseVectorView<T> b)
 {
     MUDA_ASSERT(!A.is_trans(), "CSRMatrix A must not be transposed");
 

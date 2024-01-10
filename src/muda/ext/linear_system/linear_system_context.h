@@ -164,14 +164,24 @@ class LinearSystemContext
     void dot(CDenseVectorView<T> x, CDenseVectorView<T> y, VarView<T> result);
     template <typename T>
     void dot(CDenseVectorView<T> x, CDenseVectorView<T> y, T* result);
+
+    /***********************************************************************************************
+                                              Max/Min
+    ***********************************************************************************************/
+    //TODO:
+
+
     /***********************************************************************************************
                                                Axpby
                                       y = alpha * x + beta * y
     ***********************************************************************************************/
+    // y = alpha * x + beta * y
     template <typename T>
     void axpby(const T& alpha, CDenseVectorView<T> x, const T& beta, DenseVectorView<T> y);
+    // y = alpha * x + beta * y
     template <typename T>
     void axpby(CVarView<T> alpha, CDenseVectorView<T> x, CVarView<T> beta, DenseVectorView<T> y);
+    // z = x + y
     template <typename T>
     void plus(CDenseVectorView<T> x, CDenseVectorView<T> y, DenseVectorView<T> z);
 
@@ -236,8 +246,10 @@ class LinearSystemContext
     // and b will be modified to store the solution
     template <typename T>
     void solve(DenseMatrixView<T> A_to_fact, DenseVectorView<T> b_to_x);
+    // solve Ax = b
+    // A is the CSR Matrix
     template <typename T>
-    void solve(CCSRMatrixView<T> A, DenseVectorView<T> x, CDenseVectorView<T> b);
+    void solve(DenseVectorView<T> x, CCSRMatrixView<T> A, CDenseVectorView<T> b);
 
   private:
     template <typename T>

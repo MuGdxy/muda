@@ -13,7 +13,7 @@ void LinearSystemContext::spmv(const T&                 a,
 {
     using namespace muda;
     y.buffer_view().fill(0);
-    ParallelFor()
+    ParallelFor(0, stream())
         .kernel_name(__FUNCTION__)
         .apply(A.triplet_count(),
                [a = a,

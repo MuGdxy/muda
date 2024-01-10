@@ -150,6 +150,12 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
     operator COOMatrixView<Ty>() { return view(); }
     operator CCOOMatrixView<Ty>() const { return view(); }
 
+    void clear()
+    {
+        DeviceTripletMatrix<Ty, 1>::clear();
+        destroy_all_descr();
+    }
+
   private:
     void destroy_all_descr()
     {

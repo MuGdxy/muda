@@ -89,6 +89,8 @@ class DeviceCSRMatrix
     operator CSRMatrixView<Ty>() { return view(); }
     operator CCSRMatrixView<Ty>() const { return view(); }
 
+    void clear();
+
   private:
     void destroy_all_descr() const;
 };

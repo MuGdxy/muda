@@ -28,6 +28,7 @@ class LinearSystemHandles
         checkCudaErrors(cusolverDnSetStream(m_cusolver_dn, m_stream));
         checkCudaErrors(cusolverSpCreate(&m_cusolver_sp));
         checkCudaErrors(cusolverSpSetStream(m_cusolver_sp, m_stream));
+        set_pointer_mode_host();
     }
     ~LinearSystemHandles()
     {

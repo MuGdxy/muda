@@ -95,6 +95,17 @@ cusparseMatDescr_t DeviceBSRMatrix<Ty, N>::legacy_descr() const
 }
 
 template <typename Ty, int N>
+void DeviceBSRMatrix<Ty, N>::clear()
+{
+    m_row               = 0;
+    m_col               = 0;
+    m_block_row_offsets = decltype(m_block_row_offsets)();
+    m_block_col_indices = decltype(m_block_col_indices)();
+    m_block_values      = decltype(m_block_values)();
+    destroy_all_descr();
+}
+
+template <typename Ty, int N>
 void DeviceBSRMatrix<Ty, N>::destroy_all_descr() const
 {
     if(m_legacy_descr)

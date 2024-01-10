@@ -48,6 +48,9 @@ void test_sparse_matrix(int block_row_size, int non_zero_block_count)
         block += blocks[i];
     }
 
+    Eigen::VectorX<T> ground_truth = dense_A * dense_x;
+    Eigen::VectorX<T> host_b;
+
     DeviceTripletMatrix<T, BlockDim> A_triplet;
     A_triplet.reshape(block_row_size, block_row_size);
     A_triplet.resize_triplets(non_zero_block_count);
@@ -55,11 +58,6 @@ void test_sparse_matrix(int block_row_size, int non_zero_block_count)
     A_triplet.block_row_indices().copy_from(row_indices.data());
     A_triplet.block_col_indices().copy_from(col_indices.data());
     A_triplet.block_values().copy_from(blocks.data());
-
-    Eigen::VectorX<T> ground_truth = dense_A * dense_x;
-    Eigen::VectorX<T> host_b;
-
-    //SECTION("triplet")
     {
         ctx.spmv(A_triplet.cview(), x.cview(), b.view());
         ctx.sync();
@@ -69,7 +67,6 @@ void test_sparse_matrix(int block_row_size, int non_zero_block_count)
 
     DeviceBCOOMatrix<T, BlockDim> A_bcoo;
     ctx.convert(A_triplet, A_bcoo);
-    //SECTION("bcoo")
     {
         b.fill(0);
         ctx.spmv(A_bcoo.cview(), x.cview(), b.view());
@@ -78,20 +75,25 @@ void test_sparse_matrix(int block_row_size, int non_zero_block_count)
         REQUIRE(host_b.isApprox(ground_truth));
     }
 
+    DeviceDenseMatrix<T> A;
+
     DeviceCOOMatrix<T> A_coo;
     ctx.convert(A_bcoo, A_coo);
-    //SECTION("coo")
+    A.fill(0);
+    ctx.convert(A_coo, A);
     {
         b.fill(0);
         ctx.spmv(A_coo.cview(), x.cview(), b.view());
         ctx.sync();
         b.copy_to(host_b);
         REQUIRE(host_b.isApprox(ground_truth));
+
+        A.copy_to(host_A);
+        REQUIRE(host_A.isApprox(dense_A));
     }
 
-    DeviceDenseMatrix<T> A;
+
     ctx.convert(A_bcoo, A);
-    //SECTION("dense")
     {
         b.fill(0);
         ctx.mv(A.cview(), x.cview(), b.view());
@@ -101,14 +103,10 @@ void test_sparse_matrix(int block_row_size, int non_zero_block_count)
 
         A.copy_to(host_A);
         REQUIRE(host_A.isApprox(dense_A));
-
-        //std::cout << "A: " << std::endl << host_A << std::endl;
-        //std::cout << "Eigen A" << std::endl << dense_A << std::endl;
     }
 
     DeviceBSRMatrix<T, BlockDim> A_bsr;
     ctx.convert(A_bcoo, A_bsr);
-    //SECTION("bsr")
     {
         b.fill(0);
         ctx.spmv(A_bsr.cview(), x.cview(), b.view());
@@ -119,7 +117,16 @@ void test_sparse_matrix(int block_row_size, int non_zero_block_count)
 
     DeviceCSRMatrix<T> A_csr;
     ctx.convert(A_bsr, A_csr);
-    //SECTION("csr")
+    {
+        b.fill(0);
+        ctx.spmv(A_csr.cview(), x.cview(), b.view());
+        ctx.sync();
+        b.copy_to(host_b);
+        REQUIRE(host_b.isApprox(ground_truth));
+    }
+
+    A_csr.clear();
+    ctx.convert(A_coo, A_csr);
     {
         b.fill(0);
         ctx.spmv(A_csr.cview(), x.cview(), b.view());

@@ -83,8 +83,8 @@ void DeviceCSRMatrix<Ty>::reshape(int row, int col)
 {
     m_row = row;
     m_row_offsets.resize(row + 1);
-    m_col   = col;
-    m_descr = nullptr;
+    m_col = col;
+    destroy_all_descr();
 }
 
 template <typename Ty>
@@ -120,7 +120,18 @@ cusparseMatDescr_t DeviceCSRMatrix<Ty>::legacy_descr() const
     return m_legacy_descr;
 }
 template <typename Ty>
-void muda::DeviceCSRMatrix<Ty>::destroy_all_descr() const
+void DeviceCSRMatrix<Ty>::clear()
+{
+    m_row = 0;
+    m_col = 0;
+    m_row_offsets.clear();
+    m_col_indices.clear();
+    m_values.clear();
+    destroy_all_descr();
+}
+
+template <typename Ty>
+void DeviceCSRMatrix<Ty>::destroy_all_descr() const
 {
     if(m_descr)
     {

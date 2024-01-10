@@ -61,9 +61,9 @@ class CSRMatrixViewBase : public ViewBase<IsConst>
     // implicit conversion to const
     operator ConstView() const { return as_const(); }
 
-    auto_const_t<Ty*>  values() { return m_values; }
-    auto_const_t<int*> row_offsets() { return m_row_offsets; }
-    auto_const_t<int*> col_indices() { return m_col_indices; }
+    auto_const_t<Ty>*  values() { return m_values; }
+    auto_const_t<int>* row_offsets() { return m_row_offsets; }
+    auto_const_t<int>* col_indices() { return m_col_indices; }
 
     auto values() const { return m_values; }
     auto row_offsets() const { return m_row_offsets; }

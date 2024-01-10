@@ -92,6 +92,8 @@ class DeviceBSRMatrix
     auto T() const { return view().T(); }
     auto T() { return view().T(); }
 
+    void clear();
+
   private:
     void destroy_all_descr() const;
 };
