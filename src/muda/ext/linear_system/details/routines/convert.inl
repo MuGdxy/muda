@@ -83,7 +83,7 @@ void LinearSystemContext::convert(const DeviceCOOMatrix<T>& from, DeviceCSRMatri
 template <typename T>
 void LinearSystemContext::convert(DeviceCOOMatrix<T>&& from, DeviceCSRMatrix<T>& to)
 {
-    m_converter.convert(from, to);
+    m_converter.convert(std::move(from), to);
 }
 
 // Doublet -> COO
