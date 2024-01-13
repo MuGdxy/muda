@@ -139,6 +139,15 @@ MUDA_INLINE void LaunchCore::kernel_name(std::string_view name)
 #endif
 }
 
+MUDA_INLINE std::string_view muda::LaunchCore::kernel_name()
+{
+#if MUDA_CHECK_ON
+    return details::LaunchInfoCache::current_kernel_name().host_string;
+#else
+    return "";
+#endif
+}
+
 MUDA_INLINE MUDA_HOST void LaunchCore::pop_kernel_name()
 {
 #if MUDA_CHECK_ON

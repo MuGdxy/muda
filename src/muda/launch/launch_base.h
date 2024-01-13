@@ -49,7 +49,8 @@ class LaunchCore
     MUDA_HOST void pop_kernel_name();
 
   public:
-    static void kernel_name(std::string_view name);
+    static void             kernel_name(std::string_view name);
+    static std::string_view kernel_name();
 
     MUDA_GENERIC LaunchCore(::cudaStream_t stream) MUDA_NOEXCEPT;
 
@@ -85,6 +86,7 @@ class LaunchBase : public LaunchCore
 {
     template <typename Others>
     friend class launch_base;
+    using Base = LaunchCore;
 
   public:
     using derived_type = T;
@@ -100,9 +102,11 @@ class LaunchBase : public LaunchCore
     T& push_range(const std::string& name);
     T& pop_range();
 
+
     // create a name for the following kernel launch
     // viewers will record this name for the sake of better recognization when debugging
-    T& kernel_name(std::string_view name);
+    T&               kernel_name(std::string_view name);
+    std::string_view kernel_name() const { return Base::kernel_name(); }
 
     // record an event on this point with current stream, you could use .when() to
     // capture this event for synchronization

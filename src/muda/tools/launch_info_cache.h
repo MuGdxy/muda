@@ -19,6 +19,7 @@ class LaunchInfoCache
     }
 
   public:
+
     static auto view_name(std::string_view name) MUDA_NOEXCEPT
     {
         return instance().m_view_name_string_cache[name];
