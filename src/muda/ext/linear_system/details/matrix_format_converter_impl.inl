@@ -376,4 +376,28 @@ void MatrixFormatConverter<T, 1>::set_unique_values_to_dense_vector(
                    dst(index) = unique_values(i);
                });
 }
+
+// using T = float;
+template <typename T>
+void MatrixFormatConverter<T, 1>::convert(const DeviceDoubletVector<T, 1>& from,
+                                          DeviceDenseVector<T>&            to,
+                                          bool clear_dense_vector)
+{
+    using namespace muda;
+
+    to.resize(from.segment_count());
+
+    if(clear_dense_vector)
+        to.fill(0);
+
+    ParallelFor(256)
+        .kernel_name(__FUNCTION__)
+        .apply(from.doublet_count(),
+               [src = from.viewer().name("src_sparse_vector"),
+                dst = to.viewer().name("dst_dense_vector")] __device__(int i) mutable
+               {
+                   auto&& [index, value] = src(i);
+                   dst.segment<1>(index).atomic_add(value);
+               });
+}
 }  // namespace muda::details

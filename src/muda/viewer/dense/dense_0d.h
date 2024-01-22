@@ -3,50 +3,67 @@
 
 namespace muda
 {
-template <typename T>
-class DenseBase : public ViewerBase<false> // TODO
+template <bool IsConst, typename T>
+class DenseViewerBase : public ViewerBase<IsConst>
 {
+    MUDA_VIEWER_COMMON_NAME(DenseViewerBase);
+
+  public:
+    using ConstViewer    = DenseViewerBase<true, T>;
+    using NonConstViewer = DenseViewerBase<false, T>;
+    using ThisViewer     = DenseViewerBase<IsConst, T>;
+
   protected:
-    T* m_data;
+    template <typename T>
+    using auto_const_t = ViewerBase<IsConst>::template auto_const_t<T>;
+    auto_const_t<T>* m_data;
 
   public:
     using value_type = T;
 
-    MUDA_GENERIC DenseBase() MUDA_NOEXCEPT : m_data(nullptr) {}
-    MUDA_GENERIC explicit DenseBase(T* p) MUDA_NOEXCEPT : m_data(p) {}
+    MUDA_GENERIC DenseViewerBase() MUDA_NOEXCEPT : m_data(nullptr) {}
 
-    MUDA_GENERIC DenseBase& operator=(const T& rhs) MUDA_NOEXCEPT
+    MUDA_GENERIC explicit DenseViewerBase(auto_const_t<T>* p) MUDA_NOEXCEPT : m_data(p)
     {
-        check();
-        *m_data = rhs;
-        return *this;
     }
 
-    MUDA_GENERIC const T& operator()() const MUDA_NOEXCEPT
+    MUDA_GENERIC auto as_const() const MUDA_NOEXCEPT
     {
-        check();
-        return *m_data;
+        return ConstViewer{m_data};
     }
 
-    MUDA_GENERIC const T& operator*() const MUDA_NOEXCEPT
+    MUDA_GENERIC operator ConstViewer() const MUDA_NOEXCEPT
     {
-        check();
-        return *m_data;
+        return as_const();
     }
 
-    MUDA_GENERIC operator const T&() const MUDA_NOEXCEPT
+    MUDA_GENERIC auto_const_t<T>& operator*() MUDA_NOEXCEPT
     {
         check();
         return *m_data;
     }
 
-    MUDA_GENERIC const T* operator->() const MUDA_NOEXCEPT
+    MUDA_GENERIC auto_const_t<T>* operator->() MUDA_NOEXCEPT
     {
         check();
         return m_data;
     }
 
+    MUDA_GENERIC auto_const_t<T>* data() MUDA_NOEXCEPT { return m_data; }
+
+    MUDA_GENERIC const T& operator*() const MUDA_NOEXCEPT
+    {
+        return remove_const(*this).operator*();
+    }
+
+    MUDA_GENERIC const T* operator->() const MUDA_NOEXCEPT
+    {
+        return remove_const(*this).operator->();
+    }
+
     MUDA_GENERIC const T* data() const MUDA_NOEXCEPT { return m_data; }
+
+    MUDA_GENERIC operator const T&() const MUDA_NOEXCEPT { return *m_data; }
 
   protected:
     MUDA_INLINE MUDA_GENERIC void check() const MUDA_NOEXCEPT
@@ -62,71 +79,46 @@ class DenseBase : public ViewerBase<false> // TODO
 };
 
 template <typename T>
-class CDense : public DenseBase<T>
-{
-    MUDA_VIEWER_COMMON_NAME(CDense);
-
-  public:
-    using DenseBase<T>::DenseBase;
-    using DenseBase<T>::operator=;
-    using DenseBase<T>::operator();
-
-    MUDA_GENERIC CDense(const DenseBase<T>& base) MUDA_NOEXCEPT : DenseBase<T>(base)
-    {
-    }
-
-    MUDA_GENERIC explicit CDense(const T* p) MUDA_NOEXCEPT
-        : DenseBase<T>(const_cast<T*>(p))
-    {
-    }
-};
-
-template <typename T>
-class Dense : public DenseBase<T>
+class Dense : public DenseViewerBase<false, T>
 {
     MUDA_VIEWER_COMMON_NAME(Dense);
 
   public:
-    using DenseBase<T>::DenseBase;
-    using DenseBase<T>::operator=;
-    using DenseBase<T>::operator();
-    using DenseBase<T>::data;
+    using Base           = DenseViewerBase<false, T>;
+    using ConstViewer    = typename Base::ConstViewer;
+    using NonConstViewer = Dense<T>;
+    using ThisViewer     = Dense<T>;
 
-    MUDA_GENERIC Dense(const DenseBase<T>& base) MUDA_NOEXCEPT : DenseBase<T>(base)
+    using Base::Base;
+
+    MUDA_GENERIC Dense(const Base& base) MUDA_NOEXCEPT : Base(base) {}
+
+    MUDA_GENERIC Dense& operator=(const T& base) MUDA_NOEXCEPT
     {
+        Base::check();
+        *this->m_data = base;
+        return *this;
     }
 
-    MUDA_GENERIC operator CDense<T>() const MUDA_NOEXCEPT
+    using Base::operator*;
+    using Base::operator->;
+    using Base::as_const;
+    using Base::data;
+
+    MUDA_GENERIC operator T&() MUDA_NOEXCEPT { return *this->m_data; }
+    MUDA_GENERIC operator const T&() const MUDA_NOEXCEPT
     {
-        return CDense<T>{*this};
+        return *this->m_data;
     }
 
-    MUDA_GENERIC T& operator()() MUDA_NOEXCEPT
+    MUDA_GENERIC operator ConstViewer() const MUDA_NOEXCEPT
     {
-        this->check();
-        return *(this->m_data);
+        return this->as_const();
     }
-
-    MUDA_GENERIC T& operator*() MUDA_NOEXCEPT
-    {
-        this->check();
-        return *(this->m_data);
-    }
-
-    MUDA_GENERIC operator T&() MUDA_NOEXCEPT
-    {
-        this->check();
-        return *(this->m_data);
-    }
-
-    MUDA_GENERIC T* operator->()
-    {
-        this->check();
-        return this->m_data;
-    }
-
-    MUDA_GENERIC T* data() MUDA_NOEXCEPT { return this->m_data; }
 };
+
+template <typename T>
+using CDense = DenseViewerBase<true, T>;
 
 // viewer traits
 template <typename T>
@@ -140,15 +132,6 @@ struct read_write_viewer<CDense<T>>
 {
     using type = Dense<T>;
 };
-
-
-// CTAD
-template <typename T>
-CDense(const T*) -> CDense<T>;
-
-template <typename T>
-Dense(T*) -> Dense<T>;
-
 
 // make functions
 template <typename T>

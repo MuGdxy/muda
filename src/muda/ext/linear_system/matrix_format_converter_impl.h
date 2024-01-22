@@ -124,6 +124,11 @@ namespace details
                                                  DeviceDenseVector<T>& to,
                                                  bool clear_dense_vector);
 
+        // Triplet -> Dense Vector
+        void convert(const DeviceDoubletVector<T, N>& from,
+                     DeviceDenseVector<T>&            to,
+                     bool clear_dense_vector = true);
+
         // BSR -> CSR
         void convert(const DeviceBSRMatrix<T, N>& from, DeviceCSRMatrix<T>& to);
     };
@@ -199,6 +204,11 @@ namespace details
         void set_unique_values_to_dense_vector(const DeviceDoubletVector<T, 1>& from,
                                                DeviceDenseVector<T>& to,
                                                bool clear_dense_vector);
+
+        // Triplet -> Dense Vector
+        void convert(const DeviceDoubletVector<T, 1>& from,
+                     DeviceDenseVector<T>&            to,
+                     bool clear_dense_vector = true);
     };
 }  // namespace details
 }  // namespace muda

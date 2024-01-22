@@ -50,6 +50,15 @@ void LinearSystemContext::convert(const DeviceBCOOVector<T, N>& from,
     m_converter.convert(from, to, clear_dense_vector);
 }
 
+// Doublet -> Dense Vector
+template <typename T, int N>
+void LinearSystemContext::convert(const DeviceDoubletVector<T, N>& from,
+                                  DeviceDenseVector<T>&            to,
+                                  bool clear_dense_vector)
+{
+    m_converter.convert(from, to, clear_dense_vector);
+}
+
 // BSR -> CSR
 template <typename T, int N>
 void LinearSystemContext::convert(const DeviceBSRMatrix<T, N>& from, DeviceCSRMatrix<T>& to)
@@ -99,6 +108,13 @@ template <typename T>
 void LinearSystemContext::convert(const DeviceCOOVector<T>& from,
                                   DeviceDenseVector<T>&     to,
                                   bool                      clear_dense_vector)
+{
+    m_converter.convert(from, to, clear_dense_vector);
+}
+template <typename T>
+void LinearSystemContext::convert(const DeviceDoubletVector<T, 1>& from,
+                                  DeviceDenseVector<T>&            to,
+                                  bool clear_dense_vector)
 {
     m_converter.convert(from, to, clear_dense_vector);
 }

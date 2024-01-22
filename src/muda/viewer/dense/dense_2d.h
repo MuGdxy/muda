@@ -15,21 +15,30 @@ namespace muda
  *  2) as for CUDA Memory2D, x index into height, y index into width.
  *****************************************************************************/
 
-template <typename T>
-class Dense2DBase : public ViewerBase<false> // TODO
+template <bool IsConst, typename T>
+class Dense2DBase : public ViewerBase<IsConst>  // TODO
 {
+    MUDA_VIEWER_COMMON_NAME(Dense2DBase);
+
   protected:
-    T*   m_data;
-    int2 m_offset;
-    int2 m_dim;
-    int  m_pitch_bytes;
+    template <typename T>
+    using auto_const_t = std::conditional_t<IsConst, const T, T>;
+
+    auto_const_t<T>* m_data;
+    int2             m_offset;
+    int2             m_dim;
+    int              m_pitch_bytes;
 
   public:
-    using value_type = T;
+    using value_type     = T;
+    using ConstViewer    = Dense2DBase<true, T>;
+    using NonConstViewer = Dense2DBase<false, T>;
+    using ThisViewer     = Dense2DBase<IsConst, T>;
+
 
     MUDA_GENERIC Dense2DBase() MUDA_NOEXCEPT : m_data(nullptr) {}
 
-    MUDA_GENERIC Dense2DBase(T* p, const int2& offset, const int2& dim, int pitch_bytes) MUDA_NOEXCEPT
+    MUDA_GENERIC Dense2DBase(auto_const_t<T>* p, const int2& offset, const int2& dim, int pitch_bytes) MUDA_NOEXCEPT
         : m_data(p),
           m_offset(offset),
           m_dim(dim),
@@ -37,23 +46,35 @@ class Dense2DBase : public ViewerBase<false> // TODO
     {
     }
 
-    MUDA_GENERIC const T& operator()(const int2& xy) const MUDA_NOEXCEPT
+    MUDA_GENERIC auto as_const() const MUDA_NOEXCEPT
     {
-        return operator()(xy.x, xy.y);
+        return ConstViewer{m_data, m_offset, m_dim, m_pitch_bytes};
     }
 
-    MUDA_GENERIC const T& operator()(int x, int y) const MUDA_NOEXCEPT
+    MUDA_GENERIC operator ConstViewer() const MUDA_NOEXCEPT
+    {
+        return as_const();
+    }
+
+
+    MUDA_GENERIC auto_const_t<T>& operator()(int x, int y) MUDA_NOEXCEPT
     {
         check();
         check_range(x, y);
 
         x += m_offset.x;
         y += m_offset.y;
-        auto height_begin = reinterpret_cast<std::byte*>(m_data) + x * m_pitch_bytes;
-        return *(reinterpret_cast<T*>(height_begin) + y);
+        auto height_begin =
+            reinterpret_cast<auto_const_t<std::byte>*>(m_data) + x * m_pitch_bytes;
+        return *((auto_const_t<T>*)(height_begin) + y);
     }
 
-    MUDA_GENERIC const T& flatten(int i)
+    MUDA_GENERIC auto_const_t<T>& operator()(const int2& xy) MUDA_NOEXCEPT
+    {
+        return operator()(xy.x, xy.y);
+    }
+
+    MUDA_GENERIC auto_const_t<T>& flatten(int i)
     {
         if constexpr(DEBUG_VIEWER)
         {
@@ -67,6 +88,25 @@ class Dense2DBase : public ViewerBase<false> // TODO
         auto x = i / m_dim.y;
         auto y = i % m_dim.y;
         return operator()(x, y);
+    }
+
+    MUDA_GENERIC auto_const_t<T>* data() MUDA_NOEXCEPT { return m_data; }
+
+
+    MUDA_GENERIC const T& operator()(const int2& xy) const MUDA_NOEXCEPT
+    {
+        return remove_const(*this)(xy);
+    }
+
+
+    MUDA_GENERIC const T& operator()(int x, int y) const MUDA_NOEXCEPT
+    {
+        return remove_const(*this)(x, y);
+    }
+
+    MUDA_GENERIC const T& flatten(int i) const
+    {
+        return remove_const(*this).flatten(i);
     }
 
     MUDA_GENERIC const T* data() const MUDA_NOEXCEPT { return m_data; }
@@ -113,67 +153,12 @@ class Dense2DBase : public ViewerBase<false> // TODO
     }
 };
 
+template <typename T>
+using Dense2D = Dense2DBase<false, T>;
 
 template <typename T>
-class CDense2D : public Dense2DBase<T>
-{
-    MUDA_VIEWER_COMMON_NAME(CDense2D);
-    using Base = Dense2DBase<T>;
+using CDense2D = Dense2DBase<true, T>;
 
-  public:
-    using Base::Base;
-    using Base::operator();
-
-    MUDA_GENERIC CDense2D(const Base& base)
-        : Base(base)
-    {
-    }
-
-    MUDA_GENERIC CDense2D(const T* p, const int2& offset, const int2& dim, int pitch_bytes) MUDA_NOEXCEPT
-        : Base(const_cast<T*>(p), offset, dim, pitch_bytes)
-    {
-    }
-};
-
-template <typename T>
-class Dense2D : public Dense2DBase<T>
-{
-    MUDA_VIEWER_COMMON_NAME(Dense2D);
-    using Base = Dense2DBase<T>;
-
-  public:
-    using Base::Dense2DBase;
-    using Base::operator();
-    using Base::data;
-    using Base::flatten;
-
-    MUDA_GENERIC Dense2D(const Base& base)
-        : Base(base)
-    {
-    }
-
-    MUDA_GENERIC operator CDense2D<T>() const MUDA_NOEXCEPT
-    {
-        return CDense2D<T>{*this};
-    }
-
-    MUDA_GENERIC T& operator()(int x, int y) MUDA_NOEXCEPT
-    {
-        return const_cast<T&>(Base::operator()(x, y));
-    }
-
-    MUDA_GENERIC T& operator()(const int2& xy) MUDA_NOEXCEPT
-    {
-        return const_cast<T&>(Base::operator()(xy));
-    }
-
-    MUDA_GENERIC T& flatten(int i) { return const_cast<T&>(Base::flatten(i)); }
-
-    MUDA_GENERIC T* data() MUDA_NOEXCEPT
-    {
-        return const_cast<T*>(Base::data());
-    }
-};
 
 // viewer traits
 template <typename T>

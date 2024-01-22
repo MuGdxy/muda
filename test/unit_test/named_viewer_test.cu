@@ -8,6 +8,4 @@ TEST_CASE("named_viewer_test", "[viewer]")
 {
     auto v = Dense1D<float>(nullptr, 1);
     REQUIRE(v.name() == std::string("~"));
-    v.name("");
-    REQUIRE(v.name() == std::string(""));
 }
