@@ -26,7 +26,7 @@ details::MatrixFormatConverter<T, N>& MatrixFormatConverter::impl()
     }
 
     auto impl = std::make_unique<details::MatrixFormatConverter<T, N>>(m_handles);
-    current   = impl.get();
+    current = impl.get();
     m_impls.emplace(type, std::move(impl));
     return *static_cast<details::MatrixFormatConverter<T, N>*>(current);
 }
@@ -87,6 +87,16 @@ void MatrixFormatConverter::convert(const DeviceBCOOVector<T, N>& from,
     impl<T, N>().convert(from, to, clear_dense_vector);
 }
 
+// Doublet -> Dense Vector
+template <typename T, int N>
+void MatrixFormatConverter::convert(const DeviceDoubletVector<T, N>& from,
+                                    DeviceDenseVector<T>&            to,
+                                    bool clear_dense_vector)
+{
+
+    impl<T, N>().convert(from, to, clear_dense_vector);
+}
+
 // BSR -> CSR
 template <typename T, int N>
 void MatrixFormatConverter::convert(const DeviceBSRMatrix<T, N>& from,
@@ -136,6 +146,15 @@ void MatrixFormatConverter::convert(const DeviceDoubletVector<T, 1>& from,
 template <typename T>
 void MatrixFormatConverter::convert(const DeviceCOOVector<T>& from,
                                     DeviceDenseVector<T>&     to,
+                                    bool clear_dense_vector)
+{
+    impl<T, 1>().convert(from, to, clear_dense_vector);
+}
+
+// Doublet -> Dense Vector
+template <typename T>
+void MatrixFormatConverter::convert(const DeviceDoubletVector<T, 1>& from,
+                                    DeviceDenseVector<T>&            to,
                                     bool clear_dense_vector)
 {
     impl<T, 1>().convert(from, to, clear_dense_vector);

@@ -42,7 +42,7 @@ void MatrixFormatConverter<T, N>::merge_sort_indices_and_blocks(
     ij_pairs.resize(src_row_indices.size());
 
     ParallelFor(256)
-        .kernel_name("set ij pairs")
+        .kernel_name(__FUNCTION__ "-set ij pairs")
         .apply(src_row_indices.size(),
                [row_indices = src_row_indices.cviewer().name("row_indices"),
                 col_indices = src_col_indices.cviewer().name("col_indices"),
@@ -53,7 +53,7 @@ void MatrixFormatConverter<T, N>::merge_sort_indices_and_blocks(
                });
 
     ParallelFor(256)
-        .kernel_name("iota")  //
+        .kernel_name(__FUNCTION__ "-iota")  //
         .apply(src_row_indices.size(),
                [sort_index = sort_index.viewer().name("sort_index")] __device__(int i) mutable
                { sort_index(i) = i; });
@@ -87,7 +87,7 @@ void MatrixFormatConverter<T, N>::merge_sort_indices_and_blocks(
     unique_blocks.resize(from.m_block_values.size());
 
     ParallelFor(256)
-        .kernel_name("set block values")
+        .kernel_name(__FUNCTION__)
         .apply(src_blocks.size(),
                [src_blocks = src_blocks.cviewer().name("blocks"),
                 sort_index = sort_index.cviewer().name("sort_index"),
@@ -126,7 +126,7 @@ void MatrixFormatConverter<T, N>::make_unique_indices(const DeviceTripletMatrix<
 
 
     muda::ParallelFor(256)
-        .kernel_name("make unique indices")
+        .kernel_name(__FUNCTION__)
         .apply(unique_counts.size(),
                [unique_ij_pairs = unique_ij_pairs.viewer().name("unique_ij_pairs"),
                 row_indices = row_indices.viewer().name("row_indices"),
@@ -152,7 +152,7 @@ void MatrixFormatConverter<T, N>::make_unique_blocks(const DeviceTripletMatrix<T
     // first we add the offsets to counts, to get the offset_ends
 
     Launch()
-        .kernel_name("calculate offset_ends")
+        .kernel_name(__FUNCTION__)
         .apply([offsets = offsets.viewer().name("offset"),
                 counts  = unique_counts.cviewer().name("counts"),
                 last    = unique_counts.size() - 1] __device__() mutable
@@ -338,7 +338,7 @@ void MatrixFormatConverter<T, N>::make_unique_indices(const DeviceDoubletVector<
     auto& begin_offset = offsets;
 
     Launch()
-        .kernel_name("calculate offset_ends")
+        .kernel_name(__FUNCTION__)
         .apply([offset = offsets.viewer().name("offset"),
                 count  = unique_counts.cviewer().name("counts"),
                 last   = unique_counts.size() - 1] __device__() mutable
@@ -381,7 +381,7 @@ void MatrixFormatConverter<T, N>::set_unique_segments_to_dense_vector(
         to.fill(0);
 
     ParallelFor(256)
-        .kernel_name("set unique segments to dense vector")
+        .kernel_name(__FUNCTION__)
         .apply(from.non_zero_segments(),
                [unique_segments = from.m_segment_values.cviewer().name("unique_segments"),
                 unique_indices = from.m_segment_indices.cviewer().name("unique_indices"),
@@ -389,6 +389,29 @@ void MatrixFormatConverter<T, N>::set_unique_segments_to_dense_vector(
                {
                    auto index                = unique_indices(i);
                    dst.segment<N>(index * N) = unique_segments(i);
+               });
+}
+
+template <typename T, int N>
+void MatrixFormatConverter<T, N>::convert(const DeviceDoubletVector<T, N>& from,
+                                          DeviceDenseVector<T>&            to,
+                                          bool clear_dense_vector)
+{
+    using namespace muda;
+
+    to.resize(N * from.segment_count());
+
+    if(clear_dense_vector)
+        to.fill(0);
+
+    ParallelFor(256)
+        .kernel_name(__FUNCTION__)
+        .apply(from.doublet_count(),
+               [src = from.viewer().name("src_sparse_vector"),
+                dst = to.viewer().name("dst_dense_vector")] __device__(int i) mutable
+               {
+                   auto&& [index, value] = src(i);
+                   dst.segment<N>(index * N).atomic_add(value);
                });
 }
 
@@ -471,14 +494,14 @@ void MatrixFormatConverter<T, N>::expand_blocks(const DeviceBCOOMatrix<T, N>& fr
     auto& row_indices = to.m_row_indices;
     auto& col_indices = to.m_col_indices;
     auto& values      = to.m_values;
-
+    
     auto& block_row_indices = from.m_block_row_indices;
     auto& block_col_indices = from.m_block_col_indices;
     auto& block_values      = from.m_block_values;
 
 
     ParallelFor(256)
-        .kernel_name("set coo matrix")
+        .kernel_name(__FUNCTION__)
         .apply(block_row_indices.size(),
                [block_row_indices = block_row_indices.cviewer().name("block_row_indices"),
                 block_col_indices = block_col_indices.cviewer().name("block_col_indices"),
@@ -523,7 +546,7 @@ void MatrixFormatConverter<T, N>::sort_indices_and_values(const DeviceBCOOMatrix
     ij_pairs.resize(row_indices.size());
 
     ParallelFor(256)
-        .kernel_name("set ij pairs")
+        .kernel_name(__FUNCTION__ "-set ij pairs")
         .apply(row_indices.size(),
                [row_indices = row_indices.cviewer().name("row_indices"),
                 col_indices = col_indices.cviewer().name("col_indices"),
@@ -547,7 +570,7 @@ void MatrixFormatConverter<T, N>::sort_indices_and_values(const DeviceBCOOMatrix
     auto dst_col_indices = to.col_indices();
 
     ParallelFor(256)
-        .kernel_name("set col row indices")
+        .kernel_name(__FUNCTION__ "-set col row indices")
         .apply(dst_row_indices.size(),
                [row_indices = dst_row_indices.viewer().name("row_indices"),
                 col_indices = dst_col_indices.viewer().name("col_indices"),

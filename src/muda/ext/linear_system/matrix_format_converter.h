@@ -90,6 +90,12 @@ class MatrixFormatConverter
                  DeviceDenseVector<T>&         to,
                  bool                          clear_dense_vector = true);
 
+    // Doublet -> Dense Vector
+    template <typename T, int N>
+    void convert(const DeviceDoubletVector<T, N>& from,
+                 DeviceDenseVector<T>&            to,
+                 bool                             clear_dense_vector = true);
+
     // BSR -> CSR
     template <typename T, int N>
     void convert(const DeviceBSRMatrix<T, N>& from, DeviceCSRMatrix<T>& to);
@@ -119,6 +125,12 @@ class MatrixFormatConverter
     void convert(const DeviceCOOVector<T>& from,
                  DeviceDenseVector<T>&     to,
                  bool                      clear_dense_vector = true);
+
+    // Doublet -> Dense Vector
+    template <typename T>
+    void convert(const DeviceDoubletVector<T, 1>& from,
+                 DeviceDenseVector<T>&            to,
+                 bool                             clear_dense_vector = true);
 };
 }  // namespace muda
 

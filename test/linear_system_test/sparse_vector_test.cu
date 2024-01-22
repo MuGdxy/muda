@@ -46,6 +46,14 @@ void test_doublet_vector(int segment_size, int doublet_count)
     DeviceDenseVector<T>          v;
     DeviceBCOOVector<T, BlockDim> bcoo;
     ctx.convert(doublet, bcoo);
+
+    v.fill(0);
+    ctx.convert(doublet, v);
+    v.copy_to(host_v);
+    //std::cout << host_v.transpose() << std::endl;
+    //std::cout << ground_truth.transpose() << std::endl;
+    REQUIRE(host_v.isApprox(ground_truth));
+
     ctx.convert(bcoo, v);
     v.copy_to(host_v);
     //std::cout << host_v.transpose() << std::endl;

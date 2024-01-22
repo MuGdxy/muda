@@ -15,22 +15,31 @@ namespace muda
  *  2) as for CUDA Memory3D, x index into depth, y index into height, z index into width
  ****************************************************************************************/
 
-template <typename T>
-class Dense3DBase : public ViewerBase<false> // TODO
+template <bool IsConst, typename T>
+class Dense3DBase : public ViewerBase<IsConst>  // TODO
 {
+    MUDA_VIEWER_COMMON_NAME(Dense3DBase);
+
   protected:
-    T*   m_data;
-    int3 m_offset;
-    int3 m_dim;
-    int  m_pitch_bytes;
-    int  m_pitch_bytes_area;
+    auto_const_t<T>* m_data;
+    int3             m_offset;
+    int3             m_dim;
+    int              m_pitch_bytes;
+    int              m_pitch_bytes_area;
 
   public:
-    using value_type = T;
+    using value_type     = T;
+    using ConstViewer    = Dense3DBase<true, T>;
+    using NonConstViewer = Dense3DBase<false, T>;
+    using ThisViewer     = Dense3DBase<IsConst, T>;
 
     MUDA_GENERIC Dense3DBase() MUDA_NOEXCEPT : m_data(nullptr){};
 
-    MUDA_GENERIC Dense3DBase(T* p, const int3& offset, const int3& dim, int pitch_bytes, int pitch_bytes_area) MUDA_NOEXCEPT
+    MUDA_GENERIC Dense3DBase(auto_const_t<T>* p,
+                             const int3&      offset,
+                             const int3&      dim,
+                             int              pitch_bytes,
+                             int              pitch_bytes_area) MUDA_NOEXCEPT
         : m_data(p),
           m_offset(offset),
           m_dim(dim),
@@ -39,12 +48,17 @@ class Dense3DBase : public ViewerBase<false> // TODO
     {
     }
 
-    MUDA_GENERIC const T& operator()(const int3& xyz) const MUDA_NOEXCEPT
+    MUDA_GENERIC auto as_const() const MUDA_NOEXCEPT
     {
-        return operator()(xyz.x, xyz.y, xyz.z);
+        return ConstViewer{m_data, m_offset, m_dim, m_pitch_bytes, m_pitch_bytes_area};
     }
 
-    MUDA_GENERIC const T& operator()(int x, int y, int z) const MUDA_NOEXCEPT
+    MUDA_GENERIC operator ConstViewer() const MUDA_NOEXCEPT
+    {
+        return as_const();
+    }
+
+    MUDA_GENERIC auto_const_t<T>& operator()(int x, int y, int z) MUDA_NOEXCEPT
     {
         check();
         check_range(x, y, z);
@@ -53,7 +67,12 @@ class Dense3DBase : public ViewerBase<false> // TODO
         return *(reinterpret_cast<T*>(height_begin) + z);
     }
 
-    MUDA_GENERIC const T& flatten(int i) const MUDA_NOEXCEPT
+    MUDA_GENERIC auto_const_t<T>& operator()(const int3& xyz) MUDA_NOEXCEPT
+    {
+        return operator()(xyz.x, xyz.y, xyz.z);
+    }
+
+    MUDA_GENERIC auto_const_t<T>& flatten(int i) MUDA_NOEXCEPT
     {
         auto area       = m_dim.y * m_dim.z;
         auto x          = i / area;
@@ -64,26 +83,40 @@ class Dense3DBase : public ViewerBase<false> // TODO
         return operator()(x, y, z);
     }
 
+    MUDA_GENERIC auto_const_t<T>* data() MUDA_NOEXCEPT { return m_data; }
+
+
+    MUDA_GENERIC const T& operator()(int x, int y, int z) const MUDA_NOEXCEPT
+    {
+        return remove_const(*this)(x, y, z);
+    }
+
+
+    MUDA_GENERIC const T& operator()(const int3& xyz) const MUDA_NOEXCEPT
+    {
+        return remove_const(*this)(xyz.x, xyz.y, xyz.z);
+    }
+
+    MUDA_GENERIC const T& flatten(int i) const MUDA_NOEXCEPT
+    {
+        return remove_const(*this).flatten(i);
+    }
+
     MUDA_GENERIC const T* data() const MUDA_NOEXCEPT { return m_data; }
 
+
     MUDA_GENERIC auto dim() const MUDA_NOEXCEPT { return m_dim; }
-
-    MUDA_GENERIC int area() const MUDA_NOEXCEPT { return m_dim.y * m_dim.z; }
-
-    MUDA_GENERIC int volume() const MUDA_NOEXCEPT { return total_size(); }
-
-    MUDA_GENERIC int total_size() const MUDA_NOEXCEPT
+    MUDA_GENERIC int  area() const MUDA_NOEXCEPT { return m_dim.y * m_dim.z; }
+    MUDA_GENERIC int  volume() const MUDA_NOEXCEPT { return total_size(); }
+    MUDA_GENERIC int  total_size() const MUDA_NOEXCEPT
     {
         return m_dim.x * area();
     }
-
     MUDA_GENERIC int pitch_bytes() const MUDA_NOEXCEPT { return m_pitch_bytes; }
-
     MUDA_GENERIC int pitch_bytes_area() const MUDA_NOEXCEPT
     {
         return m_pitch_bytes_area;
     }
-
     MUDA_GENERIC int total_bytes() const MUDA_NOEXCEPT
     {
         return m_pitch_bytes_area * m_dim.x;
@@ -119,62 +152,10 @@ class Dense3DBase : public ViewerBase<false> // TODO
 };
 
 template <typename T>
-class CDense3D : public Dense3DBase<T>
-{
-    MUDA_VIEWER_COMMON_NAME(CDense3D);
-    using Base = Dense3DBase<T>;
-
-  public:
-    using Base::Base;
-    using Base::operator();
-
-    MUDA_GENERIC CDense3D(const Base& base) MUDA_NOEXCEPT : Base(base){};
-
-    MUDA_GENERIC CDense3D(const T* p, const int3& offset, const int3& dim, int pitch_bytes, int pitch_bytes_area) MUDA_NOEXCEPT
-        : Base(const_cast<T*>(p), offset, dim, pitch_bytes, pitch_bytes_area)
-    {
-    }
-};
+using Dense3D = Dense3DBase<false, T>;
 
 template <typename T>
-class Dense3D : public Dense3DBase<T>
-{
-    MUDA_VIEWER_COMMON_NAME(Dense3D);
-    using Base = Dense3DBase<T>;
-
-  public:
-    using Base::Base;
-    using Base::operator();
-    using Base::data;
-    using Base::flatten;
-
-    MUDA_GENERIC Dense3D(const Base& base) MUDA_NOEXCEPT : Base(base) {}
-
-    MUDA_GENERIC operator CDense3D<T>() const MUDA_NOEXCEPT
-    {
-        return CDense3D<T>{*this};
-    }
-
-    MUDA_GENERIC T& operator()(const int3& xyz) MUDA_NOEXCEPT
-    {
-        return const_cast<T&>(Base::operator()(xyz));
-    }
-
-    MUDA_GENERIC T& operator()(int x, int y, int z) MUDA_NOEXCEPT
-    {
-        return const_cast<T&>(Base::operator()(x, y, z));
-    }
-
-    MUDA_GENERIC T& flatten(int i) MUDA_NOEXCEPT
-    {
-        return const_cast<T&>(Base::flatten(i));
-    }
-
-    MUDA_GENERIC T* data() MUDA_NOEXCEPT
-    {
-        return const_cast<T&>(Base::data());
-    }
-};
+using CDense3D = Dense3DBase<true, T>;
 
 // viewer traits
 template <typename T>

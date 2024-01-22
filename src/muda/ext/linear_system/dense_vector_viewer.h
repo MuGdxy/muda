@@ -248,6 +248,13 @@ class DenseVectorViewer : public DenseVectorViewerBase<false, T>
         return ret;
     }
 
+    MUDA_DEVICE T atomic_add(const T& val)
+    {
+        check_size_matching(1);
+        T ret = atomic_add(i, val);
+        return ret;
+    }
+
 
     template <int N>
     MUDA_GENERIC DenseVectorViewer& operator=(const Eigen::Vector<T, N>& other)
