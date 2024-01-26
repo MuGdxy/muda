@@ -185,77 +185,80 @@ BufferLaunch(stream).copy(BufferView, ...).wait();
 BufferLaunch(stream).fill(BufferView,...).wait();
 ```
 
-###  Field Layout
+### Linear System Support
 
-A simple simulation code using `muda::Field`, with a `muda::eigen` extension for better performance and readability.
+[We are still working on this part]
+
+**MUDA** supports basic linear system operations. e.g.:
+
+1. Sparse Matrix Format Conversion
+2. Sparse Matrix Assembly
+3. Linear System Solving
+
+![](./README.assets/linear_system.drawio.svg)
+
+The only thing you need to do is to declare a `muda::LinearSystemContext`.
 
 ```c++
-// create a field
-Field field;
-// create a subfield called "particle"
-// all attribute in this subfield has the same size
-auto& particle = field["particle"];
-// create a logger
-Logger logger;
+LinearSystemContext ctx;
+// non-unique triplets of (row_index, col_index, block3x3)
+DeviceTripletMatrix<float, 3> A_triplet;
+// setup the triplet matrix dimension
+A_triplet.reshape(block_rows,block_cols);
+// resize the triplets, we should know the total count of the triplets.
+A_triplet.resize_triplets(hessian_count); 
 
-// build the subfield
-auto  builder = particle.SoAoS(); // use SoAoS layout
-auto& m       = builder.entry("mass").scalar<float>();
-auto& pos     = builder.entry("position").vector3<float>(); 
-auto& vel     = builder.entry("velocity").vector3<float>();
-auto& f       = builder.entry("force").vector3<float>();
-builder.build(); // finish building a subfield
+// unique triplets of (row_index, col_index, block3x3) faster SPMV than TripletMatrix
+DeviceBCOOMatrix<float,3> A_bcoo; 
 
-// set size of the particle attributes
-constexpr int N = 10;
-particle.resize(N);
+// block compressed sparse row format, faster SPMV than BCOOMatrix
+DeviceBSRMatrix<float,3> A_bsr; 
 
-// to use muda eigen extension
-using namespace Eigen;
-using namespace muda::eigen;
+// compressed sparse row format, slower SPMV than BSRMatrix
+DeviceCSRMatrix<float,3> A_csr
 
-ParallelFor(256)
-    .apply(N,
-           [m   = make_viewer(m),          // muda::eigen::make_viewer
-            pos = make_viewer(pos),        // muda::eigen::make_viewer
-            vel = make_viewer(vel),        // muda::eigen::make_viewer
-            f   = make_viewer(f)] $(int i) // syntax sugar for `__device__ (int i) mutable`
-           {
-               m(i)   = 1.0f;
-               pos(i) = Vector3f::Zero();
-               vel(i) = Vector3f::Zero();
-               f(i)   = Vector3f{0.0f, -9.8f, 0.0f}; // just gravity
-           })
-    .wait();
+// trivial dense matrix 
+DeviceDenseMatrix<float> A_dense; 
 
-// safely resize the subfield
-particle.resize(N * 13);
+// convert:
+ctx.convert(A_triplet, A_bcoo);
+ctx.convert(A_bcoo, A_bsr);
+ctx.convert(A_bsr, A_dense);
+ctx.convert(A_bsr, A_csr);
+ctx.convert(A_bcoo, A_dense);
 
-float dt = 0.01f;
-
-// integration
-ParallelFor(256)
-    .apply(N,
-           [logger = logger.viewer(),
-            m   = make_viewer(m),
-            pos = make_viewer(pos),
-            vel = make_viewer(vel),
-            f   = make_cviewer(f),
-            dt] $(int i)
-           {
-               auto     x = pos(i);
-               auto     v = vel(i);
-               Vector3f a = f(i) / m(i);
-               v = v + a * dt;
-               x = x + v * dt;
-               logger << "position=" << x << "\n"; 
-           })
-    .wait();
-
-logger.retrieve(std::cout);
+// so for the Sparse Vector ...
 ```
 
-Note: every entry can be a separate `muda::ComputeGraphVar` so that it can also be used in `muda::ComputeGraph`
+We only allow users to assemble a Sparse Matrix from Triplet Matrix. And allow users to read from BCOOMatrix.
+
+To assemble a Triplet Matrix, user need to use the `viewer` of a Triplet Matrix.
+
+```c++
+DeviceTripletMatrix<float, 3> A_triplet;
+A_triplet.reshape(block_rows,block_cols);
+A_triplet.resize_triplets(hessian_count); 
+
+ParallelFor(256/*block size*/)
+    .apply(hessian_count,
+    [
+        H = A_triplet.viewer().name("H")
+        // some infos to build up hessian.
+    ] __device__(int i) 
+    {
+        int row, col;
+        Eigen::Matrix3f hessian; // fill the local hessian, using your infos
+        
+        // write the (row, col, hessian) to the i-th triplet
+        H(i).write(row,col, hessin);
+    }).wait();
+
+// convert to bcoo for better performance on SPMV.
+ctx.convert(A_triplet, A_bcoo);
+ctx.convert(A_bcoo, A_bsr);
+
+// so for the Sparse Vector ...
+```
 
 ### Compute Graph
 
