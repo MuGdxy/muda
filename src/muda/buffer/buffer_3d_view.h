@@ -130,6 +130,8 @@ class CBuffer3DView : public Buffer3DViewBase<true, T>
     }
 
     MUDA_HOST void copy_to(T* host) const;
+
+    MUDA_GENERIC auto as_const() const MUDA_NOEXCEPT { return *this; }
 };
 
 template <typename T>
@@ -147,9 +149,14 @@ class Buffer3DView : public Buffer3DViewBase<false, T>
 
     MUDA_GENERIC Buffer3DView(const CBuffer3DView<T>&) = delete;
 
+    MUDA_GENERIC CBuffer3DView<T> as_const() const MUDA_NOEXCEPT
+    {
+        return CBuffer3DView<T>{Base::as_const()};
+    }
+
     MUDA_GENERIC operator CBuffer3DView<T>() const MUDA_NOEXCEPT
     {
-        return CBuffer3DView<T>{this->as_const()};
+        return as_const();
     }
 
     MUDA_HOST void fill(const T& v);

@@ -116,6 +116,8 @@ class CBufferView : public BufferViewBase<true, T>
     }
 
     MUDA_HOST void copy_to(T* host) const;
+
+    MUDA_GENERIC auto as_const() const MUDA_NOEXCEPT { return *this; }
 };
 
 template <typename T>
@@ -140,9 +142,14 @@ class BufferView : public BufferViewBase<false, T>
     {
     }
 
+    MUDA_GENERIC CBufferView<T> as_const() const MUDA_NOEXCEPT
+    {
+        return CBufferView<T>{Base::as_const()};
+    }
+
     MUDA_GENERIC operator CBufferView<T>() const MUDA_NOEXCEPT
     {
-        return CBufferView<T>{this->as_const()};
+        return as_const();
     }
 
     MUDA_GENERIC BufferView<T> subview(size_t offset, size_t size = ~0) MUDA_NOEXCEPT

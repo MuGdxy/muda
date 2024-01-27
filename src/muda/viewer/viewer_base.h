@@ -76,8 +76,14 @@ class ViewerBase
     MUDA_INLINE MUDA_HOST void name(const char* n) MUDA_NOEXCEPT
     {
 #if MUDA_CHECK_ON
-        m_kernel_name = details::LaunchInfoCache::current_kernel_name();
         m_viewer_name = details::LaunchInfoCache::view_name(n);
+#endif
+    }
+
+    MUDA_INLINE MUDA_GENERIC void name(details::StringPointer pointer) MUDA_NOEXCEPT
+    {
+#if MUDA_CHECK_ON
+        m_viewer_name = pointer;
 #endif
     }
 };

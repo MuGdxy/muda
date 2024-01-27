@@ -126,6 +126,8 @@ class CBuffer2DView : public Buffer2DViewBase<true, T>
     }
 
     MUDA_HOST void copy_to(T* host) const;
+
+    MUDA_GENERIC auto as_const() const MUDA_NOEXCEPT { return *this; }
 };
 
 template <typename T>
@@ -143,9 +145,14 @@ class Buffer2DView : public Buffer2DViewBase<false, T>
 
     MUDA_GENERIC Buffer2DView(const CBuffer2DView<T>&) = delete;
 
+    MUDA_GENERIC CBuffer2DView<T> as_const() const MUDA_NOEXCEPT
+    {
+        return CBuffer2DView<T>{Base::as_const()};
+    }
+
     MUDA_GENERIC operator CBuffer2DView<T>() const MUDA_NOEXCEPT
     {
-        return CBuffer2DView<T>{this->as_const()};
+        return as_const();
     }
 
     MUDA_GENERIC Buffer2DView<T> subview(Offset2D offset, Extent2D extent = {}) MUDA_NOEXCEPT

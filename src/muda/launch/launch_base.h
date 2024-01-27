@@ -85,7 +85,7 @@ template <typename T>
 class LaunchBase : public LaunchCore
 {
     template <typename Others>
-    friend class launch_base;
+    friend class LaunchBase;
     using Base = LaunchCore;
 
   public:
