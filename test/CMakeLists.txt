@@ -13,6 +13,7 @@ target_compile_definitions(muda_unit_test PRIVATE "-DMUDA_TEST_DATA_DIR=R\"(${PR
 source_group(TREE "${PROJECT_SOURCE_DIR}/test" PREFIX "test" FILES ${MUDA_UNIT_TEST_SOURCE_FILES})
 source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
 
+
 find_package(Eigen3 REQUIRED)
 file(GLOB_RECURSE MUDA_EIGEN_TEST_SOURCE_FILES
   "${PROJECT_SOURCE_DIR}/test/eigen_test/*.cpp"
@@ -40,3 +41,12 @@ target_include_directories(muda_linear_sysytem_test PRIVATE
 target_link_libraries(muda_linear_sysytem_test PRIVATE muda cusparse cublas cusolver Eigen3::Eigen)
 source_group(TREE "${PROJECT_SOURCE_DIR}/test" PREFIX "test" FILES ${MUDA_LINEAR_SYSTEM_TEST_SOURCE_FILES})
 source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
+
+if(MSVC)
+  #when using c++ compiler, ignore C4819
+  #using generation expression to avoid warning in cmake
+  set(disable_warning -Xcompiler "/wd 4819")
+  target_compile_options(muda_unit_test PRIVATE ${disable_warning})
+  target_compile_options(muda_eigen_test PRIVATE ${disable_warning})
+  target_compile_options(muda_linear_sysytem_test PRIVATE ${disable_warning})
+endif()
