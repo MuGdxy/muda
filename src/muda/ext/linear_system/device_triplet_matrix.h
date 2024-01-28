@@ -46,6 +46,12 @@ class DeviceTripletMatrix
         m_block_col_indices.resize(nonzero_count);
     }
 
+    void resize(int row, int col, size_t nonzero_count)
+    {
+        reshape(row, col);
+        resize_triplets(nonzero_count);
+    }
+
     static constexpr int block_dim() { return N; }
 
     auto block_values() { return m_block_values.view(); }
@@ -129,6 +135,12 @@ class DeviceTripletMatrix<T, 1>
         m_values.resize(nonzero_count);
         m_row_indices.resize(nonzero_count);
         m_col_indices.resize(nonzero_count);
+    }
+
+    void resize(int row, int col, size_t nonzero_count)
+    {
+        reshape(row, col);
+        resize_triplets(nonzero_count);
     }
 
     static constexpr int block_size() { return 1; }

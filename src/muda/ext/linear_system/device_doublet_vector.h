@@ -38,6 +38,12 @@ class DeviceDoubletVector
         m_segment_indices.resize(nonzero_count);
     }
 
+    void resize(int num_segment, size_t nonzero_count)
+    {
+        reshape(num_segment);
+        resize_doublet(nonzero_count);
+    }
+
     void clear()
     {
         m_segment_values.clear();
@@ -93,6 +99,12 @@ class DeviceDoubletVector<T, 1>
     {
         m_values.resize(nonzero_count);
         m_indices.resize(nonzero_count);
+    }
+
+    void resize(int num, size_t nonzero_count)
+    {
+        reshape(num);
+        resize_doublet(nonzero_count);
     }
 
     void clear()
