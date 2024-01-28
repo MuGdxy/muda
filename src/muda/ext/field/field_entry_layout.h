@@ -36,7 +36,11 @@ class FieldEntryLayoutInfo
           m_innermost_array_size(layout == Layout::AoSoA ? innermost_array_size : 0)
     {
         MUDA_ASSERT(layout != Layout::RuntimeLayout,
-                    "RuntimeLayout is not allowed to use when constructing FieldEntryLayoutInfo.");
+                    "RuntimeLayout is not allowed to use when constructing FieldEntryLayoutInfo, because it's meaningless."
+                    "RuntimeLayout is only used in template argument.");
+
+        MUDA_ASSERT((innermost_array_size & (innermost_array_size - 1)) == 0,
+                    "innermost_array_size must be power of 2");
     }
 
     MUDA_GENERIC FieldEntryLayoutInfo() MUDA_NOEXCEPT {}

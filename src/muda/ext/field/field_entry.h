@@ -111,6 +111,8 @@ class FieldEntry : public FieldEntryBase
     template <FieldEntryLayout SrcLayout>
     void copy_from(const FieldEntry<T, SrcLayout, M, N>& src);
 
+    void fill(const ElementType& value);
+
   private:
     mutable DeviceBuffer<ElementType> m_workpace; // for data copy, if needed
 };

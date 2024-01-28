@@ -53,7 +53,7 @@ class CFieldEntryView<T, Layout, N, 1>
     MUDA_GENERIC auto as_const() const { return *this; }
     MUDA_GENERIC operator ConstView() const { return as_const(); }
 
-    MUDA_GENERIC void copy_to(BufferView<ElementType> dst) const;
+    MUDA_HOST void copy_to(BufferView<ElementType> dst) const;
 };
 
 template <typename T, FieldEntryLayout Layout, int N>
@@ -79,13 +79,13 @@ class FieldEntryView<T, Layout, N, 1>
 
     template <FieldEntryLayout SrcLayout>
     MUDA_HOST void copy_from(CFieldEntryView<T, SrcLayout, N, 1> src);
-
     MUDA_HOST void copy_from(CBufferView<ElementType> src);
-
     MUDA_HOST void copy_to(BufferView<ElementType> dst) const
     {
         as_const().copy_to(dst);
     }
+
+    MUDA_HOST void fill(const ElementType& value);
 };
 }  // namespace muda
 
@@ -98,7 +98,7 @@ template <FieldEntryLayout SrcLayout>
 MUDA_HOST void FieldEntryView<T, Layout, N, 1>::copy_from(CFieldEntryView<T, SrcLayout, N, 1> src)
 {
     FieldEntryLaunch()  //
-        .template copy<T, Layout, SrcLayout, N>(*this, src)
+        .copy(*this, src)
         .wait();
 }
 
@@ -106,7 +106,7 @@ template <typename T, FieldEntryLayout Layout, int N>
 MUDA_HOST void CFieldEntryView<T, Layout, N, 1>::copy_to(BufferView<ElementType> dst) const
 {
     FieldEntryLaunch()  //
-        .template copy<T, Layout, N>(dst, *this)
+        .copy(dst, *this)
         .wait();
 }
 
@@ -114,7 +114,15 @@ template <typename T, FieldEntryLayout Layout, int N>
 MUDA_HOST void FieldEntryView<T, Layout, N, 1>::copy_from(CBufferView<ElementType> src)
 {
     FieldEntryLaunch()  //
-        .template copy<T, Layout, N>(*this, src)
+        .copy(*this, src)
+        .wait();
+}
+
+template <typename T, FieldEntryLayout Layout, int N>
+MUDA_HOST void FieldEntryView<T, Layout, N, 1>::fill(const ElementType& value)
+{
+    FieldEntryLaunch()  //
+        .fill(*this, value)
         .wait();
 }
 }  // namespace muda

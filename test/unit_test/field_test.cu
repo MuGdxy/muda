@@ -127,80 +127,104 @@ void field_test2(FieldEntryLayout layout)
         .wait();
 }
 
-
+template <FieldEntryLayout Layout>
 void field_test(FieldEntryLayout layout, int N)
 {
     Field field;
     auto& particle = field["particle"];
-    float dt       = 0.01f;
 
     // build the field
-    auto  builder = particle.builder(layout);
-    auto& m       = builder.entry("mass").scalar<float>();
-    auto& pos     = builder.entry("position").vector3<float>();
-    auto& I       = builder.entry("inertia").matrix3x3<float>();
+    auto  builder = particle.template builder<Layout>(layout);
+    auto& m       = builder.entry("mass").template scalar<float>();
+    auto& pos     = builder.entry("position").template vector3<float>();
+    auto& vel     = builder.entry("velocity").template vector3<float>();
+    auto& I       = builder.entry("inertia").template matrix3x3<float>();
     builder.build();
 
     particle.resize(N);
 
     std::vector<float>    h_m(N);
     std::vector<Vector3f> h_pos(N);
+    std::vector<Vector3f> h_vel(N);
     std::vector<Matrix3f> h_I(N);
+
 
     std::vector<float>    res_h_m(N);
     std::vector<Vector3f> res_h_pos(N);
+    std::vector<Vector3f> res_h_vel(N);
     std::vector<Matrix3f> res_h_I(N);
 
     for(int i = 0; i < N; ++i)
     {
         h_m[i]   = 1.0f * i;
-        h_pos[i] = Vector3f::Ones() * i;
-        h_I[i]   = Matrix3f::Ones() * i;
+        h_pos[i] = 2.0f * Vector3f::Ones() * i;
+        h_vel[i] = Vector3f::UnitY();
+        h_I[i]   = 3.0f * Matrix3f::Ones() * i;
     }
 
+    // test entry: copy from device buffer & copy from host
     m.copy_from(h_m);
     pos.copy_from(h_pos);
+
+    // test entry: fill
+    vel.fill(Vector3f::UnitY());
     I.copy_from(h_I);
 
+    // test entry: copy to device buffer & copy to host
     m.copy_to(res_h_m);
     pos.copy_to(res_h_pos);
+    vel.copy_to(res_h_vel);
     I.copy_to(res_h_I);
 
     REQUIRE(h_m == res_h_m);
     REQUIRE(h_pos == res_h_pos);
+    REQUIRE(h_vel == res_h_vel);
     REQUIRE(h_I == res_h_I);
 
+    // test field resize
     particle.resize(N * 2);
 
     ParallelFor()
         .kernel_name(__FUNCTION__)
         .apply(N,
-               [N, m = m.viewer(), pos = pos.viewer(), I = I.viewer()] $(int i)
+               [N, m = m.viewer(), pos = pos.viewer(), vel = vel.viewer(), I = I.viewer()] $(int i)
                {
                    m(N + i)   = -1.0f * i;
                    pos(N + i) = -Vector3f::Ones() * i;
+                   vel(N + i) = -Vector3f::UnitY();
                    I(N + i)   = -Matrix3f::Ones() * i;
                });
 
 
     h_m.resize(N * 2);
     h_pos.resize(N * 2);
+    h_vel.resize(N * 2);
     h_I.resize(N * 2);
 
     for(int i = 0; i < N; ++i)
     {
         h_m[N + i]   = -1.0f * i;
         h_pos[N + i] = -Vector3f::Ones() * i;
+        h_vel[N + i] = -Vector3f::UnitY();
         h_I[N + i]   = -Matrix3f::Ones() * i;
     }
 
     m.copy_to(res_h_m);
     pos.copy_to(res_h_pos);
+    vel.copy_to(res_h_vel);
     I.copy_to(res_h_I);
 
     REQUIRE(h_m == res_h_m);
     REQUIRE(h_pos == res_h_pos);
+    REQUIRE(h_vel == res_h_vel);
     REQUIRE(h_I == res_h_I);
+
+    // test entry: entry entry copy
+    pos.copy_from(vel);
+    h_pos = h_vel;
+
+    pos.copy_to(res_h_pos);
+    REQUIRE(h_pos == res_h_pos);
 }
 
 TEST_CASE("field_test", "[field]")
@@ -208,21 +232,36 @@ TEST_CASE("field_test", "[field]")
     using Layout = FieldEntryLayout;
 
     std::array layout{Layout::AoSoA, Layout::SoA, Layout::AoS};
-    std::array name{"AoSoA", "SoA", "AoS"};
+    std::array name{"Runtime:AoSoA", "Runtime:SoA", "Runtime:AoS"};
 
     for(int i = 0; i < layout.size(); ++i)
     {
         SECTION(name[i])
         {
-            field_test(layout[i], 10);
+            field_test<Layout::RuntimeLayout>(layout[i], 10);
+            field_test<Layout::RuntimeLayout>(layout[i], 33);
+            field_test<Layout::RuntimeLayout>(layout[i], 197);
         }
-        SECTION(name[i])
-        {
-            field_test(layout[i], 33);
-        }
-        SECTION(name[i])
-        {
-            field_test(layout[i], 197);
-        }
+    }
+
+    SECTION("AoSoA")
+    {
+        field_test<Layout::AoSoA>(Layout::AoSoA, 10);
+        field_test<Layout::AoSoA>(Layout::AoSoA, 33);
+        field_test<Layout::AoSoA>(Layout::AoSoA, 197);
+    }
+
+    SECTION("SoA")
+    {
+        field_test<Layout::SoA>(Layout::SoA, 10);
+        field_test<Layout::SoA>(Layout::SoA, 33);
+        field_test<Layout::SoA>(Layout::SoA, 197);
+    }
+
+    SECTION("AoS")
+    {
+        field_test<Layout::AoS>(Layout::AoS, 10);
+        field_test<Layout::AoS>(Layout::AoS, 33);
+        field_test<Layout::AoS>(Layout::AoS, 197);
     }
 }
