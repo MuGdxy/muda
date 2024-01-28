@@ -18,9 +18,10 @@ void field_test1(FieldEntryLayout layout)
     auto  builder = particle.builder(layout);
     auto& m       = builder.entry("mass").scalar<float>();
     auto& pos     = builder.entry("position").vector3<float>();
-    auto& vel     = builder.entry("velocity").vector3<float>();
-    auto& force   = builder.entry("force").vector3<float>();
-    auto& I       = builder.entry("inertia").matrix3x3<float>();
+
+    auto& vel   = builder.entry("velocity").vector3<float>();
+    auto& force = builder.entry("force").vector3<float>();
+    auto& I     = builder.entry("inertia").matrix3x3<float>();
     builder.build();
 
     // set size of the particle attributes
@@ -79,7 +80,7 @@ void field_test2(FieldEntryLayout layout)
     float dt       = 0.01f;
 
     // build the field
-    auto builder = particle.builder(layout);
+    auto builder = particle.AoSoA();
     // auto  builder = particle.builder<FieldEntryLayout::SoA>();
     auto& m = builder.entry("mass").scalar<float>();
     auto& I = builder.entry("inertia").matrix3x3<float>();
@@ -125,6 +126,107 @@ void field_test2(FieldEntryLayout layout)
                           << I(i) << "\n";
                })
         .wait();
+}
+
+void field_example(FieldEntryLayout layout)
+{
+    using namespace muda;
+    using namespace Eigen;
+
+    Field field;
+    // create a subfield called "particle"
+    // any entry in this field has the same size
+    auto& particle = field["particle"];
+    float dt       = 0.01f;
+
+    // build the field:
+    // auto builder = particle.AoSoA(); // compile time layout
+    auto builder = particle.builder(FieldEntryLayout::AoSoA);  // runtime layout
+    auto& m      = builder.entry("mass").scalar<float>();
+    auto& pos    = builder.entry("position").vector3<float>();
+    auto& pos_old = builder.entry("position_old").vector3<float>();
+    auto& vel     = builder.entry("velocity").vector3<float>();
+    auto& force   = builder.entry("force").vector3<float>();
+    // matrix is also supported, but in this example we don't use it
+    auto& I = builder.entry("inertia").matrix3x3<float>();
+    builder.build();  // finish building the field
+
+    // set size of the particle attributes
+    constexpr int N = 10;
+    particle.resize(N);
+
+    Logger logger;
+
+    ParallelFor(256)
+        .kernel_name("setup_vars")
+        .apply(N,
+               [logger = logger.viewer(),
+                m      = m.viewer(),
+                pos    = pos.viewer(),
+                vel    = vel.viewer(),
+                f      = force.viewer()] $(int i)
+               {
+                   m(i)   = 1.0f;
+                   pos(i) = Vector3f::Ones();
+                   vel(i) = Vector3f::Zero();
+                   f(i)   = Vector3f{0.0f, -9.8f, 0.0f};
+
+                   logger << "--------------------------------\n"
+                          << "i=" << i << "\n"
+                          << "m=" << m(i) << "\n"
+                          << "pos=" << pos(i) << "\n"
+                          << "vel=" << vel(i) << "\n"
+                          << "f=" << f(i) << "\n";
+               })
+        .wait();
+
+    logger.retrieve();
+
+    // safe resize, the data will be copied to the new buffer.
+    // here we just show the possibility
+    // later we only work on the first N particles
+    particle.resize(N * 2);
+
+    ParallelFor(256)
+        .kernel_name("integration")
+        .apply(N,
+               [logger = logger.viewer(),
+                m      = m.cviewer(),
+                pos    = pos.viewer(),
+                vel    = vel.viewer(),
+                f      = force.cviewer(),
+                dt] $(int i)
+               {
+                   auto     x = pos(i);
+                   auto     v = vel(i);
+                   Vector3f a = f(i) / m(i);
+
+                   v = v + a * dt;
+                   x = x + v * dt;
+
+                   logger << "--------------------------------\n"
+                          << "i=" << i << "\n"
+                          << "m=" << m(i) << "\n"
+                          << "pos=" << pos(i) << "\n"
+                          << "vel=" << vel(i) << "\n"
+                          << "f=" << f(i) << "\n";
+               })
+        .wait();
+
+    logger.retrieve();
+
+    // copy between entry and host
+    std::vector<Vector3f> positions;
+    pos.copy_to(positions);
+    pos.copy_from(positions);
+
+    // copy between entries
+    pos_old.copy_from(pos);
+
+    // copy between buffer and entry
+    DeviceBuffer<Vector3f> pos_buf;
+    pos.copy_to(pos_buf);
+    pos.copy_from(pos_buf);
 }
 
 template <FieldEntryLayout Layout>
