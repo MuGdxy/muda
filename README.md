@@ -239,28 +239,36 @@ To assemble a Triplet Matrix, user need to use the `viewer` of a Triplet Matrix.
 
 ```c++
 DeviceTripletMatrix<float, 3> A_triplet;
-A_triplet.reshape(block_rows,block_cols);
-A_triplet.resize_triplets(hessian_count); 
+A_triplet.resize(block_rows,block_cols,hessian_count);
+DeviceDenseVector<float> x, b;
+x.resize(block_rows * 3);
+b.resize(block_rows * 3)
 
 ParallelFor(256/*block size*/)
     .apply(hessian_count,
     [
-        H = A_triplet.viewer().name("H")
-        // some infos to build up hessian.
+        H = A_triplet.viewer().name("Hessian"),
+        g = x.viewer().name("gradient")
+        // some infos to build up hessian and gradient
     ] __device__(int i) 
     {
         int row, col;
         Eigen::Matrix3f hessian; // fill the local hessian, using your infos
+        Eigen::Vector3f gradient;
         
         // write the (row, col, hessian) to the i-th triplet
         H(i).write(row,col, hessin);
+        
+        // atomic add the gradient vector
+        g.segment<3>(i * 3).atomic_add(gradient);
     }).wait();
 
 // convert to bcoo for better performance on SPMV.
 ctx.convert(A_triplet, A_bcoo);
 ctx.convert(A_bcoo, A_bsr);
 
-// so for the Sparse Vector ...
+// maybe in some iterative solver:
+ctx.spmv(A_bsr.cview(), x.cview(), b.view());
 ```
 
 ### [Extension] Field Layout
