@@ -1,4 +1,7 @@
+[TOC]
+
 # MUDA
+
 MUDA is **μ-CUDA**, yet another painless CUDA programming **paradigm**.
 
 > COVER THE LAST MILE OF CUDA
@@ -367,7 +370,11 @@ void field_example(FieldEntryLayout layout)
 }
 ```
 
+Note that every `FieldEntry` has a `View` called `FieldEntryView`. A `FieldEntryView` can be regarded as a `ComputeGraphVar`(see below), which means `FieldEntry` can also be used in `ComputeGraph`. 
+
 ### Compute Graph
+
+Define `MUDA_WITH_COMPUTE_GRAPH`  to turn on `Compute Graph` support.
 
 **MUDA** can generate `cudaGraph` nodes and dependencies from your `eval()` call. And the `cudaGraphExec` will be automatically updated (minimally) if you update a `muda::ComputeGraphVar`. More details in [zhihu_ZH](https://zhuanlan.zhihu.com/p/658080362).
 
@@ -592,7 +599,7 @@ $ cmake --build .
 
 ### Copy Headers
 
-Because **muda** is header-only, just copy the `src/muda/` folder to your project, set the include directory, and then everything is done.
+Because **muda** is header-only, copy the `src/muda/` folder to your project, set the include directory, and everything is done.
 
 ### Macro
 
