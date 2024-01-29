@@ -94,13 +94,13 @@ class ViewerBase
                                                                                \
     MUDA_INLINE MUDA_HOST this_type& name(const char* n) noexcept              \
     {                                                                          \
-        ViewerBase<IsConst>::name(n);                                          \
+        ::muda::ViewerBase<IsConst>::name(n);                                  \
         return *this;                                                          \
     }                                                                          \
                                                                                \
     MUDA_INLINE MUDA_GENERIC const char* name() const noexcept                 \
     {                                                                          \
-        return ViewerBase<IsConst>::name();                                    \
+        return ::muda::ViewerBase<IsConst>::name();                            \
     }                                                                          \
                                                                                \
   private:

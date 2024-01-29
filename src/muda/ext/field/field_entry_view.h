@@ -90,3 +90,18 @@ class CFieldEntryView;
 #include "details/entry_view/field_entry_view_matrix.inl"
 #include "details/entry_view/field_entry_view_vector.inl"
 #include "details/entry_view/field_entry_view_scalar.inl"
+
+namespace muda
+{
+template <typename T, FieldEntryLayout Layout, int M, int N>
+struct read_only_viewer<FieldEntryView<T, Layout, M, N>>
+{
+    using type = CFieldEntryView<T, Layout, M, N>;
+};
+
+template <typename T, FieldEntryLayout Layout, int M, int N>
+struct read_write_viewer<CFieldEntryView<T, Layout, M, N>>
+{
+    using type = FieldEntryView<T, Layout, M, N>;
+};
+}  // namespace muda
