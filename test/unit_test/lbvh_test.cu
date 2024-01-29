@@ -7,6 +7,8 @@
 #include <vector>
 #include <thrust/random.h>
 
+using namespace muda;
+
 struct AABBGetter
 {
     __device__ __host__ lbvh::AABB<float> operator()(const float4 f) const noexcept
@@ -52,23 +54,32 @@ void lbvh_test()
         thrust::device,
         thrust::make_counting_iterator<std::size_t>(0),
         thrust::make_counting_iterator<std::size_t>(N),
-        [bvh = bvh.viewer()] __device__(std::size_t idx)
+        [bvh = bvh.viewer().name("bvh")] __device__(std::size_t idx) mutable
         {
             unsigned int buffer[10];
-            const auto   self = bvh.objects[idx];
+            const auto   self = bvh.object(idx);
             const float  dr   = 0.1f;
             for(std::size_t i = 1; i < 10; ++i)
             {
+                uint32_t current_idx = 0;
                 for(unsigned int j = 0; j < 10; ++j)
                 {
                     buffer[j] = 0xFFFFFFFF;
                 }
+
+
                 const float       r = dr * i;
                 lbvh::AABB<float> query_box;
                 query_box.lower = make_float4(self.x - r, self.y - r, self.z - r, 0);
                 query_box.upper = make_float4(self.x + r, self.y + r, self.z + r, 0);
-                const auto num_found =
-                    lbvh::query_device(bvh, lbvh::overlaps(query_box), buffer, 10);
+                const auto num_found = bvh.query(lbvh::overlaps(query_box),
+                                                 [&] __device__(uint32_t obj_idx) mutable
+                                                 {
+                                                     if(current_idx < 10)
+                                                     {
+                                                         buffer[current_idx++] = obj_idx;
+                                                     }
+                                                 });
 
                 for(unsigned int j = 0; j < 10; ++j)
                 {
@@ -81,9 +92,9 @@ void lbvh_test()
                     else
                     {
                         assert(jdx != 0xFFFFFFFF);
-                        assert(jdx < bvh.num_objects);
+                        assert(jdx < bvh.num_objects());
                     }
-                    const auto other = bvh.objects[jdx];
+                    const auto other = bvh.object(jdx);
                     assert(fabsf(self.x - other.x) < r);  // check coordinates
                     assert(fabsf(self.y - other.y) < r);  // are in the range
                     assert(fabsf(self.z - other.z) < r);  // of query box
@@ -96,13 +107,13 @@ void lbvh_test()
     thrust::for_each(thrust::device,
                      thrust::make_counting_iterator<unsigned int>(0),
                      thrust::make_counting_iterator<unsigned int>(N),
-                     [bvh_dev = bvh.viewer()] __device__(const unsigned int idx)
+                     [bvh = bvh.viewer()] __device__(const unsigned int idx) mutable
                      {
-                         const auto self = bvh_dev.objects[idx];
-                         const auto nest = lbvh::query_device(
-                             bvh_dev, lbvh::nearest(self), DistanceCalculator());
+                         const auto self = bvh.object(idx);
+                         const auto nest =
+                             bvh.query(lbvh::nearest(self), DistanceCalculator());
                          assert(nest.first != 0xFFFFFFFF);
-                         const auto other = bvh_dev.objects[nest.first];
+                         const auto other = bvh.object(nest.first);
                          // of course, the nearest object is itself.
                          assert(nest.second == 0.0f);
                          assert(self.x == other.x);
@@ -128,16 +139,15 @@ void lbvh_test()
 
     thrust::for_each(random_points.begin(),
                      random_points.end(),
-                     [bvh_dev = bvh.viewer()] __device__(const float4 pos)
+                     [bvh = bvh.viewer()] __device__(const float4 pos) mutable
                      {
                          const auto calc = DistanceCalculator();
-                         const auto nest =
-                             lbvh::query_device(bvh_dev, lbvh::nearest(pos), calc);
+                         const auto nest = bvh.query(lbvh::nearest(pos), calc);
                          assert(nest.first != 0xFFFFFFFF);
 
-                         for(unsigned int i = 0; i < bvh_dev.num_objects; ++i)
+                         for(unsigned int i = 0; i < bvh.num_objects(); ++i)
                          {
-                             const auto dist = calc(bvh_dev.objects[i], pos);
+                             const auto dist = calc(bvh.object(i), pos);
                              if(i == nest.first)
                              {
                                  assert(dist == nest.second);
@@ -150,13 +160,11 @@ void lbvh_test()
                          return;
                      });
 
-    bvh.download();  // we must download the construct result to use it on host
-
     std::cout << "testing query_host:overlap ...\n";
     {
         for(std::size_t i = 0; i < 10; ++i)
         {
-            const auto  self = bvh.objects_host()[i];
+            const auto  self = bvh.host_objects()[i];
             const float dr   = 0.1f;
             for(unsigned int cnt = 1; cnt < 10; ++cnt)
             {
@@ -166,14 +174,14 @@ void lbvh_test()
                 query_box.upper = make_float4(self.x + r, self.y + r, self.z + r, 0);
 
                 std::vector<std::size_t> buffer;
-                const auto               num_found = lbvh::query_host(
-                    bvh, lbvh::overlaps(query_box), std::back_inserter(buffer));
+                const auto               num_found =
+                    lbvh::query(bvh, lbvh::overlaps(query_box), std::back_inserter(buffer));
 
                 for(unsigned int jdx : buffer)
                 {
-                    assert(jdx < bvh.objects_host().size());
+                    assert(jdx < bvh.host_objects().size());
 
-                    const auto other = bvh.objects_host()[jdx];
+                    const auto other = bvh.host_objects()[jdx];
                     assert(fabsf(self.x - other.x) < r);  // check coordinates
                     assert(fabsf(self.y - other.y) < r);  // are in the range
                     assert(fabsf(self.z - other.z) < r);  // of query box

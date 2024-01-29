@@ -1,13 +1,12 @@
 #pragma once
-#include "aabb.h"
+#include <muda/ext/geo/lbvh/aabb.h>
 
-namespace lbvh
+namespace muda::lbvh
 {
-
 template <typename Real>
 struct query_overlap
 {
-    __device__ __host__ query_overlap(const AABB<Real>& tgt)
+    MUDA_GENERIC query_overlap(const AABB<Real>& tgt)
         : target(tgt)
     {
     }
@@ -19,7 +18,7 @@ struct query_overlap
     query_overlap& operator=(const query_overlap&) = default;
     query_overlap& operator=(query_overlap&&)      = default;
 
-    __device__ __host__ inline bool operator()(const AABB<Real>& box) noexcept
+    MUDA_GENERIC inline bool operator()(const AABB<Real>& box) noexcept
     {
         return intersects(box, target);
     }
@@ -28,7 +27,7 @@ struct query_overlap
 };
 
 template <typename Real>
-__device__ __host__ query_overlap<Real> overlaps(const AABB<Real>& region) noexcept
+MUDA_GENERIC query_overlap<Real> overlaps(const AABB<Real>& region) noexcept
 {
     return query_overlap<Real>(region);
 }
@@ -39,7 +38,7 @@ struct query_nearest
     // float4/double4
     using vector_type = typename vector_of<Real>::type;
 
-    __device__ __host__ query_nearest(const vector_type& tgt)
+    MUDA_GENERIC query_nearest(const vector_type& tgt)
         : target(tgt)
     {
     }
@@ -54,21 +53,21 @@ struct query_nearest
     vector_type target;
 };
 
-__device__ __host__ inline query_nearest<float> nearest(const float4& point) noexcept
+MUDA_GENERIC inline query_nearest<float> nearest(const float4& point) noexcept
 {
     return query_nearest<float>(point);
 }
-__device__ __host__ inline query_nearest<float> nearest(const float3& point) noexcept
+MUDA_GENERIC inline query_nearest<float> nearest(const float3& point) noexcept
 {
     return query_nearest<float>(make_float4(point.x, point.y, point.z, 0.0f));
 }
-__device__ __host__ inline query_nearest<double> nearest(const double4& point) noexcept
+MUDA_GENERIC inline query_nearest<double> nearest(const double4& point) noexcept
 {
     return query_nearest<double>(point);
 }
-__device__ __host__ inline query_nearest<double> nearest(const double3& point) noexcept
+MUDA_GENERIC inline query_nearest<double> nearest(const double3& point) noexcept
 {
     return query_nearest<double>(make_double4(point.x, point.y, point.z, 0.0));
 }
 
-}  // namespace lbvh
+}  // namespace muda::lbvh

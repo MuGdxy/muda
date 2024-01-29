@@ -1,10 +1,11 @@
 #pragma once
-#include "utility.h"
+#include <muda/ext/geo/lbvh/utility.h>
+
 #include <thrust/swap.h>
 #include <cmath>
 #include <cuda_runtime.h>
 
-namespace lbvh
+namespace muda::lbvh
 {
 template <typename T>
 struct AABB
@@ -14,7 +15,7 @@ struct AABB
 };
 
 template <typename T>
-__device__ __host__ inline bool intersects(const AABB<T>& lhs, const AABB<T>& rhs) noexcept
+MUDA_GENERIC inline bool intersects(const AABB<T>& lhs, const AABB<T>& rhs) noexcept
 {
     if(lhs.upper.x < rhs.lower.x || rhs.upper.x < lhs.lower.x)
     {
@@ -31,8 +32,7 @@ __device__ __host__ inline bool intersects(const AABB<T>& lhs, const AABB<T>& rh
     return true;
 }
 
-__device__ __host__ inline AABB<double> merge(const AABB<double>& lhs,
-                                              const AABB<double>& rhs) noexcept
+MUDA_GENERIC inline AABB<double> merge(const AABB<double>& lhs, const AABB<double>& rhs) noexcept
 {
     AABB<double> merged;
     merged.upper.x = ::fmax(lhs.upper.x, rhs.upper.x);
@@ -44,8 +44,7 @@ __device__ __host__ inline AABB<double> merge(const AABB<double>& lhs,
     return merged;
 }
 
-__device__ __host__ inline AABB<float> merge(const AABB<float>& lhs,
-                                             const AABB<float>& rhs) noexcept
+MUDA_GENERIC inline AABB<float> merge(const AABB<float>& lhs, const AABB<float>& rhs) noexcept
 {
     AABB<float> merged;
     merged.upper.x = ::fmaxf(lhs.upper.x, rhs.upper.x);
@@ -61,7 +60,7 @@ __device__ __host__ inline AABB<float> merge(const AABB<float>& lhs,
 // Nearest Neighbor Queries (1995) ACS-SIGMOD
 // - Nick Roussopoulos, Stephen Kelley FredericVincent
 
-__device__ __host__ inline float mindist(const AABB<float>& lhs, const float4& rhs) noexcept
+MUDA_GENERIC inline float mindist(const AABB<float>& lhs, const float4& rhs) noexcept
 {
     const float dx = ::fminf(lhs.upper.x, ::fmaxf(lhs.lower.x, rhs.x)) - rhs.x;
     const float dy = ::fminf(lhs.upper.y, ::fmaxf(lhs.lower.y, rhs.y)) - rhs.y;
@@ -69,7 +68,7 @@ __device__ __host__ inline float mindist(const AABB<float>& lhs, const float4& r
     return dx * dx + dy * dy + dz * dz;
 }
 
-__device__ __host__ inline double mindist(const AABB<double>& lhs, const double4& rhs) noexcept
+MUDA_GENERIC inline double mindist(const AABB<double>& lhs, const double4& rhs) noexcept
 {
     const double dx = ::fmin(lhs.upper.x, ::fmax(lhs.lower.x, rhs.x)) - rhs.x;
     const double dy = ::fmin(lhs.upper.y, ::fmax(lhs.lower.y, rhs.y)) - rhs.y;
@@ -77,7 +76,7 @@ __device__ __host__ inline double mindist(const AABB<double>& lhs, const double4
     return dx * dx + dy * dy + dz * dz;
 }
 
-__device__ __host__ inline float minmaxdist(const AABB<float>& lhs, const float4& rhs) noexcept
+MUDA_GENERIC inline float minmaxdist(const AABB<float>& lhs, const float4& rhs) noexcept
 {
     float3 rm_sq = make_float3((lhs.lower.x - rhs.x) * (lhs.lower.x - rhs.x),
                                (lhs.lower.y - rhs.y) * (lhs.lower.y - rhs.y),
@@ -105,7 +104,7 @@ __device__ __host__ inline float minmaxdist(const AABB<float>& lhs, const float4
     return ::fminf(dx, ::fminf(dy, dz));
 }
 
-__device__ __host__ inline double minmaxdist(const AABB<double>& lhs, const double4& rhs) noexcept
+MUDA_GENERIC inline double minmaxdist(const AABB<double>& lhs, const double4& rhs) noexcept
 {
     double3 rm_sq = make_double3((lhs.lower.x - rhs.x) * (lhs.lower.x - rhs.x),
                                  (lhs.lower.y - rhs.y) * (lhs.lower.y - rhs.y),
@@ -134,7 +133,7 @@ __device__ __host__ inline double minmaxdist(const AABB<double>& lhs, const doub
 }
 
 template <typename T>
-__device__ __host__ inline typename vector_of<T>::type centroid(const AABB<T>& box) noexcept
+MUDA_GENERIC inline typename vector_of<T>::type centroid(const AABB<T>& box) noexcept
 {
     typename vector_of<T>::type c;
     c.x = (box.upper.x + box.lower.x) * 0.5;
@@ -143,4 +142,4 @@ __device__ __host__ inline typename vector_of<T>::type centroid(const AABB<T>& b
     return c;
 }
 
-}  // namespace lbvh
+}  // namespace muda::lbvh

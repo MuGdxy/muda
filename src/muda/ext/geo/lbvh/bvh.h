@@ -1,6 +1,6 @@
 #pragma once
-#include "aabb.h"
-#include "morton_code.h"
+#include <muda/ext/geo/lbvh/bvh_viewer.h>
+
 #include <thrust/swap.h>
 #include <thrust/pair.h>
 #include <thrust/tuple.h>
@@ -18,183 +18,40 @@
 #include <thrust/unique.h>
 #include <thrust/execution_policy.h>
 
-namespace lbvh
+namespace muda::lbvh
 {
-namespace detail
+namespace details
 {
-    struct node
-    {
-        std::uint32_t parent_idx;  // parent node
-        std::uint32_t left_idx;    // index of left  child node
-        std::uint32_t right_idx;   // index of right child node
-        std::uint32_t object_idx;  // == 0xFFFFFFFF if internal node.
-    };
-
-    // a set of pointers to use it on device.
-    template <typename Real, typename Object, bool IsConst>
-    struct basic_device_bvh;
-    template <typename Real, typename Object>
-    struct basic_device_bvh<Real, Object, false>
-    {
-        using real_type   = Real;
-        using aabb_type   = AABB<real_type>;
-        using node_type   = detail::node;
-        using index_type  = std::uint32_t;
-        using object_type = Object;
-
-        unsigned int num_nodes;  // (# of internal node) + (# of leaves), 2N+1
-        unsigned int num_objects;  // (# of leaves), the same as the number of objects
-
-        node_type*   nodes;
-        aabb_type*   aabbs;
-        object_type* objects;
-    };
-    template <typename Real, typename Object>
-    struct basic_device_bvh<Real, Object, true>
-    {
-        using real_type   = Real;
-        using aabb_type   = AABB<real_type>;
-        using node_type   = detail::node;
-        using index_type  = std::uint32_t;
-        using object_type = Object;
-
-        unsigned int num_nodes;  // (# of internal node) + (# of leaves), 2N+1
-        unsigned int num_objects;  // (# of leaves), the same as the number of objects
-
-        node_type const*   nodes;
-        aabb_type const*   aabbs;
-        object_type const* objects;
-    };
-
     template <typename UInt>
-    __device__ __host__ inline uint2 determine_range(UInt const* node_code,
-                                                     const unsigned int num_leaves,
-                                                     unsigned int idx)
-    {
-        if(idx == 0)
-        {
-            return make_uint2(0, num_leaves - 1);
-        }
-
-        // determine direction of the range
-        const UInt self_code = node_code[idx];
-        const int  L_delta   = common_upper_bits(self_code, node_code[idx - 1]);
-        const int  R_delta   = common_upper_bits(self_code, node_code[idx + 1]);
-        const int  d         = (R_delta > L_delta) ? 1 : -1;
-
-        // Compute upper bound for the length of the range
-
-        const int delta_min = thrust::min(L_delta, R_delta);
-        int       l_max     = 2;
-        int       delta     = -1;
-        int       i_tmp     = idx + d * l_max;
-        if(0 <= i_tmp && i_tmp < num_leaves)
-        {
-            delta = common_upper_bits(self_code, node_code[i_tmp]);
-        }
-        while(delta > delta_min)
-        {
-            l_max <<= 1;
-            i_tmp = idx + d * l_max;
-            delta = -1;
-            if(0 <= i_tmp && i_tmp < num_leaves)
-            {
-                delta = common_upper_bits(self_code, node_code[i_tmp]);
-            }
-        }
-
-        // Find the other end by binary search
-        int l = 0;
-        int t = l_max >> 1;
-        while(t > 0)
-        {
-            i_tmp = idx + (l + t) * d;
-            delta = -1;
-            if(0 <= i_tmp && i_tmp < num_leaves)
-            {
-                delta = common_upper_bits(self_code, node_code[i_tmp]);
-            }
-            if(delta > delta_min)
-            {
-                l += t;
-            }
-            t >>= 1;
-        }
-        unsigned int jdx = idx + l * d;
-        if(d < 0)
-        {
-            thrust::swap(idx, jdx);  // make it sure that idx < jdx
-        }
-        return make_uint2(idx, jdx);
-    }
-
-    template <typename UInt>
-    __device__ __host__ inline unsigned int find_split(UInt const* node_code,
-                                                       const unsigned int num_leaves,
-                                                       const unsigned int first,
-                                                       const unsigned int last) noexcept
-    {
-        const UInt first_code = node_code[first];
-        const UInt last_code  = node_code[last];
-        if(first_code == last_code)
-        {
-            return (first + last) >> 1;
-        }
-        const int delta_node = common_upper_bits(first_code, last_code);
-
-        // binary search...
-        int split  = first;
-        int stride = last - first;
-        do
-        {
-            stride           = (stride + 1) >> 1;
-            const int middle = split + stride;
-            if(middle < last)
-            {
-                const int delta = common_upper_bits(first_code, node_code[middle]);
-                if(delta > delta_node)
-                {
-                    split = middle;
-                }
-            }
-        } while(stride > 1);
-
-        return split;
-    }
-    template <typename Real, typename Object, bool IsConst, typename UInt>
-    void construct_internal_nodes(const basic_device_bvh<Real, Object, IsConst>& self,
-                                  UInt const*        node_code,
-                                  const unsigned int num_objects)
+    void construct_internal_nodes(node* nodes, UInt const* node_code, const uint32_t num_objects)
     {
         thrust::for_each(
             thrust::device,
-            thrust::make_counting_iterator<unsigned int>(0),
-            thrust::make_counting_iterator<unsigned int>(num_objects - 1),
-            [self, node_code, num_objects] __device__ __host__(const unsigned int idx)
+            thrust::make_counting_iterator<uint32_t>(0),
+            thrust::make_counting_iterator<uint32_t>(num_objects - 1),
+            [nodes, node_code, num_objects] __device__ (const uint32_t idx)
             {
-                self.nodes[idx].object_idx = 0xFFFFFFFF;  //  internal nodes
+                nodes[idx].object_idx = 0xFFFFFFFF;  //  internal nodes
 
                 const uint2 ij = determine_range(node_code, num_objects, idx);
                 const int gamma = find_split(node_code, num_objects, ij.x, ij.y);
 
-                self.nodes[idx].left_idx  = gamma;
-                self.nodes[idx].right_idx = gamma + 1;
+                nodes[idx].left_idx  = gamma;
+                nodes[idx].right_idx = gamma + 1;
                 if(thrust::min(ij.x, ij.y) == gamma)
                 {
-                    self.nodes[idx].left_idx += num_objects - 1;
+                    nodes[idx].left_idx += num_objects - 1;
                 }
                 if(thrust::max(ij.x, ij.y) == gamma + 1)
                 {
-                    self.nodes[idx].right_idx += num_objects - 1;
+                    nodes[idx].right_idx += num_objects - 1;
                 }
-                self.nodes[self.nodes[idx].left_idx].parent_idx  = idx;
-                self.nodes[self.nodes[idx].right_idx].parent_idx = idx;
+                nodes[nodes[idx].left_idx].parent_idx  = idx;
+                nodes[nodes[idx].right_idx].parent_idx = idx;
                 return;
             });
-        return;
     }
-
-}  // namespace detail
+}  // namespace details
 
 template <typename Real, typename Object>
 struct default_morton_code_calculator
@@ -210,8 +67,7 @@ struct default_morton_code_calculator
     default_morton_code_calculator& operator=(default_morton_code_calculator const&) = default;
     default_morton_code_calculator& operator=(default_morton_code_calculator&&) = default;
 
-    __device__ __host__ inline unsigned int operator()(const Object&,
-                                                       const AABB<Real>& box) noexcept
+    __device__ __host__ inline uint32_t operator()(const Object&, const AABB<Real>& box) noexcept
     {
         auto p = centroid(box);
         p.x -= whole.lower.x;
@@ -225,11 +81,6 @@ struct default_morton_code_calculator
     AABB<Real> whole;
 };
 
-template <typename Real, typename Object>
-using BVHDeviceViewer = detail::basic_device_bvh<Real, Object, false>;
-template <typename Real, typename Object>
-using CBVHDeviceViewer = detail::basic_device_bvh<Real, Object, true>;
-
 template <typename Real, typename Object, typename AABBGetter, typename MortonCodeCalculator = default_morton_code_calculator<Real, Object>>
 class BVH
 {
@@ -238,18 +89,11 @@ class BVH
     using index_type                  = std::uint32_t;
     using object_type                 = Object;
     using aabb_type                   = AABB<real_type>;
-    using node_type                   = detail::node;
+    using node_type                   = details::node;
     using aabb_getter_type            = AABBGetter;
     using morton_code_calculator_type = MortonCodeCalculator;
 
   public:
-    void download()
-    {
-        this->objects_h_ = this->objects_d_;
-        this->aabbs_h_   = this->aabbs_;
-        this->nodes_h_   = this->nodes_;
-    }
-
     BVH()                      = default;
     ~BVH()                     = default;
     BVH(const BVH&)            = default;
@@ -259,41 +103,43 @@ class BVH
 
     void clear()
     {
-        this->objects_d_.clear();
-        this->aabbs_.clear();
-        this->nodes_.clear();
+        this->m_objects.clear();
+        this->m_aabbs.clear();
+        this->m_nodes.clear();
         return;
     }
 
-    BVHDeviceViewer<real_type, object_type> viewer() noexcept
+    BVHViewer<real_type, object_type> viewer() noexcept
     {
-        return BVHDeviceViewer<real_type, object_type>{
-            static_cast<unsigned int>(nodes_.size()),
-            static_cast<unsigned int>(objects_d_.size()),
-            nodes_.data().get(),
-            aabbs_.data().get(),
-            objects_d_.data().get()};
+        return BVHViewer<real_type, object_type>{static_cast<uint32_t>(m_nodes.size()),
+                                                 static_cast<uint32_t>(m_objects.size()),
+                                                 m_nodes.data(),
+                                                 m_aabbs.data(),
+                                                 m_objects.data()};
     }
-    CBVHDeviceViewer<real_type, object_type> cviewer() const noexcept
+
+    CBVHViewer<real_type, object_type> cviewer() const noexcept
     {
-        return CBVHDeviceViewer<real_type, object_type>{
-            static_cast<unsigned int>(nodes_.size()),
-            static_cast<unsigned int>(objects_d_.size()),
-            nodes_.data().get(),
-            aabbs_.data().get(),
-            objects_d_.data().get()};
+        return CBVHViewer<real_type, object_type>{
+            static_cast<uint32_t>(m_nodes.size()),
+            static_cast<uint32_t>(m_objects.size()),
+            m_nodes.data(),
+            m_aabbs.data(),
+            m_objects.data()};
     }
 
     void build()
     {
-        if(objects_d_.size() == 0u)
+        if(m_objects.size() == 0u)
         {
             return;
         }
 
-        const unsigned int num_objects        = objects_d_.size();
-        const unsigned int num_internal_nodes = num_objects - 1;
-        const unsigned int num_nodes          = num_objects * 2 - 1;
+        m_host_dirty = true;
+
+        const uint32_t num_objects        = m_objects.size();
+        const uint32_t num_internal_nodes = num_objects - 1;
+        const uint32_t num_nodes          = num_objects * 2 - 1;
 
         // --------------------------------------------------------------------
         // calculate morton code of each points
@@ -307,56 +153,58 @@ class BVH
         default_aabb.upper.z = -inf;
         default_aabb.lower.z = inf;
 
-        this->aabbs_.resize(num_nodes, default_aabb);
+        this->m_aabbs.resize(num_nodes, default_aabb);
 
-        thrust::transform(this->objects_d_.begin(),
-                          this->objects_d_.end(),
-                          aabbs_.begin() + num_internal_nodes,
+        thrust::transform(this->m_objects.begin(),
+                          this->m_objects.end(),
+                          m_aabbs.begin() + num_internal_nodes,
                           aabb_getter_type());
 
         const auto aabb_whole =
-            thrust::reduce(aabbs_.begin() + num_internal_nodes,
-                           aabbs_.end(),
+            thrust::reduce(m_aabbs.begin() + num_internal_nodes,
+                           m_aabbs.end(),
                            default_aabb,
                            [] __device__ __host__(const aabb_type& lhs, const aabb_type& rhs)
                            { return merge(lhs, rhs); });
 
-        thrust::device_vector<unsigned int> morton(num_objects);
-        thrust::transform(this->objects_d_.begin(),
-                          this->objects_d_.end(),
-                          aabbs_.begin() + num_internal_nodes,
-                          morton.begin(),
+        m_morton.resize(num_objects);
+        thrust::transform(this->m_objects.begin(),
+                          this->m_objects.end(),
+                          m_aabbs.begin() + num_internal_nodes,
+                          m_morton.begin(),
                           morton_code_calculator_type(aabb_whole));
 
         // --------------------------------------------------------------------
         // sort object-indices by morton code
 
-        thrust::device_vector<unsigned int> indices(num_objects);
+        // iota the indices
+        m_indices.resize(num_objects);
         thrust::copy(thrust::make_counting_iterator<index_type>(0),
                      thrust::make_counting_iterator<index_type>(num_objects),
-                     indices.begin());
+                     m_indices.begin());
+
         // keep indices ascending order
         thrust::stable_sort_by_key(
-            morton.begin(),
-            morton.end(),
-            thrust::make_zip_iterator(thrust::make_tuple(aabbs_.begin() + num_internal_nodes,
-                                                         indices.begin())));
+            m_morton.begin(),
+            m_morton.end(),
+            thrust::make_zip_iterator(thrust::make_tuple(m_aabbs.begin() + num_internal_nodes,
+                                                         m_indices.begin())));
 
         // --------------------------------------------------------------------
         // check morton codes are unique
 
-        thrust::device_vector<unsigned long long int> morton64(num_objects);
-        const auto                                    uniqued =
-            thrust::unique_copy(morton.begin(), morton.end(), morton64.begin());
+        m_morton64.resize(num_objects);
+        const auto uniqued =
+            thrust::unique_copy(m_morton.begin(), m_morton.end(), m_morton64.begin());
 
-        const bool morton_code_is_unique = (morton64.end() == uniqued);
+        const bool morton_code_is_unique = (m_morton64.end() == uniqued);
         if(!morton_code_is_unique)
         {
-            thrust::transform(morton.begin(),
-                              morton.end(),
-                              indices.begin(),
-                              morton64.begin(),
-                              [] __device__ __host__(const unsigned int m, const unsigned int idx)
+            thrust::transform(m_morton.begin(),
+                              m_morton.end(),
+                              m_indices.begin(),
+                              m_morton64.begin(),
+                              [] __device__ __host__(const uint32_t m, const uint32_t idx)
                               {
                                   unsigned long long int m64 = m;
                                   m64 <<= 32;
@@ -373,11 +221,11 @@ class BVH
         default_node.left_idx   = 0xFFFFFFFF;
         default_node.right_idx  = 0xFFFFFFFF;
         default_node.object_idx = 0xFFFFFFFF;
-        this->nodes_.resize(num_nodes, default_node);
+        this->m_nodes.resize(num_nodes, default_node);
 
-        thrust::transform(indices.begin(),
-                          indices.end(),
-                          this->nodes_.begin() + num_internal_nodes,
+        thrust::transform(m_indices.begin(),
+                          m_indices.end(),
+                          this->m_nodes.begin() + num_internal_nodes,
                           [] __device__ __host__(const index_type idx)
                           {
                               node_type n;
@@ -391,79 +239,102 @@ class BVH
         // --------------------------------------------------------------------
         // construct internal nodes
 
-        const auto self = this->viewer();
         if(morton_code_is_unique)
         {
-            const unsigned int* node_code = morton.data().get();
-            detail::construct_internal_nodes(self, node_code, num_objects);
+            const uint32_t* node_code = m_morton.data();
+            details::construct_internal_nodes(m_nodes.data(), node_code, num_objects);
         }
         else  // 64bit version
         {
-            const unsigned long long int* node_code = morton64.data().get();
-            detail::construct_internal_nodes(self, node_code, num_objects);
+            const unsigned long long int* node_code = m_morton64.data();
+            details::construct_internal_nodes(m_nodes.data(), node_code, num_objects);
         }
 
         // --------------------------------------------------------------------
         // create AABB for each node by bottom-up strategy
 
-        thrust::device_vector<int> flag_container(num_internal_nodes, 0);
-        const auto                 flags = flag_container.data().get();
+        m_flag_container.clear();
+        m_flag_container.resize(num_internal_nodes, 0);
+        const auto flags = m_flag_container.data();
 
-        thrust::for_each(thrust::device,
-                         thrust::make_counting_iterator<index_type>(num_internal_nodes),
-                         thrust::make_counting_iterator<index_type>(num_nodes),
-                         [self, flags] __device__(index_type idx)
-                         {
-                             unsigned int parent = self.nodes[idx].parent_idx;
-                             while(parent != 0xFFFFFFFF)  // means idx == 0
-                             {
-                                 const int old = atomicCAS(flags + parent, 0, 1);
-                                 if(old == 0)
-                                 {
-                                     // this is the first thread entered here.
-                                     // wait the other thread from the other child node.
-                                     return;
-                                 }
-                                 assert(old == 1);
-                                 // here, the flag has already been 1. it means that this
-                                 // thread is the 2nd thread. merge AABB of both childlen.
+        thrust::for_each(
+            thrust::device,
+            thrust::make_counting_iterator<index_type>(num_internal_nodes),
+            thrust::make_counting_iterator<index_type>(num_nodes),
+            [nodes = m_nodes.data(), aabbs = m_aabbs.data(), flags] __device__(index_type idx)
+            {
+                uint32_t parent = nodes[idx].parent_idx;
+                while(parent != 0xFFFFFFFF)  // means idx == 0
+                {
+                    const int old = atomicCAS(flags + parent, 0, 1);
+                    if(old == 0)
+                    {
+                        // this is the first thread entered here.
+                        // wait the other thread from the other child node.
+                        return;
+                    }
+                    MUDA_KERNEL_ASSERT(old == 1);
+                    // here, the flag has already been 1. it means that this
+                    // thread is the 2nd thread. merge AABB of both childlen.
 
-                                 const auto lidx = self.nodes[parent].left_idx;
-                                 const auto ridx = self.nodes[parent].right_idx;
-                                 const auto lbox = self.aabbs[lidx];
-                                 const auto rbox = self.aabbs[ridx];
-                                 self.aabbs[parent] = merge(lbox, rbox);
+                    const auto lidx = nodes[parent].left_idx;
+                    const auto ridx = nodes[parent].right_idx;
+                    const auto lbox = aabbs[lidx];
+                    const auto rbox = aabbs[ridx];
+                    aabbs[parent]   = merge(lbox, rbox);
 
-                                 // look the next parent...
-                                 parent = self.nodes[parent].parent_idx;
-                             }
-                             return;
-                         });
-        return;
+                    // look the next parent...
+                    parent = nodes[parent].parent_idx;
+                }
+                return;
+            });
     }
 
-    const auto& objects() const noexcept { return objects_d_; }
-    auto&       objects() noexcept { return objects_d_; }
-    const auto& aabbs() const noexcept { return aabbs_; }
-    auto&       aabbs() noexcept { return aabbs_; }
-    const auto& nodes() const noexcept { return nodes_; }
-    auto&       nodes() noexcept { return nodes_; }
+    const auto& objects() const noexcept { return m_objects; }
+    auto&       objects() noexcept { return m_objects; }
+    const auto& aabbs() const noexcept { return m_aabbs; }
+    const auto& nodes() const noexcept { return m_nodes; }
 
-    const auto& objects_host() const noexcept { return objects_h_; }
-    auto&       objects_host() noexcept { return objects_h_; }
-    const auto& aabbs_host() const noexcept { return aabbs_h_; }
-    auto&       aabbs_host() noexcept { return aabbs_h_; }
-    const auto& nodes_host() const noexcept { return nodes_h_; }
-    auto&       nodes_host() noexcept { return nodes_h_; }
+    const auto& host_objects() const noexcept
+    {
+        download_if_dirty();
+        return m_h_objects;
+    }
+    const auto& host_aabbs() const noexcept
+    {
+        download_if_dirty();
+        return m_h_aabbs;
+    }
+    const auto& host_nodes() const noexcept
+    {
+        download_if_dirty();
+        return m_h_nodes;
+    }
 
   private:
-    thrust::device_vector<object_type> objects_d_;
-    thrust::device_vector<aabb_type>   aabbs_;
-    thrust::device_vector<node_type>   nodes_;
+    muda::DeviceVector<uint32_t>               m_morton;
+    muda::DeviceVector<uint32_t>               m_indices;
+    muda::DeviceVector<unsigned long long int> m_morton64;
+    muda::DeviceVector<int>                    m_flag_container;
 
-    thrust::host_vector<object_type> objects_h_;
-    thrust::host_vector<aabb_type>   aabbs_h_;
-    thrust::host_vector<node_type>   nodes_h_;
+    muda::DeviceVector<object_type> m_objects;
+    muda::DeviceVector<aabb_type>   m_aabbs;
+    muda::DeviceVector<node_type>   m_nodes;
+
+    mutable bool                             m_host_dirty = true;
+    mutable thrust::host_vector<object_type> m_h_objects;
+    mutable thrust::host_vector<aabb_type>   m_h_aabbs;
+    mutable thrust::host_vector<node_type>   m_h_nodes;
+
+    void download_if_dirty() const
+    {
+        if(m_host_dirty)
+        {
+            m_h_objects  = m_objects;
+            m_h_aabbs    = m_aabbs;
+            m_h_nodes    = m_nodes;
+            m_host_dirty = false;
+        }
+    }
 };
-
-}  // namespace lbvh
+}  // namespace muda::lbvh
