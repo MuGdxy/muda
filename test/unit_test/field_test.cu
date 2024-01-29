@@ -269,7 +269,8 @@ void field_test(FieldEntryLayout layout, int N)
     pos.copy_from(h_pos);
 
     // test entry: fill
-    vel.fill(Vector3f::UnitY());
+    vel.subview(0, N - 1).fill(Vector3f::UnitY());
+    vel.subview(N - 1, 1).fill(Vector3f::UnitY());
     I.copy_from(h_I);
 
     // test entry: copy to device buffer & copy to host

@@ -25,14 +25,26 @@ class FieldEntryViewerCore : protected ViewerBase<IsConst>
 
     FieldEntryCore m_core;
     MatStride      m_stride;
+    int            m_offset = 0;
+    int            m_size   = 0;
 
   public:
     MUDA_GENERIC FieldEntryViewerCore() {}
 
-    MUDA_GENERIC FieldEntryViewerCore(const FieldEntryCore& core)
+    MUDA_GENERIC FieldEntryViewerCore(const FieldEntryCore& core, int offset, int size)
         : m_core(core)
+        , m_offset(offset)
+        , m_size(size)
     {
         Base::name(core.name_string_pointer());
+
+        MUDA_KERNEL_ASSERT(m_offset >= 0 && m_size >= 0 && m_offset + m_size <= total_count(),
+                           "FieldEntryViewer[%s:%s]: offset/size indexing out of range, size=%d, offset=%d, size=%d",
+                           name(),
+                           kernel_name(),
+                           total_count(),
+                           m_offset,
+                           m_size);
 
         if constexpr(M == 1 && N == 1)
         {
@@ -59,62 +71,62 @@ class FieldEntryViewerCore : protected ViewerBase<IsConst>
     // we will impl that in the derived class
     MUDA_GENERIC T* data(int i) const
     {
-        MUDA_KERNEL_ASSERT(i < count(),
-                           "FieldEntry[%s:%s]: count indexing out of range, size=%d, index=%d",
-                           kernel_name(),
-                           name(),
-                           count(),
-                           i);
-        return m_core.template data<T, Layout>(i);
+        check_index(i);
+        return m_core.template data<T, Layout>(m_offset + i);
     }
 
     MUDA_GENERIC T* data(int i, int j) const
     {
-        MUDA_KERNEL_ASSERT(i < count(),
-                           "FieldEntry[%s:%s]: count indexing out of range, size=%d, index=%d",
-                           kernel_name(),
-                           name(),
-                           count(),
-                           i);
+        check_index(i);
 
         MUDA_KERNEL_ASSERT(j < shape().x,
                            "FieldEntry[%s:%s]: vector component indexing out of range, shape=(%d, %d), index=%d",
-                           kernel_name(),
                            name(),
+                           kernel_name(),
                            shape().x,
                            shape().y,
                            j);
-        return m_core.template data<T, Layout>(i, j);
+        return m_core.template data<T, Layout>(m_offset + i, j);
     }
 
     MUDA_GENERIC T* data(int i, int row_index, int col_index) const
     {
-        MUDA_KERNEL_ASSERT(i < count(),
-                           "FieldEntry[%s:%s]: count indexing out of range, size=%d, index=%d",
-                           kernel_name(),
-                           name(),
-                           count(),
-                           i);
+        check_index(i);
 
         MUDA_KERNEL_ASSERT(row_index < shape().x && col_index < shape().y,
                            "FieldEntry[%s:%s]: vector component indexing out of range, shape=(%d,%d), index=(%d,%d)",
-                           kernel_name(),
                            name(),
+                           kernel_name(),
                            shape().x,
                            shape().y,
                            row_index,
                            col_index);
-        return m_core.template data<T, Layout>(i, row_index, col_index);
+        return m_core.template data<T, Layout>(m_offset + i, row_index, col_index);
     }
 
   public:
     MUDA_GENERIC auto layout_info() const { return m_core.layout_info(); }
     MUDA_GENERIC auto layout() const { return m_core.layout(); }
-    MUDA_GENERIC auto count() const { return m_core.count(); }
+    MUDA_GENERIC auto offset() const { return m_offset; }
+    MUDA_GENERIC auto size() const { return m_size; }
+    MUDA_GENERIC auto total_count() const { return m_core.count(); }
     MUDA_GENERIC auto elem_byte_size() const { return m_core.elem_byte_size(); }
     MUDA_GENERIC auto shape() const { return m_core.shape(); }
     MUDA_GENERIC auto struct_stride() const { return m_core.struct_stride(); }
     MUDA_GENERIC auto entry_name() const { return m_core.name(); }
+
+  private:
+    MUDA_INLINE MUDA_GENERIC void check_index(int i) const
+    {
+        MUDA_KERNEL_ASSERT(i < m_size,
+                           "FieldEntryViewer[%s:%s]: indexing out of range, index=%d, size=%d, offset=%d, entry_total_count=%d",
+                           name(),
+                           kernel_name(),
+                           i,
+                           m_size,
+                           m_offset,
+                           total_count());
+    }
 };
 }  // namespace muda
 

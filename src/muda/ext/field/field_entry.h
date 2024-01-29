@@ -86,14 +86,30 @@ class FieldEntry : public FieldEntryBase
     {
         MUDA_ASSERT(m_field.data_buffer() != nullptr, "Resize the field before you use it!");
         return FieldEntryView<T, Layout, M, N>{
-            FieldEntryCore{m_field.data_buffer(), m_info, m_name_ptr}};
+            FieldEntryCore{m_field.data_buffer(), m_info, m_name_ptr},
+            0,
+            static_cast<int>(m_info.elem_count)};
     }
 
     CFieldEntryView<T, Layout, M, N> view() const
     {
         MUDA_ASSERT(m_field.data_buffer() != nullptr, "Resize the field before you use it!");
         return CFieldEntryView<T, Layout, M, N>{
-            FieldEntryCore{m_field.data_buffer(), m_info, m_name_ptr}};
+            FieldEntryCore{m_field.data_buffer(), m_info, m_name_ptr},
+            0,
+            static_cast<int>(m_info.elem_count)};
+    }
+
+    auto subview(int offset) { return view().subview(offset); }
+    auto subview(int offset) const { return view().subview(offset); }
+
+    auto subview(int offset, int count)
+    {
+        return view().subview(offset, count);
+    }
+    auto subview(int offset, int count) const
+    {
+        return view().subview(offset, count);
     }
 
     FieldEntryViewer<T, Layout, M, N>  viewer() { return view().viewer(); }
@@ -114,7 +130,7 @@ class FieldEntry : public FieldEntryBase
     void fill(const ElementType& value);
 
   private:
-    mutable DeviceBuffer<ElementType> m_workpace; // for data copy, if needed
+    mutable DeviceBuffer<ElementType> m_workpace;  // for data copy, if needed
 };
 
 constexpr int FieldEntryDynamicSize = -1;

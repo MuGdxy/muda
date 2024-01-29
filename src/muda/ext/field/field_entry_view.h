@@ -25,40 +25,53 @@ class FieldEntryViewCore : public ViewBase<IsConst>
 
   protected:
     FieldEntryCore m_core;
+    int            m_offset = 0;
+    int            m_size   = 0;
 
     MUDA_GENERIC T* data(int i) const
     {
-        return m_core.template data<T, Layout>(i);
+        return m_core.template data<T, Layout>(m_offset + i);
     }
 
     MUDA_GENERIC T* data(int i, int j) const
     {
-        return m_core.template data<T, Layout>(i, j);
+        return m_core.template data<T, Layout>(m_offset + i, j);
     }
 
     MUDA_GENERIC T* data(int i, int row_index, int col_index) const
     {
-        return m_core.template data<T, Layout>(i, row_index, col_index);
+        return m_core.template data<T, Layout>(m_offset + i, row_index, col_index);
     }
 
   public:
     MUDA_GENERIC FieldEntryViewCore() = default;
-    MUDA_GENERIC FieldEntryViewCore(const FieldEntryCore& core)
+    MUDA_GENERIC FieldEntryViewCore(const FieldEntryCore& core, int offset, int size)
         : m_core{core}
+        , m_offset{offset}
+        , m_size{size}
     {
+        MUDA_KERNEL_ASSERT(offset >= 0 && size >= 0 && offset + size <= core.count(),
+                           "(offset,size) is out of range, offset=%d, size=%d, count=%d",
+                           offset,
+                           size,
+                           core.count());
     }
 
     MUDA_GENERIC auto layout_info() const { return m_core.layout_info(); }
     MUDA_GENERIC auto layout() const { return layout_info().layout(); }
-    MUDA_GENERIC auto count() const { return m_core.count(); }
+    MUDA_GENERIC auto offset() const { return m_offset; }
+    MUDA_GENERIC auto size() const { return m_size; }
+    MUDA_GENERIC auto total_count() const { return m_core.count(); }
     MUDA_GENERIC auto elem_byte_size() const { return m_core.elem_byte_size(); }
     MUDA_GENERIC auto shape() const { return m_core.shape(); }
     MUDA_GENERIC auto struct_stride() const { return m_core.struct_stride(); }
 
-    // only available on host
-    MUDA_HOST std::string_view name() const { return m_core.name(); }
-    MUDA_GENERIC auto          viewer() { return ThisViewer{m_core}; }
-    MUDA_GENERIC auto          cviewer() const { return ConstViewer{m_core}; }
+    MUDA_GENERIC auto name() const { return m_core.name(); }
+    MUDA_GENERIC auto viewer() { return ThisViewer{m_core, offset(), size()}; }
+    MUDA_GENERIC auto cviewer() const
+    {
+        return ConstViewer{m_core, offset(), size()};
+    }
 };
 }  // namespace muda
 

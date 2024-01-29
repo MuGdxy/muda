@@ -10,13 +10,13 @@ template <typename T, FieldEntryLayout DstLayout, FieldEntryLayout SrcLayout, in
 MUDA_HOST FieldEntryLaunch& FieldEntryLaunch::copy(FieldEntryView<T, DstLayout, M, N> dst,
                                                    CFieldEntryView<T, SrcLayout, M, N> src)
 {
-    MUDA_ASSERT(dst.count() == src.count(),
-                "FieldEntry size mismatching: dst.count() = %d, src.count() = %d",
-                dst.count(),
-                src.count());
+    MUDA_ASSERT(dst.size() == src.size(),
+                "FieldEntry size mismatching: dst.size() = %d, src.size() = %d",
+                dst.size(),
+                src.size());
 
     ParallelFor()  //
-        .apply(dst.count(),
+        .apply(dst.size(),
                [dst, src] __device__(int i) mutable
                {
                    if constexpr(M == 1 && N == 1)
@@ -58,7 +58,7 @@ MUDA_HOST FieldEntryLaunch& FieldEntryLaunch::fill(
     const typename FieldEntryView<T, DstLayout, M, N>::ElementType& value)
 {
     ParallelFor()  //
-        .apply(dst.count(),
+        .apply(dst.size(),
                [dst, value] __device__(int i) mutable
                {
                    if constexpr(M == 1 && N == 1)
@@ -100,10 +100,10 @@ MUDA_HOST FieldEntryLaunch& FieldEntryLaunch::copy(
     BufferView<typename CFieldEntryView<T, SrcLayout, M, N>::ElementType> dst,
     CFieldEntryView<T, SrcLayout, M, N>                                   src)
 {
-    MUDA_ASSERT(dst.size() == src.count(),
-                "FieldEntry size mismatching: dst.size() = %d, src.count() = %d",
+    MUDA_ASSERT(dst.size() == src.size(),
+                "FieldEntry size mismatching: dst.size() = %d, src.size() = %d",
                 dst.size(),
-                src.count());
+                src.size());
 
 
     ParallelFor()  //
@@ -148,12 +148,12 @@ MUDA_HOST FieldEntryLaunch& FieldEntryLaunch::copy(
     FieldEntryView<T, DstLayout, M, N>                                    dst,
     CBufferView<typename FieldEntryView<T, DstLayout, M, N>::ElementType> src)
 {
-    MUDA_ASSERT(dst.count() == src.size(),
-                "FieldEntry size mismatching: dst.count() = %d, src.size() = %d",
-                dst.count(),
+    MUDA_ASSERT(dst.size() == src.size(),
+                "FieldEntry size mismatching: dst.size() = %d, src.size() = %d",
+                dst.size(),
                 src.size());
 
-    ParallelFor().apply(dst.count(),
+    ParallelFor().apply(dst.size(),
                         [dst, src] __device__(int i) mutable
                         {
                             if constexpr(M == 1 && N == 1)

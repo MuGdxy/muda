@@ -21,7 +21,10 @@ class FieldEntryViewBase : public FieldEntryViewCore<IsConst, T, Layout, M, N>
     {
     }
 
-    MUDA_GENERIC auto as_const() const { return ConstView{m_core}; }
+    MUDA_GENERIC auto as_const() const
+    {
+        return ConstView{m_core, Base::offset(), Base::size()};
+    }
     MUDA_GENERIC operator ConstView() const { return as_const(); }
 
 
@@ -33,6 +36,26 @@ class FieldEntryViewBase : public FieldEntryViewCore<IsConst, T, Layout, M, N>
     MUDA_GENERIC const T* data(int i, int row_index, int col_index) const
     {
         return remove_const(this)->data(i, row_index, col_index);
+    }
+
+    MUDA_GENERIC auto subview(int offset) const
+    {
+        return ConstView{m_core, m_offset + offset, m_size - offset};
+    }
+
+    MUDA_GENERIC auto subview(int offset, int size) const
+    {
+        return ConstView{m_core, m_offset + offset, size};
+    }
+
+    MUDA_GENERIC auto subview(int offset)
+    {
+        return ThisView{m_core, m_offset + offset, m_size - offset};
+    }
+
+    MUDA_GENERIC auto subview(int offset, int size)
+    {
+        return ThisView{m_core, m_offset + offset, size};
     }
 };
 
@@ -55,6 +78,26 @@ class CFieldEntryView : public FieldEntryViewBase<true, T, Layout, M, N>
 
     MUDA_GENERIC auto as_const() const { return *this; }
     MUDA_GENERIC operator ConstView() const { return as_const(); }
+
+    MUDA_GENERIC auto subview(int offset) const
+    {
+        return ConstView{Base::subview(offset)};
+    }
+
+    MUDA_GENERIC auto subview(int offset, int size) const
+    {
+        return ConstView{Base::subview(offset, size)};
+    }
+
+    MUDA_GENERIC auto subview(int offset)
+    {
+        return ThisView{Base::subview(offset)};
+    }
+
+    MUDA_GENERIC auto subview(int offset, int size)
+    {
+        return ThisView{Base::subview(offset, size)};
+    }
 
     MUDA_HOST void copy_to(BufferView<ElementType> dst) const;
 };
@@ -83,6 +126,25 @@ class FieldEntryView : public FieldEntryViewBase<false, T, Layout, M, N>
     }
     MUDA_GENERIC operator ConstView() const { return as_const(); }
 
+    MUDA_GENERIC auto subview(int offset) const
+    {
+        return ConstView{Base::subview(offset)};
+    }
+
+    MUDA_GENERIC auto subview(int offset, int size) const
+    {
+        return ConstView{Base::subview(offset, size)};
+    }
+
+    MUDA_GENERIC auto subview(int offset)
+    {
+        return ThisView{Base::subview(offset)};
+    }
+
+    MUDA_GENERIC auto subview(int offset, int size)
+    {
+        return ThisView{Base::subview(offset, size)};
+    }
 
     template <FieldEntryLayout SrcLayout>
     MUDA_HOST void copy_from(CFieldEntryView<T, SrcLayout, M, N> src);
