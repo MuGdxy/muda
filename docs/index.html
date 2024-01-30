@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>muda: muda</title>
+<title>MUDA: Main Page</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -21,7 +21,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">muda
+   <div id="projectname">MUDA
    </div>
   </td>
  </tr>
@@ -68,10 +68,7 @@ $(function() {
 </div>
 </div>
 
-<div><div class="header">
-  <div class="headertitle"><div class="title">muda </div></div>
-</div><!--header-->
-<div class="contents">
+<div><div class="contents">
 <div class="toc"><h3>Table of Contents</h3>
 <ul><li class="level1"><a href="#autotoc_md0">Overview</a><ul><li class="level2"><a href="#autotoc_md1">Launch</a></li>
 <li class="level2"><a href="#autotoc_md2">Logger</a></li>
@@ -152,7 +149,7 @@ Launch</h2>
 <div class="line">}</div>
 <div class="ttc" id="aclassmuda_1_1_kernel_html"><div class="ttname"><a href="classmuda_1_1_kernel.html">muda::Kernel</a></div><div class="ttdef"><b>Definition</b> kernel.h:11</div></div>
 <div class="ttc" id="aclassmuda_1_1_launch_html"><div class="ttname"><a href="classmuda_1_1_launch.html">muda::Launch</a></div><div class="ttdoc">A wrapper of raw cuda kernel launch in muda style, removing the &lt;&lt;&lt;&gt;&gt;&gt; usage, for better intellisense...</div><div class="ttdef"><b>Definition</b> launch.h:86</div></div>
-<div class="ttc" id="aclassmuda_1_1_parallel_for_html"><div class="ttname"><a href="classmuda_1_1_parallel_for.html">muda::ParallelFor</a></div><div class="ttdoc">ParallelFor usage: ParallelFor(16) .apply(16, [=] device(int i) mutable { printf(&quot;var=%d,...</div><div class="ttdef"><b>Definition</b> parallel_for.h:123</div></div>
+<div class="ttc" id="aclassmuda_1_1_parallel_for_html"><div class="ttname"><a href="classmuda_1_1_parallel_for.html">muda::ParallelFor</a></div><div class="ttdoc">a frequently used parallel for loop, DynamicBlockDim and GridStrideLoop strategy are provided,...</div><div class="ttdef"><b>Definition</b> parallel_for.h:116</div></div>
 <div class="ttc" id="aclassmuda_1_1_stream_html"><div class="ttname"><a href="classmuda_1_1_stream.html">muda::Stream</a></div><div class="ttdoc">RAII wrapper for cudaStream.</div><div class="ttdef"><b>Definition</b> stream.h:14</div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md2"></a>
 Logger</h2>
@@ -290,7 +287,7 @@ Asynchronous Operation</h2>
 <li>Sparse Matrix Assembly</li>
 <li>Linear System Solving</li>
 </ol>
-<p><img src="./img/linear_system.drawio.svg" alt="" style="pointer-events: none;" class="inline"/></p>
+<p><img src="./img/linear_system.drawio.svg" alt="" style="pointer-events: none; zoom:50%;" class="inline"/></p>
 <p>The only thing you need to do is to declare a <code><a class="el" href="classmuda_1_1_linear_system_context.html">muda::LinearSystemContext</a></code>.</p>
 <div class="fragment"><div class="line"><a class="code hl_class" href="classmuda_1_1_linear_system_context.html">LinearSystemContext</a> ctx;</div>
 <div class="line"><span class="comment">// non-unique triplets of (row_index, col_index, block3x3)</span></div>

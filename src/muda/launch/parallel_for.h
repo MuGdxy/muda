@@ -1,6 +1,6 @@
 /*****************************************************************/ /**
  * \file   parallel_for.h
- * \brief  a frequently used parallel for loop, **DynamicBlockDim** and **GridStrideLoop**
+ * \brief  A frequently used parallel for loop, **DynamicBlockDim** and **GridStrideLoop**
  * strategy are provided, and can be switched seamlessly to each other.
  * 
  * \author MuGdxy
@@ -104,13 +104,6 @@ class ParallelForDetails
 
 using details::grid_stride_loop_kernel;
 using details::parallel_for_kernel;
-
-/// <summary>
-/// ParallelFor
-/// usage:
-///		ParallelFor(16)
-///			.apply(16, [=] __device__(int i) mutable { printf("var=%d, i = %d\n");}, true);
-/// </summary>
 
 
 /**

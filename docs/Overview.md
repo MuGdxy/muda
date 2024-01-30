@@ -1,4 +1,4 @@
-\mainpage muda
+\mainpage notitle
 
 MUDA is **μ-CUDA**, yet another painless CUDA programming **paradigm**.
 
@@ -198,7 +198,7 @@ BufferLaunch(stream).fill(BufferView,...).wait();
 2. Sparse Matrix Assembly
 3. Linear System Solving
 
-![](./img/linear_system.drawio.svg)
+<img src="./img/linear_system.drawio.svg" style="zoom:50%;" />
 
 The only thing you need to do is to declare a `muda::LinearSystemContext`.
 

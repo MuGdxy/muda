@@ -111,7 +111,7 @@ buffer3d.copy_to(host);
 
 result of buffer2d:
 
-![buffer2d_resize](/doc/img/buffer2d_resize.svg)
+![buffer2d_resize](/docs/img/buffer2d_resize.svg)
 
 ### Viewer In Kernel
 
@@ -198,7 +198,7 @@ BufferLaunch(stream).fill(BufferView,...).wait();
 2. Sparse Matrix Assembly
 3. Linear System Solving
 
-![](./doc/img/linear_system.drawio.svg)
+![](./docs/img/linear_system.drawio.svg)
 
 The only thing you need to do is to declare a `muda::LinearSystemContext`.
 
@@ -441,7 +441,7 @@ void compute_graph_simple()
 }
 ```
 
-![graphviz](/doc/img/compute_graph.svg)
+![graphviz](/docs/img/compute_graph.svg)
 
 Launch a muda compute graph:
 
@@ -515,7 +515,7 @@ void dynamic_parallelism_graph()
 }
 ```
 
-![image-20231119161837442](/doc/img/dynamic_parallelism.svg)
+![image-20231119161837442](/docs/img/dynamic_parallelism.svg)
 
 ### MUDA vs. CUDA
 
@@ -625,7 +625,7 @@ If you manually copy the header files, don't forget to define the macros yoursel
 
 ## Documentation
 
-Documentation is maintained on https://codedocs.xyz/MuGdxy/muda/. And you can also build the doc by yourself. 
+Documentation is maintained on https://mugdxy.github.io/muda/. And you can also build the doc by yourself. 
 
 ## Examples
 
@@ -633,7 +633,7 @@ Documentation is maintained on https://codedocs.xyz/MuGdxy/muda/. And you can al
 
 All examples in `muda/example` are self-explanatory,  enjoy it.
 
-![image-20231102030703199](/doc/img/example-img.png)
+![image-20231102030703199](/docs/img/example-img.png)
 
 ## Contributing
 
@@ -662,7 +662,7 @@ Contributions are welcome. We are looking for or are working on:
   }
   ```
 
-  ![braiding](/doc/img/braiding.png)
+  ![braiding](/docs/img/braiding.png)
 
   
 

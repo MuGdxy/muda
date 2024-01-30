@@ -9,7 +9,10 @@ if (DOXYGEN_FOUND)
 
     # request to configure the file
     # replace variable: @PROJECT_NAME@ with the project name
-    set(PROJECT_NAME ${CMAKE_PROJECT_NAME})
+
+    # uppercase the CMAKE_PROJECT_NAME variable
+    string(TOUPPER ${CMAKE_PROJECT_NAME} PROJECT_NAME)
+    
     set(DOCXGEN_INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ ${PROJECT_SOURCE_DIR}/src/")
 
     # set the built document in this source directory

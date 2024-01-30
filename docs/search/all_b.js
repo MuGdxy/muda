@@ -9,6 +9,5 @@ var searchData=
   ['memcpynode_6',['MemcpyNode',['../classmuda_1_1_memcpy_node.html',1,'muda']]],
   ['memory_7',['Memory',['../classmuda_1_1_memory.html',1,'muda']]],
   ['memsetnode_8',['MemsetNode',['../classmuda_1_1_memset_node.html',1,'muda']]],
-  ['muda_9',['muda',['../index.html',1,'']]],
-  ['muda_20vs_20cuda_10',['MUDA vs. CUDA',['../index.html#autotoc_md11',1,'']]]
+  ['muda_20vs_20cuda_9',['MUDA vs. CUDA',['../index.html#autotoc_md11',1,'']]]
 ];
