@@ -1,3 +1,13 @@
+/*****************************************************************//**
+ * \file   device_buffer.h
+ * \brief  A light-weight wrapper of cuda device memory. Like `std::vector`,
+ * allow user to resize, reserve, shrink_to_fit, fill, also provide muda viewer
+ * for in-kernel access. 
+ * 
+ * \author MuGdxy
+ * \date   January 2024
+ *********************************************************************/
+
 #pragma once
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -16,6 +26,21 @@ class DeviceVector;
 template <typename T>
 class HostVector;
 
+
+/**
+ * \class DeviceBuffer
+ * 
+ * \brief A `std::vector` like wrapper of cuda device memory, allows user to:
+ * \li resize
+ * \li reserve
+ * \li clear
+ * \li fill
+ * \li shrink_to_fit
+ * \li make view or subview from it
+ * \li make a safe viewer from it
+ * 
+ * \sa \ref 
+ */
 template <typename T>
 class DeviceBuffer
 {

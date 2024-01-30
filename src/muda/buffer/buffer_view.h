@@ -1,3 +1,12 @@
+/*****************************************************************//**
+ * \file   buffer_view.h
+ * \brief  A view interface for any array-like liner memory, which can be 
+ * constructed from DeviceBuffer/DeviceVector or any thing that is a array-like
+ * liner memory, e.g. raw cuda pointer.
+ * 
+ * \author MuGdxy
+ * \date   January 2024
+ *********************************************************************/
 #pragma once
 #include <cuda.h>
 #include <cuda_runtime.h>

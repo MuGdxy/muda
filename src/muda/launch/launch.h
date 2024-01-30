@@ -1,3 +1,11 @@
+/*****************************************************************/ /**
+ * \file   launch.h
+ * \brief  cuda kernel launch in muda style.
+ * 
+ * \author MuGdxy
+ * \date   January 2024
+ *********************************************************************/
+
 #pragma once
 #include <muda/launch/launch_base.h>
 #include <muda/type_traits/always.h>
@@ -31,6 +39,49 @@ namespace details
 dim3 cube(int x) MUDA_NOEXCEPT;
 dim3 square(int x) MUDA_NOEXCEPT;
 
+/** 
+ * \class Launch
+ * 
+ * \ingroup Launcher
+ * 
+ * \brief **A wrapper of raw cuda kernel launch in muda style**, removing the `<<<>>>` usage, for better intellisense support.
+ * 
+ * \details
+ * A raw cuda kernel define and launch:
+ * \code{.cpp}
+ *  __global__ void cuda_kernel() {}
+ * 
+ *  int main()
+ *  {
+ *      cuda_kernel<<<4,64>>>();
+ *  }
+ * \endcode
+ * 
+ * The muda style kernel launch:
+ * \code{.cpp}
+ *  // muda kernel launch
+ *  Launch(4,64)
+ *      .kernel_name("kernel_name") // optional
+ *      .apply([]__device__(){}); // kernel body
+ * \endcode
+ * 
+ * A more complicated but more convincing example, to show why
+ * using muda style kernel launch is better than raw cuda kernel launch.
+ * \code{.cpp}
+ *  DeviceBuffer3D<float> volume{10,10,10};
+ *  Launch(dim3{8,8,8}) // blockDim
+ *      .kernel_name("write_volume") // optional, for better debug info
+ *      .apply(volume.extent(), 
+ *          [
+ *              volume = volume.viewer().name("volume") // name is optional, for better debug info
+ *          ] __device__(int3 xyz) mutable
+ *          {
+ *              buffer(xyz) = 1.0f;
+ *          });
+ * \endcode
+ * 
+ * \sa \ref device_buffer_3d.h \ref parallel_for.h
+ */
 class Launch : public LaunchBase<Launch>
 {
     dim3   m_grid_dim;

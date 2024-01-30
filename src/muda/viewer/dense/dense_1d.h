@@ -1,3 +1,13 @@
+/*****************************************************************//**
+ * \file   dense_1d.h
+ * \brief  A C/C++ array like viewer for kernel access, with safe checking
+ * on any input. You can index the element in `Dense1D<T>` by `operator ()`.
+ * 
+ * \author MuGdxy
+ * \date   January 2024
+ *********************************************************************/
+
+
 #pragma once
 #include <muda/viewer/viewer_base.h>
 

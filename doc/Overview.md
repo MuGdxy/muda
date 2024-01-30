@@ -1,18 +1,18 @@
-[TOC]
-
-# MUDA
+\mainpage muda
 
 MUDA is **μ-CUDA**, yet another painless CUDA programming **paradigm**.
 
 > COVER THE LAST MILE OF CUDA
 
-## Overview
+[TOC]
 
-### Launch
+# Overview
+
+## Launch
 
 Simple, self-explanatory, intellisense-friendly Launcher.
 
-```c++
+```cpp
 #include <muda/muda.h>
 using namespace muda;
 __global__ void raw_kernel()
@@ -57,9 +57,9 @@ int main()
 }
 ```
 
-### Logger
+## Logger
 
-```c++
+```cpp
 Logger logger;
 Launch(2, 2)
     .apply(
@@ -74,9 +74,9 @@ Launch(2, 2)
 logger.retrieve(std::cout);
 ```
 
-### Buffer
+## Buffer
 
-```c++
+```cpp
 DeviceBuffer<int> buffer;
 
 // copy from std::vector
@@ -111,11 +111,11 @@ buffer3d.copy_to(host);
 
 result of buffer2d:
 
-![buffer2d_resize](/doc/img/buffer2d_resize.svg)
+![buffer2d_resize](./img/buffer2d_resize.svg)
 
-### Viewer In Kernel
+## Viewer In Kernel
 
-```c++
+```cpp
 DeviceVar<int> single;
 DeviceBuffer<int> array;
 DeviceBuffer2D<int> array2d;
@@ -139,9 +139,9 @@ Launch().apply(
 });
 ```
 
-### Event And Stream
+## Event And Stream
 
-```c++
+```cpp
 Stream         s1, s2;
 Event          set_value_done;
 
@@ -168,9 +168,9 @@ on(s2)
            { int res = v; });
 ```
 
-### Asynchronous Operation
+## Asynchronous Operation
 
-```c++
+```cpp
 // kernel launch
 Kernel{..., f}(...);
 Launch(stream).apply(...).wait();
@@ -188,7 +188,7 @@ BufferLaunch(stream).copy(BufferView, ...).wait();
 BufferLaunch(stream).fill(BufferView,...).wait();
 ```
 
-### [Extension] Linear System Support
+## [Extension] Linear System Support
 
 [We are still working on this part]
 
@@ -198,11 +198,11 @@ BufferLaunch(stream).fill(BufferView,...).wait();
 2. Sparse Matrix Assembly
 3. Linear System Solving
 
-![](./doc/img/linear_system.drawio.svg)
+![](./img/linear_system.drawio.svg)
 
 The only thing you need to do is to declare a `muda::LinearSystemContext`.
 
-```c++
+```cpp
 LinearSystemContext ctx;
 // non-unique triplets of (row_index, col_index, block3x3)
 DeviceTripletMatrix<float, 3> A_triplet;
@@ -237,7 +237,7 @@ We only allow users to assemble a Sparse Matrix from Triplet Matrix. And allow u
 
 To assemble a Triplet Matrix, user need to use the `viewer` of a Triplet Matrix.
 
-```c++
+```cpp
 DeviceTripletMatrix<float, 3> A_triplet;
 A_triplet.resize(block_rows,block_cols,hessian_count);
 DeviceDenseVector<float> x, b;
@@ -271,9 +271,9 @@ ctx.convert(A_bcoo, A_bsr);
 ctx.spmv(A_bsr.cview(), x.cview(), b.view());
 ```
 
-### [Extension] Field Layout
+## [Extension] Field Layout
 
-```c++
+```cpp
 #include <muda/ext/field.h> // all you need for muda::Field
 
 void field_example(FieldEntryLayout layout)
@@ -380,7 +380,7 @@ void field_example(FieldEntryLayout layout)
 
 Note that every `FieldEntry` has a `View` called `FieldEntryView`. A `FieldEntryView` can be regarded as a `ComputeGraphVar`(see below), which means `FieldEntry` can also be used in `ComputeGraph`. 
 
-### Compute Graph
+## Compute Graph
 
 Define `MUDA_WITH_COMPUTE_GRAPH`  to turn on `Compute Graph` support.
 
@@ -388,7 +388,7 @@ Define `MUDA_WITH_COMPUTE_GRAPH`  to turn on `Compute Graph` support.
 
 Define a muda compute graph:
 
-```c++
+```cpp
 void compute_graph_simple()
 {
     ComputeGraphVarManager manager;
@@ -441,11 +441,11 @@ void compute_graph_simple()
 }
 ```
 
-![graphviz](/doc/img/compute_graph.svg)
+![graphviz](./img/compute_graph.svg)
 
 Launch a muda compute graph:
 
-```c++
+```cpp
 void compute_graph_simple()
 {
     // resources
@@ -468,9 +468,9 @@ void compute_graph_simple()
 }
 ```
 
-### Dynamic Parallelism
+## Dynamic Parallelism
 
-```c++
+```cpp
 void dynamic_parallelism_graph()
 {
     std::vector<int> host(16);
@@ -515,11 +515,11 @@ void dynamic_parallelism_graph()
 }
 ```
 
-![image-20231119161837442](/doc/img/dynamic_parallelism.svg)
+![image-20231119161837442](./img/dynamic_parallelism.svg)
 
-### MUDA vs. CUDA
+## MUDA vs. CUDA
 
-```c++
+```cpp
 /* 
 * muda style
 */
@@ -575,9 +575,9 @@ void cuda()
 }
 ```
 
-## Build
+# Build
 
-### Xmake
+## Xmake
 
 Run example:
 
@@ -596,7 +596,7 @@ Play all examples:
 ```shell
 $ xmake run muda_example
 ```
-### Cmake
+## Cmake
 
 ```shell
 $ mkdir CMakeBuild
@@ -605,11 +605,11 @@ $ cmake -S ..
 $ cmake --build .
 ```
 
-### Copy Headers
+## Copy Headers
 
 Because **muda** is header-only, copy the `src/muda/` folder to your project, set the include directory, and everything is done.
 
-### Macro
+## Macro
 
 | Macro                     | Value               | Details                                                      |
 | ------------------------- | ------------------- | ------------------------------------------------------------ |
@@ -618,24 +618,24 @@ Because **muda** is header-only, copy the `src/muda/` folder to your project, se
 
 If you manually copy the header files, don't forget to define the macros yourself. If you use cmake or xmake, just set the project dependency to muda.
 
-## Tutorial
+# Tutorial
 
 - [tutorial_zh](https://zhuanlan.zhihu.com/p/659664377)
 - If you need an English version tutorial, please contact me or post an issue to let me know.
 
-## Documentation
+# Documentation
 
 Documentation is maintained on https://codedocs.xyz/MuGdxy/muda/. And you can also build the doc by yourself. 
 
-## Examples
+# Examples
 
 - [examples](./example/)
 
 All examples in `muda/example` are self-explanatory,  enjoy it.
 
-![image-20231102030703199](/doc/img/example-img.png)
+![image-20231102030703199](./img/example-img.png)
 
-## Contributing
+# Contributing
 
 Contributions are welcome. We are looking for or are working on:
 
@@ -645,7 +645,7 @@ Contributions are welcome. We are looking for or are working on:
 
 3. better documentation of **muda**
 
-## Related Work
+# Related Work
 
 - Topological braiding simulation using **muda** (old version)
 
@@ -662,9 +662,19 @@ Contributions are welcome. We are looking for or are working on:
   }
   ```
 
-  ![braiding](/doc/img/braiding.png)
+  ![braiding](./img/braiding.png)
 
   
+
+
+
+
+
+
+
+
+
+
 
 
 

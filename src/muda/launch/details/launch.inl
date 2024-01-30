@@ -217,6 +217,7 @@ MUDA_HOST Launch& Launch::apply(const dim3& active_dim, F&& f, Tag<UserTag>)
 MUDA_INLINE MUDA_GENERIC dim3 Launch::calculate_grid_dim(const dim3& active_dim) const MUDA_NOEXCEPT
 {
     dim3 ret;
+
     ret.x = (active_dim.x + m_block_dim.x - 1) / m_block_dim.x;
     ret.y = (active_dim.y + m_block_dim.y - 1) / m_block_dim.y;
     ret.z = (active_dim.z + m_block_dim.z - 1) / m_block_dim.z;

@@ -1,3 +1,13 @@
+/*****************************************************************//**
+ * \file   device_buffer_3d.h
+ * \brief  A light-weight wrapper of cuda device memory3D,
+ * allows user to resize, reserve, shrink_to_fit, fill, also provide muda viewer
+ * for in-kernel access. 
+ * 
+ * \author MuGdxy
+ * \date   January 2024
+ *********************************************************************/
+
 #pragma once
 #include <cuda.h>
 #include <cuda_runtime.h>

@@ -1,3 +1,13 @@
+/*****************************************************************/ /**
+ * \file   parallel_for.h
+ * \brief  a frequently used parallel for loop, **DynamicBlockDim** and **GridStrideLoop**
+ * strategy are provided, and can be switched seamlessly to each other.
+ * 
+ * \author MuGdxy
+ * \date   January 2024
+ *********************************************************************/
+
+
 #pragma once
 #include <muda/launch/launch_base.h>
 #include <muda/launch/kernel_tag.h>
@@ -101,6 +111,14 @@ using details::parallel_for_kernel;
 ///		ParallelFor(16)
 ///			.apply(16, [=] __device__(int i) mutable { printf("var=%d, i = %d\n");}, true);
 /// </summary>
+
+
+/**
+ * \class ParallelFor
+ * 
+ * \brief a frequently used parallel for loop, **DynamicBlockDim** and **GridStrideLoop**
+ * strategy are provided, and can be switched seamlessly to each other.
+ */
 class ParallelFor : public LaunchBase<ParallelFor>
 {
     int    m_grid_dim;
@@ -110,12 +128,24 @@ class ParallelFor : public LaunchBase<ParallelFor>
   public:
     template <typename F>
     using NodeParms = KernelNodeParms<details::ParallelForCallable<raw_type_t<F>>>;
-    /// <summary>
-    /// calculate grid dim automatically to cover the range, 
-    /// block size will be calculated automatically
-    /// </summary>
-    /// <param name="sharedMemSize"></param>
-    /// <param name="stream"></param>
+
+    /**
+     * \brief Calculate grid dim automatically to cover the range, 
+     * automatially choose the block size to achieve max occupancy.
+     * 
+     * \code 
+     *  DeviceBuffer<int> buffer(256);
+     *  ParallelFor()
+     *      .kernel_name("set_buffer") // optional
+     *      .apply(buffer.size(), 
+     *          [
+     *              buffer = buffer.viewer().name("buffer") // name is optional
+     *          ] __device__(int i) mutable 
+     *          {
+     *              buffer(i) = 1;
+     *          });
+     * \endcode
+     */
     MUDA_HOST ParallelFor(size_t shared_mem_size = 0, cudaStream_t stream = nullptr) MUDA_NOEXCEPT
         : LaunchBase(stream),
           m_grid_dim(0),
@@ -124,13 +154,22 @@ class ParallelFor : public LaunchBase<ParallelFor>
     {
     }
 
-
-    /// <summary>
-    /// calculate grid dim automatically to cover the range
-    /// </summary>
-    /// <param name="blockDim">block dim to use</param>
-    /// <param name="sharedMemSize"></param>
-    /// <param name="stream"></param>
+    /**
+     * \brief Calculate grid dim automatically to cover the range, but you need mannally set the block size.
+     * 
+     * \code 
+     *  DeviceBuffer<int> buffer(256);
+     *  ParallelFor(64)
+     *      .kernel_name("set_buffer") // optional
+     *      .apply(buffer.size(), 
+     *          [
+     *              buffer = buffer.viewer().name("buffer") // name is optional
+     *          ] __device__(int i) mutable 
+     *          {
+     *              buffer(i) = 1;
+     *          });
+     * \endcode
+     */
     MUDA_HOST ParallelFor(int blockDim, size_t shared_mem_size = 0, cudaStream_t stream = nullptr) MUDA_NOEXCEPT
         : LaunchBase(stream),
           m_grid_dim(0),
@@ -139,13 +178,24 @@ class ParallelFor : public LaunchBase<ParallelFor>
     {
     }
 
-    /// <summary>
-    /// use Grid-Stride Loops to cover the range
-    /// </summary>
-    /// <param name="blockDim"></param>
-    /// <param name="gridDim"></param>
-    /// <param name="sharedMemSize"></param>
-    /// <param name="stream"></param>
+
+     /**
+     * \brief Use Gride Stride Loop to cover the range, you need mannally set the grid size and block size.
+     * Gride Stride Loop: if grid_dim * block_dim < count, there will be a loop in every thread, to process multiple indices
+     * 
+     * \code 
+     *  DeviceBuffer<int> buffer(256);
+     *  ParallelFor(2, 64)
+     *      .kernel_name("set_buffer") // optional
+     *      .apply(buffer.size(), 
+     *          [
+     *              buffer = buffer.viewer().name("buffer") // name is optional
+     *          ] __device__(int i) mutable 
+     *          {
+     *              buffer(i) = 1;
+     *          });
+     * \endcode
+     */
     MUDA_HOST ParallelFor(int          gridDim,
                           int          blockDim,
                           size_t       shared_mem_size = 0,
