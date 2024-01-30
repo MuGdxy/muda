@@ -71,5 +71,7 @@ if(MUDA_BUILD_TEST)
 endif()
 
 if(MUDA_BUILD_DOC)
-  add_subdirectory("doc")
+  # don't rename this directory
+  # github page will not work
+  add_subdirectory("docs") 
 endif()
