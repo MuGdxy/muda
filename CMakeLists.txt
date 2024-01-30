@@ -11,6 +11,7 @@ cmake_minimum_required(VERSION 3.20)
 # build targets:
 option(MUDA_BUILD_EXAMPLE "build muda examples. if you want to see how to use muda, you could enable this option." ON)
 option(MUDA_BUILD_TEST "build muda test. if you're the developer, you could enable this option." OFF)
+option(MUDA_BUILD_DOC "build muda document. if you're the developer, you could enable this option." OFF)
 
 # short cut
 option(MUDA_DEV "build muda example and unit test. if you're the developer, you could enable this option." OFF)
@@ -67,4 +68,8 @@ endif()
 
 if(MUDA_BUILD_TEST)
   add_subdirectory("test")
+endif()
+
+if(MUDA_BUILD_DOC)
+  add_subdirectory("doc")
 endif()
