@@ -625,7 +625,7 @@ If you manually copy the header files, don't forget to define the macros yoursel
 
 ## Documentation
 
-Documentation is maintained on https://mugdxy.github.io/muda/. And you can also build the doc by yourself. 
+Documentation is maintained on https://mugdxy.github.io/muda-doc/. And you can also build the doc by yourself. 
 
 ## Examples
 
