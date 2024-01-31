@@ -1,10 +1,14 @@
-\mainpage notitle
+\mainpage Main Page
 
 MUDA is **μ-CUDA**, yet another painless CUDA programming **paradigm**.
 
 > COVER THE LAST MILE OF CUDA
 
 [TOC]
+
+# Introduction
+
+
 
 # Overview
 
@@ -109,9 +113,7 @@ buffer3d.resize(Extent3D{3, 4, 5}, 1);
 buffer3d.copy_to(host);
 ```
 
-result of buffer2d:
-
-![buffer2d_resize](./img/buffer2d_resize.svg)
+<img src="img/buffer2d_resize.svg" alt="buffer2d_resize" style="zoom: 80%;" />
 
 ## Viewer In Kernel
 
@@ -633,7 +635,7 @@ Documentation is maintained on https://codedocs.xyz/MuGdxy/muda/. And you can al
 
 All examples in `muda/example` are self-explanatory,  enjoy it.
 
-![image-20231102030703199](./img/example-img.png)
+<img src="./img/example-img.png" alt="image-20231102030703199" style="zoom:67%;" />
 
 # Contributing
 
@@ -662,7 +664,7 @@ Contributions are welcome. We are looking for or are working on:
   }
   ```
 
-  ![braiding](./img/braiding.png)
+  <img src="./img/braiding.png" alt="braiding" style="zoom:67%;" />
 
   
 

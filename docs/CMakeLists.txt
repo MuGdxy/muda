@@ -22,6 +22,7 @@ if (DOXYGEN_FOUND)
     string(TOUPPER ${CMAKE_PROJECT_NAME} PROJECT_NAME)
 
     set(DOCXGEN_INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ ${PROJECT_SOURCE_DIR}/src/")
+    set(DOXYGEN_EXCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/muda-doc/")
 
     # set the built document in this source directory
     set(DOXYGEN_HTML_OUTPUT "docs")
