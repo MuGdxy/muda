@@ -8,9 +8,54 @@ MUDA is **μ-CUDA**, yet another painless CUDA programming **paradigm**.
 
 # Introduction
 
+## What is muda?
 
+- header-only library right out of the box
+- Depends only on CUDA and standard libraries
+- Improve readability, maintainability, security, and debugging efficiency of CUDA code.
+- Reduce the difficulty of building CUDA Graphs and increase automation.
+
+## Why muda?
+
+Think that you wanna try a new idea or implement a demo with CUDA. If the demo works well, you want to embed it into your project quickly. But you find that using CUDA directly will be a catastrophic disaster.
+
+Coding with C-API CUDA, you will be buried in irrelevant details, and the information density of the code is very low, which means that you need to write a lot of redundant code to achieve a simple function. Less is more, right?
+
+Debugging the GPU code is a nightmare. How much time do you spend on those weird Error Codes from CUDA, and finally find it's an illegal memory access? 
+
+<img src="img/question_head_gakuzen_boy.png" style="zoom: 20%;" />
+
+Using a GPU Debugger when something goes wrong may be an approach. But the best way is to prevent bugs from happening, right? Most of the time, automatic range checking is all we want. It's a pretty fantasy that someone tells you, "Hey Bro, at `Block 103, Thread 45`, in kernel named `set_up_array`, the buffer named `array` goes out of range because your index is `100` while the array size is `96`." After that, it exits the kernel and stops the program for you to prevent later chained dummy bugs from producing confusing debug information.
+
+It is muda! 
+
+If you access memory resource using a MUDA **Viewer**. Dear muda will tell you all about that.
+
+MUDA also provides an elegant way to create and update [CUDA Graph](https://developer.nvidia.com/blog/cuda-graphs/), called MUDA `ComputeGraph`.
+
+- Users almost take only a bit of effort to switch from the Stream-Base Launch Mode to Graph Launch Mode.
+- Updating the node parameters and shared resources in CUDA Graphs becomes intuitive, safe, and efficient.
+
+Simple to extend.
+
+- User can obey the basic interface of muda to define their own object to reuse the MUDA facility
+- Almost all "Resource View Type" can be used directly in the MUDA `ComputeGraph`.
+
+## A substitution of thrust?
+
+**Nop!** MUDA is a supplement of thrust!
+
+> [Thrust](https://docs.nvidia.com/cuda/thrust/index.html) is a C++ template library for CUDA based on the Standard Template Library (STL). Thrust allows you to implement high-performance parallel applications with minimal programming effort through a high-level interface that is fully interoperable with CUDA C.
+
+Using iterators to prevent range error is a high-level approach. However, we still need to access the memory manually in our own kernel, no matter whether using raw cuda kernel launch `<<<>>>` or using thrust agent kernel (most of the time, using a `thrust::counting_iterator` in a `thrust::for_each` algorithm).
+
+So, I think MUDA is a mid-level approach. We have the same purpose but different levels and aim at different problems. Feel comfortable to use them together!
 
 # Overview
+
+This is a quick overview of some muda APIs. 
+
+You can check it to find out something useful for you. A comprehensive description of MUDA is placed at [Tutorial](#Tutorial).
 
 ## Launch
 
@@ -63,6 +108,8 @@ int main()
 
 ## Logger
 
+A `std::cout` like output stream with overload formatting.
+
 ```cpp
 Logger logger;
 Launch(2, 2)
@@ -78,7 +125,37 @@ Launch(2, 2)
 logger.retrieve(std::cout);
 ```
 
+You can define a global`__device__ LoggerViewer cout` and call the overloaded constructor `Logger(LoggerViewer* global_viewer)` to use it without any capturing, which is useful when you need to use logger in some function but don't want to put the `LoggerViewer` in the function parameter.
+
+```cpp
+namespace foo
+{
+__device__ LoggerViewer cout;
+__device__ void say_hello() { cout << "hello global logger!\n"; }
+}
+
+int main()
+{
+    // setup global logger
+    LoggerViewer* viewer_ptr = nullptr;
+    checkCudaErrors(cudaGetSymbolAddress(&viewer, cout));
+    Logger logger(viewer_ptr);
+    
+    Launch().apply([]__device__() mutable
+        {
+            foo::say_hello();
+        })
+    .wait();
+    
+    logger.retrieve(std::cout);
+}
+```
+
 ## Buffer
+
+A lightweight `std::vector`-like cuda device memory container. 
+
+In addition, 2D/3D aligned buffers are also provided.
 
 ```cpp
 DeviceBuffer<int> buffer;
@@ -113,9 +190,13 @@ buffer3d.resize(Extent3D{3, 4, 5}, 1);
 buffer3d.copy_to(host);
 ```
 
+The old data will be safely kept if you resize a 2D or 3D buffer. If you don't want to keep the old data, use `.clear()` before your `.resize()`. An example of resizing a 2D buffer is shown below.
+
 <img src="img/buffer2d_resize.svg" alt="buffer2d_resize" style="zoom: 80%;" />
 
 ## Viewer In Kernel
+
+MUDA **Viewers** provide safe inner-kernel memory access, which checks all input to make sure access does not go out of range and does not dereference a null pointer. If something goes wrong, they report the debug information as much as possible and trap the kernel to prevent further errors. Don't forget to fill the `kernel_name()` and `name()` out.
 
 ```cpp
 DeviceVar<int> single;
@@ -123,25 +204,29 @@ DeviceBuffer<int> array;
 DeviceBuffer2D<int> array2d;
 DeviceBuffer3D<int> array3d;
 Logger logger;
-Launch().apply(
-[
-    single  = single.viewer().name("single"), // give a name for more readable debug info
-    array   = buffer.viewer().name("array"),
-    array2d = buffer_2d.viewer().name("array2d"),
-    array3d = buffer_3d.viewer().name("array3d"),
-    logger  = logger.viewer().name("logger"),
-    ...
-] __device__ () mutable
-{
-    single = 1;
-    array(i) = 1;
-    array2d(offset_in_height, offset_in_width) = 1;
-    array3d(offset_in_depth, offset_in_height, offset_in_width) = 1;
-    logger << 1;
-});
+Launch()
+    .kernel_name(__FUNCTION__)
+    .apply(
+    [
+        single  = single.viewer().name("single"), // give a name for more readable debug info
+        array   = buffer.viewer().name("array"),
+        array2d = buffer_2d.viewer().name("array2d"),
+        array3d = buffer_3d.viewer().name("array3d"),
+        logger  = logger.viewer().name("logger"),
+        ...
+    ] __device__ () mutable
+    {
+        single = 1;
+        array(i) = 1;
+        array2d(offset_in_height, offset_in_width) = 1;
+        array3d(offset_in_depth, offset_in_height, offset_in_width) = 1;
+        logger << 1;
+    });
 ```
 
 ## Event And Stream
+
+If you don't want to launch something on the default stream, use `Stream` to create async streams. And you can use `Event` to synchronize between streams.
 
 ```cpp
 Stream         s1, s2;
@@ -172,6 +257,8 @@ on(s2)
 
 ## Asynchronous Operation
 
+MUDA **Launchers**' functions are Asynchronous, meaning we need to call `.wait()` to synchronize it on the host, unlike some APIs such as `BufferView::copy_fom`. NOTE: Operations of a **Launcher** will be asynchronous as possible, so you should synchronize the stream by yourself, while other APIs will synchronize themselves.
+
 ```cpp
 // kernel launch
 Kernel{..., f}(...);
@@ -189,6 +276,10 @@ Memory(stream).set(...).wait();
 BufferLaunch(stream).copy(BufferView, ...).wait();
 BufferLaunch(stream).fill(BufferView,...).wait();
 ```
+
+Feel free to ignore `Memory` `BufferLaunch` **Launcher** when building your fast demo. Directly use the convenient synchronous APIs of `DeviceBuffer/BufferView` until you find it's the performance hotpot that will save you a lot of time.
+
+It's a good practice to keep **Launchers** asynchronous while keeping other APIs synchronous, which obeys the 80/20 rule.
 
 ## [Extension] Linear System Support
 
@@ -273,7 +364,15 @@ ctx.convert(A_bcoo, A_bsr);
 ctx.spmv(A_bsr.cview(), x.cview(), b.view());
 ```
 
+[TODO:] Later, we may involve [Expression Template](https://en.wikipedia.org/wiki/Expression_templates) to strengthen the linear algebra calculation and use lazy evaluation to arrange as many element-wise/scattering operations as possible in a single kernel.
+
 ## [Extension] Field Layout
+
+MUDA now supports the `SoA/AoS/AoSoA` layouts. Users can switch between them seamlessly(with different builder parameters). The copy operation is in all directions, and the layout is well-supported.
+
+Most of the time, `AoSoA` is the best layout for Vector and Matrix, with better [memory coalescing](https://nichijou.co/cuda5-coalesce/) and more compact memory storage. With the help of `Eigen::Map<>`, the read/write of a Vector/Matrix is as trivial as accessing a struct-version Vector/Matrix.
+
+Here is a simple example of `muda::Field`.
 
 ```cpp
 #include <muda/ext/field.h> // all you need for muda::Field
@@ -314,10 +413,11 @@ void field_example(FieldEntryLayout layout)
                 m      = m.viewer(),
                 pos    = pos.viewer(),
                 vel    = vel.viewer(),
-                f      = force.viewer()] $(int i)
+                f      = force.viewer()] __device__ (int i) mutable
                {
                    m(i)   = 1.0f;
-                   pos(i) = Vector3f::Ones();
+                   // a row of particles with position=(i,1,0)
+                   pos(i) = Vector3f::UnitY() + Vector3f::UnitX() * i;
                    vel(i) = Vector3f::Zero();
                    f(i)   = Vector3f{0.0f, -9.8f, 0.0f};
 
@@ -332,11 +432,6 @@ void field_example(FieldEntryLayout layout)
 
     logger.retrieve();
 
-    // safe resize, the data will be copied to the new buffer.
-    // here we just show the possibility
-    // later we only work on the first N particles
-    particle.resize(N * 2);
-
     ParallelFor(256)
         .kernel_name("integration")
         .apply(N,
@@ -345,7 +440,7 @@ void field_example(FieldEntryLayout layout)
                 pos    = pos.viewer(),
                 vel    = vel.viewer(),
                 f      = force.cviewer(),
-                dt] $(int i)
+                dt] __device__ (int i) mutable
                {
                    auto     x = pos(i);
                    auto     v = vel(i);
@@ -379,6 +474,15 @@ void field_example(FieldEntryLayout layout)
     pos.copy_from(pos_buf);
 }
 ```
+
+Additionally, resizing a subfield will resize all the entries, and the resizing is safe; all entries will be copied to a new buffer if the new size exceeds the capacity.
+
+```cpp
+// safe resize, all entries will be copied to the new buffer.
+particle.resize(N * 2);
+```
+
+It'd be useful if the topology will change in your simulation. For example, the fracture simulation always changes its tetrahedron mesh, and all attributes of particles, edges, triangles, and tetrahedra will change correspondently. It will be terrible if you resize all the attributes yourself.
 
 Note that every `FieldEntry` has a `View` called `FieldEntryView`. A `FieldEntryView` can be regarded as a `ComputeGraphVar`(see below), which means `FieldEntry` can also be used in `ComputeGraph`. 
 
@@ -471,6 +575,8 @@ void compute_graph_simple()
 ```
 
 ## Dynamic Parallelism
+
+MUDA support dynamic parallelism based on MUDA ComputeGraph.
 
 ```cpp
 void dynamic_parallelism_graph()
@@ -622,16 +728,9 @@ If you manually copy the header files, don't forget to define the macros yoursel
 
 # Tutorial
 
-- [tutorial_zh](https://zhuanlan.zhihu.com/p/659664377)
-- If you need an English version tutorial, please contact me or post an issue to let me know.
-
-# Documentation
-
-Documentation is maintained on https://codedocs.xyz/MuGdxy/muda/. And you can also build the doc by yourself. 
+[TODO]
 
 # Examples
-
-- [examples](./example/)
 
 All examples in `muda/example` are self-explanatory,  enjoy it.
 
