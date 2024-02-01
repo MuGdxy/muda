@@ -16,6 +16,8 @@ class FieldEntryViewBase<IsConst, T, Layout, N, 1>
     using ThisView     = FieldEntryViewBase<IsConst, T, Layout, N, 1>;
     using ElementType  = Eigen::Vector<T, N>;
 
+    using ConstVectorMap = typename Base::ConstMatMap;
+    using ThisVectorMap  = typename Base::ThisMatMap;
 
     MUDA_GENERIC auto as_const() const
     {
@@ -32,6 +34,15 @@ class FieldEntryViewBase<IsConst, T, Layout, N, 1>
     MUDA_GENERIC const T* data(int i, int comp_j) const
     {
         return remove_const(this)->data(i, comp_j);
+    }
+
+    MUDA_GENERIC auto operator[](int i)
+    {
+        return ThisVectorMap{data(i, 0), this->m_stride};
+    }
+    MUDA_GENERIC auto operator[](int i) const
+    {
+        return ConstVectorMap{data(i, 0), this->m_stride};
     }
 
     MUDA_GENERIC auto subview(int offset) const

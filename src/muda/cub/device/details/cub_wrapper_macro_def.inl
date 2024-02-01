@@ -8,8 +8,7 @@
                                                                                \
     checkCudaErrors(x);                                                        \
                                                                                \
-    prepare_buffer(external_buffer, temp_storage_bytes);                       \
-    d_temp_storage = (void*)external_buffer.data();                            \
+    d_temp_storage = (void*)prepare_buffer(temp_storage_bytes);                \
                                                                                \
     checkCudaErrors(x);                                                        \
                                                                                \

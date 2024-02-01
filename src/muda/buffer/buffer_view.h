@@ -1,4 +1,4 @@
-/*****************************************************************//**
+/*****************************************************************/ /**
  * \file   buffer_view.h
  * \brief  A view interface for any array-like liner memory, which can be 
  * constructed from DeviceBuffer/DeviceVector or any thing that is a array-like
@@ -73,10 +73,10 @@ class BufferViewBase : public ViewBase<IsConst>
         return m_data + m_offset;
     }
 
-    MUDA_GENERIC auto_const_t<T>* data(size_t x) MUDA_NOEXCEPT
+    MUDA_GENERIC auto_const_t<T>* data(size_t i) MUDA_NOEXCEPT
     {
-        x += m_offset;
-        return m_data + x;
+        i += m_offset;
+        return m_data + i;
     }
 
     MUDA_GENERIC auto_const_t<T>* origin_data() MUDA_NOEXCEPT { return m_data; }
@@ -90,15 +90,26 @@ class BufferViewBase : public ViewBase<IsConst>
     {
         return remove_const(*this).data();
     }
-    MUDA_GENERIC const T* data(size_t x) const MUDA_NOEXCEPT
+    MUDA_GENERIC const T* data(size_t i) const MUDA_NOEXCEPT
     {
-        return remove_const(*this).data(x);
+        return remove_const(*this).data(i);
     }
     MUDA_GENERIC const T* origin_data() const MUDA_NOEXCEPT { return m_data; }
     MUDA_GENERIC size_t   offset() const MUDA_NOEXCEPT { return m_offset; }
 
     MUDA_GENERIC ConstView subview(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT;
     MUDA_GENERIC CViewer cviewer() const MUDA_NOEXCEPT;
+
+
+    MUDA_GENERIC auto_const_t<T>& operator[](size_t i) MUDA_NOEXCEPT
+    {
+        return *data(i);
+    }
+
+    MUDA_GENERIC const T& operator[](size_t i) const MUDA_NOEXCEPT
+    {
+        return *data(i);
+    }
 };
 
 template <typename T>

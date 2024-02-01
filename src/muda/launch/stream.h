@@ -4,9 +4,13 @@
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include <muda/check/check_cuda_errors.h>
+#include <muda/tools/byte_temp_buffer.h>
 
 namespace muda
 {
+template <typename T>
+class DeviceBuffer;
+
 /// <summary>
 /// RAII wrapper for cudaStream
 /// </summary>
@@ -25,7 +29,7 @@ class Stream
     ~Stream();
 
     operator cudaStream_t() const { return m_handle; }
-    cudaStream_t viewer() const { return m_handle; }
+    cudaStream_t view() const { return m_handle; }
 
     // delete copy constructor and copy assignment operator
     Stream(const Stream&)            = delete;
@@ -39,6 +43,8 @@ class Stream
 
     void begin_capture(cudaStreamCaptureMode mode = cudaStreamCaptureModeThreadLocal) const;
     void end_capture(cudaGraph_t* graph) const;
+
+    static Stream& Default();
 
     class TailLaunch
     {
@@ -67,6 +73,15 @@ class Stream
         MUDA_DEVICE GraphFireAndForget(){};
         MUDA_DEVICE operator cudaStream_t() const;
     };
+
+    std::byte* workspace(size_t byte_size);
+
+  private:
+    Stream(nullptr_t)
+        : m_handle(nullptr)
+    {
+    }
+    details::ByteTempBuffer m_workspace;
 };
 
 

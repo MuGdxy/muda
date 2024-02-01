@@ -8,20 +8,49 @@
 
 namespace muda
 {
+namespace details::field
+{
+    using MatStride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
+    template <typename T, FieldEntryLayout Layout, int M, int N>
+    MUDA_GENERIC MatStride make_stride(const FieldEntryCore& core)
+    {
+        MatStride ret;
+        if constexpr(M == 1 && N == 1)
+        {
+            ret = MatStride{0, 0};
+        }
+        else if constexpr(N == 1)  // vector
+        {
+            auto begin = core.data<T, Layout>(0, 0);
+            auto next  = core.data<T, Layout>(0, 1);
+            ret        = MatStride{0, next - begin};
+        }
+        else  // matrix
+        {
+            auto begin      = core.data<T, Layout>(0, 0, 0);
+            auto inner_next = core.data<T, Layout>(0, 1, 0);
+            auto outer_next = core.data<T, Layout>(0, 0, 1);
+            ret             = MatStride{outer_next - begin, inner_next - begin};
+        }
+        return ret;
+    }
+}  // namespace details::field
+
 template <bool IsConst, typename T, FieldEntryLayout Layout, int M, int N>
 class FieldEntryViewerCore : protected ViewerBase<IsConst>
 {
     using Base = ViewerBase<IsConst>;
 
-  protected:
-    template <typename T>
-    using auto_const_t = Base::template auto_const_t<T>;
-
-    using MatStride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
+  public:
+    using MatStride = details::field::MatStride;
 
     using ConstMatMap = Eigen::Map<const Eigen::Matrix<T, M, N>, 0, MatStride>;
     using NonConstMatMap = Eigen::Map<Eigen::Matrix<T, M, N>, 0, MatStride>;
     using ThisMatMap = std::conditional_t<IsConst, ConstMatMap, NonConstMatMap>;
+
+  protected:
+    template <typename T>
+    using auto_const_t = Base::template auto_const_t<T>;
 
     FieldEntryCore m_core;
     MatStride      m_stride;
@@ -46,23 +75,7 @@ class FieldEntryViewerCore : protected ViewerBase<IsConst>
                            m_offset,
                            m_size);
 
-        if constexpr(M == 1 && N == 1)
-        {
-            m_stride = MatStride{0, 0};
-        }
-        else if constexpr(N == 1)  // vector
-        {
-            auto begin = core.data<T, Layout>(0, 0);
-            auto next  = core.data<T, Layout>(0, 1);
-            m_stride   = MatStride{0, next - begin};
-        }
-        else  // matrix
-        {
-            auto begin      = core.data<T, Layout>(0, 0, 0);
-            auto inner_next = core.data<T, Layout>(0, 1, 0);
-            auto outer_next = core.data<T, Layout>(0, 0, 1);
-            m_stride        = MatStride{outer_next - begin, inner_next - begin};
-        }
+        m_stride = details::field::make_stride<T, Layout, M, N>(m_core);
     }
 
     MUDA_GENERIC FieldEntryViewerCore(const FieldEntryViewerCore&) = default;

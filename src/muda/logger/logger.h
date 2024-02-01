@@ -80,7 +80,6 @@ class Logger
 
     //details::LoggerMetaData* m_meta_data;
     //size_t                   m_meta_data_size;
-    DeviceBuffer<std::byte> m_sort_temp_storage;
 
     DeviceBuffer<uint32_t>                m_sorted_meta_data_id;
     DeviceBuffer<details::LoggerMetaData> m_sorted_meta_data;

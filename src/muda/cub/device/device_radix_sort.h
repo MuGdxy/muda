@@ -16,23 +16,19 @@ namespace muda
 //ref: https://nvlabs.github.io/cub/structcub_1_1_device_radix_sort.html
 class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
 {
-  public:
-    DeviceRadixSort(cudaStream_t stream = nullptr)
-        : CubWrapper(stream)
-    {
-    }
+    using Base = CubWrapper<DeviceRadixSort>;
 
-    // DeviceVector:
+  public:
+    using Base::Base;
 
     template <typename KeyT, typename ValueT, typename NumItemsT>
-    DeviceRadixSort& SortPairs(DeviceVector<std::byte>& external_buffer,
-                               const KeyT*              d_keys_in,
-                               KeyT*                    d_keys_out,
-                               const ValueT*            d_values_in,
-                               ValueT*                  d_values_out,
-                               NumItemsT                num_items,
-                               int                      begin_bit = 0,
-                               int end_bit = sizeof(KeyT) * 8)
+    DeviceRadixSort& SortPairs(const KeyT*   d_keys_in,
+                               KeyT*         d_keys_out,
+                               const ValueT* d_values_in,
+                               ValueT*       d_values_out,
+                               NumItemsT     num_items,
+                               int           begin_bit = 0,
+                               int           end_bit   = sizeof(KeyT) * 8)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceRadixSort::SortPairs(d_temp_storage,
                                                               temp_storage_bytes,
@@ -59,8 +55,7 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
     }
 
     template <typename KeyT, typename ValueT, typename NumItemsT>
-    DeviceRadixSort& SortPairsDescending(DeviceVector<std::byte>& external_buffer,
-                                         const KeyT*   d_keys_in,
+    DeviceRadixSort& SortPairsDescending(const KeyT*   d_keys_in,
                                          KeyT*         d_keys_out,
                                          const ValueT* d_values_in,
                                          ValueT*       d_values_out,
@@ -73,8 +68,7 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
     }
 
     template <typename KeyT, typename ValueT, typename NumItemsT>
-    DeviceRadixSort& SortPairsDescending(DeviceVector<std::byte>& external_buffer,
-                                         cub::DoubleBuffer<KeyT>&   d_keys,
+    DeviceRadixSort& SortPairsDescending(cub::DoubleBuffer<KeyT>&   d_keys,
                                          cub::DoubleBuffer<ValueT>& d_values,
                                          NumItemsT                  num_items,
                                          int begin_bit = 0,
@@ -85,20 +79,18 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
     }
 
     template <typename KeyT, typename NumItemsT>
-    DeviceRadixSort& SortKeys(DeviceVector<std::byte>& external_buffer,
-                              const KeyT*              d_keys_in,
-                              KeyT*                    d_keys_out,
-                              NumItemsT                num_items,
-                              int                      begin_bit = 0,
-                              int end_bit = sizeof(KeyT) * 8)
+    DeviceRadixSort& SortKeys(const KeyT* d_keys_in,
+                              KeyT*       d_keys_out,
+                              NumItemsT   num_items,
+                              int         begin_bit = 0,
+                              int         end_bit   = sizeof(KeyT) * 8)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceRadixSort::SortKeys(
             d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, begin_bit, end_bit, _stream));
     }
 
     template <typename KeyT, typename NumItemsT>
-    DeviceRadixSort& SortKeys(DeviceVector<std::byte>& external_buffer,
-                              cub::DoubleBuffer<KeyT>& d_keys,
+    DeviceRadixSort& SortKeys(cub::DoubleBuffer<KeyT>& d_keys,
                               NumItemsT                num_items,
                               int                      begin_bit = 0,
                               int end_bit = sizeof(KeyT) * 8)
@@ -108,8 +100,7 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
     }
 
     template <typename KeyT, typename NumItemsT>
-    DeviceRadixSort& SortKeysDescending(DeviceVector<std::byte>& external_buffer,
-                                        const KeyT* d_keys_in,
+    DeviceRadixSort& SortKeysDescending(const KeyT* d_keys_in,
                                         KeyT*       d_keys_out,
                                         NumItemsT   num_items,
                                         int         begin_bit = 0,
@@ -120,116 +111,7 @@ class DeviceRadixSort : public CubWrapper<DeviceRadixSort>
     }
 
     template <typename KeyT, typename NumItemsT>
-    DeviceRadixSort& SortKeysDescending(DeviceVector<std::byte>& external_buffer,
-                                        cub::DoubleBuffer<KeyT>& d_keys,
-                                        NumItemsT                num_items,
-                                        int                      begin_bit = 0,
-                                        int end_bit = sizeof(KeyT) * 8)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceRadixSort::SortKeysDescending(
-            d_temp_storage, temp_storage_bytes, d_keys, num_items, begin_bit, end_bit, _stream));
-    }
-
-    // DeviceBuffer:
-
-    template <typename KeyT, typename ValueT, typename NumItemsT>
-    DeviceRadixSort& SortPairs(DeviceBuffer<std::byte>& external_buffer,
-                               const KeyT*              d_keys_in,
-                               KeyT*                    d_keys_out,
-                               const ValueT*            d_values_in,
-                               ValueT*                  d_values_out,
-                               NumItemsT                num_items,
-                               int                      begin_bit = 0,
-                               int end_bit = sizeof(KeyT) * 8)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceRadixSort::SortPairs(d_temp_storage,
-                                                              temp_storage_bytes,
-                                                              d_keys_in,
-                                                              d_keys_out,
-                                                              d_values_in,
-                                                              d_values_out,
-                                                              num_items,
-                                                              begin_bit,
-                                                              end_bit,
-                                                              _stream));
-    }
-
-    template <typename KeyT, typename ValueT, typename NumItemsT>
-    DeviceRadixSort& SortPairs(DeviceBuffer<std::byte>&   external_buffer,
-                               cub::DoubleBuffer<KeyT>&   d_keys,
-                               cub::DoubleBuffer<ValueT>& d_values,
-                               NumItemsT                  num_items,
-                               int                        begin_bit = 0,
-                               int end_bit = sizeof(KeyT) * 8)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceRadixSort::SortPairs(
-            d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, _stream));
-    }
-
-    template <typename KeyT, typename ValueT, typename NumItemsT>
-    DeviceRadixSort& SortPairsDescending(DeviceBuffer<std::byte>& external_buffer,
-                                         const KeyT*   d_keys_in,
-                                         KeyT*         d_keys_out,
-                                         const ValueT* d_values_in,
-                                         ValueT*       d_values_out,
-                                         NumItemsT     num_items,
-                                         int           begin_bit = 0,
-                                         int end_bit = sizeof(KeyT) * 8)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceRadixSort::SortPairsDescending(
-            d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, begin_bit, end_bit, _stream));
-    }
-
-    template <typename KeyT, typename ValueT, typename NumItemsT>
-    DeviceRadixSort& SortPairsDescending(DeviceBuffer<std::byte>& external_buffer,
-                                         cub::DoubleBuffer<KeyT>&   d_keys,
-                                         cub::DoubleBuffer<ValueT>& d_values,
-                                         NumItemsT                  num_items,
-                                         int begin_bit = 0,
-                                         int end_bit   = sizeof(KeyT) * 8)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceRadixSort::SortPairsDescending(
-            d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, _stream));
-    }
-
-    template <typename KeyT, typename NumItemsT>
-    DeviceRadixSort& SortKeys(DeviceBuffer<std::byte>& external_buffer,
-                              const KeyT*              d_keys_in,
-                              KeyT*                    d_keys_out,
-                              NumItemsT                num_items,
-                              int                      begin_bit = 0,
-                              int end_bit = sizeof(KeyT) * 8)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceRadixSort::SortKeys(
-            d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, begin_bit, end_bit, _stream));
-    }
-
-    template <typename KeyT, typename NumItemsT>
-    DeviceRadixSort& SortKeys(DeviceBuffer<std::byte>& external_buffer,
-                              cub::DoubleBuffer<KeyT>& d_keys,
-                              NumItemsT                num_items,
-                              int                      begin_bit = 0,
-                              int end_bit = sizeof(KeyT) * 8)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceRadixSort::SortKeys(
-            d_temp_storage, temp_storage_bytes, d_keys, num_items, begin_bit, end_bit, _stream));
-    }
-
-    template <typename KeyT, typename NumItemsT>
-    DeviceRadixSort& SortKeysDescending(DeviceBuffer<std::byte>& external_buffer,
-                                        const KeyT* d_keys_in,
-                                        KeyT*       d_keys_out,
-                                        NumItemsT   num_items,
-                                        int         begin_bit = 0,
-                                        int         end_bit = sizeof(KeyT) * 8)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceRadixSort::SortKeysDescending(
-            d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, begin_bit, end_bit, _stream));
-    }
-
-    template <typename KeyT, typename NumItemsT>
-    DeviceRadixSort& SortKeysDescending(DeviceBuffer<std::byte>& external_buffer,
-                                        cub::DoubleBuffer<KeyT>& d_keys,
+    DeviceRadixSort& SortKeysDescending(cub::DoubleBuffer<KeyT>& d_keys,
                                         NumItemsT                num_items,
                                         int                      begin_bit = 0,
                                         int end_bit = sizeof(KeyT) * 8)

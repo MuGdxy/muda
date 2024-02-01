@@ -10,22 +10,18 @@ namespace muda
 //ref: https://nvlabs.github.io/cub/structcub_1_1_device_segmented_reduce.html
 class DeviceSegmentedSort : public CubWrapper<DeviceSegmentedSort>
 {
+    using Base = CubWrapper<DeviceSegmentedSort>;
+
   public:
-    DeviceSegmentedSort(cudaStream_t stream = nullptr)
-        : CubWrapper(stream)
-    {
-    }
-
-    // DeviceVector:
+    using Base::Base;
 
     template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& SortKeys(DeviceVector<std::byte>& external_buffer,
-                                  const KeyT*              d_keys_in,
-                                  KeyT*                    d_keys_out,
-                                  int                      num_items,
-                                  int                      num_segments,
-                                  BeginOffsetIteratorT     d_begin_offsets,
-                                  EndOffsetIteratorT       d_end_offsets)
+    DeviceSegmentedSort& SortKeys(const KeyT*          d_keys_in,
+                                  KeyT*                d_keys_out,
+                                  int                  num_items,
+                                  int                  num_segments,
+                                  BeginOffsetIteratorT d_begin_offsets,
+                                  EndOffsetIteratorT   d_end_offsets)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceSegmentedSort::SortKeys(d_temp_storage,
                                                                  temp_storage_bytes,
@@ -40,8 +36,7 @@ class DeviceSegmentedSort : public CubWrapper<DeviceSegmentedSort>
     }
 
     template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& SortKeysDescending(DeviceVector<std::byte>& external_buffer,
-                                            const KeyT* d_keys_in,
+    DeviceSegmentedSort& SortKeysDescending(const KeyT* d_keys_in,
                                             KeyT*       d_keys_out,
                                             int         num_items,
                                             int         num_segments,
@@ -63,8 +58,7 @@ class DeviceSegmentedSort : public CubWrapper<DeviceSegmentedSort>
 
 
     template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& SortKeys(DeviceVector<std::byte>& external_buffer,
-                                  cub::DoubleBuffer<KeyT>& d_keys,
+    DeviceSegmentedSort& SortKeys(cub::DoubleBuffer<KeyT>& d_keys,
                                   int                      num_items,
                                   int                      num_segments,
                                   BeginOffsetIteratorT     d_begin_offsets,
@@ -76,8 +70,7 @@ class DeviceSegmentedSort : public CubWrapper<DeviceSegmentedSort>
 
 
     template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& SortKeysDescending(DeviceVector<std::byte>& external_buffer,
-                                            cub::DoubleBuffer<KeyT>& d_keys,
+    DeviceSegmentedSort& SortKeysDescending(cub::DoubleBuffer<KeyT>& d_keys,
                                             int                      num_items,
                                             int num_segments,
                                             BeginOffsetIteratorT d_begin_offsets,
@@ -89,8 +82,7 @@ class DeviceSegmentedSort : public CubWrapper<DeviceSegmentedSort>
 
 
     template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& StableSortKeys(DeviceVector<std::byte>& external_buffer,
-                                        const KeyT*          d_keys_in,
+    DeviceSegmentedSort& StableSortKeys(const KeyT*          d_keys_in,
                                         KeyT*                d_keys_out,
                                         int                  num_items,
                                         int                  num_segments,
@@ -111,8 +103,7 @@ class DeviceSegmentedSort : public CubWrapper<DeviceSegmentedSort>
 
 
     template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& StableSortKeysDescending(DeviceVector<std::byte>& external_buffer,
-                                                  const KeyT* d_keys_in,
+    DeviceSegmentedSort& StableSortKeysDescending(const KeyT* d_keys_in,
                                                   KeyT*       d_keys_out,
                                                   int         num_items,
                                                   int         num_segments,
@@ -134,8 +125,7 @@ class DeviceSegmentedSort : public CubWrapper<DeviceSegmentedSort>
 
 
     template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& StableSortKeys(DeviceVector<std::byte>& external_buffer,
-                                        cub::DoubleBuffer<KeyT>& d_keys,
+    DeviceSegmentedSort& StableSortKeys(cub::DoubleBuffer<KeyT>& d_keys,
                                         int                      num_items,
                                         int                      num_segments,
                                         BeginOffsetIteratorT d_begin_offsets,
@@ -147,8 +137,7 @@ class DeviceSegmentedSort : public CubWrapper<DeviceSegmentedSort>
 
 
     template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& StableSortKeysDescending(DeviceVector<std::byte>& external_buffer,
-                                                  cub::DoubleBuffer<KeyT>& d_keys,
+    DeviceSegmentedSort& StableSortKeysDescending(cub::DoubleBuffer<KeyT>& d_keys,
                                                   int num_items,
                                                   int num_segments,
                                                   BeginOffsetIteratorT d_begin_offsets,
@@ -160,15 +149,14 @@ class DeviceSegmentedSort : public CubWrapper<DeviceSegmentedSort>
 
 
     template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& SortPairs(DeviceVector<std::byte>& external_buffer,
-                                   const KeyT*              d_keys_in,
-                                   KeyT*                    d_keys_out,
-                                   const ValueT*            d_values_in,
-                                   ValueT*                  d_values_out,
-                                   int                      num_items,
-                                   int                      num_segments,
-                                   BeginOffsetIteratorT     d_begin_offsets,
-                                   EndOffsetIteratorT       d_end_offsets)
+    DeviceSegmentedSort& SortPairs(const KeyT*          d_keys_in,
+                                   KeyT*                d_keys_out,
+                                   const ValueT*        d_values_in,
+                                   ValueT*              d_values_out,
+                                   int                  num_items,
+                                   int                  num_segments,
+                                   BeginOffsetIteratorT d_begin_offsets,
+                                   EndOffsetIteratorT   d_end_offsets)
     {
         MUDA_CUB_WRAPPER_IMPL(cub::DeviceSegmentedSort::SortPairs(d_temp_storage,
                                                                   temp_storage_bytes,
@@ -186,8 +174,7 @@ class DeviceSegmentedSort : public CubWrapper<DeviceSegmentedSort>
 
 
     template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& SortPairsDescending(DeviceVector<std::byte>& external_buffer,
-                                             const KeyT*   d_keys_in,
+    DeviceSegmentedSort& SortPairsDescending(const KeyT*   d_keys_in,
                                              KeyT*         d_keys_out,
                                              const ValueT* d_values_in,
                                              ValueT*       d_values_out,
@@ -212,8 +199,7 @@ class DeviceSegmentedSort : public CubWrapper<DeviceSegmentedSort>
     }
 
     template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& SortPairs(DeviceVector<std::byte>&   external_buffer,
-                                   cub::DoubleBuffer<KeyT>&   d_keys,
+    DeviceSegmentedSort& SortPairs(cub::DoubleBuffer<KeyT>&   d_keys,
                                    cub::DoubleBuffer<ValueT>& d_values,
                                    int                        num_items,
                                    int                        num_segments,
@@ -234,8 +220,7 @@ class DeviceSegmentedSort : public CubWrapper<DeviceSegmentedSort>
 
 
     template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& SortPairsDescending(DeviceVector<std::byte>& external_buffer,
-                                             cub::DoubleBuffer<KeyT>& d_keys,
+    DeviceSegmentedSort& SortPairsDescending(cub::DoubleBuffer<KeyT>& d_keys,
                                              cub::DoubleBuffer<ValueT>& d_values,
                                              int num_items,
                                              int num_segments,
@@ -248,8 +233,7 @@ class DeviceSegmentedSort : public CubWrapper<DeviceSegmentedSort>
 
 
     template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& StableSortPairs(DeviceVector<std::byte>& external_buffer,
-                                         const KeyT*          d_keys_in,
+    DeviceSegmentedSort& StableSortPairs(const KeyT*          d_keys_in,
                                          KeyT*                d_keys_out,
                                          const ValueT*        d_values_in,
                                          ValueT*              d_values_out,
@@ -275,8 +259,7 @@ class DeviceSegmentedSort : public CubWrapper<DeviceSegmentedSort>
 
 
     template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& StableSortPairsDescending(DeviceVector<std::byte>& external_buffer,
-                                                   const KeyT*   d_keys_in,
+    DeviceSegmentedSort& StableSortPairsDescending(const KeyT*   d_keys_in,
                                                    KeyT*         d_keys_out,
                                                    const ValueT* d_values_in,
                                                    ValueT*       d_values_out,
@@ -302,8 +285,7 @@ class DeviceSegmentedSort : public CubWrapper<DeviceSegmentedSort>
 
 
     template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& StableSortPairs(DeviceVector<std::byte>& external_buffer,
-                                         cub::DoubleBuffer<KeyT>&   d_keys,
+    DeviceSegmentedSort& StableSortPairs(cub::DoubleBuffer<KeyT>&   d_keys,
                                          cub::DoubleBuffer<ValueT>& d_values,
                                          int                        num_items,
                                          int                  num_segments,
@@ -316,320 +298,7 @@ class DeviceSegmentedSort : public CubWrapper<DeviceSegmentedSort>
 
 
     template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& StableSortPairsDescending(DeviceVector<std::byte>& external_buffer,
-                                                   cub::DoubleBuffer<KeyT>& d_keys,
-                                                   cub::DoubleBuffer<ValueT>& d_values,
-                                                   int num_items,
-                                                   int num_segments,
-                                                   BeginOffsetIteratorT d_begin_offsets,
-                                                   EndOffsetIteratorT d_end_offsets)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceSegmentedSort::StableSortPairsDescending(
-            d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, num_segments, d_begin_offsets, d_end_offsets, _stream, false));
-    }
-
-    // DeviceBuffer:
-
-    template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& SortKeys(DeviceBuffer<std::byte>& external_buffer,
-                                  const KeyT*              d_keys_in,
-                                  KeyT*                    d_keys_out,
-                                  int                      num_items,
-                                  int                      num_segments,
-                                  BeginOffsetIteratorT     d_begin_offsets,
-                                  EndOffsetIteratorT       d_end_offsets)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceSegmentedSort::SortKeys(d_temp_storage,
-                                                                 temp_storage_bytes,
-                                                                 d_keys_in,
-                                                                 d_keys_out,
-                                                                 num_items,
-                                                                 num_segments,
-                                                                 d_begin_offsets,
-                                                                 d_end_offsets,
-                                                                 _stream,
-                                                                 false));
-    }
-
-    template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& SortKeysDescending(DeviceBuffer<std::byte>& external_buffer,
-                                            const KeyT* d_keys_in,
-                                            KeyT*       d_keys_out,
-                                            int         num_items,
-                                            int         num_segments,
-                                            BeginOffsetIteratorT d_begin_offsets,
-                                            EndOffsetIteratorT d_end_offsets)
-    {
-        MUDA_CUB_WRAPPER_IMPL(
-            cub::DeviceSegmentedSort::SortKeysDescending(d_temp_storage,
-                                                         temp_storage_bytes,
-                                                         d_keys_in,
-                                                         d_keys_out,
-                                                         num_items,
-                                                         num_segments,
-                                                         d_begin_offsets,
-                                                         d_end_offsets,
-                                                         _stream,
-                                                         false));
-    }
-
-
-    template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& SortKeys(DeviceBuffer<std::byte>& external_buffer,
-                                  cub::DoubleBuffer<KeyT>& d_keys,
-                                  int                      num_items,
-                                  int                      num_segments,
-                                  BeginOffsetIteratorT     d_begin_offsets,
-                                  EndOffsetIteratorT       d_end_offsets)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceSegmentedSort::SortKeys(
-            d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, _stream, false));
-    }
-
-
-    template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& SortKeysDescending(DeviceBuffer<std::byte>& external_buffer,
-                                            cub::DoubleBuffer<KeyT>& d_keys,
-                                            int                      num_items,
-                                            int num_segments,
-                                            BeginOffsetIteratorT d_begin_offsets,
-                                            EndOffsetIteratorT d_end_offsets)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceSegmentedSort::SortKeysDescending(
-            d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, _stream, false));
-    }
-
-
-    template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& StableSortKeys(DeviceBuffer<std::byte>& external_buffer,
-                                        const KeyT*          d_keys_in,
-                                        KeyT*                d_keys_out,
-                                        int                  num_items,
-                                        int                  num_segments,
-                                        BeginOffsetIteratorT d_begin_offsets,
-                                        EndOffsetIteratorT   d_end_offsets)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceSegmentedSort::StableSortKeys(d_temp_storage,
-                                                                       temp_storage_bytes,
-                                                                       d_keys_in,
-                                                                       d_keys_out,
-                                                                       num_items,
-                                                                       num_segments,
-                                                                       d_begin_offsets,
-                                                                       d_end_offsets,
-                                                                       _stream,
-                                                                       false));
-    }
-
-
-    template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& StableSortKeysDescending(DeviceBuffer<std::byte>& external_buffer,
-                                                  const KeyT* d_keys_in,
-                                                  KeyT*       d_keys_out,
-                                                  int         num_items,
-                                                  int         num_segments,
-                                                  BeginOffsetIteratorT d_begin_offsets,
-                                                  EndOffsetIteratorT d_end_offsets)
-    {
-        MUDA_CUB_WRAPPER_IMPL(
-            cub::DeviceSegmentedSort::StableSortKeysDescending(d_temp_storage,
-                                                               temp_storage_bytes,
-                                                               d_keys_in,
-                                                               d_keys_out,
-                                                               num_items,
-                                                               num_segments,
-                                                               d_begin_offsets,
-                                                               d_end_offsets,
-                                                               _stream,
-                                                               false));
-    }
-
-
-    template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& StableSortKeys(DeviceBuffer<std::byte>& external_buffer,
-                                        cub::DoubleBuffer<KeyT>& d_keys,
-                                        int                      num_items,
-                                        int                      num_segments,
-                                        BeginOffsetIteratorT d_begin_offsets,
-                                        EndOffsetIteratorT   d_end_offsets)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceSegmentedSort::StableSortKeys(
-            d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, _stream, false));
-    }
-
-
-    template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& StableSortKeysDescending(DeviceBuffer<std::byte>& external_buffer,
-                                                  cub::DoubleBuffer<KeyT>& d_keys,
-                                                  int num_items,
-                                                  int num_segments,
-                                                  BeginOffsetIteratorT d_begin_offsets,
-                                                  EndOffsetIteratorT d_end_offsets)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceSegmentedSort::StableSortKeysDescending(
-            d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, _stream, false));
-    }
-
-
-    template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& SortPairs(DeviceBuffer<std::byte>& external_buffer,
-                                   const KeyT*              d_keys_in,
-                                   KeyT*                    d_keys_out,
-                                   const ValueT*            d_values_in,
-                                   ValueT*                  d_values_out,
-                                   int                      num_items,
-                                   int                      num_segments,
-                                   BeginOffsetIteratorT     d_begin_offsets,
-                                   EndOffsetIteratorT       d_end_offsets)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceSegmentedSort::SortPairs(d_temp_storage,
-                                                                  temp_storage_bytes,
-                                                                  d_keys_in,
-                                                                  d_keys_out,
-                                                                  d_values_in,
-                                                                  d_values_out,
-                                                                  num_items,
-                                                                  num_segments,
-                                                                  d_begin_offsets,
-                                                                  d_end_offsets,
-                                                                  _stream,
-                                                                  false));
-    }
-
-
-    template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& SortPairsDescending(DeviceBuffer<std::byte>& external_buffer,
-                                             const KeyT*   d_keys_in,
-                                             KeyT*         d_keys_out,
-                                             const ValueT* d_values_in,
-                                             ValueT*       d_values_out,
-                                             int           num_items,
-                                             int           num_segments,
-                                             BeginOffsetIteratorT d_begin_offsets,
-                                             EndOffsetIteratorT d_end_offsets)
-    {
-        MUDA_CUB_WRAPPER_IMPL(
-            cub::DeviceSegmentedSort::SortPairsDescending(d_temp_storage,
-                                                          temp_storage_bytes,
-                                                          d_keys_in,
-                                                          d_keys_out,
-                                                          d_values_in,
-                                                          d_values_out,
-                                                          num_items,
-                                                          num_segments,
-                                                          d_begin_offsets,
-                                                          d_end_offsets,
-                                                          _stream,
-                                                          false));
-    }
-
-    template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& SortPairs(DeviceBuffer<std::byte>&   external_buffer,
-                                   cub::DoubleBuffer<KeyT>&   d_keys,
-                                   cub::DoubleBuffer<ValueT>& d_values,
-                                   int                        num_items,
-                                   int                        num_segments,
-                                   BeginOffsetIteratorT       d_begin_offsets,
-                                   EndOffsetIteratorT         d_end_offsets)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceSegmentedSort::SortPairs(d_temp_storage,
-                                                                  temp_storage_bytes,
-                                                                  d_keys,
-                                                                  d_values,
-                                                                  num_items,
-                                                                  num_segments,
-                                                                  d_begin_offsets,
-                                                                  d_end_offsets,
-                                                                  _stream,
-                                                                  false));
-    }
-
-
-    template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& SortPairsDescending(DeviceBuffer<std::byte>& external_buffer,
-                                             cub::DoubleBuffer<KeyT>& d_keys,
-                                             cub::DoubleBuffer<ValueT>& d_values,
-                                             int num_items,
-                                             int num_segments,
-                                             BeginOffsetIteratorT d_begin_offsets,
-                                             EndOffsetIteratorT d_end_offsets)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceSegmentedSort::SortPairsDescending(
-            d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, num_segments, d_begin_offsets, d_end_offsets, _stream, false));
-    }
-
-
-    template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& StableSortPairs(DeviceBuffer<std::byte>& external_buffer,
-                                         const KeyT*          d_keys_in,
-                                         KeyT*                d_keys_out,
-                                         const ValueT*        d_values_in,
-                                         ValueT*              d_values_out,
-                                         int                  num_items,
-                                         int                  num_segments,
-                                         BeginOffsetIteratorT d_begin_offsets,
-                                         EndOffsetIteratorT   d_end_offsets)
-    {
-        MUDA_CUB_WRAPPER_IMPL(
-            cub::DeviceSegmentedSort::StableSortPairs(d_temp_storage,
-                                                      temp_storage_bytes,
-                                                      d_keys_in,
-                                                      d_keys_out,
-                                                      d_values_in,
-                                                      d_values_out,
-                                                      num_items,
-                                                      num_segments,
-                                                      d_begin_offsets,
-                                                      d_end_offsets,
-                                                      _stream,
-                                                      false));
-    }
-
-
-    template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& StableSortPairsDescending(DeviceBuffer<std::byte>& external_buffer,
-                                                   const KeyT*   d_keys_in,
-                                                   KeyT*         d_keys_out,
-                                                   const ValueT* d_values_in,
-                                                   ValueT*       d_values_out,
-                                                   int           num_items,
-                                                   int           num_segments,
-                                                   BeginOffsetIteratorT d_begin_offsets,
-                                                   EndOffsetIteratorT d_end_offsets)
-    {
-        MUDA_CUB_WRAPPER_IMPL(
-            cub::DeviceSegmentedSort::StableSortPairsDescending(d_temp_storage,
-                                                                temp_storage_bytes,
-                                                                d_keys_in,
-                                                                d_keys_out,
-                                                                d_values_in,
-                                                                d_values_out,
-                                                                num_items,
-                                                                num_segments,
-                                                                d_begin_offsets,
-                                                                d_end_offsets,
-                                                                _stream,
-                                                                false));
-    }
-
-
-    template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& StableSortPairs(DeviceBuffer<std::byte>& external_buffer,
-                                         cub::DoubleBuffer<KeyT>&   d_keys,
-                                         cub::DoubleBuffer<ValueT>& d_values,
-                                         int                        num_items,
-                                         int                  num_segments,
-                                         BeginOffsetIteratorT d_begin_offsets,
-                                         EndOffsetIteratorT   d_end_offsets)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceSegmentedSort::StableSortPairs(
-            d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, num_segments, d_begin_offsets, d_end_offsets, _stream, false));
-    }
-
-
-    template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-    DeviceSegmentedSort& StableSortPairsDescending(DeviceBuffer<std::byte>& external_buffer,
-                                                   cub::DoubleBuffer<KeyT>& d_keys,
+    DeviceSegmentedSort& StableSortPairsDescending(cub::DoubleBuffer<KeyT>& d_keys,
                                                    cub::DoubleBuffer<ValueT>& d_values,
                                                    int num_items,
                                                    int num_segments,

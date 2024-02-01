@@ -13,7 +13,8 @@ namespace muda
 template <bool IsConst, typename T, FieldEntryLayout Layout, int M, int N>
 class FieldEntryViewCore : public ViewBase<IsConst>
 {
-    using Base = ViewBase<IsConst>;
+    using Base       = ViewBase<IsConst>;
+    using ViewerCore = FieldEntryViewerCore<IsConst, T, Layout, M, N>;
 
   public:
     template <typename T>
@@ -23,8 +24,14 @@ class FieldEntryViewCore : public ViewBase<IsConst>
     using NonConstViewer = FieldEntryViewer<T, Layout, M, N>;
     using ThisViewer = std::conditional_t<IsConst, ConstViewer, NonConstViewer>;
 
+    using MatStride      = typename ViewerCore::MatStride;
+    using ConstMatMap    = typename ViewerCore::ConstMatMap;
+    using NonConstMatMap = typename ViewerCore::NonConstMatMap;
+    using ThisMatMap     = typename ViewerCore::ThisMatMap;
+
   protected:
     FieldEntryCore m_core;
+    MatStride      m_stride;
     int            m_offset = 0;
     int            m_size   = 0;
 
@@ -43,6 +50,19 @@ class FieldEntryViewCore : public ViewBase<IsConst>
         return m_core.template data<T, Layout>(m_offset + i, row_index, col_index);
     }
 
+  protected:
+    struct AsIterator
+    {
+    };
+
+    MUDA_GENERIC FieldEntryViewCore(const FieldEntryCore& core, int offset, int size, AsIterator)
+        : m_core{core}
+        , m_offset{offset}
+        , m_size{size}
+    {
+        m_stride = details::field::make_stride<T, Layout, M, N>(m_core);
+    }
+
   public:
     MUDA_GENERIC FieldEntryViewCore() = default;
     MUDA_GENERIC FieldEntryViewCore(const FieldEntryCore& core, int offset, int size)
@@ -55,6 +75,8 @@ class FieldEntryViewCore : public ViewBase<IsConst>
                            offset,
                            size,
                            core.count());
+
+        m_stride = details::field::make_stride<T, Layout, M, N>(m_core);
     }
 
     MUDA_GENERIC auto layout_info() const { return m_core.layout_info(); }

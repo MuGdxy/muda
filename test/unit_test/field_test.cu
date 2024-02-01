@@ -269,8 +269,8 @@ void field_test(FieldEntryLayout layout, int N)
     pos.copy_from(h_pos);
 
     // test entry: fill
-    vel.subview(0, N - 1).fill(Vector3f::UnitY());
-    vel.subview(N - 1, 1).fill(Vector3f::UnitY());
+    vel.view(0, N - 1).fill(Vector3f::UnitY());
+    vel.view(N - 1, 1).fill(Vector3f::UnitY());
     I.copy_from(h_I);
 
     // test entry: copy to device buffer & copy to host
@@ -366,5 +366,60 @@ TEST_CASE("field_test", "[field]")
         field_test<Layout::AoS>(Layout::AoS, 10);
         field_test<Layout::AoS>(Layout::AoS, 33);
         field_test<Layout::AoS>(Layout::AoS, 197);
+    }
+}
+
+#include <muda/cub/device/device_scan.h>
+
+void field_cub(FieldEntryLayout input_layout, FieldEntryLayout output_layout, size_t size)
+{
+    Field field;
+    auto& input  = field["input"];
+    auto& output = field["output"];
+
+    auto  builder1 = input.builder(input_layout);
+    auto& x        = builder1.entry("x").scalar<int>();
+    auto& vx       = builder1.entry("vx").vector3<float>();
+    builder1.build();
+
+    auto  builder2 = output.builder(output_layout);
+    auto& y        = builder2.entry("y").scalar<int>();
+    auto& vy       = builder2.entry("vy").vector3<float>();
+    builder2.build();
+
+
+    std::vector<int> h_x(size, 1);
+    std::vector<int> h_gt_y(size);
+    std::exclusive_scan(h_x.begin(), h_x.end(), h_gt_y.begin(), 0);
+
+    std::vector<int> h_y(size);
+    input.resize(size);
+    output.resize(size);
+
+    x.copy_from(h_x);
+    DeviceScan().ExclusiveSum(x.view(), y.view(), x.count());
+    y.copy_to(h_y);
+
+    REQUIRE(h_y == h_gt_y);
+}
+
+TEST_CASE("field_cub", "[field]")
+{
+    using Layout = FieldEntryLayout;
+
+    std::array layout{Layout::AoSoA, Layout::SoA, Layout::AoS};
+    std::array name{"Runtime:AoSoA", "Runtime:SoA", "Runtime:AoS"};
+
+    for(int i = 0; i < layout.size(); ++i)
+    {
+        for(int j = 0; j < layout.size(); ++j)
+        {
+            SECTION(name[i] + std::string{"->"} + name[j])
+            {
+                field_cub(layout[i], layout[j], 10);
+                field_cub(layout[i], layout[j], 33);
+                field_cub(layout[i], layout[j], 197);
+            }
+        }
     }
 }

@@ -68,8 +68,7 @@ MUDA_INLINE Logger::Logger(LoggerViewer* global_viewer, size_t meta_size, size_t
 }
 
 MUDA_INLINE Logger::Logger(Logger&& other) noexcept
-    : m_sort_temp_storage(std::move(other.m_sort_temp_storage))
-    , m_meta_data_id(std::move(other.m_meta_data_id))
+    : m_meta_data_id(std::move(other.m_meta_data_id))
     , m_meta_data(std::move(other.m_meta_data))
     , m_sorted_meta_data_id(std::move(other.m_sorted_meta_data_id))
     , m_sorted_meta_data(std::move(other.m_sorted_meta_data))
@@ -89,7 +88,6 @@ MUDA_INLINE Logger& Logger::operator=(Logger&& other) noexcept
     if(this == &other)
         return *this;
 
-    m_sort_temp_storage    = std::move(other.m_sort_temp_storage);
     m_meta_data_id         = std::move(other.m_meta_data_id);
     m_meta_data            = std::move(other.m_meta_data);
     m_sorted_meta_data_id  = std::move(other.m_sorted_meta_data_id);
@@ -208,8 +206,7 @@ MUDA_INLINE void Logger::download()
 
     // sort meta data
 
-    DeviceRadixSort().SortPairs(m_sort_temp_storage,
-                                m_meta_data_id.data(),
+    DeviceRadixSort().SortPairs(m_meta_data_id.data(),
                                 m_sorted_meta_data_id.data(),
                                 m_meta_data.data(),
                                 m_sorted_meta_data.data(),

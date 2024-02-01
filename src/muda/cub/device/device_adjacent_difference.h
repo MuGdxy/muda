@@ -1,6 +1,6 @@
 #pragma once
-#if 0
 #include <muda/cub/device/cub_wrapper.h>
+#if CUB_VERSION >= 200200
 #include "details/cub_wrapper_macro_def.inl"
 #ifndef __INTELLISENSE__
 #include <cub/device/device_adjacent_difference.cuh>
@@ -16,17 +16,14 @@ namespace muda
 //ref: https://nvlabs.github.io/cub/structcub_1_1_device_adjacent_difference.html
 class DeviceAdjacentDifference : public CubWrapper<DeviceAdjacentDifference>
 {
-  public:
-    DeviceAdjacentDifference(cudaStream_t stream = nullptr)
-        : CubWrapper(stream)
-    {
-    }
+    using Base = CubWrapper<DeviceAdjacentDifference>;
 
+  public:
+    using Base::Base;
     // DeviceVector:
 
     template <typename InputIteratorT, typename OutputIteratorT, typename DifferenceOpT = cub::Difference>
-    DeviceAdjacentDifference& SubtractLeftCopy(DeviceVector<std::byte>& external_buffer,
-                                               InputIteratorT  d_in,
+    DeviceAdjacentDifference& SubtractLeftCopy(InputIteratorT  d_in,
                                                OutputIteratorT d_out,
                                                int             num_items,
                                                DifferenceOpT difference_op = {},
@@ -37,8 +34,7 @@ class DeviceAdjacentDifference : public CubWrapper<DeviceAdjacentDifference>
     }
 
     template <typename RandomAccessIteratorT, typename DifferenceOpT = cub::Difference>
-    DeviceAdjacentDifference& SubtractLeft(DeviceVector<std::byte>& external_buffer,
-                                           RandomAccessIteratorT d_in,
+    DeviceAdjacentDifference& SubtractLeft(RandomAccessIteratorT d_in,
                                            int                   num_items,
                                            DifferenceOpT difference_op = {},
                                            bool debug_synchronous      = false)
@@ -48,8 +44,7 @@ class DeviceAdjacentDifference : public CubWrapper<DeviceAdjacentDifference>
     }
 
     template <typename InputIteratorT, typename OutputIteratorT, typename DifferenceOpT = cub::Difference>
-    DeviceAdjacentDifference& SubtractRightCopy(DeviceVector<std::byte>& external_buffer,
-                                                InputIteratorT  d_in,
+    DeviceAdjacentDifference& SubtractRightCopy(InputIteratorT  d_in,
                                                 OutputIteratorT d_out,
                                                 int             num_items,
                                                 DifferenceOpT difference_op = {},
@@ -60,57 +55,7 @@ class DeviceAdjacentDifference : public CubWrapper<DeviceAdjacentDifference>
     }
 
     template <typename RandomAccessIteratorT, typename DifferenceOpT = cub::Difference>
-    DeviceAdjacentDifference& SubtractRight(DeviceVector<std::byte>& external_buffer,
-                                            RandomAccessIteratorT d_in,
-                                            int                   num_items,
-                                            DifferenceOpT difference_op = {},
-                                            bool debug_synchronous      = false)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceAdjacentDifference::SubtractRight(
-            d_temp_storage, temp_storage_bytes, d_in, num_items, difference_op, _stream, debug_synchronous));
-    }
-
-    // DeviceBuffer:
-
-    
-    template <typename InputIteratorT, typename OutputIteratorT, typename DifferenceOpT = cub::Difference>
-    DeviceAdjacentDifference& SubtractLeftCopy(DeviceBuffer<std::byte>& external_buffer,
-                                               InputIteratorT  d_in,
-                                               OutputIteratorT d_out,
-                                               int             num_items,
-                                               DifferenceOpT difference_op = {},
-                                               bool debug_synchronous = false)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceAdjacentDifference::SubtractLeftCopy(
-            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, difference_op, _stream, debug_synchronous));
-    }
-
-    template <typename RandomAccessIteratorT, typename DifferenceOpT = cub::Difference>
-    DeviceAdjacentDifference& SubtractLeft(DeviceBuffer<std::byte>& external_buffer,
-                                           RandomAccessIteratorT d_in,
-                                           int                   num_items,
-                                           DifferenceOpT difference_op = {},
-                                           bool debug_synchronous      = false)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceAdjacentDifference::SubtractLeft(
-            d_temp_storage, temp_storage_bytes, d_in, num_items, difference_op, _stream, debug_synchronous));
-    }
-
-    template <typename InputIteratorT, typename OutputIteratorT, typename DifferenceOpT = cub::Difference>
-    DeviceAdjacentDifference& SubtractRightCopy(DeviceBuffer<std::byte>& external_buffer,
-                                                InputIteratorT  d_in,
-                                                OutputIteratorT d_out,
-                                                int             num_items,
-                                                DifferenceOpT difference_op = {},
-                                                bool debug_synchronous = false)
-    {
-        MUDA_CUB_WRAPPER_IMPL(cub::DeviceAdjacentDifference::SubtractRightCopy(
-            d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, difference_op, _stream, debug_synchronous));
-    }
-
-    template <typename RandomAccessIteratorT, typename DifferenceOpT = cub::Difference>
-    DeviceAdjacentDifference& SubtractRight(DeviceBuffer<std::byte>& external_buffer,
-                                            RandomAccessIteratorT d_in,
+    DeviceAdjacentDifference& SubtractRight(RandomAccessIteratorT d_in,
                                             int                   num_items,
                                             DifferenceOpT difference_op = {},
                                             bool debug_synchronous      = false)
@@ -121,9 +66,9 @@ class DeviceAdjacentDifference : public CubWrapper<DeviceAdjacentDifference>
 
     // Origin:
 
-    
     template <typename InputIteratorT, typename OutputIteratorT, typename DifferenceOpT = cub::Difference>
-    DeviceAdjacentDifference& SubtractLeftCopy(void*  d_temp_storage, size_t& temp_storage_bytes,
+    DeviceAdjacentDifference& SubtractLeftCopy(void*   d_temp_storage,
+                                               size_t& temp_storage_bytes,
                                                InputIteratorT  d_in,
                                                OutputIteratorT d_out,
                                                int             num_items,
@@ -135,7 +80,8 @@ class DeviceAdjacentDifference : public CubWrapper<DeviceAdjacentDifference>
     }
 
     template <typename RandomAccessIteratorT, typename DifferenceOpT = cub::Difference>
-    DeviceAdjacentDifference& SubtractLeft(void*  d_temp_storage, size_t& temp_storage_bytes,
+    DeviceAdjacentDifference& SubtractLeft(void*   d_temp_storage,
+                                           size_t& temp_storage_bytes,
                                            RandomAccessIteratorT d_in,
                                            int                   num_items,
                                            DifferenceOpT difference_op = {},
@@ -146,7 +92,8 @@ class DeviceAdjacentDifference : public CubWrapper<DeviceAdjacentDifference>
     }
 
     template <typename InputIteratorT, typename OutputIteratorT, typename DifferenceOpT = cub::Difference>
-    DeviceAdjacentDifference& SubtractRightCopy(void*  d_temp_storage, size_t& temp_storage_bytes,
+    DeviceAdjacentDifference& SubtractRightCopy(void*   d_temp_storage,
+                                                size_t& temp_storage_bytes,
                                                 InputIteratorT  d_in,
                                                 OutputIteratorT d_out,
                                                 int             num_items,
@@ -158,7 +105,8 @@ class DeviceAdjacentDifference : public CubWrapper<DeviceAdjacentDifference>
     }
 
     template <typename RandomAccessIteratorT, typename DifferenceOpT = cub::Difference>
-    DeviceAdjacentDifference& SubtractRight(void*  d_temp_storage, size_t& temp_storage_bytes,
+    DeviceAdjacentDifference& SubtractRight(void*   d_temp_storage,
+                                            size_t& temp_storage_bytes,
                                             RandomAccessIteratorT d_in,
                                             int                   num_items,
                                             DifferenceOpT difference_op = {},

@@ -100,14 +100,11 @@ class FieldEntry : public FieldEntryBase
             static_cast<int>(m_info.elem_count)};
     }
 
-    auto subview(int offset) { return view().subview(offset); }
-    auto subview(int offset) const { return view().subview(offset); }
+    auto view(int offset) { return view().subview(offset); }
+    auto view(int offset) const { return view().subview(offset); }
 
-    auto subview(int offset, int count)
-    {
-        return view().subview(offset, count);
-    }
-    auto subview(int offset, int count) const
+    auto view(int offset, int count) { return view().subview(offset, count); }
+    auto view(int offset, int count) const
     {
         return view().subview(offset, count);
     }

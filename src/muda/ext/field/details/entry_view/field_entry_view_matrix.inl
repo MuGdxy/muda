@@ -3,7 +3,8 @@ namespace muda
 template <bool IsConst, typename T, FieldEntryLayout Layout, int M, int N>
 class FieldEntryViewBase : public FieldEntryViewCore<IsConst, T, Layout, M, N>
 {
-    using Base = FieldEntryViewCore<IsConst, T, Layout, M, N>;
+    using Base       = FieldEntryViewCore<IsConst, T, Layout, M, N>;
+    using ViewerBase = FieldEntryViewerBase<IsConst, T, Layout, M, N>;
 
     template <typename U>
     using auto_const_t = Base::template auto_const_t<U>;
@@ -14,6 +15,9 @@ class FieldEntryViewBase : public FieldEntryViewCore<IsConst, T, Layout, M, N>
     using NonConstView = FieldEntryViewBase<false, T, Layout, M, N>;
     using ThisView     = FieldEntryViewBase<IsConst, T, Layout, M, N>;
     using ElementType  = Eigen::Matrix<T, M, N>;
+
+    using ConstMatrixMap = typename Base::ConstMatMap;
+    using ThisMatrixMap  = typename Base::ThisMatMap;
 
 
     MUDA_GENERIC FieldEntryViewBase(const Base& base)
@@ -37,6 +41,17 @@ class FieldEntryViewBase : public FieldEntryViewCore<IsConst, T, Layout, M, N>
     {
         return remove_const(this)->data(i, row_index, col_index);
     }
+
+    MUDA_GENERIC auto operator[](int i)
+    {
+        return ThisMatrixMap{data(i, 0, 0), this->m_stride};
+    }
+
+    MUDA_GENERIC auto operator[](int i) const
+    {
+        return ConstMatrixMap{data(i, 0, 0), this->m_stride};
+    }
+
 
     MUDA_GENERIC auto subview(int offset) const
     {

@@ -10,7 +10,7 @@ MUDA is **μ-CUDA**, yet another painless CUDA programming **paradigm**.
 
 ## What is muda?
 
-- header-only library right out of the box
+- Header-only library right out of the box
 - Depends only on CUDA and standard libraries
 - Improve readability, maintainability, security, and debugging efficiency of CUDA code.
 - Reduce the difficulty of building CUDA Graphs and increase automation.
@@ -177,10 +177,10 @@ buffer.view(0,4).copy_to(dst_buffer.view());
 
 // safe and easy resize
 DeviceBuffer2D<int> buffer2d;
-buffer.resize(Extent2D{5, 5}, 1);
-buffer.resize(Extent2D{7, 2}, 2);
-buffer.resize(Extent2D{2, 7}, 3);
-buffer.resize(Extent2D{9, 9}, 4);
+buffer2d.resize(Extent2D{5, 5}, 1);
+buffer2d.resize(Extent2D{7, 2}, 2);
+buffer2d.resize(Extent2D{2, 7}, 3);
+buffer2d.resize(Extent2D{9, 9}, 4);
 // subview 
 buffer2d.view(Offset2D{1,1}, Extent2D{3,3});
 buffer2d.copy_to(host);
@@ -190,13 +190,13 @@ buffer3d.resize(Extent3D{3, 4, 5}, 1);
 buffer3d.copy_to(host);
 ```
 
-The old data will be safely kept if you resize a 2D or 3D buffer. If you don't want to keep the old data, use `.clear()` before your `.resize()`. An example of resizing a 2D buffer is shown below.
+The old data will be safely kept if you resize a 2D or 3D buffer. If you don't want to keep the old data, use `.clear()` before your `.resize()`. The result of the above chain of 2D buffer resizing is shown below.
 
 <img src="img/buffer2d_resize.svg" alt="buffer2d_resize" style="zoom: 80%;" />
 
 ## Viewer In Kernel
 
-MUDA **Viewers** provide safe inner-kernel memory access, which checks all input to make sure access does not go out of range and does not dereference a null pointer. If something goes wrong, they report the debug information as much as possible and trap the kernel to prevent further errors. Don't forget to fill the `kernel_name()` and `name()` out.
+MUDA **Viewers** provide safe inner-kernel memory access, which checks all input to ensure access does not go out of range and does not dereference a null pointer. If something goes wrong, they report the debug information as much as possible and trap the kernel to prevent further errors. Don't forget to fill the `kernel_name()` and `name()` out.
 
 ```cpp
 DeviceVar<int> single;
@@ -368,7 +368,7 @@ ctx.spmv(A_bsr.cview(), x.cview(), b.view());
 
 ## [Extension] Field Layout
 
-MUDA now supports the `SoA/AoS/AoSoA` layouts. Users can switch between them seamlessly(with different builder parameters). The copy operation is in all directions, and the layout is well-supported.
+MUDA now supports the `SoA/AoS/AoSoA` layouts. Users can switch between them seamlessly(with different builder parameters). The copy operation in all directions and layouts is well-supported.
 
 Most of the time, `AoSoA` is the best layout for Vector and Matrix, with better [memory coalescing](https://nichijou.co/cuda5-coalesce/) and more compact memory storage. With the help of `Eigen::Map<>`, the read/write of a Vector/Matrix is as trivial as accessing a struct-version Vector/Matrix.
 

@@ -5,7 +5,6 @@ class FieldEntryViewBase<IsConst, T, Layout, 1, 1>
     : public FieldEntryViewCore<IsConst, T, Layout, 1, 1>
 {
     using Base = FieldEntryViewCore<IsConst, T, Layout, 1, 1>;
-
     template <typename U>
     using auto_const_t = Base::template auto_const_t<U>;
 
@@ -51,6 +50,29 @@ class FieldEntryViewBase<IsConst, T, Layout, 1, 1>
     {
         return ThisView{m_core, m_offset + offset, size};
     }
+
+    /**********************************************************************************
+    * As Iterator
+    ***********************************************************************************/
+
+    // Random Access Iterator Interface
+    using value_type        = T;
+    using reference         = T&;
+    using pointer           = T*;
+    using iterator_category = std::random_access_iterator_tag;
+    using difference_type   = size_t;
+
+    MUDA_GENERIC ThisView operator+(int i)
+    {
+        return ThisView{m_core, m_offset + i, m_size - i, typename Base::AsIterator{}};
+    }
+    MUDA_GENERIC ConstView operator+(int i) const
+    {
+        return remove_const(*this).operator+(i).as_const();
+    }
+    MUDA_GENERIC reference operator*() { return *data(0); }
+    MUDA_GENERIC auto_const_t<T>& operator[](int i) { return *data(i); }
+    MUDA_GENERIC const T&         operator[](int i) const { return *data(i); }
 };
 
 template <typename T, FieldEntryLayout Layout>
@@ -65,6 +87,7 @@ class CFieldEntryView<T, Layout, 1, 1>
     using NonConstView = FieldEntryView<T, Layout, 1, 1>;
     using ThisView     = CFieldEntryView<T, Layout, 1, 1>;
     using ElementType  = typename Base::ElementType;
+    using value_type   = T;
 
     MUDA_GENERIC CFieldEntryView(const Base& base)
         : Base(base)
@@ -110,6 +133,7 @@ class FieldEntryView<T, Layout, 1, 1>
     using NonConstView = FieldEntryView<T, Layout, 1, 1>;
     using ThisView     = FieldEntryView<T, Layout, 1, 1>;
     using ElementType  = typename Base::ElementType;
+    using value_type   = T;
 
     MUDA_GENERIC FieldEntryView(const Base& base)
         : Base(base)

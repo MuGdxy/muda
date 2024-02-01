@@ -23,6 +23,18 @@ MUDA_INLINE void Stream::end_capture(cudaGraph_t* graph) const
     checkCudaErrors(cudaStreamEndCapture(m_handle, graph));
 }
 
+MUDA_INLINE Stream& Stream::Default()
+{
+    thread_local static Stream s{nullptr};
+    return s;
+}
+
+MUDA_INLINE std::byte* Stream::workspace(size_t byte_size)
+{
+    m_workspace.resize(m_handle, byte_size);
+    return m_workspace.data();
+}
+
 MUDA_INLINE MUDA_DEVICE Stream::TailLaunch::operator cudaStream_t() const
 {
     return details::stream::tail_launch();
