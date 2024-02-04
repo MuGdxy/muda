@@ -6,6 +6,8 @@
 #include <muda/ext/field/field_entry_type.h>
 #include <muda/ext/field/field_entry_base_data.h>
 #include <muda/ext/field/field_entry_view.h>
+#include <muda/tools/host_device_config.h>
+#include <muda/ext/field/field_entry.h>
 
 namespace muda
 {
@@ -16,6 +18,9 @@ class SubFieldImpl;
 
 class FieldEntryBase
 {
+    template <FieldEntryLayout layout>
+    friend class SubFieldImpl;
+
   public:
     FieldEntryBase(SubField&            field,
                    FieldEntryLayoutInfo layout_info,
@@ -26,23 +31,16 @@ class FieldEntryBase
         : m_field{field}
         , m_name{name}
     {
-        m_info.layout_info    = layout_info;
-        m_info.type           = type;
-        m_info.shape          = shape;
-        m_info.elem_byte_size = m_elem_byte_size;
+        auto& info          = m_core.m_info;
+        info.layout_info    = layout_info;
+        info.type           = type;
+        info.shape          = shape;
+        info.elem_byte_size = m_elem_byte_size;
+
+        m_core.m_name =
+            m_field.m_field.m_string_cache[std::string{m_field.name()} + "." + m_name];
     }
     ~FieldEntryBase() = default;
-
-    auto name() const { return std::string{m_name}; }
-    auto elem_byte_size() const { return m_info.elem_byte_size; }
-    auto count() const { return m_info.elem_count; }
-
-    auto struct_stride() const { return m_info.struct_stride; }
-    auto layout() const { return m_info.layout_info.layout(); }
-    auto layout_info() const { return m_info.layout_info; }
-    auto type() const { return m_info.type; }
-    auto shape() const { return m_info.shape; }
-    // FieldEntryViewerBase viewer();
 
   protected:
     friend class SubField;
@@ -50,14 +48,28 @@ class FieldEntryBase
     template <FieldEntryLayout Layout>
     friend class SubFieldImpl;
 
+    virtual void async_copy_to_new_place(HostDeviceConfigView<FieldEntryCore> vfc) const = 0;
+
     // delete copy
     FieldEntryBase(const FieldEntryBase&)            = delete;
     FieldEntryBase& operator=(const FieldEntryBase&) = delete;
 
-    SubField&              m_field;
-    FieldEntryBaseData     m_info;
-    std::string            m_name;
-    details::StringPointer m_name_ptr;
+    SubField&   m_field;
+    std::string m_name;
+    // a parameter struct that can be copy between host and device.
+    FieldEntryCore                   m_core;
+    HostDeviceConfig<FieldEntryCore> m_host_device_core;
+
+    MUDA_GENERIC const auto& core() const { return m_core; }
+
+  public:
+    MUDA_GENERIC auto layout_info() const { return core().layout_info(); }
+    MUDA_GENERIC auto layout() const { return core().layout(); }
+    MUDA_GENERIC auto count() const { return core().count(); }
+    MUDA_GENERIC auto elem_byte_size() const { return core().elem_byte_size(); }
+    MUDA_GENERIC auto shape() const { return core().shape(); }
+    MUDA_GENERIC auto struct_stride() const { return core().struct_stride(); }
+    MUDA_GENERIC auto name() const { return std::string_view{m_name}; }
 };
 
 template <typename T, FieldEntryLayout Layout, int M, int N>
@@ -86,18 +98,14 @@ class FieldEntry : public FieldEntryBase
     {
         MUDA_ASSERT(m_field.data_buffer() != nullptr, "Resize the field before you use it!");
         return FieldEntryView<T, Layout, M, N>{
-            FieldEntryCore{m_field.data_buffer(), m_info, m_name_ptr},
-            0,
-            static_cast<int>(m_info.elem_count)};
+            m_host_device_core.view(), 0, static_cast<int>(m_core.count())};
     }
 
     CFieldEntryView<T, Layout, M, N> view() const
     {
         MUDA_ASSERT(m_field.data_buffer() != nullptr, "Resize the field before you use it!");
         return CFieldEntryView<T, Layout, M, N>{
-            FieldEntryCore{m_field.data_buffer(), m_info, m_name_ptr},
-            0,
-            static_cast<int>(m_info.elem_count)};
+            m_host_device_core.view(), 0, static_cast<int>(m_core.count())};
     }
 
     auto view(int offset) { return view().subview(offset); }
@@ -124,35 +132,64 @@ class FieldEntry : public FieldEntryBase
     template <FieldEntryLayout SrcLayout>
     void copy_from(const FieldEntry<T, SrcLayout, M, N>& src);
 
+    virtual void async_copy_to_new_place(HostDeviceConfigView<FieldEntryCore> new_place) const override
+    {
+        using DstView = FieldEntryView<T, Layout, M, N>;
+        auto dst = DstView{new_place, 0, static_cast<int>(new_place->count())};
+
+        if(new_place->count() < this->count())  // shrinking
+        {
+            if(!m_field.allow_inplace_shrink())  // typically SoA don't allow inplace shrinking
+            {
+                BufferLaunch().resize(m_workpace, new_place->count());
+                FieldEntryLaunch().copy(m_workpace.view(),
+                                        std::as_const(*this).view(0, new_place->count()));  // copy self to workspace
+                FieldEntryLaunch().copy(dst,
+                                        m_workpace.view());  // copy workspace to dst
+            }
+            // else do nothing, trivial shrink
+        }
+        else if(new_place->count() > this->count())  // expanding
+        {
+            // safe direct copy
+            FieldEntryLaunch().copy(dst.subview(0, this->count()),
+                                    std::as_const(*this).view());
+        }
+        else
+        {
+            // do thing
+        }
+    }
+
     void fill(const ElementType& value);
 
   private:
     mutable DeviceBuffer<ElementType> m_workpace;  // for data copy, if needed
 };
 
-constexpr int FieldEntryDynamicSize = -1;
+//constexpr int FieldEntryDynamicSize = -1;
 
-template <typename T, FieldEntryLayout Layout>
-class FieldEntry<T, Layout, FieldEntryDynamicSize, 1> : public FieldEntryBase
-{
-  public:
-    FieldEntry(SubField& field, FieldEntryLayoutInfo layout, FieldEntryType type, uint32_t N, std::string_view name)
-        : FieldEntryBase{field, layout, type, make_uint2(N, 1), sizeof(T), name}
-    {
-        MUDA_ERROR_WITH_LOCATION("Not implemented yet");
-    }
-};
-
-template <typename T, FieldEntryLayout Layout>
-class FieldEntry<T, Layout, FieldEntryDynamicSize, FieldEntryDynamicSize> : public FieldEntryBase
-{
-  public:
-    FieldEntry(SubField& field, FieldEntryLayoutInfo layout, FieldEntryType type, uint2 shape, std::string_view name)
-        : FieldEntryBase{field, layout, type, shape, sizeof(T), name}
-    {
-        MUDA_ERROR_WITH_LOCATION("Not implemented yet");
-    }
-};
+//template <typename T, FieldEntryLayout Layout>
+//class FieldEntry<T, Layout, FieldEntryDynamicSize, 1> : public FieldEntryBase
+//{
+//  public:
+//    FieldEntry(SubField& field, FieldEntryLayoutInfo layout, FieldEntryType type, uint32_t N, std::string_view name)
+//        : FieldEntryBase{field, layout, type, make_uint2(N, 1), sizeof(T), name}
+//    {
+//        MUDA_ERROR_WITH_LOCATION("Not implemented yet");
+//    }
+//};
+//
+//template <typename T, FieldEntryLayout Layout>
+//class FieldEntry<T, Layout, FieldEntryDynamicSize, FieldEntryDynamicSize> : public FieldEntryBase
+//{
+//  public:
+//    FieldEntry(SubField& field, FieldEntryLayoutInfo layout, FieldEntryType type, uint2 shape, std::string_view name)
+//        : FieldEntryBase{field, layout, type, shape, sizeof(T), name}
+//    {
+//        MUDA_ERROR_WITH_LOCATION("Not implemented yet");
+//    }
+//};
 }  // namespace muda
 
 #include "details/field_entry.inl"

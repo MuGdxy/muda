@@ -1,6 +1,6 @@
 namespace muda
 {
-MUDA_INLINE void SubFieldImpl<FieldEntryLayout::AoSoA>::build()
+MUDA_INLINE void SubFieldImpl<FieldEntryLayout::AoSoA>::build_impl()
 {
     auto min_alignment = build_options().min_alignment;
     auto max_alignment = build_options().max_alignment;
@@ -31,7 +31,7 @@ MUDA_INLINE void SubFieldImpl<FieldEntryLayout::AoSoA>::build()
 
         struct_stride = align(struct_stride, elem_byte_size, min_alignment, max_alignment);
         // now struct_stride is the offset of the entry in the "Struct"
-        e->m_info.offset_in_struct = struct_stride;
+        e->m_core.m_info.offset_in_struct = struct_stride;
 
         auto total_elem_count_in_innermost_array = e->shape().x * e->shape().y * inner_array_size;
         struct_stride += elem_byte_size * total_elem_count_in_innermost_array;
@@ -41,18 +41,13 @@ MUDA_INLINE void SubFieldImpl<FieldEntryLayout::AoSoA>::build()
 
     for(auto& e : m_entries)
     {
-        e->m_info.struct_stride = m_struct_stride;
-        e->m_name_ptr           = m_field.m_string_cache[e->m_name];
+        e->m_core.m_info.struct_stride = m_struct_stride;
     }
 }
 
-MUDA_INLINE void SubFieldImpl<FieldEntryLayout::AoSoA>::resize(size_t num_elements)
+MUDA_INLINE size_t SubFieldImpl<FieldEntryLayout::AoSoA>::require_total_buffer_byte_size(size_t element_count)
 {
-    size_t outer_size = round_up(num_elements, m_layout_info.innermost_array_size());
-    copy_resize_data_buffer(outer_size * m_struct_stride);
-    for(auto& e : m_entries)
-    {
-        e->m_info.elem_count = num_elements;
-    }
+    size_t outer_size = round_up(element_count, m_layout_info.innermost_array_size());
+    return outer_size * m_struct_stride;
 }
 }  // namespace muda

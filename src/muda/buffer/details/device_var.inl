@@ -48,14 +48,14 @@ DeviceVar<T>& DeviceVar<T>::operator=(DeviceVar<T>&& other)
 }
 
 template <typename T>
-DeviceVar<T>& DeviceVar<T>::operator=(VarView<T> other)
+DeviceVar<T>& DeviceVar<T>::operator=(CVarView<T> other)
 {
     view().copy_from(other);
     return *this;
 }
 
 template <typename T>
-void DeviceVar<T>::copy_from(VarView<T> other)
+void DeviceVar<T>::copy_from(CVarView<T> other)
 {
     view().copy_from(other);
 }

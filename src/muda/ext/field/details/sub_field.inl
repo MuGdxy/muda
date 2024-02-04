@@ -124,8 +124,13 @@ MUDA_INLINE void SubField::build(const FieldBuildOptions& options)
 {
     m_interface->m_build_options = options;
     MUDA_ASSERT(!m_is_built, "Field is already built!");
-    m_interface->build();
+    m_interface->build_impl();
     m_is_built = true;
+}
+
+MUDA_INLINE bool SubField::allow_inplace_shrink() const
+{
+    return m_interface->allow_inplace_shrink();
 }
 
 MUDA_INLINE size_t SubField::size() const

@@ -4,6 +4,7 @@
 #include <muda/ext/field/field_entry_base_data.h>
 #include <muda/ext/field/field_entry_core.h>
 #include <muda/ext/field/matrix_map_info.h>
+#include <muda/tools/host_device_config.h>
 #include <Eigen/Core>
 
 namespace muda
@@ -52,20 +53,20 @@ class FieldEntryViewerCore : protected ViewerBase<IsConst>
     template <typename T>
     using auto_const_t = Base::template auto_const_t<T>;
 
-    FieldEntryCore m_core;
-    MatStride      m_stride;
-    int            m_offset = 0;
-    int            m_size   = 0;
+    HostDeviceConfigView<FieldEntryCore> m_core;
+    MatStride                            m_stride;
+    int                                  m_offset = 0;
+    int                                  m_size   = 0;
 
   public:
     MUDA_GENERIC FieldEntryViewerCore() {}
 
-    MUDA_GENERIC FieldEntryViewerCore(const FieldEntryCore& core, int offset, int size)
+    MUDA_GENERIC FieldEntryViewerCore(HostDeviceConfigView<FieldEntryCore> core, int offset, int size)
         : m_core(core)
         , m_offset(offset)
         , m_size(size)
     {
-        Base::name(core.name_string_pointer());
+        Base::name(core->name_string_pointer());
 
         MUDA_KERNEL_ASSERT(m_offset >= 0 && m_size >= 0 && m_offset + m_size <= total_count(),
                            "FieldEntryViewer[%s:%s]: offset/size indexing out of range, size=%d, offset=%d, size=%d",
@@ -75,7 +76,7 @@ class FieldEntryViewerCore : protected ViewerBase<IsConst>
                            m_offset,
                            m_size);
 
-        m_stride = details::field::make_stride<T, Layout, M, N>(m_core);
+        m_stride = details::field::make_stride<T, Layout, M, N>(*m_core);
     }
 
     MUDA_GENERIC FieldEntryViewerCore(const FieldEntryViewerCore&) = default;
@@ -85,7 +86,7 @@ class FieldEntryViewerCore : protected ViewerBase<IsConst>
     MUDA_GENERIC T* data(int i) const
     {
         check_index(i);
-        return m_core.template data<T, Layout>(m_offset + i);
+        return m_core->template data<T, Layout>(m_offset + i);
     }
 
     MUDA_GENERIC T* data(int i, int j) const
@@ -99,7 +100,7 @@ class FieldEntryViewerCore : protected ViewerBase<IsConst>
                            shape().x,
                            shape().y,
                            j);
-        return m_core.template data<T, Layout>(m_offset + i, j);
+        return m_core->template data<T, Layout>(m_offset + i, j);
     }
 
     MUDA_GENERIC T* data(int i, int row_index, int col_index) const
@@ -114,19 +115,22 @@ class FieldEntryViewerCore : protected ViewerBase<IsConst>
                            shape().y,
                            row_index,
                            col_index);
-        return m_core.template data<T, Layout>(m_offset + i, row_index, col_index);
+        return m_core->template data<T, Layout>(m_offset + i, row_index, col_index);
     }
 
   public:
-    MUDA_GENERIC auto layout_info() const { return m_core.layout_info(); }
-    MUDA_GENERIC auto layout() const { return m_core.layout(); }
+    MUDA_GENERIC auto layout_info() const { return m_core->layout_info(); }
+    MUDA_GENERIC auto layout() const { return m_core->layout(); }
     MUDA_GENERIC auto offset() const { return m_offset; }
     MUDA_GENERIC auto size() const { return m_size; }
-    MUDA_GENERIC auto total_count() const { return m_core.count(); }
-    MUDA_GENERIC auto elem_byte_size() const { return m_core.elem_byte_size(); }
-    MUDA_GENERIC auto shape() const { return m_core.shape(); }
-    MUDA_GENERIC auto struct_stride() const { return m_core.struct_stride(); }
-    MUDA_GENERIC auto entry_name() const { return m_core.name(); }
+    MUDA_GENERIC auto total_count() const { return m_core->count(); }
+    MUDA_GENERIC auto elem_byte_size() const
+    {
+        return m_core->elem_byte_size();
+    }
+    MUDA_GENERIC auto shape() const { return m_core->shape(); }
+    MUDA_GENERIC auto struct_stride() const { return m_core->struct_stride(); }
+    MUDA_GENERIC auto entry_name() const { return m_core->name(); }
 
   private:
     MUDA_INLINE MUDA_GENERIC void check_index(int i) const

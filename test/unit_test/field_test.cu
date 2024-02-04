@@ -328,6 +328,22 @@ void field_test(FieldEntryLayout layout, int N)
 
     pos.copy_to(res_h_pos);
     REQUIRE(h_pos == res_h_pos);
+
+    
+    DeviceBuffer<Vector3f> temp(2 * N);
+
+    particle.resize(100 * N);
+    temp.fill(Vector3f::Zero());
+    pos.view(0, 2 * N).copy_to(temp);
+    temp.copy_to(res_h_pos);
+
+    REQUIRE(h_pos == res_h_pos);
+
+    particle.resize(7 * N);
+    temp.fill(Vector3f::Zero());
+    pos.view(0, 2 * N).copy_to(temp);
+    temp.copy_to(res_h_pos);
+    REQUIRE(h_pos == res_h_pos);
 }
 
 TEST_CASE("field_test", "[field]")

@@ -200,7 +200,7 @@ TEST_CASE("buffer_test", "[buffer]")
         REQUIRE(var == buffer_var);
 
         buffer_var = 2;
-        var        = buffer_var.view();  // via buffer view
+        var        = buffer_var.view().as_const();  // via buffer view
         REQUIRE(var == buffer_var);
     }
 

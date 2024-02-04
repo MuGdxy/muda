@@ -1,5 +1,5 @@
 #include <muda/ext/field/sub_field.h>
-#include "field_entry.h"
+
 namespace muda
 {
 //using T                  = float;
@@ -41,7 +41,7 @@ void FieldEntry<T, Layout, M, N>::copy_from(const std::vector<ElementType>& src)
                 src.size(),
                 count());
     m_workpace.resize(count());
-    BufferLaunch().copy(m_workpace.view(), src.data());
+    BufferLaunch().copy(m_workpace.view(), src.data()).wait();
     FieldEntryLaunch().copy(view(), std::as_const(m_workpace).view()).wait();
 }
 

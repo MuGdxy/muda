@@ -22,6 +22,7 @@ class Field
     friend class SubFieldInterface;
     template <FieldEntryLayout Layout>
     friend class SubFieldImpl;
+    friend class FieldEntryBase;
 
     details::HostDeviceStringCache          m_string_cache;
     std::vector<U<SubField>>                m_sub_fields;
@@ -34,7 +35,7 @@ class Field
 
     // sub field count
     size_t num_sub_fields() const { return m_sub_fields.size(); }
-    
+
     // create or find a subfield
     SubField& operator[](std::string_view name);
 };

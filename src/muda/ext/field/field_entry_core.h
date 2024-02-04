@@ -2,15 +2,22 @@
 #include <muda/tools/string_pointer.h>
 #include <muda/ext/field/field_entry_layout.h>
 #include <muda/ext/field/field_entry_base_data.h>
-#include <muda/ext/field/field_entry_core.h>
+
 namespace muda
 {
 template <typename T, FieldEntryLayout Layout, int M, int N>
 class FieldEntry;
 
+class FieldEntryBase;
+
 // basic field entry info to pass between different field objects
 class FieldEntryCore
 {
+    friend class FieldEntryBase;
+    template <FieldEntryLayout layout>
+    friend class SubFieldImpl;
+    friend class SubFieldInterface;
+
   public:
     MUDA_GENERIC FieldEntryCore() {}
 

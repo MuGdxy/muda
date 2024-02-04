@@ -36,9 +36,10 @@ class ComputeGraphVar;
 class BufferLaunch : public LaunchBase<BufferLaunch>
 {
     int m_grid_dim  = 0;
-    int m_block_dim = LIGHT_WORKLOAD_BLOCK_SIZE;
+    int m_block_dim = -1;  // we use automatic block dim choose as default.
 
   public:
+    // default config
     MUDA_HOST BufferLaunch(cudaStream_t s = nullptr) MUDA_NOEXCEPT : LaunchBase(s)
     {
     }

@@ -26,8 +26,8 @@ class DeviceVar
 
     // device transfer
     
-    DeviceVar& operator=(VarView<T> other);
-    void       copy_from(VarView<T> other);
+    DeviceVar& operator=(CVarView<T> other);
+    void       copy_from(CVarView<T> other);
 
     DeviceVar& operator=(const T& val);  // copy from host
     operator T() const;                  // copy to host

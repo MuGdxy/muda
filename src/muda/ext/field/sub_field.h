@@ -91,6 +91,7 @@ class SubField
                                               uint2                shape);
 
     void build(const FieldBuildOptions& options);
+    bool allow_inplace_shrink() const;
 };
 }  // namespace muda
 

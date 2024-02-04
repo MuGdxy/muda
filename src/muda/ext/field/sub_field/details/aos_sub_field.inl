@@ -1,6 +1,6 @@
 namespace muda
 {
-MUDA_INLINE void SubFieldImpl<FieldEntryLayout::AoS>::build()
+MUDA_INLINE void SubFieldImpl<FieldEntryLayout::AoS>::build_impl()
 {
     auto min_alignment = build_options().min_alignment;
     auto max_alignment = build_options().max_alignment;
@@ -20,25 +20,25 @@ MUDA_INLINE void SubFieldImpl<FieldEntryLayout::AoS>::build()
         auto total_elem_count_in_a_struct_member = e->shape().x * e->shape().y;
         struct_stride = align(struct_stride, elem_byte_size, min_alignment, max_alignment);
         // now struct_stride is the offset of the entry in the "Struct"
-        e->m_info.offset_in_struct = struct_stride;
+        e->m_core.m_info.offset_in_struct = struct_stride;
         struct_stride += elem_byte_size * total_elem_count_in_a_struct_member;
     }
     // the final stride of the "Struct" >= struct size
     m_struct_stride = align(struct_stride, struct_stride, min_alignment, max_alignment);
 
     for(auto& e : m_entries)
-    {
-        e->m_info.struct_stride = m_struct_stride;
-        e->m_name_ptr           = m_field.m_string_cache[e->m_name];
-    }
+        e->m_core.m_info.struct_stride = m_struct_stride;
 }
 
-MUDA_INLINE void SubFieldImpl<FieldEntryLayout::AoS>::resize(size_t num_elements)
+//MUDA_INLINE void SubFieldImpl<FieldEntryLayout::AoS>::resize(size_t num_elements)
+//{
+//    copy_resize_data_buffer(m_struct_stride * num_elements);
+//    for(auto& e : m_entries)
+//        e->m_core.m_info.elem_count = num_elements;
+//}
+
+MUDA_INLINE size_t SubFieldImpl<FieldEntryLayout::AoS>::require_total_buffer_byte_size(size_t num_element)
 {
-    copy_resize_data_buffer(m_struct_stride * num_elements);
-    for(auto& e : m_entries)
-    {
-        e->m_info.elem_count = num_elements;
-    }
+    return m_struct_stride * num_element;
 }
 }  // namespace muda

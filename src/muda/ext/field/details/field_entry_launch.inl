@@ -154,7 +154,7 @@ MUDA_HOST FieldEntryLaunch& FieldEntryLaunch::copy(
                 src.size());
 
     ParallelFor().apply(dst.size(),
-                        [dst, src] __device__(int i) mutable
+                        [dst = dst, src = src] __device__(int i) mutable
                         {
                             if constexpr(M == 1 && N == 1)
                             {
@@ -163,6 +163,7 @@ MUDA_HOST FieldEntryLaunch& FieldEntryLaunch::copy(
                             else if constexpr(M > 1 && N == 1)
                             {
 #pragma unroll
+
                                 for(int j = 0; j < M; ++j)
                                 {
                                     *dst.data(i, j) = (*src.data(i))(j);

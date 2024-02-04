@@ -33,16 +33,4 @@ void VarView<T>::fill(const T& val)
         .fill(*this, val)  //
         .wait();
 }
-
-template <typename T>
-MUDA_GENERIC Dense<T> VarView<T>::viewer() MUDA_NOEXCEPT
-{
-    return Dense<T>{m_data};
-}
-
-template <typename T>
-MUDA_GENERIC CDense<T> VarViewBase<T>::cviewer() const MUDA_NOEXCEPT
-{
-    return CDense<T>{m_data};
-}
 }  // namespace muda
