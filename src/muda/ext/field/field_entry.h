@@ -166,30 +166,6 @@ class FieldEntry : public FieldEntryBase
   private:
     mutable DeviceBuffer<ElementType> m_workpace;  // for data copy, if needed
 };
-
-//constexpr int FieldEntryDynamicSize = -1;
-
-//template <typename T, FieldEntryLayout Layout>
-//class FieldEntry<T, Layout, FieldEntryDynamicSize, 1> : public FieldEntryBase
-//{
-//  public:
-//    FieldEntry(SubField& field, FieldEntryLayoutInfo layout, FieldEntryType type, uint32_t N, std::string_view name)
-//        : FieldEntryBase{field, layout, type, make_uint2(N, 1), sizeof(T), name}
-//    {
-//        MUDA_ERROR_WITH_LOCATION("Not implemented yet");
-//    }
-//};
-//
-//template <typename T, FieldEntryLayout Layout>
-//class FieldEntry<T, Layout, FieldEntryDynamicSize, FieldEntryDynamicSize> : public FieldEntryBase
-//{
-//  public:
-//    FieldEntry(SubField& field, FieldEntryLayoutInfo layout, FieldEntryType type, uint2 shape, std::string_view name)
-//        : FieldEntryBase{field, layout, type, shape, sizeof(T), name}
-//    {
-//        MUDA_ERROR_WITH_LOCATION("Not implemented yet");
-//    }
-//};
 }  // namespace muda
 
 #include "details/field_entry.inl"

@@ -32,11 +32,11 @@ class FieldEntryViewCore : public ViewBase<IsConst>
     using ThisMatMap     = typename ViewerCore::ThisMatMap;
 
   protected:
-    HostDeviceConfigView<FieldEntryCore> m_core; 
+    HostDeviceConfigView<FieldEntryCore> m_core;
     MatStride                            m_stride;
     int                                  m_offset = 0;
     int                                  m_size   = 0;
-    
+
 
     MUDA_GENERIC T* data(int i) const
     {
@@ -70,17 +70,13 @@ class FieldEntryViewCore : public ViewBase<IsConst>
   public:
     MUDA_GENERIC FieldEntryViewCore() = default;
     MUDA_GENERIC FieldEntryViewCore(HostDeviceConfigView<FieldEntryCore> core, int offset, int size)
-        : m_core{core}
-        , m_offset{offset}
-        , m_size{size}
+        : FieldEntryViewCore(core, offset, size, AsIterator{})
     {
         MUDA_KERNEL_ASSERT(offset >= 0 && size >= 0 && offset + size <= core->count(),
                            "(offset,size) is out of range, offset=%d, size=%d, count=%d",
                            offset,
                            size,
                            core->count());
-
-        m_stride = details::field::make_stride<T, Layout, M, N>(*m_core);
     }
 
     MUDA_GENERIC auto layout_info() const { return m_core->layout_info(); }

@@ -36,15 +36,6 @@ class FieldEntryViewBase<IsConst, T, Layout, N, 1>
         return remove_const(this)->data(i, comp_j);
     }
 
-    MUDA_GENERIC auto operator[](int i)
-    {
-        return ThisVectorMap{data(i, 0), this->m_stride};
-    }
-    MUDA_GENERIC auto operator[](int i) const
-    {
-        return ConstVectorMap{data(i, 0), this->m_stride};
-    }
-
     MUDA_GENERIC auto subview(int offset) const
     {
         return ConstView{m_core, m_offset + offset, m_size - offset};
@@ -63,6 +54,48 @@ class FieldEntryViewBase<IsConst, T, Layout, N, 1>
     MUDA_GENERIC auto subview(int offset, int size)
     {
         return ThisView{m_core, m_offset + offset, size};
+    }
+
+    /**********************************************************************************
+    * Entry View As Iterator
+    ***********************************************************************************/
+
+    class DummyPointer
+    {
+        ThisVectorMap map;
+
+      public:
+        MUDA_GENERIC DummyPointer(ThisVectorMap map)
+            : map(map)
+        {
+        }
+        MUDA_GENERIC auto operator*() { return map; }
+    };
+
+    // Random Access Iterator Interface
+    using value_type        = ElementType;
+    using reference         = ThisVectorMap;
+    using pointer           = DummyPointer;
+    using iterator_category = std::random_access_iterator_tag;
+    using difference_type   = size_t;
+
+    MUDA_GENERIC ThisView operator+(int i)
+    {
+        return ThisView{m_core, m_offset + i, m_size - i, typename Base::AsIterator{}};
+    }
+    MUDA_GENERIC ConstView operator+(int i) const
+    {
+        return remove_const(*this).operator+(i).as_const();
+    }
+    MUDA_GENERIC reference operator*() { return (*this)[0]; }
+
+    MUDA_GENERIC auto operator[](int i)
+    {
+        return ThisVectorMap{data(i, 0), this->m_stride};
+    }
+    MUDA_GENERIC auto operator[](int i) const
+    {
+        return ConstVectorMap{data(i, 0), this->m_stride};
     }
 };
 

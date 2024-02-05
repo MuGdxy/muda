@@ -52,7 +52,7 @@ class FieldEntryViewBase<IsConst, T, Layout, 1, 1>
     }
 
     /**********************************************************************************
-    * As Iterator
+    * Entry View As Iterator
     ***********************************************************************************/
 
     // Random Access Iterator Interface

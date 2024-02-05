@@ -42,17 +42,6 @@ class FieldEntryViewBase : public FieldEntryViewCore<IsConst, T, Layout, M, N>
         return remove_const(this)->data(i, row_index, col_index);
     }
 
-    MUDA_GENERIC auto operator[](int i)
-    {
-        return ThisMatrixMap{data(i, 0, 0), this->m_stride};
-    }
-
-    MUDA_GENERIC auto operator[](int i) const
-    {
-        return ConstMatrixMap{data(i, 0, 0), this->m_stride};
-    }
-
-
     MUDA_GENERIC auto subview(int offset) const
     {
         return ConstView{m_core, m_offset + offset, m_size - offset};
@@ -71,6 +60,48 @@ class FieldEntryViewBase : public FieldEntryViewCore<IsConst, T, Layout, M, N>
     MUDA_GENERIC auto subview(int offset, int size)
     {
         return ThisView{m_core, m_offset + offset, size};
+    }
+
+    /**********************************************************************************
+    * Entry View As Iterator
+    ***********************************************************************************/
+
+    class DummyPointer
+    {
+        ThisMatrixMap map;
+
+      public:
+        MUDA_GENERIC DummyPointer(ThisMatrixMap map)
+            : map(map)
+        {
+        }
+        MUDA_GENERIC auto operator*() { return map; }
+    };
+
+    // Random Access Iterator Interface
+    using value_type        = ElementType;
+    using reference         = ThisMatrixMap;
+    using pointer           = DummyPointer;
+    using iterator_category = std::random_access_iterator_tag;
+    using difference_type   = size_t;
+
+    MUDA_GENERIC ThisView operator+(int i)
+    {
+        return ThisView{m_core, m_offset + i, m_size - i, typename Base::AsIterator{}};
+    }
+    MUDA_GENERIC ConstView operator+(int i) const
+    {
+        return remove_const(*this).operator+(i).as_const();
+    }
+    MUDA_GENERIC reference operator*() { return (*this)[0]; }
+
+    MUDA_GENERIC auto operator[](int i)
+    {
+        return ThisMatrixMap{data(i, 0, 0), this->m_stride};
+    }
+    MUDA_GENERIC auto operator[](int i) const
+    {
+        return ConstMatrixMap{data(i, 0, 0), this->m_stride};
     }
 };
 

@@ -329,7 +329,7 @@ void field_test(FieldEntryLayout layout, int N)
     pos.copy_to(res_h_pos);
     REQUIRE(h_pos == res_h_pos);
 
-    
+
     DeviceBuffer<Vector3f> temp(2 * N);
 
     particle.resize(100 * N);
@@ -396,27 +396,70 @@ void field_cub(FieldEntryLayout input_layout, FieldEntryLayout output_layout, si
     auto  builder1 = input.builder(input_layout);
     auto& x        = builder1.entry("x").scalar<int>();
     auto& vx       = builder1.entry("vx").vector3<float>();
+    auto& mx       = builder1.entry("mx").matrix3x3<float>();
     builder1.build();
 
     auto  builder2 = output.builder(output_layout);
     auto& y        = builder2.entry("y").scalar<int>();
     auto& vy       = builder2.entry("vy").vector3<float>();
+    auto& my       = builder2.entry("my").matrix3x3<float>();
     builder2.build();
 
-
-    std::vector<int> h_x(size, 1);
-    std::vector<int> h_gt_y(size);
-    std::exclusive_scan(h_x.begin(), h_x.end(), h_gt_y.begin(), 0);
-
-    std::vector<int> h_y(size);
     input.resize(size);
     output.resize(size);
 
-    x.copy_from(h_x);
-    DeviceScan().ExclusiveSum(x.view(), y.view(), x.count());
-    y.copy_to(h_y);
+    {  // test scalar
+        std::vector<int> h_x(size, 1);
+        std::vector<int> h_gt_y(size);
+        std::exclusive_scan(h_x.begin(), h_x.end(), h_gt_y.begin(), 0);
 
-    REQUIRE(h_y == h_gt_y);
+        std::vector<int> h_y(size);
+        x.copy_from(h_x);
+        DeviceScan().ExclusiveSum(x.view(), y.view(), x.count());
+        y.copy_to(h_y);
+
+        REQUIRE(h_y == h_gt_y);
+    }
+
+    {  // test vector
+        std::vector<Vector3f> h_vx(size, Vector3f::Ones());
+        std::vector<Vector3f> h_vy(size, Vector3f::Ones());
+        std::exclusive_scan(
+            h_vx.begin(), h_vx.end(), h_vy.begin(), Vector3f::Zero().eval());
+
+        std::vector<Vector3f> h_vy2(size);
+        vx.copy_from(h_vx);
+        DeviceScan().ExclusiveScan(
+            vx.view(),
+            vy.view(),
+            [] __host__ __device__(const Vector3f& a, const Vector3f& b) -> Vector3f
+            { return a + b; },
+            Vector3f::Zero().eval(),
+            vx.count());
+        vy.copy_to(h_vy2);
+
+        REQUIRE(h_vy == h_vy2);
+    }
+
+    {  // test matrix
+        std::vector<Matrix3f> h_mx(size, Matrix3f::Ones());
+        std::vector<Matrix3f> h_my(size, Matrix3f::Ones());
+        std::exclusive_scan(
+            h_mx.begin(), h_mx.end(), h_my.begin(), Matrix3f::Zero().eval());
+
+        std::vector<Matrix3f> h_my2(size);
+        mx.copy_from(h_mx);
+        DeviceScan().ExclusiveScan(
+            mx.view(),
+            my.view(),
+            [] __host__ __device__(const Matrix3f& a, const Matrix3f& b) -> Matrix3f
+            { return a + b; },
+            Matrix3f::Zero().eval(),
+            mx.count());
+        my.copy_to(h_my2);
+
+        REQUIRE(h_my == h_my2);
+    }
 }
 
 TEST_CASE("field_cub", "[field]")
