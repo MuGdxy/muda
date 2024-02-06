@@ -40,6 +40,21 @@ class VarViewBase : public ViewBase<IsConst>
         return ConstViewer{m_data};
     }
     MUDA_GENERIC auto viewer() MUDA_NOEXCEPT { return ThisViewer{m_data}; }
+
+    /**********************************************************************************
+    * VarView As Iterator
+    ***********************************************************************************/
+
+    // Random Access Iterator Interface
+    using value_type        = T;
+    using reference         = T&;
+    using pointer           = T*;
+    using iterator_category = std::random_access_iterator_tag;
+    using difference_type   = size_t;
+
+    MUDA_GENERIC reference operator*() { return *data(); }
+    MUDA_GENERIC auto_const_t<T>& operator[](int i) { return *data(); }
+    MUDA_GENERIC const T&         operator[](int i) const { return *data(); }
 };
 
 template <typename T>

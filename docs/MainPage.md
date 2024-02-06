@@ -138,7 +138,7 @@ int main()
 {
     // setup global logger
     LoggerViewer* viewer_ptr = nullptr;
-    checkCudaErrors(cudaGetSymbolAddress(&viewer, cout));
+    checkCudaErrors(cudaGetSymbolAddress(&viewer_ptr, foo::cout));
     Logger logger(viewer_ptr);
     
     Launch().apply([]__device__() mutable
@@ -472,6 +472,10 @@ void field_example(FieldEntryLayout layout)
     DeviceBuffer<Vector3f> pos_buf;
     pos.copy_to(pos_buf);
     pos.copy_from(pos_buf);
+    
+    // using cub to do reduction on any format
+    DeviceVar<float> total_mass;
+    DeviceReduce().Sum(m.view(), total_mass.view(), m.count());
 }
 ```
 

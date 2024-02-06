@@ -4,6 +4,7 @@
 #include <muda/syntax_sugar.h>
 #include <muda/ext/field.h>
 #include <muda/ext/eigen.h>
+#include <muda/cub/device/device_reduce.h>
 
 using namespace muda;
 using namespace Eigen;
@@ -128,6 +129,7 @@ void field_test2(FieldEntryLayout layout)
         .wait();
 }
 
+
 void field_example(FieldEntryLayout layout)
 {
     using namespace muda;
@@ -227,6 +229,10 @@ void field_example(FieldEntryLayout layout)
     DeviceBuffer<Vector3f> pos_buf;
     pos.copy_to(pos_buf);
     pos.copy_from(pos_buf);
+
+    // using cub to do reduction on any format
+    DeviceVar<float> total_mass;
+    DeviceReduce().Sum(m.view(), total_mass.view(), m.count());
 }
 
 template <FieldEntryLayout Layout>

@@ -110,6 +110,29 @@ class BufferViewBase : public ViewBase<IsConst>
     {
         return *data(i);
     }
+
+    /**********************************************************************************
+    * BufferView As Iterator
+    ***********************************************************************************/
+
+    // Random Access Iterator Interface
+    using value_type        = T;
+    using reference         = T&;
+    using pointer           = T*;
+    using iterator_category = std::random_access_iterator_tag;
+    using difference_type   = size_t;
+
+    MUDA_GENERIC ThisView operator+(int i)
+    {
+        return ThisView{m_data, m_offset + i, m_size - i};
+    }
+    MUDA_GENERIC ConstView operator+(int i) const
+    {
+        return remove_const(*this).operator+(i).as_const();
+    }
+    MUDA_GENERIC reference operator*() { return *data(0); }
+    MUDA_GENERIC auto_const_t<T>& operator[](int i) { return *data(i); }
+    MUDA_GENERIC const T&         operator[](int i) const { return *data(i); }
 };
 
 template <typename T>
