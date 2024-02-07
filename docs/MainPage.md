@@ -353,7 +353,7 @@ ParallelFor(256/*block size*/)
         H(i).write(row,col, hessin);
         
         // atomic add the gradient vector
-        g.segment<3>(i * 3).atomic_add(gradient);
+        g.segment<3>(row * 3).atomic_add(gradient);
     }).wait();
 
 // convert to bcoo for better performance on SPMV.

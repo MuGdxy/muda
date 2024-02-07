@@ -76,7 +76,7 @@ dim3 square(int x) MUDA_NOEXCEPT;
  *              volume = volume.viewer().name("volume") // name is optional, for better debug info
  *          ] __device__(int3 xyz) mutable
  *          {
- *              buffer(xyz) = 1.0f;
+ *              volume(xyz) = 1.0f;
  *          });
  * \endcode
  * 
