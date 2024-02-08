@@ -1,3 +1,4 @@
+# common unit test
 find_package(Eigen3 REQUIRED)
 file(GLOB_RECURSE MUDA_UNIT_TEST_SOURCE_FILES
   "${PROJECT_SOURCE_DIR}/test/unit_test/*.cpp"
@@ -14,6 +15,7 @@ source_group(TREE "${PROJECT_SOURCE_DIR}/test" PREFIX "test" FILES ${MUDA_UNIT_T
 source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
 
 
+# check eigen validation in cuda
 find_package(Eigen3 REQUIRED)
 file(GLOB_RECURSE MUDA_EIGEN_TEST_SOURCE_FILES
   "${PROJECT_SOURCE_DIR}/test/eigen_test/*.cpp"
@@ -28,6 +30,7 @@ target_link_libraries(muda_eigen_test PRIVATE muda Eigen3::Eigen)
 source_group(TREE "${PROJECT_SOURCE_DIR}/test" PREFIX "test" FILES ${MUDA_EIGEN_TEST_SOURCE_FILES})
 source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
 
+# linear system test
 find_package(Eigen3 REQUIRED)
 file(GLOB_RECURSE MUDA_LINEAR_SYSTEM_TEST_SOURCE_FILES
   "${PROJECT_SOURCE_DIR}/test/linear_system_test/*.cpp"
@@ -42,11 +45,31 @@ target_link_libraries(muda_linear_sysytem_test PRIVATE muda cusparse cublas cuso
 source_group(TREE "${PROJECT_SOURCE_DIR}/test" PREFIX "test" FILES ${MUDA_LINEAR_SYSTEM_TEST_SOURCE_FILES})
 source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
 
+# iterative sparse solver cusp test
+# check if external/cusp is available
+if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/cusplibrary/.git")
+  message(STATUS "cusplibrary is not available, `git submodule update --init` to download cusplibrary")
+else()
+  file(GLOB_RECURSE MUDA_CUSP_TEST_SOURCE_FILES
+    "${PROJECT_SOURCE_DIR}/test/cusp_test/*.cpp"
+    "${PROJECT_SOURCE_DIR}/test/cusp_test/*.cu"
+    "${PROJECT_SOURCE_DIR}/test/cusp_test/*.h")
+  add_executable(muda_cusp_test ${MUDA_CUSP_TEST_SOURCE_FILES})
+  set_target_properties(muda_cusp_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  target_include_directories(muda_cusp_test PRIVATE
+    "${PROJECT_SOURCE_DIR}/test/"
+    "${PROJECT_SOURCE_DIR}/external"
+    "${PROJECT_SOURCE_DIR}/external/cusplibrary")
+  target_link_libraries(muda_cusp_test PRIVATE muda cusparse cublas cusolver)
+  source_group(TREE "${PROJECT_SOURCE_DIR}/test" PREFIX "test" FILES ${MUDA_CUSP_TEST_SOURCE_FILES})
+  source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
+endif()
+
 if(MSVC)
-  #when using c++ compiler, ignore C4819
-  #using generation expression to avoid warning in cmake
+  # when using c++ compiler, ignore C4819
   set(disable_warning -Xcompiler "/wd 4819")
   target_compile_options(muda_unit_test PRIVATE ${disable_warning})
   target_compile_options(muda_eigen_test PRIVATE ${disable_warning})
   target_compile_options(muda_linear_sysytem_test PRIVATE ${disable_warning})
+  target_compile_options(muda_cusp_test PRIVATE ${disable_warning})
 endif()
