@@ -71,7 +71,7 @@ class DenseViewerBase : public ViewerBase<IsConst>
         if constexpr(DEBUG_VIEWER)
         {
             MUDA_KERNEL_ASSERT(m_data,
-                               "dense[%s:%s]: m_data is null",
+                               "Dense[%s:%s]: m_data is null",
                                this->name(),
                                this->kernel_name());
         }

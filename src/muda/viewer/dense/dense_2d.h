@@ -79,7 +79,7 @@ class Dense2DBase : public ViewerBase<IsConst>  // TODO
         if constexpr(DEBUG_VIEWER)
         {
             MUDA_KERNEL_ASSERT(i >= 0 && i < total_size(),
-                               "dense2D[%s:%s]: out of range, index=%d, total_size=%d",
+                               "Dense2D[%s:%s]: out of range, index=%d, total_size=%d",
                                this->name(),
                                this->kernel_name(),
                                i,
@@ -131,7 +131,7 @@ class Dense2DBase : public ViewerBase<IsConst>  // TODO
         if constexpr(DEBUG_VIEWER)
             if(!(x >= 0 && x < m_dim.x && y >= 0 && y < m_dim.y))
             {
-                MUDA_KERNEL_ERROR("dense2D[%s:%s]: out of range, index=(%d,%d) dim=(%d,%d)",
+                MUDA_KERNEL_ERROR("Dense2D[%s:%s]: out of range, index=(%d,%d) dim=(%d,%d)",
                                   this->name(),
                                   this->kernel_name(),
                                   x,
@@ -146,7 +146,7 @@ class Dense2DBase : public ViewerBase<IsConst>  // TODO
         if constexpr(DEBUG_VIEWER)
         {
             MUDA_KERNEL_ASSERT(m_data,
-                               "dense2D[%s:%s]: m_data is null",
+                               "Dense2D[%s:%s]: m_data is null",
                                this->name(),
                                this->kernel_name());
         }

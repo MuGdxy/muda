@@ -74,6 +74,15 @@ class Dense3DBase : public ViewerBase<IsConst>  // TODO
 
     MUDA_GENERIC auto_const_t<T>& flatten(int i) MUDA_NOEXCEPT
     {
+        if constexpr(DEBUG_VIEWER)
+        {
+            MUDA_KERNEL_ASSERT(i >= 0 && i < total_size(),
+                               "Dense3D[%s:%s]: out of range, index=%d, total_size=%d",
+                               this->name(),
+                               this->kernel_name(),
+                               i,
+                               total_size());
+        }
         auto area       = m_dim.y * m_dim.z;
         auto x          = i / area;
         auto i_in_area  = i % area;
@@ -129,7 +138,7 @@ class Dense3DBase : public ViewerBase<IsConst>  // TODO
         {
             if(!(x >= 0 && x < m_dim.x && y >= 0 && y < m_dim.y && z >= 0
                  && z < m_dim.z))
-                MUDA_KERNEL_ERROR("dense3D[%s:%s]: out of range, index=(%d,%d,%d) dim=(%d,%d,%d)",
+                MUDA_KERNEL_ERROR("Dense3D[%s:%s]: out of range, index=(%d,%d,%d) dim=(%d,%d,%d)",
                                   this->name(),
                                   this->kernel_name(),
                                   x,
@@ -145,7 +154,7 @@ class Dense3DBase : public ViewerBase<IsConst>  // TODO
     {
         if constexpr(DEBUG_VIEWER)
             if(m_data == nullptr)
-                MUDA_KERNEL_ERROR("dense3D[%s:%s]: data is null",
+                MUDA_KERNEL_ERROR("Dense3D[%s:%s]: data is null",
                                   this->name(),
                                   this->kernel_name());
     }

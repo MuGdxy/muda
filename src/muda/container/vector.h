@@ -26,21 +26,11 @@ class DeviceVector : public thrust::device_vector<T, thrust::device_allocator<T>
     using Base::Base;
     using Base::operator=;
 
-    const T* data() const MUDA_NOEXCEPT
-    {
-        return thrust::raw_pointer_cast(Base::data());
-    }
-
-    T* data() MUDA_NOEXCEPT { return thrust::raw_pointer_cast(Base::data()); }
-
-    auto view() MUDA_NOEXCEPT
-    {
-        return BufferView<T>{const_cast<T*>(this->data()), Base::size()};
-    }
+    auto view() MUDA_NOEXCEPT { return BufferView<T>{raw_ptr(), Base::size()}; }
 
     auto view() const MUDA_NOEXCEPT
     {
-        return CBufferView<T>{const_cast<T*>(this->data()), Base::size()};
+        return CBufferView<T>{raw_ptr(), Base::size()};
     }
 
     operator BufferView<T>() const MUDA_NOEXCEPT { return view(); }
@@ -61,13 +51,17 @@ class DeviceVector : public thrust::device_vector<T, thrust::device_allocator<T>
 
     auto viewer() MUDA_NOEXCEPT
     {
-        return muda::Dense1D<T>(this->data(), static_cast<int>(this->size()));
+        return Dense1D<T>(raw_ptr(), static_cast<int>(this->size()));
     }
 
     auto cviewer() const MUDA_NOEXCEPT
     {
-        return muda::CDense1D<T>(this->data(), static_cast<int>(this->size()));
+        return CDense1D<T>(raw_ptr(), static_cast<int>(this->size()));
     }
+
+  private:
+    T*       raw_ptr() { return thrust::raw_pointer_cast(Base::data()); }
+    const T* raw_ptr() const { return thrust::raw_pointer_cast(Base::data()); }
 };
 
 template <typename T>

@@ -7,7 +7,6 @@
  * \date   January 2024
  *********************************************************************/
 
-
 #pragma once
 #include <muda/viewer/viewer_base.h>
 
@@ -82,7 +81,7 @@ class Dense1DBase : public ViewerBase<IsConst>
         if constexpr(DEBUG_VIEWER)
         {
             if(offset < 0)
-                MUDA_KERNEL_ERROR("dense1D[%s:%s]: subview out of range, offset=%d size=%d m_dim=(%d)",
+                MUDA_KERNEL_ERROR("Dense1D[%s:%s]: subview out of range, offset=%d size=%d m_dim=(%d)",
                                   this->name(),
                                   this->kernel_name(),
                                   offset,
@@ -97,7 +96,7 @@ class Dense1DBase : public ViewerBase<IsConst>
         if constexpr(DEBUG_VIEWER)
         {
             if(offset < 0 || offset + size > m_dim)
-                MUDA_KERNEL_ERROR("dense1D[%s:%s]: subview out of range, offset=%d size=%d m_dim=(%d)",
+                MUDA_KERNEL_ERROR("Dense1D[%s:%s]: subview out of range, offset=%d size=%d m_dim=(%d)",
                                   this->name(),
                                   this->kernel_name(),
                                   offset,
@@ -122,7 +121,7 @@ class Dense1DBase : public ViewerBase<IsConst>
     {
         if constexpr(DEBUG_VIEWER)
             if(m_data == nullptr)
-                MUDA_KERNEL_ERROR("dense1D[%s:%s]: m_data is null",
+                MUDA_KERNEL_ERROR("Dense1D[%s:%s]: m_data is null",
                                   this->name(),
                                   this->kernel_name());
     }
@@ -131,7 +130,7 @@ class Dense1DBase : public ViewerBase<IsConst>
     {
         if constexpr(DEBUG_VIEWER)
             if(!(x >= 0 && x < m_dim))
-                MUDA_KERNEL_ERROR("dense1D[%s:%s]: out of range, index=(%d) m_dim=(%d)",
+                MUDA_KERNEL_ERROR("Dense1D[%s:%s]: out of range, index=(%d) m_dim=(%d)",
                                   this->name(),
                                   this->kernel_name(),
                                   x,

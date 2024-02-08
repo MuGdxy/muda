@@ -12,7 +12,7 @@ class BVH;
 
 namespace details
 {
-    struct node
+    struct Node
     {
         std::uint32_t parent_idx;  // parent node
         std::uint32_t left_idx;    // index of left  child node
@@ -130,7 +130,7 @@ namespace details
       public:
         using real_type   = Real;
         using aabb_type   = AABB<real_type>;
-        using node_type   = details::node;
+        using node_type   = details::Node;
         using index_type  = std::uint32_t;
         using object_type = Object;
 

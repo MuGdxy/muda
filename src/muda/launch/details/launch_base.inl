@@ -134,18 +134,16 @@ MUDA_INLINE void LaunchCore::wait(const ComputeGraphVar<cudaEvent_t>& e,
 
 MUDA_INLINE void LaunchCore::kernel_name(std::string_view name)
 {
-#if MUDA_CHECK_ON
-    details::LaunchInfoCache::current_kernel_name(name);
-#endif
+    if constexpr(muda::RUNTIME_CHECK_ON)
+        details::LaunchInfoCache::current_kernel_name(name);
 }
 
 MUDA_INLINE std::string_view muda::LaunchCore::kernel_name()
 {
-#if MUDA_CHECK_ON
-    return details::LaunchInfoCache::current_kernel_name().host_string;
-#else
-    return "";
-#endif
+    if constexpr(muda::RUNTIME_CHECK_ON)
+        return details::LaunchInfoCache::current_kernel_name().host_string;
+    else
+        return "";
 }
 
 MUDA_INLINE MUDA_HOST void LaunchCore::pop_kernel_name()
@@ -158,10 +156,11 @@ MUDA_INLINE MUDA_HOST void LaunchCore::pop_kernel_name()
 
 MUDA_INLINE LaunchCore::~LaunchCore() MUDA_NOEXCEPT
 {
-#if MUDA_CHECK_ON
-    if(ComputeGraphBuilder::is_direct_launching() && Debug::is_debug_sync_all())
-        wait();
-#endif
+    if constexpr(muda::RUNTIME_CHECK_ON)
+    {
+        if(ComputeGraphBuilder::is_direct_launching() && Debug::is_debug_sync_all())
+            wait();
+    }
 }
 
 MUDA_INLINE void LaunchCore::wait_event(cudaEvent_t event)
