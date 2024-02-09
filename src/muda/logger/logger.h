@@ -61,10 +61,17 @@ class Logger
 
     MUDA_NODISCARD LoggerDataContainer retrieve_meta();
 
-    bool is_meta_data_full() const { return m_h_offset.exceed_meta_data; }
-    bool is_buffer_full() const { return m_h_offset.exceed_buffer; }
+    MUDA_NODISCARD bool is_meta_data_full() const
+    {
+        return m_h_offset.exceed_meta_data;
+    }
 
-    LoggerViewer viewer() const
+    MUDA_NODISCARD bool is_buffer_full() const
+    {
+        return m_h_offset.exceed_buffer;
+    }
+
+    MUDA_NODISCARD LoggerViewer viewer() const
     {
         return m_log_viewer_ptr ? *m_log_viewer_ptr : m_viewer;
     }
@@ -87,7 +94,7 @@ class Logger
     DeviceBuffer<uint32_t>                m_meta_data_id;
     DeviceBuffer<details::LoggerMetaData> m_meta_data;
 
-    std::vector<details::LoggerMetaData>  m_h_meta_data;
+    std::vector<details::LoggerMetaData> m_h_meta_data;
 
     //char*              m_buffer;
     //size_t             m_buffer_size;

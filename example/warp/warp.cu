@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
 #include <muda/container.h>
-#include "../example_common.h"
+#include <example_common.h>
 
 #include <muda/cuda/cooperative_groups.h>
 #include <muda/cuda/cooperative_groups/memcpy_async.h>

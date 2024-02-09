@@ -8,7 +8,7 @@
 #include <muda/syntax_sugar.h>
 #include <random>
 #include <muda/ext/eigen/svd.h>
-#include "../example_common.h"
+#include <example_common.h>
 using namespace muda;
 using namespace Eigen;
 

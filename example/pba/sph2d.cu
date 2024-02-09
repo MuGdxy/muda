@@ -2,7 +2,7 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
 #include <muda/container.h>
-#include "../example_common.h"
+#include <example_common.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <muda/tools/filesystem.h>

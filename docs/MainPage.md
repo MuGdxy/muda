@@ -38,7 +38,7 @@ MUDA also provides an elegant way to create and update [CUDA Graph](https://deve
 
 Simple to extend.
 
-- User can obey the basic interface of muda to define their own object to reuse the MUDA facility
+- User can obey the primary interface of muda to define their own object to reuse the MUDA facility
 - Almost all "Resource View Type" can be used directly in the MUDA `ComputeGraph`.
 
 ## A substitution of thrust?
@@ -50,6 +50,26 @@ Simple to extend.
 Using iterators to prevent range error is a high-level approach. However, we still need to access the memory manually in our own kernel, no matter whether using raw cuda kernel launch `<<<>>>` or using thrust agent kernel (most of the time, using a `thrust::counting_iterator` in a `thrust::for_each` algorithm).
 
 So, I think MUDA is a mid-level approach. We have the same purpose but different levels and aim at different problems. Feel comfortable to use them together!
+
+Here is an example for using Thrust and MUDA together.
+
+```cpp
+using namespace muda;
+using namespace thrust;
+
+constexpr auto N = 10;
+DeviceVector<float> x(N); // DeviceVector is derived from thrust::device_vector  
+
+KernelLabel lebal{"setup_concise"}; // give a kernel label for better debug info
+
+// equivalent to parallel for 
+for_each(thrust::cuda::par_nosync, // no sync after execution
+         make_counting_iterator(0), make_counting_iterator(N), // make a sequence from 0 -> N
+         [x = x.viewer().name("x")] __device__(int i) mutable
+         {
+             x(i) = i; // safe access through muda viewer
+         });
+```
 
 # Overview
 

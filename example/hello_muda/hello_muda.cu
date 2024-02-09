@@ -1,7 +1,7 @@
 #include <muda/muda.h>
 #include <muda/buffer.h>
 #include <catch2/catch.hpp>
-#include "../example_common.h"
+#include <example_common.h>
 using namespace muda;
 void hello_muda()
 {

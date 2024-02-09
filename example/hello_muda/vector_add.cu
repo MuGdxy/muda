@@ -3,7 +3,7 @@
 #include <muda/container.h>
 #include <numeric>
 #include <algorithm>
-#include "../example_common.h"
+#include <example_common.h>
 using namespace muda;
 
 void vector_add(HostVector<float>& gt_C, HostVector<float>& C)

@@ -50,7 +50,7 @@ void thrust_test()
                        [buffer = make_dense_1d(ptr_n.first.get(), N).name("buffer")] __device__(int i) mutable
                        {
                            buffer(i) = i;
-                           some_work();
+                           // some_work();
                        });
         });
 
@@ -68,7 +68,7 @@ void thrust_test()
                      [buffer = make_dense_1d(ptr_n.first.get(), N).name("buffer")] __device__(int i) mutable
                      {
                          buffer(i) = i;
-                         some_work();
+                         // some_work();
                      });
         });
 
@@ -86,7 +86,7 @@ void thrust_test()
                      [buffer = make_dense_1d(ptr_n.first.get(), N).name("buffer")] __device__(int i) mutable
                      {
                          buffer(i) = i;
-                         some_work();
+                         // some_work();
                      });
         });
     std::cout << "thrust launch time:" << t_thrust_device << std::endl;
@@ -142,6 +142,7 @@ void muda_thrust()
 
 TEST_CASE("thrust_test", "[thrust]")
 {
-    //thrust_test();
-    //muda_thrust();
+    thrust_test();
+    muda_thrust();
+    pure_thrust();
 }

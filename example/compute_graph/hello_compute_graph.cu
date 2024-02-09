@@ -1,7 +1,7 @@
 #if MUDA_COMPUTE_GRAPH_ON
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
-#include "../example_common.h"
+#include <example_common.h>
 #include <muda/syntax_sugar.h>
 using namespace muda;
 

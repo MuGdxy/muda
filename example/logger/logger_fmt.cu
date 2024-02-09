@@ -1,6 +1,6 @@
 //#include <catch2/catch.hpp>
 //#include <muda/muda.h>
-//#include "../example_common.h"
+//#include <example_common.h>
 //#include <Eigen/Core>
 //#include <fmt/printf.h>
 //#include <fmt/args.h>

@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
 #include <muda/cuda/cooperative_groups.h>
-#include "../example_common.h"
+#include <example_common.h>
 
 using namespace muda;
 namespace cg = cooperative_groups;

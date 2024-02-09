@@ -2,7 +2,7 @@
 #include <muda/muda.h>
 #include <muda/container.h>
 #include <muda/buffer.h>
-#include "../example_common.h"
+#include <example_common.h>
 using namespace muda;
 
 void dense_viewer(HostVector<int>& ground_truth, HostVector<int>& res)

@@ -2,7 +2,7 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
 #include <muda/container.h>
-#include "../example_common.h"
+#include <example_common.h>
 using namespace muda;
 
 void compute_graph_simple()
