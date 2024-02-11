@@ -18,11 +18,14 @@ namespace muda
 template <bool IsConst, typename T>
 class Dense2DBase : public ViewerBase<IsConst>  // TODO
 {
+    using Base = ViewerBase<IsConst>;
+
     MUDA_VIEWER_COMMON_NAME(Dense2DBase);
 
+
   protected:
-    template <typename T>
-    using auto_const_t = std::conditional_t<IsConst, const T, T>;
+    template <typename U>
+    using auto_const_t = typename Base::auto_const_t<U>;
 
     auto_const_t<T>* m_data;
     int2             m_offset;

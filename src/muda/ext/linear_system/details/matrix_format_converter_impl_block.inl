@@ -58,8 +58,7 @@ void MatrixFormatConverter<T, N>::merge_sort_indices_and_blocks(
                [sort_index = sort_index.viewer().name("sort_index")] __device__(int i) mutable
                { sort_index(i) = i; });
 
-    DeviceMergeSort().SortPairs(workspace,
-                                ij_pairs.data(),
+    DeviceMergeSort().SortPairs(ij_pairs.data(),
                                 sort_index.data(),
                                 ij_pairs.size(),
                                 [] __device__(const int2& a, const int2& b) {
@@ -107,8 +106,7 @@ void MatrixFormatConverter<T, N>::make_unique_indices(const DeviceTripletMatrix<
     unique_ij_pairs.resize(ij_pairs.size());
     unique_counts.resize(ij_pairs.size());
 
-    DeviceRunLengthEncode().Encode(workspace,
-                                   ij_pairs.data(),
+    DeviceRunLengthEncode().Encode(ij_pairs.data(),
                                    unique_ij_pairs.data(),
                                    unique_counts.data(),
                                    count.data(),
@@ -122,7 +120,7 @@ void MatrixFormatConverter<T, N>::make_unique_indices(const DeviceTripletMatrix<
     offsets.resize(unique_counts.size() + 1);  // +1 for the last offset_end
 
     DeviceScan().ExclusiveSum(
-        workspace, unique_counts.data(), offsets.data(), unique_counts.size());
+        unique_counts.data(), offsets.data(), unique_counts.size());
 
 
     muda::ParallelFor(256)
@@ -163,7 +161,7 @@ void MatrixFormatConverter<T, N>::make_unique_blocks(const DeviceTripletMatrix<T
 
     // then we do a segmented reduce to get the unique blocks
     DeviceSegmentedReduce().Reduce(
-        workspace,
+
         unique_blocks.data(),
         blocks.data(),
         blocks.size(),
@@ -235,8 +233,7 @@ void MatrixFormatConverter<T, N>::calculate_block_offsets(const DeviceBCOOMatrix
     unique_counts.resize(from.non_zero_blocks());
 
     // run length encode the row
-    DeviceRunLengthEncode().Encode(workspace,
-                                   from.m_block_row_indices.data(),
+    DeviceRunLengthEncode().Encode(from.m_block_row_indices.data(),
                                    unique_indices.data(),
                                    unique_counts.data(),
                                    count.data(),
@@ -259,8 +256,7 @@ void MatrixFormatConverter<T, N>::calculate_block_offsets(const DeviceBCOOMatrix
                });
 
     // calculate the offsets
-    DeviceScan().ExclusiveSum(workspace,
-                              col_counts_per_row.data(),
+    DeviceScan().ExclusiveSum(col_counts_per_row.data(),
                               dst_row_offsets.data(),
                               col_counts_per_row.size());
 }
@@ -296,8 +292,7 @@ void MatrixFormatConverter<T, N>::merge_sort_indices_and_segments(
     indices       = from.m_segment_indices;
     temp_segments = from.m_segment_values;
 
-    DeviceMergeSort().SortPairs(workspace,
-                                indices.data(),
+    DeviceMergeSort().SortPairs(indices.data(),
                                 temp_segments.data(),
                                 indices.size(),
                                 [] __device__(const int& a, const int& b)
@@ -316,8 +311,7 @@ void MatrixFormatConverter<T, N>::make_unique_indices(const DeviceDoubletVector<
     unique_indices.resize(indices.size());
     unique_counts.resize(indices.size());
 
-    DeviceRunLengthEncode().Encode(workspace,
-                                   indices.data(),
+    DeviceRunLengthEncode().Encode(indices.data(),
                                    unique_indices.data(),
                                    unique_counts.data(),
                                    count.data(),
@@ -331,7 +325,7 @@ void MatrixFormatConverter<T, N>::make_unique_indices(const DeviceDoubletVector<
     offsets.resize(unique_counts.size() + 1);
 
     DeviceScan().ExclusiveSum(
-        workspace, unique_counts.data(), offsets.data(), unique_counts.size());
+        unique_counts.data(), offsets.data(), unique_counts.size());
 
     // calculate the offset_ends, and set to the unique_counts
 
@@ -360,7 +354,7 @@ void MatrixFormatConverter<T, N>::make_unique_segments(const DeviceDoubletVector
     unique_segments.resize(unique_indices.size());
 
     DeviceSegmentedReduce().Reduce(
-        workspace,
+
         temp_segments.data(),
         unique_segments.data(),
         unique_segments.size(),
@@ -494,7 +488,7 @@ void MatrixFormatConverter<T, N>::expand_blocks(const DeviceBCOOMatrix<T, N>& fr
     auto& row_indices = to.m_row_indices;
     auto& col_indices = to.m_col_indices;
     auto& values      = to.m_values;
-    
+
     auto& block_row_indices = from.m_block_row_indices;
     auto& block_col_indices = from.m_block_col_indices;
     auto& block_values      = from.m_block_values;
@@ -556,8 +550,7 @@ void MatrixFormatConverter<T, N>::sort_indices_and_values(const DeviceBCOOMatrix
                    ij_pairs(i).y = col_indices(i);
                });
 
-    DeviceMergeSort().SortPairs(workspace,
-                                ij_pairs.data(),
+    DeviceMergeSort().SortPairs(ij_pairs.data(),
                                 to.m_values.data(),
                                 ij_pairs.size(),
                                 [] __device__(const int2& a, const int2& b) {

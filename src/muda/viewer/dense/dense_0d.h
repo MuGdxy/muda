@@ -6,6 +6,7 @@ namespace muda
 template <bool IsConst, typename T>
 class DenseViewerBase : public ViewerBase<IsConst>
 {
+    using Base = ViewerBase<IsConst>;
     MUDA_VIEWER_COMMON_NAME(DenseViewerBase);
 
   public:
@@ -14,8 +15,8 @@ class DenseViewerBase : public ViewerBase<IsConst>
     using ThisViewer     = DenseViewerBase<IsConst, T>;
 
   protected:
-    template <typename T>
-    using auto_const_t = ViewerBase<IsConst>::template auto_const_t<T>;
+    template <typename U>
+    using auto_const_t = typename Base::auto_const_t<U>;
     auto_const_t<T>* m_data;
 
   public:

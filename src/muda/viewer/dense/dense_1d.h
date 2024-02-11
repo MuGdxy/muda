@@ -1,4 +1,4 @@
-/*****************************************************************//**
+/*****************************************************************/ /**
  * \file   dense_1d.h
  * \brief  A C/C++ array like viewer for kernel access, with safe checking
  * on any input. You can index the element in `Dense1D<T>` by `operator ()`.
@@ -25,6 +25,7 @@ namespace muda
 template <bool IsConst, typename T>
 class Dense1DBase : public ViewerBase<IsConst>
 {
+    using Base = ViewerBase<IsConst>;
     MUDA_VIEWER_COMMON_NAME(Dense1DBase);
 
   public:
@@ -33,6 +34,9 @@ class Dense1DBase : public ViewerBase<IsConst>
     using ThisViewer     = Dense1DBase<IsConst, T>;
 
   protected:
+    template <typename U>
+    using auto_const_t = typename Base::auto_const_t<U>;
+
     auto_const_t<T>* m_data;
     int              m_dim;
 

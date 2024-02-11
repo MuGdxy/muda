@@ -47,7 +47,6 @@ namespace details
         muda::DeviceBuffer<int> sort_index;
         muda::DeviceBuffer<int> sort_index_tmp;
 
-        muda::DeviceBuffer<std::byte> workspace;
         muda::DeviceBuffer<int>       col_tmp;
         muda::DeviceBuffer<int>       row_tmp;
 
@@ -139,7 +138,6 @@ namespace details
         muda::DeviceBuffer<int> sort_index;
         muda::DeviceBuffer<int> sort_index_tmp;
 
-        muda::DeviceBuffer<std::byte> workspace;
         muda::DeviceBuffer<int>       col_tmp;
         muda::DeviceBuffer<int>       row_tmp;
 

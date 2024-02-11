@@ -16,11 +16,15 @@ namespace muda
  ****************************************************************************************/
 
 template <bool IsConst, typename T>
-class Dense3DBase : public ViewerBase<IsConst>  // TODO
+class Dense3DBase : public ViewerBase<IsConst>
 {
+    using Base = ViewerBase<IsConst>;
     MUDA_VIEWER_COMMON_NAME(Dense3DBase);
 
   protected:
+    template <typename U>
+    using auto_const_t = typename Base::auto_const_t<U>;
+
     auto_const_t<T>* m_data;
     int3             m_offset;
     int3             m_dim;
