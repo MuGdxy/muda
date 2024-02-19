@@ -49,6 +49,7 @@ target_sources(muda PUBLIC ${MUDA_HEADER_FILES})
 target_link_libraries(muda INTERFACE ${CUDA_LIBRARIES})
 target_include_directories(muda INTERFACE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_include_directories(muda INTERFACE "${PROJECT_SOURCE_DIR}/src/")
+source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "Header Files" FILES ${MUDA_HEADER_FILES})
 
 if(MUDA_WITH_CHECK)
   target_compile_definitions(muda INTERFACE "-DMUDA_CHECK_ON=1")
