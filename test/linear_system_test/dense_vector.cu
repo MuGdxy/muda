@@ -9,7 +9,7 @@ using namespace Eigen;
 //constexpr int BlockDim = 3;
 
 template <typename T>
-void test_dense_vector_solve(int dim)
+void test_dense_vector(int dim)
 {
     LinearSystemContext ctx;
     VectorX<T>          h_x   = VectorX<T>::Ones(dim);
@@ -50,6 +50,6 @@ void test_dense_vector_solve(int dim)
 
 TEST_CASE("dense_vector", "[linear_system]")
 {
-    test_dense_vector_solve<double>(10);
-    test_dense_vector_solve<float>(10);
+    test_dense_vector<double>(1000);
+    test_dense_vector<float>(1000);
 }

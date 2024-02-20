@@ -84,7 +84,7 @@ void LinearSystemContext::plus(CDenseVectorView<T> x, CDenseVectorView<T> y, Den
     ParallelFor().apply(size,
                         [x     = x.buffer_view(),
                          x_inc = x.inc(),
-                         y     = y.cviewer().buffer_view(),
+                         y     = y.buffer_view(),
                          y_inc = y.inc(),
                          z     = z.buffer_view(),
                          z_inc = z.inc()] __device__(int i) mutable

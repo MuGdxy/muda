@@ -94,14 +94,16 @@ DeviceDenseVector<T>& DeviceDenseVector<T>::operator=(const Eigen::VectorX<T>& v
     m_data.view().copy_from(vec.data());
     return *this;
 }
+
 template <typename T>
 CDenseVectorView<T> DeviceDenseVector<T>::view() const
 {
-    return CDenseVectorView<T>{m_data, descr(), 1};
+    return CDenseVectorView<T>{m_data.data(), descr(), 0, 1, (int)size(), (int)size()};
 }
+
 template <typename T>
 DenseVectorView<T> DeviceDenseVector<T>::view()
 {
-    return DenseVectorView<T>{m_data, descr(), 1};
+    return DenseVectorView<T>{m_data.data(), descr(), 0, 1, (int)size(), (int)size()};
 }
 }  // namespace muda
