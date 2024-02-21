@@ -46,7 +46,7 @@ target_compile_options(muda INTERFACE
 file(GLOB_RECURSE MUDA_HEADER_FILES "${PROJECT_SOURCE_DIR}/src/*.h" "${PROJECT_SOURCE_DIR}/src/*.inl")
 
 target_sources(muda PUBLIC ${MUDA_HEADER_FILES})
-target_link_libraries(muda INTERFACE ${CUDA_LIBRARIES})
+target_link_libraries(muda INTERFACE CUDA::cudart)
 target_include_directories(muda INTERFACE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_include_directories(muda INTERFACE "${PROJECT_SOURCE_DIR}/src/")
 source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "Header Files" FILES ${MUDA_HEADER_FILES})

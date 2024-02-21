@@ -74,6 +74,8 @@ class DeviceBSRMatrix
                                     false};
     }
 
+    operator BSRMatrixView<Ty, N>() { return view(); }
+
     auto view() const
     {
         return CBSRMatrixView<Ty, N>{m_row,
@@ -86,6 +88,8 @@ class DeviceBSRMatrix
                                      legacy_descr(),
                                      false};
     }
+
+    operator CBSRMatrixView<Ty, N>() const { return view(); }
 
     auto cview() const { return view(); }
 
