@@ -600,8 +600,8 @@ void device_run_length_encode_encode(std::vector<int>& h_unique_out,
     d_unique_out.resize(d_num_runs_out);
     d_counts_out.resize(d_num_runs_out);
 
-    d_unique_out.copy_from(h_unique_out);
-    d_counts_out.copy_from(h_counts_out);
+    d_unique_out.copy_to(h_unique_out);
+    d_counts_out.copy_to(h_counts_out);
 
     h_num_runs_out = d_num_runs_out;
 }

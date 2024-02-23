@@ -13,31 +13,45 @@ class DoubletVectorViewBase : public ViewBase<IsConst>
     using NonConstView  = DoubletVectorViewBase<false, T, N>;
     using ThisView      = DoubletVectorViewBase<IsConst, T, N>;
 
-    using CViewer    = CDoubletVectorViewer<T, N>;
-    using Viewer     = DoubletVectorViewer<T, N>;
-    using ThisViewer = std::conditional_t<IsConst, CViewer, Viewer>;
+    using ConstViewer    = CDoubletVectorViewer<T, N>;
+    using NonConstViewer = DoubletVectorViewer<T, N>;
+    using ThisViewer = std::conditional_t<IsConst, ConstViewer, NonConstViewer>;
 
   protected:
-    auto_const_t<int>*           m_segment_indices;
-    auto_const_t<SegmentVector>* m_segment_values;
+    // vector info
+    int m_total_segment_count = 0;
 
-    int m_segment_count        = 0;
+    // doublet info
     int m_doublet_index_offset = 0;
     int m_doublet_count        = 0;
     int m_total_doublet_count  = 0;
 
+    // subvector info
+    int m_subvector_offset = 0;
+    int m_subvector_extent = 0;
+
+    // data
+    auto_const_t<int>*           m_segment_indices;
+    auto_const_t<SegmentVector>* m_segment_values;
+
   public:
     MUDA_GENERIC DoubletVectorViewBase() = default;
-    MUDA_GENERIC DoubletVectorViewBase(int                segment_count,
-                                       int                doublet_index_offset,
-                                       int                doublet_count,
-                                       int                total_doublet_count,
+    MUDA_GENERIC DoubletVectorViewBase(int total_segment_count,
+                                       int doublet_index_offset,
+                                       int doublet_count,
+                                       int total_doublet_count,
+
+                                       int subvector_offset,
+                                       int subvector_extent,
+
                                        auto_const_t<int>* segment_indices,
                                        auto_const_t<SegmentVector>* segment_values)
-        : m_segment_count(segment_count)
+        : m_total_segment_count(total_segment_count)
         , m_doublet_index_offset(doublet_index_offset)
         , m_doublet_count(doublet_count)
         , m_total_doublet_count(total_doublet_count)
+        , m_subvector_offset(subvector_offset)
+        , m_subvector_extent(subvector_extent)
         , m_segment_indices(segment_indices)
         , m_segment_values(segment_values)
     {
@@ -47,16 +61,40 @@ class DoubletVectorViewBase : public ViewBase<IsConst>
                            m_total_doublet_count,
                            doublet_index_offset,
                            doublet_count);
+
+        MUDA_KERNEL_ASSERT(subvector_offset + subvector_extent <= total_segment_count,
+                           "DoubletVectorView: out of range, m_total_segment_count=%d, "
+                           "your subvector_offset=%d, subvector_extent=%d",
+                           m_total_segment_count,
+                           subvector_offset,
+                           subvector_extent);
+    }
+
+    MUDA_GENERIC DoubletVectorViewBase(int                total_segment_count,
+                                       int                total_doublet_count,
+                                       auto_const_t<int>* segment_indices,
+                                       auto_const_t<SegmentVector>* segment_values)
+        : DoubletVectorViewBase(total_segment_count,
+                                0,
+                                total_doublet_count,
+                                total_doublet_count,
+                                0,
+                                total_segment_count,
+                                segment_indices,
+                                segment_values)
+    {
     }
 
     // implicit conversion
 
     MUDA_GENERIC ConstView as_const() const noexcept
     {
-        return ConstView{m_segment_count,
+        return ConstView{m_total_segment_count,
                          m_doublet_index_offset,
                          m_doublet_count,
                          m_total_doublet_count,
+                         m_subvector_offset,
+                         m_subvector_extent,
                          m_segment_indices,
                          m_segment_values};
     }
@@ -65,58 +103,87 @@ class DoubletVectorViewBase : public ViewBase<IsConst>
 
     // non-const access
 
-    MUDA_GENERIC ThisView subview(int offset, int count) noexcept
+    MUDA_GENERIC ThisView subview(int offset, int count) const noexcept
     {
-        return ThisView{m_segment_count,
-                        m_doublet_index_offset + offset,
-                        count,
-                        m_total_doublet_count,
-                        m_segment_indices,
-                        m_segment_values};
-    }
-    MUDA_GENERIC ThisView subview(int offset) noexcept
-    {
-        MUDA_KERNEL_ASSERT(offset < m_doublet_count,
+
+        MUDA_KERNEL_ASSERT(offset + count <= m_doublet_count,
                            "DoubletVectorView : offset is out of range, size=%d, your offset=%d",
                            m_doublet_count,
                            offset);
+
+        return ThisView{m_total_segment_count,
+                        m_doublet_index_offset + offset,
+                        count,
+                        m_total_doublet_count,
+                        m_subvector_offset,
+                        m_subvector_extent,
+                        m_segment_indices,
+                        m_segment_values};
+    }
+
+    MUDA_GENERIC ThisView subview(int offset) const noexcept
+    {
         return subview(offset, m_doublet_count - offset);
+    }
+
+    MUDA_GENERIC auto subvector(int offset, int extent) const noexcept
+    {
+        MUDA_KERNEL_ASSERT(offset + extent <= m_subvector_extent,
+                           "DoubletVectorView : subvector out of range, extent=%d, your offset=%d, your extent=%d",
+                           m_subvector_extent,
+                           offset,
+                           extent);
+
+        return ThisView{m_total_segment_count,
+                        m_doublet_index_offset,
+                        m_doublet_count,
+                        m_total_doublet_count,
+                        m_subvector_offset + offset,
+                        extent,
+                        m_segment_indices,
+                        m_segment_values};
+    }
+
+    MUDA_GENERIC ThisViewer viewer() noexcept
+    {
+        return ThisViewer{m_total_segment_count,
+                          m_doublet_index_offset,
+                          m_doublet_count,
+                          m_total_doublet_count,
+                          m_subvector_offset,
+                          m_subvector_extent,
+                          m_segment_indices,
+                          m_segment_values};
+    }
+
+    MUDA_GENERIC ConstViewer cviewer() const noexcept
+    {
+        return ConstViewer{m_total_segment_count,
+                           m_doublet_index_offset,
+                           m_doublet_count,
+                           m_total_doublet_count,
+                           m_subvector_offset,
+                           m_subvector_extent,
+                           m_segment_indices,
+                           m_segment_values};
+    }
+
+    MUDA_GENERIC int extent() const noexcept { return m_subvector_extent; }
+
+    MUDA_GENERIC int total_extent() const noexcept
+    {
+        return m_total_segment_count;
+    }
+
+    MUDA_GENERIC int subvector_offset() const noexcept
+    {
+        return m_subvector_offset;
     }
 
     MUDA_GENERIC int doublet_count() const noexcept { return m_doublet_count; }
     MUDA_GENERIC int total_doublet_count() const noexcept
     {
         return m_total_doublet_count;
-    }
-
-    MUDA_GENERIC ConstView subview(int offset, int count) const
-    {
-        return remove_const(*this).subview(offset, count);
-    }
-
-    MUDA_GENERIC ConstView subview(int offset) const
-    {
-        return remove_const(*this).subview(offset);
-    }
-
-    MUDA_GENERIC ThisViewer viewer() noexcept
-    {
-        return ThisViewer{m_segment_count,
-                          m_doublet_index_offset,
-                          m_doublet_count,
-                          m_total_doublet_count,
-                          m_segment_indices,
-                          m_segment_values};
-    }
-
-    MUDA_GENERIC CViewer cviewer() const noexcept
-    {
-        return CViewer{m_segment_count,
-                       m_doublet_index_offset,
-                       m_doublet_count,
-                       m_total_doublet_count,
-                       m_segment_indices,
-                       m_segment_values};
     }
 };
 
@@ -128,65 +195,151 @@ class DoubletVectorViewBase<IsConst, T, 1> : public ViewBase<IsConst>
     using NonConstView = DoubletVectorViewBase<false, T, 1>;
     using ThisView     = DoubletVectorViewBase<IsConst, T, 1>;
 
-    using CViewer    = CDoubletVectorViewer<T, 1>;
-    using Viewer     = DoubletVectorViewer<T, 1>;
-    using ThisViewer = std::conditional_t<IsConst, CViewer, Viewer>;
+    using ConstViewer    = CDoubletVectorViewer<T, 1>;
+    using NonConstViewer = DoubletVectorViewer<T, 1>;
+    using ThisViewer = std::conditional_t<IsConst, ConstViewer, NonConstViewer>;
 
   protected:
-    auto_const_t<int>* m_indices;
-    auto_const_t<T>*   m_values;
+    int m_total_count = 0;
 
-    int m_size                 = 0;
     int m_doublet_index_offset = 0;
     int m_doublet_count        = 0;
     int m_total_doublet_count  = 0;
 
+    int m_subvector_offset = 0;
+    int m_subvector_extent = 0;
+
+    auto_const_t<int>* m_indices;
+    auto_const_t<T>*   m_values;
+
+
   public:
     MUDA_GENERIC DoubletVectorViewBase() = default;
-    MUDA_GENERIC DoubletVectorViewBase(int                count,
+    MUDA_GENERIC DoubletVectorViewBase(int                total_count,
                                        int                doublet_index_offset,
                                        int                doublet_count,
                                        int                total_doublet_count,
+                                       int                subvector_offset,
+                                       int                subvector_extent,
                                        auto_const_t<int>* indices,
                                        auto_const_t<T>*   values)
-        : m_size(count)
+        : m_total_count(total_count)
         , m_doublet_index_offset(doublet_index_offset)
         , m_doublet_count(doublet_count)
         , m_total_doublet_count(total_doublet_count)
+        , m_subvector_offset(subvector_offset)
+        , m_subvector_extent(subvector_extent)
         , m_indices(indices)
         , m_values(values)
     {
         MUDA_KERNEL_ASSERT(doublet_index_offset + doublet_count <= total_doublet_count,
-                           "DoubletVectorView: out of range, m_total_doublet_count=%d, "
+                           "DoubletVectorView: out of range, m_total_count=%d, "
                            "your doublet_index_offset=%d, doublet_count=%d",
                            m_total_doublet_count,
                            doublet_index_offset,
                            doublet_count);
+
+        MUDA_KERNEL_ASSERT(subvector_offset + subvector_extent <= total_count,
+                           "DoubletVectorView: out of range, m_total_count=%d, "
+                           "your subvector_offset=%d, subvector_extent=%d",
+                           total_count,
+                           subvector_offset,
+                           subvector_extent);
+    }
+
+    MUDA_GENERIC DoubletVectorViewBase(int                total_count,
+                                       int                total_doublet_count,
+                                       auto_const_t<int>* indices,
+                                       auto_const_t<T>*   values)
+        : DoubletVectorViewBase(
+            total_count, 0, total_doublet_count, total_doublet_count, 0, total_count, indices, values)
+    {
     }
 
     // implicit conversion
 
     MUDA_GENERIC ConstView as_const() const noexcept
     {
-        return ConstView{m_size, m_doublet_index_offset, m_doublet_count, m_total_doublet_count, m_indices, m_values};
+        return ConstView{m_total_count,
+                         m_doublet_index_offset,
+                         m_doublet_count,
+                         m_total_doublet_count,
+                         m_subvector_offset,
+                         m_subvector_extent,
+                         m_indices,
+                         m_values};
     }
 
     MUDA_GENERIC operator ConstView() const noexcept { return as_const(); }
 
     // non-const access
 
-    MUDA_GENERIC ThisView subview(int offset, int count) noexcept
+    MUDA_GENERIC auto subview(int offset, int count) const noexcept
     {
-        return ThisView{m_size, m_doublet_index_offset + offset, count, m_total_doublet_count, m_indices, m_values};
-    }
-    MUDA_GENERIC ThisView subview(int offset) noexcept
-    {
-        MUDA_KERNEL_ASSERT(offset < m_doublet_count,
+        MUDA_KERNEL_ASSERT(offset + count <= m_doublet_count,
                            "DoubletVectorView : offset is out of range, size=%d, your offset=%d",
                            m_doublet_count,
                            offset);
+
+        return ThisView{m_total_count,
+                        m_doublet_index_offset + offset,
+                        count,
+                        m_total_doublet_count,
+                        m_subvector_offset,
+                        m_subvector_extent,
+                        m_indices,
+                        m_values};
+    }
+
+    MUDA_GENERIC auto subview(int offset) const noexcept
+    {
         return subview(offset, m_doublet_count - offset);
     }
+
+    MUDA_GENERIC auto subvector(int offset, int extent) const noexcept
+    {
+        MUDA_KERNEL_ASSERT(offset + extent <= m_subvector_extent,
+                           "DoubletVectorView : subvector out of range, extent=%d, your offset=%d, your extent=%d",
+                           m_subvector_extent,
+                           offset,
+                           extent);
+
+        return ThisView{m_total_count,
+                        m_doublet_index_offset,
+                        m_doublet_count,
+                        m_total_doublet_count,
+                        m_subvector_offset + offset,
+                        extent,
+                        m_indices,
+                        m_values};
+    }
+
+    MUDA_GENERIC ThisViewer viewer() noexcept
+    {
+        return ThisViewer{m_total_count,
+                          m_doublet_index_offset,
+                          m_doublet_count,
+                          m_total_doublet_count,
+
+                          m_subvector_offset,
+                          m_subvector_extent,
+
+                          m_indices,
+                          m_values};
+    }
+
+    MUDA_GENERIC ConstViewer cviewer() const noexcept
+    {
+        return ConstViewer{m_total_count,
+                           m_doublet_index_offset,
+                           m_doublet_count,
+                           m_total_doublet_count,
+                           m_subvector_offset,
+                           m_subvector_extent,
+                           m_indices,
+                           m_values};
+    }
+
 
     MUDA_GENERIC int doublet_count() const noexcept { return m_doublet_count; }
     MUDA_GENERIC int total_doublet_count() const noexcept
@@ -194,25 +347,12 @@ class DoubletVectorViewBase<IsConst, T, 1> : public ViewBase<IsConst>
         return m_total_doublet_count;
     }
 
-    MUDA_GENERIC ConstView subview(int offset, int count) const
-    {
-        return remove_const(*this).subview(offset, count);
-    }
+    MUDA_GENERIC int extent() const noexcept { return m_subvector_extent; }
+    MUDA_GENERIC int total_extent() const noexcept { return m_total_count; }
 
-    MUDA_GENERIC ConstView subview(int offset) const
+    MUDA_GENERIC int subvector_offset() const noexcept
     {
-        return remove_const(*this).subview(offset);
-    }
-
-    MUDA_GENERIC ThisViewer viewer() noexcept
-    {
-        return ThisViewer{
-            m_size, m_doublet_index_offset, m_doublet_count, m_total_doublet_count, m_indices, m_values};
-    }
-
-    MUDA_GENERIC CViewer cviewer() const noexcept
-    {
-        return CViewer{m_size, m_doublet_index_offset, m_doublet_count, m_total_doublet_count, m_indices, m_values};
+        return m_subvector_offset;
     }
 };
 

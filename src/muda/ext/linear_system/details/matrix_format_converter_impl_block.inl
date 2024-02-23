@@ -23,6 +23,8 @@ void MatrixFormatConverter<T, N>::convert(const DeviceTripletMatrix<T, N>& from,
     //to.m_block_row_indices.resize(from.m_block_row_indices.size());
     //to.m_block_col_indices.resize(from.m_block_col_indices.size());
     to.resize_triplets(from.triplet_count());
+    if(to.triplet_count() == 0)
+        return;
     merge_sort_indices_and_blocks(from, to);
     make_unique_indices(from, to);
     make_unique_blocks(from, to);

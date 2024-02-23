@@ -251,7 +251,7 @@ class DenseVectorViewer : public DenseVectorViewerBase<false, T>
     MUDA_DEVICE T atomic_add(const T& val)
     {
         check_size_matching(1);
-        T ret = atomic_add(i, val);
+        T ret = atomic_add(0, val);
         return ret;
     }
 

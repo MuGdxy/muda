@@ -2,7 +2,13 @@
 #include <string>
 #include <muda/viewer/viewer_base.h>
 #include <muda/buffer/device_buffer.h>
+#include <muda/tools/cuda_vec_utils.h>
 #include <Eigen/Core>
+
+
+/*
+* - 2024/2/23 remove viewer's subview, view's subview is enough
+*/
 
 namespace muda
 {
@@ -30,35 +36,46 @@ class TripletMatrixViewerBase : public muda::ViewerBase<IsConst>
 
 
   protected:
-    // data
-    auto_const_t<int>*         m_block_row_indices;
-    auto_const_t<int>*         m_block_col_indices;
-    auto_const_t<BlockMatrix>* m_block_values;
-
     // matrix info
-    int m_block_rows = 0;
-    int m_block_cols = 0;
+    int m_total_block_rows = 0;
+    int m_total_block_cols = 0;
 
     // triplet info
     int m_triplet_index_offset = 0;
     int m_triplet_count        = 0;
     int m_total_triplet_count  = 0;
 
+    // sub matrix info
+    int2 m_submatrix_offset = {0, 0};
+    int2 m_submatrix_extent = {0, 0};
+
+    // data
+    auto_const_t<int>*         m_block_row_indices;
+    auto_const_t<int>*         m_block_col_indices;
+    auto_const_t<BlockMatrix>* m_block_values;
+
+
   public:
     MUDA_GENERIC TripletMatrixViewerBase() = default;
-    MUDA_GENERIC TripletMatrixViewerBase(int rows,
-                                         int cols,
+    MUDA_GENERIC TripletMatrixViewerBase(int total_block_rows,
+                                         int total_block_cols,
                                          int triplet_index_offset,
                                          int triplet_count,
                                          int total_triplet_count,
+
+                                         int2 submatrix_offset,
+                                         int2 submatrix_extent,
+
                                          auto_const_t<int>* block_row_indices,
                                          auto_const_t<int>* block_col_indices,
                                          auto_const_t<BlockMatrix>* block_values)
-        : m_block_rows(rows)
-        , m_block_cols(cols)
+        : m_total_block_rows(total_block_rows)
+        , m_total_block_cols(total_block_cols)
         , m_triplet_index_offset(triplet_index_offset)
         , m_triplet_count(triplet_count)
         , m_total_triplet_count(total_triplet_count)
+        , m_submatrix_offset(submatrix_offset)
+        , m_submatrix_extent(submatrix_extent)
         , m_block_row_indices(block_row_indices)
         , m_block_col_indices(block_col_indices)
         , m_block_values(block_values)
@@ -71,15 +88,40 @@ class TripletMatrixViewerBase : public muda::ViewerBase<IsConst>
                            total_triplet_count,
                            triplet_index_offset,
                            triplet_count);
+
+        MUDA_KERNEL_ASSERT(submatrix_offset.x >= 0 && submatrix_offset.y >= 0,
+                           "TripletMatrixViewer[%s:%s]: submatrix_offset is out of range, submatrix_offset.x=%d, submatrix_offset.y=%d",
+                           name(),
+                           kernel_name(),
+                           submatrix_offset.x,
+                           submatrix_offset.y);
+
+        MUDA_KERNEL_ASSERT(submatrix_offset.x + submatrix_extent.x <= total_block_rows,
+                           "TripletMatrixViewer[%s:%s]: submatrix is out of range, submatrix_offset.x=%d, submatrix_extent.x=%d, total_block_rows=%d",
+                           name(),
+                           kernel_name(),
+                           submatrix_offset.x,
+                           submatrix_extent.x,
+                           total_block_rows);
+
+        MUDA_KERNEL_ASSERT(submatrix_offset.y + submatrix_extent.y <= total_block_cols,
+                           "TripletMatrixViewer[%s:%s]: submatrix is out of range, submatrix_offset.y=%d, submatrix_extent.y=%d, total_block_cols=%d",
+                           name(),
+                           kernel_name(),
+                           submatrix_offset.y,
+                           submatrix_extent.y,
+                           total_block_cols);
     }
 
     MUDA_GENERIC ConstViewer as_const() const
     {
-        return ConstViewer{m_block_rows,
-                           m_block_cols,
+        return ConstViewer{m_total_block_rows,
+                           m_total_block_cols,
                            m_triplet_index_offset,
                            m_triplet_count,
                            m_total_triplet_count,
+                           m_submatrix_offset,
+                           m_submatrix_extent,
                            m_block_row_indices,
                            m_block_col_indices,
                            m_block_values};
@@ -87,35 +129,18 @@ class TripletMatrixViewerBase : public muda::ViewerBase<IsConst>
 
     MUDA_GENERIC operator ConstViewer() const { return as_const(); }
 
-    // non-const accessor
-
-    MUDA_GENERIC ThisViewer subview(int offset, int count)
-    {
-        return ThisViewer{m_block_rows,
-                          m_block_cols,
-                          m_triplet_index_offset + offset,
-                          count,
-                          m_total_triplet_count,
-                          m_block_row_indices,
-                          m_block_col_indices,
-                          m_block_values};
-    }
-
-    MUDA_GENERIC ThisViewer subview(int offset)
-    {
-        MUDA_KERNEL_ASSERT(offset < m_triplet_count,
-                           "TripletMatrixViewer [%s:%s]: offset is out of range, size=%d, your offset=%d",
-                           name(),
-                           kernel_name(),
-                           m_triplet_count,
-                           offset);
-        return subview(offset, m_triplet_count - offset);
-    }
-
     // const accessor
 
-    MUDA_GENERIC auto block_rows() const { return m_block_rows; }
-    MUDA_GENERIC auto block_cols() const { return m_block_cols; }
+    MUDA_GENERIC auto total_block_rows() const { return m_total_block_rows; }
+    MUDA_GENERIC auto total_block_cols() const { return m_total_block_cols; }
+    MUDA_GENERIC auto total_extent() const
+    {
+        return int2{m_total_block_rows, m_total_block_cols};
+    }
+
+    MUDA_GENERIC auto submatrix_offset() const { return m_submatrix_offset; }
+    MUDA_GENERIC auto extent() const { return m_submatrix_extent; }
+
     MUDA_GENERIC auto triplet_count() const { return m_triplet_count; }
     MUDA_GENERIC auto tripet_index_offset() const
     {
@@ -128,20 +153,13 @@ class TripletMatrixViewerBase : public muda::ViewerBase<IsConst>
 
     MUDA_GENERIC CTriplet operator()(int i) const
     {
-        auto index = get_index(i);
-        return CTriplet{m_block_row_indices[index],
-                        m_block_col_indices[index],
-                        m_block_values[index]};
-    }
-
-    MUDA_GENERIC auto subview(int offset, int count) const
-    {
-        return ConstViewer{remove_const(*this).subview(offset, count)};
-    }
-
-    MUDA_GENERIC auto subview(int offset) const
-    {
-        return ConstViewer{remove_const(*this).subview(offset)};
+        auto index    = get_index(i);
+        auto global_i = m_block_row_indices[index];
+        auto global_j = m_block_col_indices[index];
+        auto sub_i    = global_i - m_submatrix_offset.x;
+        auto sub_j    = global_j - m_submatrix_offset.y;
+        check_in_submatrix(sub_i, sub_j);
+        return CTriplet{sub_i, sub_j, m_block_values[index]};
     }
 
   protected:
@@ -156,6 +174,23 @@ class TripletMatrixViewerBase : public muda::ViewerBase<IsConst>
                            i);
         auto index = i + m_triplet_index_offset;
         return index;
+    }
+
+    MUDA_INLINE MUDA_GENERIC void check_in_submatrix(int i, int j) const noexcept
+    {
+        MUDA_KERNEL_ASSERT(i >= 0 && i < m_submatrix_extent.x,
+                           "TripletMatrixViewer [%s:%s]: row index out of submatrix range,  submatrix_extent.x=%d, your i=%d",
+                           name(),
+                           kernel_name(),
+                           m_submatrix_extent.x,
+                           i);
+
+        MUDA_KERNEL_ASSERT(j >= 0 && j < m_submatrix_extent.y,
+                           "TripletMatrixViewer [%s:%s]: col index out of submatrix range,  submatrix_extent.y=%d, your j=%d",
+                           name(),
+                           kernel_name(),
+                           m_submatrix_extent.y,
+                           j);
     }
 };
 
@@ -172,16 +207,6 @@ class CTripletMatrixViewer : public TripletMatrixViewerBase<true, T, N>
     MUDA_GENERIC CTripletMatrixViewer(const Base& base)
         : Base(base)
     {
-    }
-
-    MUDA_GENERIC CTripletMatrixViewer<T, N> subview(int offset, int count) const
-    {
-        return CTripletMatrixViewer{Base::subview(offset, count)};
-    }
-
-    MUDA_GENERIC CTripletMatrixViewer<T, N> subview(int offset) const
-    {
-        return CTripletMatrixViewer{Base::subview(offset)};
     }
 };
 
@@ -204,6 +229,8 @@ class TripletMatrixViewer : public TripletMatrixViewerBase<false, T, N>
     {
     }
 
+    using Base::operator();
+
     class Proxy
     {
         friend class TripletMatrixViewer;
@@ -220,70 +247,33 @@ class TripletMatrixViewer : public TripletMatrixViewerBase<false, T, N>
       public:
         MUDA_GENERIC auto read() &&
         {
-            return CTriplet{m_viewer.m_block_row_indices[m_index],
-                            m_viewer.m_block_col_indices[m_index],
-                            m_viewer.m_block_values[m_index]};
+            return std::as_const(m_viewer).operator()(m_index);
         }
 
         MUDA_GENERIC
         void write(int block_row_index, int block_col_index, const BlockMatrix& block) &&
         {
-            MUDA_KERNEL_ASSERT(block_row_index >= 0
-                                   && block_row_index < m_viewer.m_block_rows,
-                               "TripletMatrixViewer [%s:%s]: block_row_index out of range, m_block_rows=%d, yours=%d",
-                               m_viewer.name(),
-                               m_viewer.kernel_name(),
-                               m_viewer.m_block_rows,
-                               block_row_index);
+            auto index = m_viewer.get_index(m_index);
 
-            MUDA_KERNEL_ASSERT(block_col_index >= 0
-                                   && block_col_index < m_viewer.m_block_cols,
-                               "TripletMatrixViewer [%s:%s]: block_col_index out of range, m_block_cols=%d, yours=%d",
-                               m_viewer.name(),
-                               m_viewer.kernel_name(),
-                               m_viewer.m_block_cols,
-                               block_col_index);
+            m_viewer.check_in_submatrix(block_row_index, block_col_index);
 
-            m_viewer.m_block_row_indices[m_index] = block_row_index;
-            m_viewer.m_block_col_indices[m_index] = block_col_index;
-            m_viewer.m_block_values[m_index]      = block;
+            auto global_i = m_viewer.m_submatrix_offset.x + block_row_index;
+            auto global_j = m_viewer.m_submatrix_offset.y + block_col_index;
+
+            m_viewer.m_block_row_indices[index] = global_i;
+            m_viewer.m_block_col_indices[index] = global_j;
+            m_viewer.m_block_values[index]      = block;
         }
 
         MUDA_GENERIC ~Proxy() = default;
     };
 
-    using Base::operator();
-
-    MUDA_GENERIC Proxy operator()(int i)
-    {
-        auto index = Base::get_index(i);
-        return Proxy{*this, index};
-    }
-
-    MUDA_GENERIC auto subview(int offset, int count)
-    {
-        return NonConstViewer{Base::subview(offset, count)};
-    }
-
-    MUDA_GENERIC auto subview(int offset)
-    {
-        return NonConstViewer{Base::subview(offset)};
-    }
-
-    MUDA_GENERIC auto subview(int offset, int count) const
-    {
-        return ConstViewer{Base::subview(offset, count)};
-    }
-
-    MUDA_GENERIC auto subview(int offset) const
-    {
-        return ConstViewer{Base::subview(offset)};
-    }
+    MUDA_GENERIC Proxy operator()(int i) { return Proxy{*this, i}; }
 };
 
 
 template <bool IsConst, typename T>
-class TripletMatrixViewerBase<IsConst, T, 1> : public muda::ViewerBase<IsConst>
+class TripletMatrixViewerBase<IsConst, T, 1> : public ViewerBase<IsConst>
 {
   public:
     using ConstViewer    = TripletMatrixViewerBase<true, T, 1>;
@@ -304,35 +294,46 @@ class TripletMatrixViewerBase<IsConst, T, 1> : public muda::ViewerBase<IsConst>
     };
 
   protected:
-    // data
-    auto_const_t<int>* m_row_indices;
-    auto_const_t<int>* m_col_indices;
-    auto_const_t<T>*   m_values;
-
     // matrix info
-    int m_rows = 0;
-    int m_cols = 0;
+    int m_total_rows = 0;
+    int m_total_cols = 0;
 
     // triplet info
     int m_triplet_index_offset = 0;
     int m_triplet_count        = 0;
     int m_total_triplet_count  = 0;
 
+    // sub matrix info
+    int2 m_submatrix_offset = {0, 0};
+    int2 m_submatrix_extent = {0, 0};
+
+    // data
+    auto_const_t<int>* m_row_indices;
+    auto_const_t<int>* m_col_indices;
+    auto_const_t<T>*   m_values;
+
   public:
     MUDA_GENERIC TripletMatrixViewerBase() = default;
-    MUDA_GENERIC TripletMatrixViewerBase(int rows,
-                                         int cols,
+    MUDA_GENERIC TripletMatrixViewerBase(int total_rows,
+                                         int total_cols,
+
                                          int triplet_index_offset,
                                          int triplet_count,
                                          int total_triplet_count,
+
+                                         int2 submatrix_offset,
+                                         int2 submatrix_extent,
+
                                          auto_const_t<int>* row_indices,
                                          auto_const_t<int>* col_indices,
                                          auto_const_t<T>*   values)
-        : m_rows(rows)
-        , m_cols(cols)
+        : m_total_rows(total_rows)
+        , m_total_cols(total_cols)
         , m_triplet_index_offset(triplet_index_offset)
         , m_triplet_count(triplet_count)
         , m_total_triplet_count(total_triplet_count)
+        , m_submatrix_offset(submatrix_offset)
+        , m_submatrix_extent(submatrix_extent)
         , m_row_indices(row_indices)
         , m_col_indices(col_indices)
         , m_values(values)
@@ -345,17 +346,42 @@ class TripletMatrixViewerBase<IsConst, T, 1> : public muda::ViewerBase<IsConst>
                            total_triplet_count,
                            triplet_index_offset,
                            triplet_count);
+
+        MUDA_KERNEL_ASSERT(submatrix_offset.x >= 0 && submatrix_offset.y >= 0,
+                           "TripletMatrixViewer [%s:%s]: submatrix_offset is out of range, submatrix_offset.x=%d, submatrix_offset.y=%d",
+                           name(),
+                           kernel_name(),
+                           submatrix_offset.x,
+                           submatrix_offset.y);
+
+        MUDA_KERNEL_ASSERT(submatrix_offset.x + submatrix_extent.x <= total_rows,
+                           "TripletMatrixViewer [%s:%s]: submatrix is out of range, submatrix_offset.x=%d, submatrix_extent.x=%d, rows=%d",
+                           name(),
+                           kernel_name(),
+                           submatrix_offset.x,
+                           submatrix_extent.x,
+                           total_rows);
+
+        MUDA_KERNEL_ASSERT(submatrix_offset.y + submatrix_extent.y <= total_cols,
+                           "TripletMatrixViewer [%s:%s]: submatrix is out of range, submatrix_offset.y=%d, submatrix_extent.y=%d, cols=%d",
+                           name(),
+                           kernel_name(),
+                           submatrix_offset.y,
+                           submatrix_extent.y,
+                           total_cols);
     }
 
     // implicit conversion
 
     MUDA_GENERIC ConstViewer as_const() const
     {
-        return ConstViewer{m_rows,
-                           m_cols,
+        return ConstViewer{m_total_rows,
+                           m_total_cols,
                            m_triplet_index_offset,
                            m_triplet_count,
                            m_total_triplet_count,
+                           m_submatrix_offset,
+                           m_submatrix_extent,
                            m_row_indices,
                            m_col_indices,
                            m_values};
@@ -363,61 +389,29 @@ class TripletMatrixViewerBase<IsConst, T, 1> : public muda::ViewerBase<IsConst>
 
     MUDA_GENERIC operator ConstViewer() const { return as_const(); }
 
-    // non-const accessor
-
-    MUDA_GENERIC ThisViewer subview(int offset, int count)
-    {
-        return ThisViewer{m_rows,
-                          m_cols,
-                          m_triplet_index_offset + offset,
-                          count,
-                          m_total_triplet_count,
-                          m_row_indices,
-                          m_col_indices,
-                          m_values};
-    }
-
-    MUDA_GENERIC ThisViewer subview(int offset)
-    {
-        MUDA_KERNEL_ASSERT(offset < m_triplet_count,
-                           "TripletMatrixViewer [%s:%s]: offset is out of range, size=%d, your offset=%d",
-                           name(),
-                           kernel_name(),
-                           m_triplet_count,
-                           offset);
-        return subview(offset, m_triplet_count - offset);
-    }
-
-    // const accessor
-
-    MUDA_GENERIC auto block_rows() const { return m_rows; }
-    MUDA_GENERIC auto block_cols() const { return m_cols; }
-    MUDA_GENERIC auto triplet_count() const { return m_triplet_count; }
-    MUDA_GENERIC auto tripet_index_offset() const
-    {
-        return m_triplet_index_offset;
-    }
-    MUDA_GENERIC auto total_triplet_count() const
-    {
-        return m_total_triplet_count;
-    }
-
 
     MUDA_GENERIC CTriplet operator()(int i) const
     {
         auto index = get_index(i);
-        return CTriplet{m_row_indices[index], m_col_indices[index], m_values[index]};
+
+        auto global_i = m_row_indices[index];
+        auto global_j = m_col_indices[index];
+        auto sub_i    = global_i - m_submatrix_offset.x;
+        auto sub_j    = global_j - m_submatrix_offset.y;
+        check_in_submatrix(sub_i, sub_j);
+        return CTriplet{sub_i, sub_j, m_values[index]};
     }
 
-    MUDA_GENERIC auto subview(int offset, int count) const
-    {
-        return ConstViewer{remove_const(*this).subview(offset, count)};
-    }
+    auto total_rows() const { return m_total_rows; }
+    auto total_cols() const { return m_total_cols; }
 
-    MUDA_GENERIC auto subview(int offset) const
-    {
-        return ConstViewer{remove_const(*this).subview(offset)};
-    }
+    auto triplet_count() const { return m_triplet_count; }
+    auto tripet_index_offset() const { return m_triplet_index_offset; }
+    auto total_triplet_count() const { return m_total_triplet_count; }
+
+    auto submatrix_offset() const { return m_submatrix_offset; }
+    auto extent() const { return m_submatrix_extent; }
+    auto total_extent() const { return int2{m_total_rows, m_total_cols}; }
 
   protected:
     MUDA_INLINE MUDA_GENERIC int get_index(int i) const noexcept
@@ -431,6 +425,23 @@ class TripletMatrixViewerBase<IsConst, T, 1> : public muda::ViewerBase<IsConst>
                            i);
         auto index = i + m_triplet_index_offset;
         return index;
+    }
+
+    MUDA_INLINE MUDA_GENERIC void check_in_submatrix(int i, int j) const noexcept
+    {
+        MUDA_KERNEL_ASSERT(i >= 0 && i < m_submatrix_extent.x,
+                           "TripletMatrixViewer [%s:%s]: row index out of submatrix range, submatrix_extent.x=%d, yours=%d",
+                           name(),
+                           kernel_name(),
+                           m_submatrix_extent.x,
+                           i);
+
+        MUDA_KERNEL_ASSERT(j >= 0 && j < m_submatrix_extent.y,
+                           "TripletMatrixViewer [%s:%s]: col index out of submatrix range, submatrix_extent.y=%d, yours=%d",
+                           name(),
+                           kernel_name(),
+                           m_submatrix_extent.y,
+                           j);
     }
 };
 
@@ -447,16 +458,6 @@ class CTripletMatrixViewer<T, 1> : public TripletMatrixViewerBase<true, T, 1>
     MUDA_GENERIC CTripletMatrixViewer(const Base& base)
         : Base(base)
     {
-    }
-
-    MUDA_GENERIC auto subview(int offset, int count) const
-    {
-        return ConstViewer{Base::subview(offset, count)};
-    }
-
-    MUDA_GENERIC auto subview(int offset) const
-    {
-        return ConstViewer{Base::subview(offset)};
     }
 };
 
@@ -493,30 +494,20 @@ class TripletMatrixViewer<T, 1> : public TripletMatrixViewerBase<false, T, 1>
       public:
         MUDA_GENERIC auto read() &&
         {
-            return CTriplet{m_viewer.m_row_indices[m_index],
-                            m_viewer.m_col_indices[m_index],
-                            m_viewer.m_values[m_index]};
+            return std::as_const(m_viewer).operator()(m_index);
         }
 
         MUDA_GENERIC void write(int row_index, int col_index, const T& value) &&
         {
-            MUDA_KERNEL_ASSERT(row_index >= 0 && row_index < m_viewer.m_rows,
-                               "TripletMatrixViewer [%s:%s]: row_index out of range, m_rows=%d, yours=%d",
-                               m_viewer.name(),
-                               m_viewer.kernel_name(),
-                               m_viewer.m_rows,
-                               row_index);
+            auto index = m_viewer.get_index(m_index);
+            m_viewer.check_in_submatrix(row_index, col_index);
 
-            MUDA_KERNEL_ASSERT(col_index >= 0 && col_index < m_viewer.m_cols,
-                               "TripletMatrixViewer [%s:%s]: col_index out of range, m_cols=%d, yours=%d",
-                               m_viewer.name(),
-                               m_viewer.kernel_name(),
-                               m_viewer.m_cols,
-                               col_index);
+            auto global_i = m_viewer.m_submatrix_offset.x + row_index;
+            auto global_j = m_viewer.m_submatrix_offset.y + col_index;
 
-            m_viewer.m_row_indices[m_index] = row_index;
-            m_viewer.m_col_indices[m_index] = col_index;
-            m_viewer.m_values[m_index]      = value;
+            m_viewer.m_row_indices[index] = global_i;
+            m_viewer.m_col_indices[index] = global_j;
+            m_viewer.m_values[index]      = value;
         }
 
         MUDA_GENERIC ~Proxy() = default;
@@ -528,26 +519,6 @@ class TripletMatrixViewer<T, 1> : public TripletMatrixViewerBase<false, T, 1>
     {
         auto index = Base::get_index(i);
         return Proxy{*this, index};
-    }
-
-    MUDA_GENERIC auto subview(int offset, int count)
-    {
-        return NonConstViewer{Base::subview(offset, count)};
-    }
-
-    MUDA_GENERIC auto subview(int offset)
-    {
-        return NonConstViewer{Base::subview(offset)};
-    }
-
-    MUDA_GENERIC auto subview(int offset, int count) const
-    {
-        return ConstViewer{Base::subview(offset, count)};
-    }
-
-    MUDA_GENERIC auto subview(int offset) const
-    {
-        return ConstViewer{Base::subview(offset)};
     }
 };
 }  // namespace muda

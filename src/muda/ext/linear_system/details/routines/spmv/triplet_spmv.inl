@@ -12,6 +12,13 @@ void LinearSystemContext::spmv(const T&                 a,
                                DenseVectorView<T>&      y)
 {
     using namespace muda;
+
+    MUDA_ASSERT(A.extent() == A.total_extent() && A.triplet_count() == A.total_triplet_count(),
+                "submatrix or subview of a Triplet Matrix is not allowed in SPMV!");
+
+    MUDA_ASSERT(A.total_block_cols() * N == x.size() && A.total_block_rows() * N == y.size(),
+                "Dimension mismatch in SPMV!");
+
     y.buffer_view().fill(0);
     ParallelFor(0, stream())
         .kernel_name(__FUNCTION__)

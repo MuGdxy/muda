@@ -29,6 +29,10 @@ class COOMatrixViewBase : public ViewBase<IsConst>
     int m_triplet_count        = 0;
     int m_total_triplet_count  = 0;
 
+    // sub matrix info
+    int2 m_submatrix_offset = {0, 0};
+    int2 m_submatrix_extent = {0, 0};
+
     // data
     auto_const_t<int>* m_row_indices;
     auto_const_t<int>* m_col_indices;
@@ -45,6 +49,8 @@ class COOMatrixViewBase : public ViewBase<IsConst>
                                    int                  triplet_index_offset,
                                    int                  triplet_count,
                                    int                  total_triplet_count,
+                                   int2                 submatrix_offset,
+                                   int2                 submatrix_extent,
                                    auto_const_t<int>*   row_indices,
                                    auto_const_t<int>*   col_indices,
                                    auto_const_t<Ty>*    values,
@@ -60,6 +66,8 @@ class COOMatrixViewBase : public ViewBase<IsConst>
         , m_row_indices(row_indices)
         , m_col_indices(col_indices)
         , m_values(values)
+        , m_submatrix_offset(submatrix_offset)
+        , m_submatrix_extent(submatrix_extent)
         , m_descr(descr)
         , m_legacy_descr(legacy_descr)
         , m_trans(trans)
@@ -70,8 +78,50 @@ class COOMatrixViewBase : public ViewBase<IsConst>
                            total_triplet_count,
                            triplet_index_offset,
                            triplet_count);
+
+
+        MUDA_KERNEL_ASSERT(submatrix_offset.x >= 0 && submatrix_offset.y >= 0,
+                           "TripletMatrixView: submatrix_offset is out of range, submatrix_offset.x=%d, submatrix_offset.y=%d",
+                           submatrix_offset.x,
+                           submatrix_offset.y);
+
+        MUDA_KERNEL_ASSERT(submatrix_offset.x + submatrix_extent.x <= rows,
+                           "TripletMatrixView: submatrix is out of range, submatrix_offset.x=%d, submatrix_extent.x=%d, total_block_rows=%d",
+                           submatrix_offset.x,
+                           submatrix_extent.x,
+                           rows);
+
+        MUDA_KERNEL_ASSERT(submatrix_offset.y + submatrix_extent.y <= cols,
+                           "TripletMatrixView: submatrix is out of range, submatrix_offset.y=%d, submatrix_extent.y=%d, total_block_cols=%d",
+                           submatrix_offset.y,
+                           submatrix_extent.y,
+                           cols);
     }
 
+    MUDA_GENERIC COOMatrixViewBase(int                  rows,
+                                   int                  cols,
+                                   int                  total_triplet_count,
+                                   auto_const_t<int>*   row_indices,
+                                   auto_const_t<int>*   col_indices,
+                                   auto_const_t<Ty>*    values,
+                                   cusparseSpMatDescr_t descr,
+                                   cusparseMatDescr_t   legacy_descr,
+                                   bool                 trans)
+        : COOMatrixViewBase(rows,
+                            cols,
+                            0,
+                            total_triplet_count,
+                            total_triplet_count,
+                            {0, 0},
+                            {rows, cols},
+                            row_indices,
+                            col_indices,
+                            values,
+                            descr,
+                            legacy_descr,
+                            trans)
+    {
+    }
 
     MUDA_GENERIC auto as_const() const
     {
@@ -80,6 +130,8 @@ class COOMatrixViewBase : public ViewBase<IsConst>
                          m_triplet_index_offset,
                          m_triplet_count,
                          m_total_triplet_count,
+                         m_submatrix_offset,
+                         m_submatrix_extent,
                          m_row_indices,
                          m_col_indices,
                          m_values,
@@ -100,6 +152,8 @@ class COOMatrixViewBase : public ViewBase<IsConst>
                                            m_triplet_index_offset,
                                            m_triplet_count,
                                            m_total_triplet_count,
+                                           m_submatrix_offset,
+                                           m_submatrix_extent,
                                            m_row_indices,
                                            m_col_indices,
                                            m_values};
@@ -115,43 +169,11 @@ class COOMatrixViewBase : public ViewBase<IsConst>
                                           m_triplet_index_offset,
                                           m_triplet_count,
                                           m_total_triplet_count,
+                                          m_submatrix_offset,
+                                          m_submatrix_extent,
                                           m_row_indices,
                                           m_col_indices,
                                           m_values};
-    }
-
-    MUDA_GENERIC auto subview(int offset, int count)
-    {
-        return ThisView{m_rows,
-                        m_cols,
-                        m_triplet_index_offset + offset,
-                        count,
-                        m_total_triplet_count,
-                        m_row_indices,
-                        m_col_indices,
-                        m_values,
-                        m_descr,
-                        m_legacy_descr,
-                        m_trans};
-    }
-
-    MUDA_GENERIC auto subview(int offset)
-    {
-        MUDA_ASSERT(offset < m_triplet_count,
-                    "TripletMatrixView: offset is out of range, size=%d, your offset=%d",
-                    m_triplet_count,
-                    offset);
-        return subview(offset, m_triplet_count - offset);
-    }
-
-    MUDA_GENERIC ConstView subview(int offset, int count) const
-    {
-        return remove_const(*this).subview(offset, count);
-    }
-
-    MUDA_GENERIC ConstView subview(int offset) const
-    {
-        return remove_const(*this).subview(offset);
     }
 
     // non-const access

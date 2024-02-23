@@ -69,18 +69,13 @@ class DeviceTripletMatrix
     {
         return TripletMatrixView<T, N>{m_block_rows,
                                        m_block_cols,
-                                       0,
-                                       (int)m_block_values.size(),
                                        (int)m_block_values.size(),
                                        m_block_row_indices.data(),
                                        m_block_col_indices.data(),
                                        m_block_values.data()};
     }
 
-    auto view() const
-    {
-        return CTripletMatrixView<T, N>{remove_const(*this).view()};
-    }
+    auto view() const { return remove_const(*this).view().as_const(); }
 
     auto cview() const { return view(); }
 
@@ -156,24 +151,12 @@ class DeviceTripletMatrix<T, 1>
     auto cols() const { return m_cols; }
     auto triplet_count() const { return m_values.size(); }
 
-    auto view() const
-    {
-        return CTripletMatrixView<T, 1>{m_rows,
-                                        m_cols,
-                                        0,
-                                        (int)m_values.size(),
-                                        (int)m_values.size(),
-                                        m_row_indices.data(),
-                                        m_col_indices.data(),
-                                        m_values.data()};
-    }
+    auto view() const { return remove_const(*this).view().as_const(); }
 
     auto view()
     {
         return TripletMatrixView<T, 1>{m_rows,
                                        m_cols,
-                                       0,
-                                       (int)m_values.size(),
                                        (int)m_values.size(),
                                        m_row_indices.data(),
                                        m_col_indices.data(),

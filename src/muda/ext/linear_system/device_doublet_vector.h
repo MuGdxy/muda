@@ -50,8 +50,6 @@ class DeviceDoubletVector
         m_segment_indices.clear();
     }
 
-    static constexpr int segment_size() { return N; }
-
     auto segment_count() const { return m_segment_count; }
     auto segment_values() { return m_segment_values.view(); }
     auto segment_values() const { return m_segment_values.view(); }
@@ -63,16 +61,12 @@ class DeviceDoubletVector
     auto view()
     {
         return DoubletVectorView<T, N>{m_segment_count,
-                                       0,
-                                       (int)m_segment_values.size(),
                                        (int)m_segment_values.size(),
                                        m_segment_indices.data(),
                                        m_segment_values.data()};
     }
-    auto view() const
-    {
-        return CDoubletVectorView<T, N>{remove_const(*this).view()};
-    }
+
+    auto view() const { return remove_const(*this).view().as_const(); }
 
     auto viewer() { return view().viewer(); }
     auto viewer() const { return view().cviewer(); };
@@ -122,18 +116,11 @@ class DeviceDoubletVector<T, 1>
 
     auto view()
     {
-        return DoubletVectorView<T, 1>{m_size,
-                                       0,
-                                       (int)m_values.size(),
-                                       (int)m_values.size(),
-                                       m_indices.data(),
-                                       m_values.data()};
+        return DoubletVectorView<T, 1>{
+            m_size, (int)m_values.size(), m_indices.data(), m_values.data()};
     }
 
-    auto view() const
-    {
-        return CDoubletVectorView<T, 1>{remove_const(*this).view()};
-    }
+    auto view() const { return remove_const(*this).view().as_const(); }
     auto viewer() { return view().viewer(); }
     auto viewer() const { return view().cviewer(); };
 };

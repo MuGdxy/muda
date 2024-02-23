@@ -81,8 +81,6 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
     {
         return COOMatrixView<Ty>{m_rows,
                                  m_cols,
-                                 0,
-                                 (int)m_values.size(),
                                  (int)m_values.size(),
                                  m_row_indices.data(),
                                  m_col_indices.data(),
@@ -96,8 +94,6 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
     {
         return CCOOMatrixView<Ty>{m_rows,
                                   m_cols,
-                                  0,
-                                  (int)m_values.size(),
                                   (int)m_values.size(),
                                   m_row_indices.data(),
                                   m_col_indices.data(),
