@@ -14,7 +14,6 @@ target_compile_definitions(muda_unit_test PRIVATE "-DMUDA_TEST_DATA_DIR=R\"(${PR
 source_group(TREE "${PROJECT_SOURCE_DIR}/test" PREFIX "test" FILES ${MUDA_UNIT_TEST_SOURCE_FILES})
 source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
 
-
 # check eigen validation in cuda
 find_package(Eigen3 REQUIRED)
 file(GLOB_RECURSE MUDA_EIGEN_TEST_SOURCE_FILES
@@ -63,10 +62,6 @@ else()
   target_link_libraries(muda_cusp_test PRIVATE muda cusparse cublas cusolver)
   source_group(TREE "${PROJECT_SOURCE_DIR}/test" PREFIX "test" FILES ${MUDA_CUSP_TEST_SOURCE_FILES})
   source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
-  
-  if(MSVC)
-    target_compile_options(muda_cusp_test PRIVATE ${disable_warning})
-  endif()
 endif()
 
 if(MSVC)

@@ -450,26 +450,35 @@ class TripletMatrixViewBase<IsConst, Ty, 1> : public ViewBase<IsConst>
     }
 
     // non-const access
-    auto_const_t<Ty>*  values() { return m_values; }
-    auto_const_t<int>* row_indices() { return m_row_indices; }
-    auto_const_t<int>* col_indices() { return m_col_indices; }
+    MUDA_GENERIC auto_const_t<Ty>* values() { return m_values; }
+    MUDA_GENERIC auto_const_t<int>* row_indices() { return m_row_indices; }
+    MUDA_GENERIC auto_const_t<int>*  col_indices() { return m_col_indices; }
 
 
     // const access
-    auto values() const { return m_values; }
-    auto row_indices() const { return m_row_indices; }
-    auto col_indices() const { return m_col_indices; }
+    MUDA_GENERIC auto values() const { return m_values; }
+    MUDA_GENERIC auto  row_indices() const { return m_row_indices; }
+    MUDA_GENERIC auto  col_indices() const { return m_col_indices; }
 
-    auto total_rows() const { return m_total_rows; }
-    auto total_cols() const { return m_total_cols; }
+    MUDA_GENERIC auto total_rows() const { return m_total_rows; }
+    MUDA_GENERIC auto  total_cols() const { return m_total_cols; }
 
-    auto triplet_count() const { return m_triplet_count; }
-    auto tripet_index_offset() const { return m_triplet_index_offset; }
-    auto total_triplet_count() const { return m_total_triplet_count; }
+    MUDA_GENERIC auto triplet_count() const { return m_triplet_count; }
+    MUDA_GENERIC auto  tripet_index_offset() const
+    {
+        return m_triplet_index_offset;
+    }
+    MUDA_GENERIC auto total_triplet_count() const
+    {
+        return m_total_triplet_count;
+    }
 
-    auto submatrix_offset() const { return m_submatrix_offset; }
-    auto extent() const { return m_submatrix_extent; }
-    auto total_extent() const { return int2{m_total_rows, m_total_cols}; }
+    MUDA_GENERIC auto submatrix_offset() const { return m_submatrix_offset; }
+    MUDA_GENERIC auto  extent() const { return m_submatrix_extent; }
+    MUDA_GENERIC auto  total_extent() const
+    {
+        return int2{m_total_rows, m_total_cols};
+    }
 };
 
 template <typename Ty, int N>
