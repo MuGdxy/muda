@@ -198,7 +198,7 @@ MUDA_INLINE MUDA_GENERIC auto make_cdense_2d(const T* data, int dimx, int dimy) 
 template <typename T>
 MUDA_INLINE MUDA_GENERIC auto make_dense_2d(T* data, int dimx, int dimy) MUDA_NOEXCEPT
 {
-    return make_cdense_2d(data, make_int2(dimx, dimy));
+    return make_dense_2d(data, make_int2(dimx, dimy));
 }
 
 
