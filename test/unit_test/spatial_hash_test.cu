@@ -55,6 +55,7 @@ void spatial_hash_test()
                         std::back_inserter(diff));
 
     REQUIRE(diff.size() == 0);
+    CHECK(pair_data == pair_data_ground_truth);
 
     // REQUIRE(pair_data == pair_data_ground_truth);
 }

@@ -11,15 +11,17 @@ class Morton
 };
 
 template <>
-class Morton<int32_t>
+class Morton<uint32_t>
 {
   public:
-    MUDA_GENERIC int32_t operator()(Eigen::Vector3i p) const
+    using Vector3u = Eigen::Vector3<uint32_t>;
+
+    MUDA_GENERIC uint32_t operator()(const Vector3u& p) const
     {
         return (*this)(p.x(), p.y(), p.z());
     }
 
-    constexpr MUDA_GENERIC int32_t operator()(int32_t x, int32_t y, int32_t z) const
+    constexpr MUDA_GENERIC uint32_t operator()(uint32_t x, uint32_t y, uint32_t z) const
     {
         x = expand_bits(x);
         y = expand_bits(y);
@@ -30,7 +32,7 @@ class Morton<int32_t>
   private:
     // Expands a 10-bit integer into 30 bits
     // by inserting 2 zeros after each bit.
-    constexpr MUDA_GENERIC static int32_t expand_bits(int32_t v)
+    constexpr MUDA_GENERIC static uint32_t expand_bits(uint32_t v)
     {
         //v = (v * 0x00010001u) & 0xFF0000FFu;
         //v = (v * 0x00000101u) & 0x0F00F00Fu;
@@ -42,20 +44,22 @@ class Morton<int32_t>
         v = (v | v << 8) & 0x300f00f;
         v = (v | v << 4) & 0x30c30c3;
         v = (v | v << 2) & 0x9249249;
-        return (int32_t)v;
+        return (uint32_t)v;
     }
 };
 
 template <>
-class Morton<int64_t>
+class Morton<uint64_t>
 {
   public:
-    MUDA_GENERIC int64_t operator()(Eigen::Vector3i p) const
+    using Vector3u = Eigen::Vector3<uint32_t>;
+
+    MUDA_GENERIC uint64_t operator()(const Vector3u& p) const
     {
         return (*this)(p.x(), p.y(), p.z());
     }
 
-    constexpr MUDA_GENERIC int64_t operator()(int32_t x, int32_t y, int32_t z) const
+    constexpr MUDA_GENERIC uint64_t operator()(uint32_t x, uint32_t y, uint32_t z) const
     {
         x = expand_bits(x);
         y = expand_bits(y);
@@ -66,7 +70,7 @@ class Morton<int64_t>
   private:
     // Expands a 21-bit integer into 63 bits
     // by inserting 2 zeros after each bit.
-    constexpr MUDA_GENERIC static int64_t expand_bits(int64_t v)
+    constexpr MUDA_GENERIC static uint64_t expand_bits(uint64_t v)
     {
         v &= 0x1fffff;
         v = (v | v << 32) & 0x1f00000000ffff;

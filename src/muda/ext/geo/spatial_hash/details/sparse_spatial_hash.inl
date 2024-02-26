@@ -70,7 +70,7 @@ void SparseSpatialHashImpl<Hash>::beginCalculateCellSizeAndCoordMin()
     // as large as the scaled bounding sphere of the largest object.
     //https://developer.nvidia.com/gpugems/gpugems3/part-v-physics-simulation/chapter-32-broad-phase-collision-detection-cuda
 
-    auto scaledMaxRadius          = maxRadius * 2.25f;
+    auto scaledMaxRadius          = maxRadius * 2 * 1.5 * 1.5;
     h_spatialHashConfig.coord_min = minCoord;
     // shift the coord_min by the scaledMaxRadius, which is much safer than the original maxRadius
     h_spatialHashConfig.coord_min -= scaledMaxRadius * Vector3::Ones();
@@ -116,10 +116,6 @@ void SparseSpatialHashImpl<Hash>::beginFillHashCells()
                 cellArrayKey   = make_dense_2d(cellArrayKey.data(), size, 8),
                 level          = this->level] __device__(int i) mutable
                {
-                   using ivec3 = Eigen::Vector3i;
-                   using vec3  = Eigen::Vector3f;
-                   using u32   = uint32_t;
-
                    BoundingSphere s  = spheres(i);
                    auto&          sh = *spatialHashConfig;
 
@@ -128,10 +124,10 @@ void SparseSpatialHashImpl<Hash>::beginFillHashCells()
                    // Scaling the bounding sphere of each object by sqrt(2), here we take 1.5(>1.414)
                    proxySphere.r *= 1.5;
 
-                   auto  o        = s.o;
-                   ivec3 ijk      = sh.cell(o);
-                   auto  hash     = sh.hash_cell(ijk);
-                   auto  cellSize = sh.cell_size;
+                   auto     o        = s.o;
+                   Vector3u ijk      = sh.cell(o);
+                   auto     hash     = sh.hash_cell(ijk);
+                   auto     cellSize = sh.cell_size;
                    // print("beginFillHashCells cellSize=%f\n", cellSize);
                    auto objectId = i;
 
@@ -145,33 +141,39 @@ void SparseSpatialHashImpl<Hash>::beginFillHashCells()
                    // fill the cell that contains the center of the current sphere
                    homeCell.set_as_home(ijk);
                    homeCell.ijk = ijk;
-                   vec3 xyz     = sh.cell_center_coord(ijk);
+                   Vector3 xyz  = sh.cell_center_coord(ijk);
 
                    //find the cloest 7 neighbor cells
-                   ivec3 dxyz;
+                   Vector3i dxyz;
 #pragma unroll
                    for(int i = 0; i < 3; ++i)
                        dxyz(i) = o(i) > xyz(i) ? 1 : -1;
 
-                   ivec3 cells[7] = {ijk + ivec3(dxyz.x(), 0, 0),
-                                     ijk + ivec3(0, dxyz.y(), 0),
-                                     ijk + ivec3(0, 0, dxyz.z()),
-                                     ijk + ivec3(0, dxyz.y(), dxyz.z()),
-                                     ijk + ivec3(dxyz.x(), 0, dxyz.z()),
-                                     ijk + ivec3(dxyz.x(), dxyz.y(), 0),
-                                     ijk + dxyz};
+                   auto cal_cell = [&](const Vector3i& dxyz) -> Vector3u
 
+                   {
+                       Vector3i res = (ijk.cast<I32>() + dxyz);
+                       return res.cast<U32>();
+                   };
+
+                   Vector3u cells[7] = {cal_cell(Vector3i(dxyz.x(), 0, 0)),
+                                        cal_cell(Vector3i(0, dxyz.y(), 0)),
+                                        cal_cell(Vector3i(0, 0, dxyz.z())),
+                                        cal_cell(Vector3i(0, dxyz.y(), dxyz.z())),
+                                        cal_cell(Vector3i(dxyz.x(), 0, dxyz.z())),
+                                        cal_cell(Vector3i(dxyz.x(), dxyz.y(), 0)),
+                                        cal_cell(dxyz)};
 
                    // the cell size (3d)
-                   vec3 size(cellSize, cellSize, cellSize);
+                   Vector3 size(cellSize, cellSize, cellSize);
 
                    int idx = 1;  //goes from 1 -> 7. idx = 0 is for the homeCell
 #pragma unroll
                    for(int i = 0; i < 7; ++i)
                    {
-                       vec3 min = sh.coord(cells[i]);
-                       vec3 max = min + size;
-                       AABB aabb(min, max);
+                       Vector3 min = sh.coord(cells[i]);
+                       Vector3 max = min + size;
+                       AABB    aabb(min, max);
 
                        // use proxySphere to test
                        // whether the current sphere overlaps the neighbor cell

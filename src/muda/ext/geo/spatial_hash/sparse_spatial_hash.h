@@ -20,50 +20,51 @@ namespace muda::spatial_hash
 class SpatialPartitionCell
 {
   public:
-    using Vector3i = Eigen::Vector3i;
-    using I32      = int32_t;
+    using Vector3u = Eigen::Vector3<uint32_t>;
+    using U32      = uint32_t;
 
     struct
     {
-        I32 pass : 3;
-        I32 home : 3;
-        I32 overlap : 8;
+        // most use unsigned int to avoid comparison problem
+        U32 pass : 3;
+        U32 home : 3;
+        U32 overlap : 8;
     } ctlbit;  // controll bit
 
-    I32      cid;  // cell id
-    I32      oid;
-    Vector3i ijk;
+    U32      cid;  // cell id
+    U32      oid;
+    Vector3u ijk;
 
     MUDA_GENERIC SpatialPartitionCell()
-        : cid(~0)
-        , oid(~0)
-        , ijk(-Vector3i::Ones())
+        : cid(~0u)
+        , oid(~0u)
+        , ijk(Vector3u::Zero())
     {
-        ctlbit.home    = 0;
-        ctlbit.overlap = 0;
-        ctlbit.pass    = 0;
+        ctlbit.home    = 0u;
+        ctlbit.overlap = 0u;
+        ctlbit.pass    = 0u;
     }
 
-    MUDA_GENERIC SpatialPartitionCell(I32 cid, I32 oid)
+    MUDA_GENERIC SpatialPartitionCell(U32 cid, U32 oid)
         : cid(cid)
         , oid(oid)
-        , ijk(-Vector3i::Ones())
+        , ijk(Vector3u::Zero())
     {
-        ctlbit.home    = 0;
-        ctlbit.overlap = 0;
+        ctlbit.home    = 0u;
+        ctlbit.overlap = 0u;
     }
 
     MUDA_GENERIC bool is_phantom() const { return ctlbit.home != ctlbit.pass; }
 
     MUDA_GENERIC bool is_home() const { return ctlbit.home == ctlbit.pass; }
 
-    MUDA_GENERIC void set_as_phantom(const Vector3i& home_ijk, const Vector3i& cell_ijk)
+    MUDA_GENERIC void set_as_phantom(const Vector3u& home_ijk, const Vector3u& cell_ijk)
     {
         ctlbit.pass = pass_type(cell_ijk);
         ctlbit.home = pass_type(home_ijk);
     }
 
-    MUDA_GENERIC void set_as_home(const Vector3i& ijk)
+    MUDA_GENERIC void set_as_home(const Vector3u& ijk)
     {
         // bit   2           1           0
         // home  (i % 2)     (j % 2)     (k % 2)
@@ -72,38 +73,49 @@ class SpatialPartitionCell
         ctlbit.overlap |= (1 << ctlbit.home);
     }
 
-    MUDA_GENERIC void set_overlap(const Vector3i& ijk)
+    MUDA_GENERIC void set_overlap(const Vector3u& ijk)
     {
         ctlbit.overlap |= (1 << pass_type(ijk));
     }
 
-    MUDA_GENERIC static I32 pass_type(const Vector3i& ijk)
+    MUDA_GENERIC static U32 pass_type(const Vector3u& ijk)
     {
-        return (((I32)ijk(0) % 2) << 2) | (((I32)ijk(1) % 2) << 1)
-               | (((I32)ijk(2) % 2) << 0);
+        return (((U32)ijk(0) % 2) << 2) | (((U32)ijk(1) % 2) << 1)
+               | (((U32)ijk(2) % 2) << 0);
     }
 
     MUDA_GENERIC static bool allow_ignore(const SpatialPartitionCell& l,
                                           const SpatialPartitionCell& r)
     {
-//        if(l.is_phantom() && r.is_phantom())
-//        {
-//            return true;
-//        }
-//
-//        const SpatialPartitionCell* arr[] = {&l, &r};
-//
-//        I32 pass           = l.ctlbit.pass;
-//        I32 common_overlap = l.ctlbit.overlap & r.ctlbit.overlap;
-//#pragma unroll
-//        for(I32 i = 0; i < 2; ++i)
-//        {
-//            I32 encode_home = (1 << arr[i]->ctlbit.home);
-//            if(arr[i]->ctlbit.home < pass && (common_overlap & encode_home))
-//            {
-//                return true;
-//            }
-//        }
+        //bool need_print = l.oid == 364 && r.oid == 388;
+
+        //if(need_print)
+        //    print("pass=%d, home=%d, overlap=%d\n",
+        //          l.ctlbit.pass,
+        //          l.ctlbit.home,
+        //          l.ctlbit.overlap);
+
+        //if(need_print)
+        //    print("l.is_phantom()=%d, r.is_phantom()=%d\n", l.is_phantom(), r.is_phantom());
+
+        if(l.is_phantom() && r.is_phantom())
+        {
+            return true;
+        }
+
+        const SpatialPartitionCell* arr[] = {&l, &r};
+
+        U32 pass           = l.ctlbit.pass;
+        U32 common_overlap = l.ctlbit.overlap & r.ctlbit.overlap;
+#pragma unroll
+        for(U32 i = 0; i < 2; ++i)
+        {
+            U32 encode_home = (1 << arr[i]->ctlbit.home);
+            if(arr[i]->ctlbit.home < pass && (common_overlap & encode_home))
+            {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -122,13 +134,14 @@ class SpatialPartitionCell
     //}
 };
 
-template <typename Hash = Morton<int32_t>>
+template <typename Hash = Morton<uint32_t>>
 class SpatialHashTableInfo
 {
     using Float    = float;
-    using I32      = int32_t;
     using Vector3  = Eigen::Vector<Float, 3>;
     using Vector3i = Eigen::Vector<int, 3>;
+    using Vector3u = Eigen::Vector<uint32_t, 3>;
+    using U32      = uint32_t;
 
   public:
     Float   cell_size = 0.0f;
@@ -142,25 +155,25 @@ class SpatialHashTableInfo
     {
     }
 
-    MUDA_GENERIC I32 hash_cell(const Vector3& xyz) const
+    MUDA_GENERIC U32 hash_cell(const Vector3& xyz) const
     {
         return hash_cell(cell(xyz));
     }
 
-    MUDA_GENERIC I32 hash_cell(const Vector3i& ijk) const
+    MUDA_GENERIC U32 hash_cell(const Vector3u& ijk) const
     {
         return Hash()(ijk) % 0x40000000;
     }
 
-    MUDA_GENERIC Vector3i cell(const Vector3& xyz) const
+    MUDA_GENERIC Vector3u cell(const Vector3& xyz) const
     {
-        Vector3i ret;
+        Vector3u ret;
 #pragma unroll
         for(int i = 0; i < 3; ++i)
             ret(i) = (xyz(i) - coord_min(i)) / cell_size;
         return ret;
     }
-    MUDA_GENERIC Vector3 coord(const Vector3i& ijk) const
+    MUDA_GENERIC Vector3 coord(const Vector3u& ijk) const
     {
         Vector3 ret;
 #pragma unroll
@@ -169,7 +182,7 @@ class SpatialHashTableInfo
         return ret;
     }
 
-    MUDA_GENERIC Vector3 cell_center_coord(const Vector3i& ijk) const
+    MUDA_GENERIC Vector3 cell_center_coord(const Vector3u& ijk) const
     {
         Vector3 ret;
 #pragma unroll
@@ -219,12 +232,16 @@ class SpatialPartitionLauncher;
 
 namespace details
 {
-    template <typename Hash = Morton<int32_t>>
+    template <typename Hash = Morton<uint32_t>>
     class SparseSpatialHashImpl
     {
       public:
-        using Cell    = SpatialPartitionCell;
-        using Vector3 = Eigen::Vector3f;
+        using Cell     = SpatialPartitionCell;
+        using U32      = uint32_t;
+        using I32      = int32_t;
+        using Vector3u = Eigen::Vector3<U32>;
+        using Vector3i = Eigen::Vector3<I32>;
+        using Vector3  = Eigen::Vector3f;
 
         muda::Stream& m_stream;
 
@@ -294,8 +311,8 @@ namespace details
     };
 }  // namespace details
 
-using Hash = Morton<int32_t>;
-//template <typename Hash = Morton<int32_t>>
+using Hash = Morton<uint32_t>;
+//template <typename Hash = Morton<uint32_t>>
 class SparseSpatialHash
 {
     // algorithm comes from:
