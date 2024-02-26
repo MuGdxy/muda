@@ -31,14 +31,14 @@ class SpatialPartitionCell
         U32 overlap : 8;
     } ctlbit;  // controll bit
 
-    U32      cid;  // cell id
-    U32      oid;
-    Vector3u ijk;
+    U32 cid;  // cell id
+    U32 oid;
+    // Vector3u ijk;
 
     MUDA_GENERIC SpatialPartitionCell()
         : cid(~0u)
         , oid(~0u)
-        , ijk(Vector3u::Zero())
+    //, ijk(Vector3u::Zero())
     {
         ctlbit.home    = 0u;
         ctlbit.overlap = 0u;
@@ -48,7 +48,7 @@ class SpatialPartitionCell
     MUDA_GENERIC SpatialPartitionCell(U32 cid, U32 oid)
         : cid(cid)
         , oid(oid)
-        , ijk(Vector3u::Zero())
+    //, ijk(Vector3u::Zero())
     {
         ctlbit.home    = 0u;
         ctlbit.overlap = 0u;
@@ -87,17 +87,6 @@ class SpatialPartitionCell
     MUDA_GENERIC static bool allow_ignore(const SpatialPartitionCell& l,
                                           const SpatialPartitionCell& r)
     {
-        //bool need_print = l.oid == 364 && r.oid == 388;
-
-        //if(need_print)
-        //    print("pass=%d, home=%d, overlap=%d\n",
-        //          l.ctlbit.pass,
-        //          l.ctlbit.home,
-        //          l.ctlbit.overlap);
-
-        //if(need_print)
-        //    print("l.is_phantom()=%d, r.is_phantom()=%d\n", l.is_phantom(), r.is_phantom());
-
         if(l.is_phantom() && r.is_phantom())
         {
             return true;
@@ -227,9 +216,6 @@ class DefaultPredication
     __device__ bool operator()(int i, int j) { return true; }
 };
 
-template <typename Hash>
-class SpatialPartitionLauncher;
-
 namespace details
 {
     template <typename Hash = Morton<uint32_t>>
@@ -281,38 +267,42 @@ namespace details
         }
 
         template <typename Pred>
-        void beginCreateCollisionPairs(CBufferView<BoundingSphere> boundingSphereList,
-                                       DeviceBuffer<CollisionPair>& collisionPairs,
-                                       Pred&& pred);
+        void detect(CBufferView<BoundingSphere>  boundingSphereList,
+                    DeviceBuffer<CollisionPair>& collisionPairs,
+                    Pred&&                       pred);
 
         DeviceBuffer<float>   allRadius;
         DeviceBuffer<Vector3> allCoords;
+        DeviceBuffer<int>     collisionPairUpperBoundPerCell;
+        DeviceBuffer<int>     collisionPairUpperBoundPerCellPrefixSum;
 
-        void beginCalculateCellSizeAndCoordMin();
+        void calculate_hash_table_basic_info();
 
-        void beginSetupHashTable();
+        void setup_hash_table();
 
-        void beginFillHashCells();
+        void fill_hash_cells();
 
-        void beginSortHashCells();
-
-        void beginCountObjectPerCell();
-
-        void waitAndCreateTempData();
+        void count_object_per_cell();
 
         template <typename Pred>
-        void beginCountCollisionPairs(Pred&& pred);
-
-        void waitAndAllocCollisionPairList(DeviceBuffer<CollisionPair>& collisionPairs);
+        void simple_setup_collision_pairs(Pred&& pred, DeviceBuffer<CollisionPair>& collisionPairs);
 
         template <typename Pred>
-        void beginSetupCollisionPairList(DeviceBuffer<CollisionPair>& collisionPairs,
-                                         Pred&& pred);
+        void simple_count_collision_pairs(Pred&& pred);
+
+        void alloc_collision_pair_list(DeviceBuffer<CollisionPair>& collisionPairs,
+                                       int totalCollisionPairCount);
+
+        template <typename Pred>
+        void simple_fill_collision_pair_list(DeviceBuffer<CollisionPair>& collisionPairs,
+                                             Pred&& pred);
+
+        template <typename Pred>
+        void blanced_count_collision_pairs(Pred&& pred);
     };
 }  // namespace details
 
-using Hash = Morton<uint32_t>;
-//template <typename Hash = Morton<uint32_t>>
+template <typename Hash = Morton<uint32_t>>
 class SparseSpatialHash
 {
     // algorithm comes from:
@@ -333,7 +323,7 @@ class SparseSpatialHash
                 DeviceBuffer<CollisionPair>& collisionPairs,
                 Pred&&                       pred = {})
     {
-        m_impl.beginCreateCollisionPairs(spheres, collisionPairs, std::forward<Pred>(pred));
+        m_impl.detect(spheres, collisionPairs, std::forward<Pred>(pred));
     }
 };
 }  // namespace muda::spatial_hash

@@ -1,36 +1,30 @@
+//#include "sparse_spatial_hash.h"
 namespace muda::spatial_hash::details
 {
-//using Hash = Morton<int32_t>;
-//using Pred = DefaultPredication;
+using Hash = Morton<int32_t>;
+using Pred = DefaultPredication;
 
 template <typename Hash>
-inline void SparseSpatialHashImpl<Hash>::beginSetupHashTable()
+inline void SparseSpatialHashImpl<Hash>::setup_hash_table()
 {
-    beginFillHashCells();
-    beginSortHashCells();
-    beginCountObjectPerCell();
+    calculate_hash_table_basic_info();
+    fill_hash_cells();
+    count_object_per_cell();
 }
 
 template <typename Hash>
 template <typename Pred>
-inline void SparseSpatialHashImpl<Hash>::beginCreateCollisionPairs(
-    CBufferView<BoundingSphere>  boundingSphereList,
-    DeviceBuffer<CollisionPair>& collisionPairs,
-    Pred&&                       pred)
+inline void SparseSpatialHashImpl<Hash>::detect(CBufferView<BoundingSphere> boundingSphereList,
+                                                DeviceBuffer<CollisionPair>& collisionPairs,
+                                                Pred&& pred)
 {
     spheres = boundingSphereList;
-
-    beginCalculateCellSizeAndCoordMin();
-    beginSetupHashTable();
-    waitAndCreateTempData();
-
-    beginCountCollisionPairs(std::forward<Pred>(pred));
-    waitAndAllocCollisionPairList(collisionPairs);
-    beginSetupCollisionPairList(collisionPairs, std::forward<Pred>(pred));
+    setup_hash_table();
+    simple_setup_collision_pairs(std::forward<Pred>(pred), collisionPairs);
 }
 
 template <typename Hash>
-void SparseSpatialHashImpl<Hash>::beginCalculateCellSizeAndCoordMin()
+void SparseSpatialHashImpl<Hash>::calculate_hash_table_basic_info()
 {
     auto count = spheres.size();
 
@@ -81,7 +75,7 @@ void SparseSpatialHashImpl<Hash>::beginCalculateCellSizeAndCoordMin()
 }
 
 template <typename Hash>
-void SparseSpatialHashImpl<Hash>::beginFillHashCells()
+void SparseSpatialHashImpl<Hash>::fill_hash_cells()
 {
     using namespace muda;
 
@@ -140,8 +134,8 @@ void SparseSpatialHashImpl<Hash>::beginFillHashCells()
 
                    // fill the cell that contains the center of the current sphere
                    homeCell.set_as_home(ijk);
-                   homeCell.ijk = ijk;
-                   Vector3 xyz  = sh.cell_center_coord(ijk);
+                   // homeCell.ijk = ijk;
+                   Vector3 xyz = sh.cell_center_coord(ijk);
 
                    //find the cloest 7 neighbor cells
                    Vector3i dxyz;
@@ -183,7 +177,7 @@ void SparseSpatialHashImpl<Hash>::beginFillHashCells()
                            auto hash = sh.hash_cell(cells[i]);
                            Cell phantom(hash, objectId);
                            phantom.set_as_phantom(ijk, cells[i]);
-                           phantom.ijk            = cells[i];
+                           // phantom.ijk            = cells[i];
                            phantom.ctlbit.overlap = homeCell.ctlbit.overlap;
                            cellArrayValue(objectId, idx++) = phantom;
                        }
@@ -212,33 +206,20 @@ void SparseSpatialHashImpl<Hash>::beginFillHashCells()
 }
 
 template <typename Hash>
-void SparseSpatialHashImpl<Hash>::beginSortHashCells()
+void SparseSpatialHashImpl<Hash>::count_object_per_cell()
 {
     DeviceRadixSort(m_stream).SortPairs((uint32_t*)cellArrayKey.data(),  //in
                                         (uint32_t*)cellArrayKeySorted.data(),  //out
                                         cellArrayValue.data(),        //in
                                         cellArrayValueSorted.data(),  //out
                                         cellArrayValue.size());
-}
 
-template <typename Hash>
-void SparseSpatialHashImpl<Hash>::beginCountObjectPerCell()
-{
     auto count = uniqueKey.size();
     DeviceRunLengthEncode(m_stream).Encode(cellArrayKeySorted.data(),  // in
                                            uniqueKey.data(),           // out
                                            objCountInCell.data(),      // out
                                            uniqueKeyCount.data(),      // out
                                            count);
-}
-
-template <typename Hash>
-void SparseSpatialHashImpl<Hash>::waitAndCreateTempData()
-{
-    on(m_stream).wait();
-
-    // wait for uniqueKeyCount
-    // we need use uniqueKeyCount to resize arrays
 
     int h_uniqueKeyCount = uniqueKeyCount;
 
@@ -249,14 +230,23 @@ void SparseSpatialHashImpl<Hash>::waitAndCreateTempData()
         .resize(collisionPairCount, h_uniqueKeyCount)
         .resize(collisionPairPrefixSum, h_uniqueKeyCount);
 
-    // validCellCount is always 1 less than the uniqueKeyCount,
-    // the last one is typically the cell-object-pair {cid = -1, oid = -1}
     validCellCount = h_uniqueKeyCount - 1;
 }
 
 template <typename Hash>
 template <typename Pred>
-void SparseSpatialHashImpl<Hash>::beginCountCollisionPairs(Pred&& pred)
+void SparseSpatialHashImpl<Hash>::simple_setup_collision_pairs(Pred&& pred,
+                                                               DeviceBuffer<CollisionPair>& collisionPairs)
+{
+    // using a simple in-thread counting way to get the total number of collision pairs
+    simple_count_collision_pairs(std::forward<Pred>(pred));
+    alloc_collision_pair_list(collisionPairs, sum);
+    simple_fill_collision_pair_list(collisionPairs, std::forward<Pred>(pred));
+}
+
+template <typename Hash>
+template <typename Pred>
+void SparseSpatialHashImpl<Hash>::simple_count_collision_pairs(Pred&& pred)
 {
     using CallableType = raw_type_t<Pred>;
 
@@ -316,26 +306,25 @@ void SparseSpatialHashImpl<Hash>::beginCountCollisionPairs(Pred&& pred)
         auto lastOffset = validCellCount;
 
         BufferLaunch(m_stream)  //
-            .copy(&sum, collisionPairPrefixSum.view(lastOffset));
+            .copy(&sum, collisionPairPrefixSum.view(lastOffset))
+            .wait();
     }
     else
         sum = 0;
 }
 
 template <typename Hash>
-void SparseSpatialHashImpl<Hash>::waitAndAllocCollisionPairList(DeviceBuffer<CollisionPair>& collisionPairs)
+void SparseSpatialHashImpl<Hash>::alloc_collision_pair_list(DeviceBuffer<CollisionPair>& collisionPairs,
+                                                            int totalCollisionPairCount)
 {
-    on(m_stream).wait();
-
-    int totalCollisionPairCount = sum;
-    pairListOffset              = collisionPairs.size();
+    pairListOffset = collisionPairs.size();
     collisionPairs.resize(collisionPairs.size() + totalCollisionPairCount);
 }
 
 template <typename Hash>
 template <typename Pred>
-void SparseSpatialHashImpl<Hash>::beginSetupCollisionPairList(DeviceBuffer<CollisionPair>& collisionPairs,
-                                                              Pred&& pred)
+void SparseSpatialHashImpl<Hash>::simple_fill_collision_pair_list(DeviceBuffer<CollisionPair>& collisionPairs,
+                                                                  Pred&& pred)
 {
     using namespace muda;
 
@@ -347,10 +336,9 @@ void SparseSpatialHashImpl<Hash>::beginSetupCollisionPairList(DeviceBuffer<Colli
                 cellArrayValueSorted    = cellArrayValueSorted.viewer(),
                 collisionPairCount      = collisionPairCount.viewer(),
                 collisionPairPrefixSum  = collisionPairPrefixSum.viewer(),
-                collisionPairs          = collisionPairs.viewer(),
-                pairListOffset          = pairListOffset,
-                pred                    = std::forward<Pred>(pred),
-                level = this->level] __device__(int cell) mutable
+                collisionPairs = collisionPairs.view(pairListOffset).viewer(),
+                pred           = std::forward<Pred>(pred),
+                level          = this->level] __device__(int cell) mutable
                {
                    int size       = objCountInCell(cell);
                    int offset     = objCountInCellPrefixSum(cell);
@@ -374,13 +362,37 @@ void SparseSpatialHashImpl<Hash>::beginSetupCollisionPairList(DeviceBuffer<Colli
                               && pred(oid0, oid1))  // user predicate
                            {
                                CollisionPair p;
-                               p.id[0] = oid0;
-                               p.id[1] = oid1;
-                               collisionPairs(pairListOffset + pairOffset + index) = p;
+                               p.id[0]                            = oid0;
+                               p.id[1]                            = oid1;
+                               collisionPairs(pairOffset + index) = p;
                                ++index;
                            }
                        }
                    }
                });
 }
+////template <typename Hash>
+////template <typename Pred>
+//void SparseSpatialHashImpl<Hash>::blanced_count_collision_pairs(Pred&& pred)
+//{
+//    collisionPairUpperBoundPerCell.resize(validCellCount + 1);
+//    collisionPairUpperBoundPerCellPrefixSum.resize(validCellCount + 1);
+//
+//    ParallelFor(0, m_stream)
+//        .apply(validCellCount,
+//               [objCountInCell = objCountInCell.viewer(),
+//                collisionPairUpperBoundPerCell =
+//                    collisionPairUpperBoundPerCell.view(0, validCellCount).viewer()] __device__(int cell) mutable
+//               {
+//                   int size                             = objCountInCell(cell);
+//                   collisionPairUpperBoundPerCell(cell) = size * size;
+//               });
+//
+//    DeviceScan(m_stream).ExclusiveSum(collisionPairUpperBoundPerCell.data(),
+//                                      collisionPairUpperBoundPerCellPrefixSum.data(),
+//                                      validCellCount + 1);
+//
+//    int count = 0;
+//    collisionPairUpperBoundPerCellPrefixSum.view(validCellCount).copy_to(&count);
+//}
 }  // namespace muda::spatial_hash::details
