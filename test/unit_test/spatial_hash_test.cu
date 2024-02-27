@@ -17,17 +17,19 @@ void spatial_hash_test()
 
     for(int i = 0; i < 400; i++)
     {
-        BoundingSphere s{Vector3f::Ones() * 10 + Vector3f::Random() * 10, 1};
+        float radius = i % 2 == 0 ? 1 : 4.5;
+        BoundingSphere s{Vector3f::Ones() * 10 + Vector3f::Random() * 10, radius};
+        s.level = i % 2 == 0 ? 0 : 1;
         h_spheres.push_back(s);
     }
     h_spheres.push_back({Vector3f(0, 0, 0), 1});
 
-    //sphere_data.push_back({Vector3f(0, -0.5, 0), 1});
-    //sphere_data.push_back({Vector3f(0, 0.5, 0), 1});
-
     spheres = h_spheres;
 
-    sh.detect(spheres, pairs);
+    for(int level = 0; level < 2; level++)
+    {
+        sh.detect(level, spheres, pairs);
+    }
 
     std::vector<CollisionPair> pair_data;
     std::vector<CollisionPair> pair_data_ground_truth;
@@ -54,10 +56,8 @@ void spatial_hash_test()
                         pair_data.end(),
                         std::back_inserter(diff));
 
-    REQUIRE(diff.size() == 0);
+    CHECK(diff.size() == 0);
     CHECK(pair_data == pair_data_ground_truth);
-
-    // REQUIRE(pair_data == pair_data_ground_truth);
 }
 
 TEST_CASE("spatial_hash_test", "[geo]")

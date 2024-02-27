@@ -1,9 +1,11 @@
-//#include "sparse_spatial_hash.h"
+#include <muda/cub/device/device_reduce.h>
+#include <muda/cub/device/device_radix_sort.h>
+#include <muda/cub/device/device_run_length_encode.h>
+#include <muda/cub/device/device_scan.h>
+#include <muda/cub/device/device_select.h>
+
 namespace muda::spatial_hash::details
 {
-using Hash = Morton<int32_t>;
-using Pred = DefaultPredication;
-
 template <typename Hash>
 inline void SparseSpatialHashImpl<Hash>::setup_hash_table()
 {
@@ -15,12 +17,13 @@ inline void SparseSpatialHashImpl<Hash>::setup_hash_table()
 template <typename Hash>
 template <typename Pred>
 inline void SparseSpatialHashImpl<Hash>::detect(CBufferView<BoundingSphere> boundingSphereList,
+                                                bool append,
                                                 DeviceBuffer<CollisionPair>& collisionPairs,
                                                 Pred&& pred)
 {
     spheres = boundingSphereList;
     setup_hash_table();
-    simple_setup_collision_pairs(std::forward<Pred>(pred), collisionPairs);
+    balanced_setup_collision_pairs(append, collisionPairs, std::forward<Pred>(pred));
 }
 
 template <typename Hash>
@@ -34,22 +37,24 @@ void SparseSpatialHashImpl<Hash>::calculate_hash_table_basic_info()
         .clear(allCoords)
         .resize(allCoords, count);
 
+    constexpr auto float_max = std::numeric_limits<float>::max();
+    const Vector3  vector3_max(float_max, float_max, float_max);
+
     ParallelFor(0, m_stream)  //
         .apply(count,
                [spheres   = spheres.cviewer().name("spheres"),
-                allRadius = allRadius.viewer().name("all_radius"),
-                allCoords = allCoords.viewer().name("all_coords"),
-                level     = this->level] __device__(int i) mutable
+                allRadius = allRadius.viewer().name("allRadius"),
+                allCoords = allCoords.viewer().name("allCoords"),
+                vector3_max,
+                level = this->level] __device__(int i) mutable
                {
                    const auto& s = spheres(i);
-                   // allRadius(i)  = s.level <= level ? s.r : 0.0f;
-                   allRadius(i) = s.r;
-                   allCoords(i) = s.o;
+                   allRadius(i)  = s.level == level ? s.r : 0.0f;
+                   allCoords(i)  = s.level <= level ? s.o : vector3_max;
                });
 
     DeviceReduce().Max(allRadius.data(), maxRadius.data(), count);
 
-    constexpr auto float_max = std::numeric_limits<float>::max();
 
     DeviceReduce().Reduce(
         allCoords.data(),
@@ -57,18 +62,24 @@ void SparseSpatialHashImpl<Hash>::calculate_hash_table_basic_info()
         count,
         [] __host__ __device__(const Vector3& a, const Vector3& b) -> Vector3
         { return a.cwiseMin(b); },
-        Vector3{float_max, float_max, float_max});
+        vector3_max);
 
     // Scaling the bounding sphere of each object by sqrt(2) [we will use proxy spheres]
     // and ensuring that the grid cell is at least 1.5 times
     // as large as the scaled bounding sphere of the largest object.
     //https://developer.nvidia.com/gpugems/gpugems3/part-v-physics-simulation/chapter-32-broad-phase-collision-detection-cuda
 
-    auto scaledMaxRadius          = maxRadius * 2 * 1.5 * 1.5;
+    float maxRadius = this->maxRadius;
+    empty_level     = maxRadius == 0.0f;
+
+    if(empty_level)  // no object in this level
+        return;
+
+    auto scaledCellSize           = maxRadius * 2 * 1.5 * 1.5;
     h_spatialHashConfig.coord_min = minCoord;
     // shift the coord_min by the scaledMaxRadius, which is much safer than the original maxRadius
-    h_spatialHashConfig.coord_min -= scaledMaxRadius * Vector3::Ones();
-    h_spatialHashConfig.cell_size = scaledMaxRadius;
+    h_spatialHashConfig.coord_min -= scaledCellSize * Vector3::Ones();
+    h_spatialHashConfig.cell_size = scaledCellSize;
 
     // upload
     spatialHashConfig = h_spatialHashConfig;
@@ -77,6 +88,9 @@ void SparseSpatialHashImpl<Hash>::calculate_hash_table_basic_info()
 template <typename Hash>
 void SparseSpatialHashImpl<Hash>::fill_hash_cells()
 {
+    if(empty_level)
+        return;
+
     using namespace muda;
 
     int size  = spheres.size();
@@ -208,6 +222,9 @@ void SparseSpatialHashImpl<Hash>::fill_hash_cells()
 template <typename Hash>
 void SparseSpatialHashImpl<Hash>::count_object_per_cell()
 {
+    if(empty_level)
+        return;
+
     DeviceRadixSort(m_stream).SortPairs((uint32_t*)cellArrayKey.data(),  //in
                                         (uint32_t*)cellArrayKeySorted.data(),  //out
                                         cellArrayValue.data(),        //in
@@ -231,6 +248,13 @@ void SparseSpatialHashImpl<Hash>::count_object_per_cell()
         .resize(collisionPairPrefixSum, h_uniqueKeyCount);
 
     validCellCount = h_uniqueKeyCount - 1;
+
+    // we still prefix sum the uniqueKeyCount cell-object-pair
+    // because we need to know the total number of collision pairs
+    // which is at the last element of the prefix sum array
+    DeviceScan(m_stream).ExclusiveSum(objCountInCell.data(),           // in
+                                      objCountInCellPrefixSum.data(),  // out
+                                      validCellCount + 1);
 }
 
 template <typename Hash>
@@ -238,6 +262,9 @@ template <typename Pred>
 void SparseSpatialHashImpl<Hash>::simple_setup_collision_pairs(Pred&& pred,
                                                                DeviceBuffer<CollisionPair>& collisionPairs)
 {
+    if(empty_level)
+        return;
+
     // using a simple in-thread counting way to get the total number of collision pairs
     simple_count_collision_pairs(std::forward<Pred>(pred));
     alloc_collision_pair_list(collisionPairs, sum);
@@ -251,13 +278,6 @@ void SparseSpatialHashImpl<Hash>::simple_count_collision_pairs(Pred&& pred)
     using CallableType = raw_type_t<Pred>;
 
     using namespace muda;
-
-    // we still prefix sum the uniqueKeyCount cell-object-pair
-    // because we need to know the total number of collision pairs
-    // which is at the last element of the prefix sum array
-    DeviceScan(m_stream).ExclusiveSum(objCountInCell.data(),           // in
-                                      objCountInCellPrefixSum.data(),  // out
-                                      validCellCount + 1);
 
     muda::ParallelFor(0, m_stream)  //
         .apply(validCellCount,
@@ -349,21 +369,21 @@ void SparseSpatialHashImpl<Hash>::simple_fill_collision_pair_list(DeviceBuffer<C
                        auto cell0 = cellArrayValueSorted(offset + i);
                        auto oid0  = cell0.oid;
                        auto s0    = spheres(oid0);
+
+                       if(s0.level < level)
+                           continue;
+
                        for(int j = i + 1; j < size; ++j)
                        {
                            auto cell1 = cellArrayValueSorted(offset + j);
                            auto oid1  = cell1.oid;
                            auto s1    = spheres(oid1);
                            //print("test => %d,%d\n", oid0, oid1);
-                           if(s0.level < level)
-                               continue;
                            if(!Cell::allow_ignore(cell0, cell1)  // cell0, cell1 are created by test the proxy sphere
                               && intersect(s0, s1)  // test the bounding spheres to get exact collision result
                               && pred(oid0, oid1))  // user predicate
                            {
-                               CollisionPair p;
-                               p.id[0]                            = oid0;
-                               p.id[1]                            = oid1;
+                               CollisionPair p {oid0, oid1};
                                collisionPairs(pairOffset + index) = p;
                                ++index;
                            }
@@ -371,28 +391,160 @@ void SparseSpatialHashImpl<Hash>::simple_fill_collision_pair_list(DeviceBuffer<C
                    }
                });
 }
-////template <typename Hash>
-////template <typename Pred>
-//void SparseSpatialHashImpl<Hash>::blanced_count_collision_pairs(Pred&& pred)
-//{
-//    collisionPairUpperBoundPerCell.resize(validCellCount + 1);
-//    collisionPairUpperBoundPerCellPrefixSum.resize(validCellCount + 1);
-//
-//    ParallelFor(0, m_stream)
-//        .apply(validCellCount,
-//               [objCountInCell = objCountInCell.viewer(),
-//                collisionPairUpperBoundPerCell =
-//                    collisionPairUpperBoundPerCell.view(0, validCellCount).viewer()] __device__(int cell) mutable
-//               {
-//                   int size                             = objCountInCell(cell);
-//                   collisionPairUpperBoundPerCell(cell) = size * size;
-//               });
-//
-//    DeviceScan(m_stream).ExclusiveSum(collisionPairUpperBoundPerCell.data(),
-//                                      collisionPairUpperBoundPerCellPrefixSum.data(),
-//                                      validCellCount + 1);
-//
-//    int count = 0;
-//    collisionPairUpperBoundPerCellPrefixSum.view(validCellCount).copy_to(&count);
-//}
+
+template <typename Hash>
+template <typename Pred>
+void SparseSpatialHashImpl<Hash>::balanced_setup_collision_pairs(
+    bool append, DeviceBuffer<CollisionPair>& collisionPairs, Pred&& pred)
+{
+    if(empty_level)
+        return;
+
+    cellToCollisionPairUpperBound.resize(validCellCount + 1);
+    cellToCollisionPairUpperBoundPrefixSum.resize(validCellCount + 1);
+
+    // eg:
+    // objCountInCell                           = [1, 2, 3]
+    // cellToCollisionPairUpperBound           = [1, 4, 9, x]
+    ParallelFor(0, m_stream)
+        .kernel_name("setup_collision_pairs_upper_bound")
+        .apply(validCellCount,
+               [objCountInCell = objCountInCell.viewer(),
+                cellToCollisionPairUpperBound =
+                    cellToCollisionPairUpperBound.view(0, validCellCount).viewer()] __device__(int cell) mutable
+               {
+                   int size                            = objCountInCell(cell);
+                   cellToCollisionPairUpperBound(cell) = size * size;
+               });
+
+    // e.g.
+    // cellToCollisionPairUpperBound           = [1, 4, 9, x]
+    // cellToCollisionPairUpperBoundPrefixSum  = [0, 1, 5, 14]
+    DeviceScan(m_stream).ExclusiveSum(cellToCollisionPairUpperBound.data(),
+                                      cellToCollisionPairUpperBoundPrefixSum.data(),
+                                      validCellCount + 1);
+
+    // e.g.
+    // count = 14
+    int collisionPairCountUpperBound = 0;
+    BufferLaunch(m_stream).copy(&collisionPairCountUpperBound,
+                                cellToCollisionPairUpperBoundPrefixSum.view(validCellCount));
+
+    // e.g.
+    //                                        0  1  2  3  4  5  6  7  8  9 10 11 12 13
+    // potentialCollisionPairIdToCellCount = [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+    BufferLaunch(m_stream)
+        .resize(potentialCollisionPairIdToCellIndexBuffer, collisionPairCountUpperBound)
+        .fill(potentialCollisionPairIdToCellIndexBuffer.view(), 0);
+    ParallelFor(0, m_stream)
+        .kernel_name("fill_last_collision_pair_count")
+        .apply(validCellCount,
+               [objCountInCell = objCountInCell.cviewer(),
+                cellToCollisionPairUpperBoundPrefixSum =
+                    cellToCollisionPairUpperBoundPrefixSum.cviewer(),
+                potentialCollisionPairIdToCellIndexBuffer =
+                    potentialCollisionPairIdToCellIndexBuffer
+                        .view(0, collisionPairCountUpperBound)
+                        .viewer()] __device__(int cell) mutable
+               {
+                   int size  = objCountInCell(cell);
+                   int start = cellToCollisionPairUpperBoundPrefixSum(cell);
+                   potentialCollisionPairIdToCellIndexBuffer(start + size * size - 1) = 1;
+               });
+
+    // e.g.
+    // potentialCollisionPairIdToCellCount =    [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+    // potentialCollisionPairIdToCellIndex =    [0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+    BufferLaunch(m_stream).resize(potentialCollisionPairIdToCellIndex,
+                                  collisionPairCountUpperBound);
+
+    DeviceScan(m_stream).ExclusiveSum(potentialCollisionPairIdToCellIndexBuffer.data(),
+                                      potentialCollisionPairIdToCellIndex.data(),
+                                      collisionPairCountUpperBound);
+
+    if(!append)
+        BufferLaunch(m_stream).clear(collisionPairs);
+
+    auto collisionPairOffset = collisionPairs.size();
+
+    BufferLaunch(m_stream)
+        .resize(collisionPairBuffer, collisionPairCountUpperBound)
+        .resize(collisionPairs, collisionPairOffset + collisionPairCountUpperBound);
+
+
+    // e.g.
+    // cellArrayValueSorted                         = [0, 1, 2, 3, 4, 5]
+    // objCountInCell                               = [1, 2, 3]
+    // cellToCollisionPairUpperBoundPrefixSum       = [0, 1, 5, 14]
+    //
+    // potentialCollisionPairIdToCellIndex = [0, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+    ParallelFor(0, m_stream)
+        .kernel_name("fill_collision_pairs")
+        .apply(collisionPairCountUpperBound,
+               [spheres = spheres.cviewer().name("spheres"),
+                objCountInCell = objCountInCell.cviewer().name("objCountInCell"),
+                cellOffsets = objCountInCellPrefixSum.cviewer().name("cellOffsets"),
+                cellArrayValueSorted = cellArrayValueSorted.cviewer().name("cellArrayValueSorted"),
+                cellToCollisionPairUpperBoundPrefixSum =
+                    cellToCollisionPairUpperBoundPrefixSum.cviewer().name("cellToCollisionPairUpperBoundPrefixSum"),
+                potentialCollisionPairIdToCellIndex =
+                    potentialCollisionPairIdToCellIndex.cviewer().name("potentialCollisionPairIdToCellIndex"),
+                collisionPairBuffer = collisionPairBuffer.viewer().name("collisionPairBuffer"),
+                pred  = std::forward<Pred>(pred),
+                level = this->level] __device__(int cpI) mutable
+               {
+                   int cellIndex = potentialCollisionPairIdToCellIndex(cpI);
+                   int start = cellToCollisionPairUpperBoundPrefixSum(cellIndex);
+
+                   int objCount   = objCountInCell(cellIndex);
+                   int cellOffset = cellOffsets(cellIndex);
+
+                   int cellLocalIndex = cpI - start;
+                   int i              = cellLocalIndex / objCount;
+                   int j              = cellLocalIndex - i * objCount;
+
+                   MUDA_KERNEL_ASSERT(i >= 0 && j >= 0, "i=%d, j=%d", i, j);
+
+                   collisionPairBuffer(cpI) = CollisionPair::invalid();
+
+                   if(i >= j)
+                       return;
+
+
+                   Cell cell0 = cellArrayValueSorted(cellOffset + i);
+                   Cell cell1 = cellArrayValueSorted(cellOffset + j);
+
+                   int oid0 = cell0.oid;
+                   int oid1 = cell1.oid;
+
+
+                   // print("cellOffset=%d, ij=(%d,%d), oid=(%d,%d)\n", cellOffset, i, j, oid0, oid1);
+
+                   auto s0 = spheres(oid0);
+                   auto s1 = spheres(oid1);
+
+                   if(s0.level > level || s1.level > level)
+                       return;
+
+                   if(s0.level < level && s1.level < level)
+                       return;
+
+                   if(!Cell::allow_ignore(cell0, cell1)  // cell0, cell1 are created by test the proxy sphere
+                      && intersect(s0, s1)  // test the bounding spheres to get exact collision result
+                      && pred(oid0, oid1))  // user predicate
+                   {
+                       collisionPairBuffer(cpI) = CollisionPair{oid0, oid1};
+                   }
+               });
+
+    // select the valid collision pairs
+    DeviceSelect(m_stream).If(collisionPairBuffer.data(),
+                              collisionPairs.view(collisionPairOffset).data(),
+                              validCollisionPairCount.data(),
+                              collisionPairCountUpperBound,
+                              [] CUB_RUNTIME_FUNCTION(const CollisionPair& p) -> bool
+                              { return p.is_valid(); });
+
+    BufferLaunch(m_stream).resize(collisionPairs, collisionPairOffset + validCollisionPairCount);
+}
 }  // namespace muda::spatial_hash::details
