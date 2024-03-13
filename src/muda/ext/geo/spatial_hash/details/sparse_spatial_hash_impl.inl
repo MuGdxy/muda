@@ -383,7 +383,7 @@ void SparseSpatialHashImpl<Hash>::simple_fill_collision_pair_list(DeviceBuffer<C
                               && intersect(s0, s1)  // test the bounding spheres to get exact collision result
                               && pred(oid0, oid1))  // user predicate
                            {
-                               CollisionPair p {oid0, oid1};
+                               CollisionPair p{oid0, oid1};
                                collisionPairs(pairOffset + index) = p;
                                ++index;
                            }
@@ -447,7 +447,11 @@ void SparseSpatialHashImpl<Hash>::balanced_setup_collision_pairs(
                         .view(0, collisionPairCountUpperBound)
                         .viewer()] __device__(int cell) mutable
                {
-                   int size  = objCountInCell(cell);
+                   int size = objCountInCell(cell);
+                   MUDA_KERNEL_ASSERT(size > 0,
+                                      "Fatal Algo Error: objCountInCell(%d)=%d, an empty cell shouldn't be recorded, something goes wrong!",
+                                      cell,
+                                      size);
                    int start = cellToCollisionPairUpperBoundPrefixSum(cell);
                    potentialCollisionPairIdToCellIndexBuffer(start + size * size - 1) = 1;
                });
