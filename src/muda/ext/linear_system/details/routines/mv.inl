@@ -1,4 +1,3 @@
-#include "linear_system_context.h"
 namespace muda
 {
 namespace details::linear_system
