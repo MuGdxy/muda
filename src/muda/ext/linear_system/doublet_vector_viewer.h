@@ -15,7 +15,7 @@ class DoubletVectorViewerBase : public ViewerBase<IsConst>
 {
     using Base = ViewerBase<IsConst>;
     template <typename U>
-    using auto_const_t = typename Base::auto_const_t<U>;
+    using auto_const_t = typename Base::template auto_const_t<U>;
 
   public:
     using SegmentVector  = Eigen::Matrix<T, N, 1>;

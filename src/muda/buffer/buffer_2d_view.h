@@ -13,6 +13,7 @@ namespace muda
 template <bool IsConst, typename T>
 class Buffer2DViewBase : public ViewBase<IsConst>
 {
+    using Base = ViewBase<IsConst>;
   public:
     static_assert(!std::is_const_v<T>, "Ty must be non-const");
     using ConstView    = Buffer2DViewBase<true, T>;
@@ -26,7 +27,7 @@ class Buffer2DViewBase : public ViewBase<IsConst>
 
   private:
     template <typename T>
-    using auto_const_t = typename ViewBase<IsConst>::template auto_const_t<T>;
+    using auto_const_t = typename Base::template auto_const_t<T>;
     friend class BufferLaunch;
     friend class OtherView;
     friend class details::buffer::BufferInfoAccessor<ThisView>;

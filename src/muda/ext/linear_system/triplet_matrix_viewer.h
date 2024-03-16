@@ -13,8 +13,12 @@
 namespace muda
 {
 template <bool IsConst, typename T, int N>
-class TripletMatrixViewerBase : public muda::ViewerBase<IsConst>
+class TripletMatrixViewerBase : public ViewerBase<IsConst>
 {
+    using Base = ViewerBase<IsConst>;
+    template <typename U>
+    using auto_const_t = typename Base::template auto_const_t<U>;
+
   public:
     using BlockMatrix    = Eigen::Matrix<T, N, N>;
     using ConstViewer    = TripletMatrixViewerBase<true, T, N>;

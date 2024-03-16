@@ -392,6 +392,11 @@ void SparseSpatialHashImpl<Hash>::simple_fill_collision_pair_list(DeviceBuffer<C
                });
 }
 
+constexpr int ij_to_cell_local_index(int i, int j, int objCount)
+{
+    return (objCount - 1 + objCount - i) * i / 2 + j - i - 1;
+}
+
 template <typename Hash>
 template <typename Pred>
 void SparseSpatialHashImpl<Hash>::balanced_setup_collision_pairs(
@@ -413,8 +418,8 @@ void SparseSpatialHashImpl<Hash>::balanced_setup_collision_pairs(
                 cellToCollisionPairUpperBound =
                     cellToCollisionPairUpperBound.view(0, validCellCount).viewer()] __device__(int cell) mutable
                {
-                   int size                            = objCountInCell(cell);
-                   cellToCollisionPairUpperBound(cell) = size * size;
+                   int size = objCountInCell(cell);
+                   cellToCollisionPairUpperBound(cell) = size * (size - 1) / 2 + 1; // +1 for sentinel
                });
 
     // e.g.
@@ -431,8 +436,8 @@ void SparseSpatialHashImpl<Hash>::balanced_setup_collision_pairs(
                                 cellToCollisionPairUpperBoundPrefixSum.view(validCellCount));
 
     // e.g.
-    //                                        0  1  2  3  4  5  6  7  8  9 10 11 12 13
-    // potentialCollisionPairIdToCellCount = [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+    //                                              0  1  2  3  4  5  6  7  8  9 10 11 12 13
+    // potentialCollisionPairIdToCellIndexBuffer = [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1]
     BufferLaunch(m_stream)
         .resize(potentialCollisionPairIdToCellIndexBuffer, collisionPairCountUpperBound)
         .fill(potentialCollisionPairIdToCellIndexBuffer.view(), 0);
@@ -440,6 +445,8 @@ void SparseSpatialHashImpl<Hash>::balanced_setup_collision_pairs(
         .kernel_name("fill_last_collision_pair_count")
         .apply(validCellCount,
                [objCountInCell = objCountInCell.cviewer(),
+                cellToCollisionPairUpperBound =
+                    cellToCollisionPairUpperBound.view(0, validCellCount).viewer(),
                 cellToCollisionPairUpperBoundPrefixSum =
                     cellToCollisionPairUpperBoundPrefixSum.cviewer(),
                 potentialCollisionPairIdToCellIndexBuffer =
@@ -453,12 +460,10 @@ void SparseSpatialHashImpl<Hash>::balanced_setup_collision_pairs(
                                       cell,
                                       size);
                    int start = cellToCollisionPairUpperBoundPrefixSum(cell);
-                   potentialCollisionPairIdToCellIndexBuffer(start + size * size - 1) = 1;
+                   int upper_bound = cellToCollisionPairUpperBound(cell);
+                   potentialCollisionPairIdToCellIndexBuffer(start + upper_bound - 1) = 1;
                });
 
-    // e.g.
-    // potentialCollisionPairIdToCellCount =    [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1]
-    // potentialCollisionPairIdToCellIndex =    [0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2]
     BufferLaunch(m_stream).resize(potentialCollisionPairIdToCellIndex,
                                   collisionPairCountUpperBound);
 
@@ -484,62 +489,88 @@ void SparseSpatialHashImpl<Hash>::balanced_setup_collision_pairs(
     // potentialCollisionPairIdToCellIndex = [0, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3]
     ParallelFor(0, m_stream)
         .kernel_name("fill_collision_pairs")
-        .apply(collisionPairCountUpperBound,
-               [spheres = spheres.cviewer().name("spheres"),
-                objCountInCell = objCountInCell.cviewer().name("objCountInCell"),
-                cellOffsets = objCountInCellPrefixSum.cviewer().name("cellOffsets"),
-                cellArrayValueSorted = cellArrayValueSorted.cviewer().name("cellArrayValueSorted"),
-                cellToCollisionPairUpperBoundPrefixSum =
-                    cellToCollisionPairUpperBoundPrefixSum.cviewer().name("cellToCollisionPairUpperBoundPrefixSum"),
-                potentialCollisionPairIdToCellIndex =
-                    potentialCollisionPairIdToCellIndex.cviewer().name("potentialCollisionPairIdToCellIndex"),
-                collisionPairBuffer = collisionPairBuffer.viewer().name("collisionPairBuffer"),
-                pred  = std::forward<Pred>(pred),
-                level = this->level] __device__(int cpI) mutable
-               {
-                   int cellIndex = potentialCollisionPairIdToCellIndex(cpI);
-                   int start = cellToCollisionPairUpperBoundPrefixSum(cellIndex);
+        .apply(
+            collisionPairCountUpperBound,
+            [spheres        = spheres.cviewer().name("spheres"),
+             objCountInCell = objCountInCell.cviewer().name("objCountInCell"),
+             cellOffsets = objCountInCellPrefixSum.cviewer().name("cellOffsets"),
+             cellToCollisionPairUpperBound =
+                 cellToCollisionPairUpperBound.cviewer().name("cellToCollisionPairUpperBound"),
+             cellArrayValueSorted = cellArrayValueSorted.cviewer().name("cellArrayValueSorted"),
+             cellToCollisionPairUpperBoundPrefixSum =
+                 cellToCollisionPairUpperBoundPrefixSum.cviewer().name("cellToCollisionPairUpperBoundPrefixSum"),
+             potentialCollisionPairIdToCellIndex =
+                 potentialCollisionPairIdToCellIndex.cviewer().name("potentialCollisionPairIdToCellIndex"),
+             potentialCollisionPairIdToCellIndexBuffer =
+                 potentialCollisionPairIdToCellIndexBuffer.cviewer().name("potentialCollisionPairIdToCellIndexBuffer"),
+             collisionPairBuffer = collisionPairBuffer.viewer().name("collisionPairBuffer"),
+             pred  = std::forward<Pred>(pred),
+             level = this->level] __device__(int cpI) mutable
+            {
+                int cellIndex = potentialCollisionPairIdToCellIndex(cpI);
 
-                   int objCount   = objCountInCell(cellIndex);
-                   int cellOffset = cellOffsets(cellIndex);
+                // int upper_bound = cellToCollisionPairUpperBound(cellIndex);  // check the index is valid
 
-                   int cellLocalIndex = cpI - start;
-                   int i              = cellLocalIndex / objCount;
-                   int j              = cellLocalIndex - i * objCount;
+                int start = cellToCollisionPairUpperBoundPrefixSum(cellIndex);
 
-                   MUDA_KERNEL_ASSERT(i >= 0 && j >= 0, "i=%d, j=%d", i, j);
+                int objCount = objCountInCell(cellIndex);
 
-                   collisionPairBuffer(cpI) = CollisionPair::invalid();
+                int cellOffset = cellOffsets(cellIndex);
 
-                   if(i >= j)
-                       return;
+                int cellLocalIndex = cpI - start;
 
+                collisionPairBuffer(cpI) = CollisionPair::invalid();
 
-                   Cell cell0 = cellArrayValueSorted(cellOffset + i);
-                   Cell cell1 = cellArrayValueSorted(cellOffset + j);
+                if(cellLocalIndex == 0) // ignore the first sentinel
+                    return;
 
-                   int oid0 = cell0.oid;
-                   int oid1 = cell1.oid;
+                cellLocalIndex -= 1;
 
+                // use the formula to get the i, j
 
-                   // print("cellOffset=%d, ij=(%d,%d), oid=(%d,%d)\n", cellOffset, i, j, oid0, oid1);
+                int i = objCount - 2
+                        - floor(sqrt(-8.0 * cellLocalIndex + 4 * objCount * (objCount - 1) - 7) / 2.0
+                                - 0.5);
+                int j = cellLocalIndex + i + 1 - objCount * (objCount - 1) / 2
+                        + (objCount - i) * ((objCount - i) - 1) / 2;
 
-                   auto s0 = spheres(oid0);
-                   auto s1 = spheres(oid1);
+                // printf("CellLocalId=%d, i=%d, j=%d,objCount=%d\n", cellLocalIndex, i, j, objCount);
 
-                   if(s0.level > level || s1.level > level)
-                       return;
+                MUDA_KERNEL_ASSERT(
+                    i >= 0 && j >= 0 && i < objCount && j < objCount, "i=%d, j=%d", i, j);
 
-                   if(s0.level < level && s1.level < level)
-                       return;
+                MUDA_KERNEL_ASSERT(ij_to_cell_local_index(i, j, objCount) == cellLocalIndex,
+                                   "numerical error happen!"
+                                   "i=%d, j=%d, objCount=%d, cellLocalIndex=%d",
+                                   i,
+                                   j,
+                                   objCount,
+                                   cellLocalIndex);
 
-                   if(!Cell::allow_ignore(cell0, cell1)  // cell0, cell1 are created by test the proxy sphere
-                      && intersect(s0, s1)  // test the bounding spheres to get exact collision result
-                      && pred(oid0, oid1))  // user predicate
-                   {
-                       collisionPairBuffer(cpI) = CollisionPair{oid0, oid1};
-                   }
-               });
+                Cell cell0 = cellArrayValueSorted(cellOffset + i);
+                Cell cell1 = cellArrayValueSorted(cellOffset + j);
+
+                int oid0 = cell0.oid;
+                int oid1 = cell1.oid;
+
+                // print("cellOffset=%d, ij=(%d,%d), oid=(%d,%d)\n", cellOffset, i, j, oid0, oid1);
+
+                auto s0 = spheres(oid0);
+                auto s1 = spheres(oid1);
+
+                if(s0.level > level || s1.level > level)
+                    return;
+
+                if(s0.level < level && s1.level < level)
+                    return;
+
+                if(!Cell::allow_ignore(cell0, cell1)  // cell0, cell1 are created by test the proxy sphere
+                   && intersect(s0, s1)  // test the bounding spheres to get exact collision result
+                   && pred(oid0, oid1))  // user predicate
+                {
+                    collisionPairBuffer(cpI) = CollisionPair{oid0, oid1};
+                }
+            });
 
     // select the valid collision pairs
     DeviceSelect(m_stream).If(collisionPairBuffer.data(),

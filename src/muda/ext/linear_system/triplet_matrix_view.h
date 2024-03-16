@@ -8,6 +8,10 @@ namespace muda
 template <bool IsConst, typename Ty, int N>
 class TripletMatrixViewBase : public ViewBase<IsConst>
 {
+    using Base = ViewBase<IsConst>;
+    template <typename U>
+    using auto_const_t = typename Base::template auto_const_t<U>;
+
   public:
     static_assert(!std::is_const_v<Ty>, "Ty must be non-const");
     using ConstView    = TripletMatrixViewBase<true, Ty, N>;
@@ -452,19 +456,19 @@ class TripletMatrixViewBase<IsConst, Ty, 1> : public ViewBase<IsConst>
     // non-const access
     MUDA_GENERIC auto_const_t<Ty>* values() { return m_values; }
     MUDA_GENERIC auto_const_t<int>* row_indices() { return m_row_indices; }
-    MUDA_GENERIC auto_const_t<int>*  col_indices() { return m_col_indices; }
+    MUDA_GENERIC auto_const_t<int>* col_indices() { return m_col_indices; }
 
 
     // const access
     MUDA_GENERIC auto values() const { return m_values; }
-    MUDA_GENERIC auto  row_indices() const { return m_row_indices; }
-    MUDA_GENERIC auto  col_indices() const { return m_col_indices; }
+    MUDA_GENERIC auto row_indices() const { return m_row_indices; }
+    MUDA_GENERIC auto col_indices() const { return m_col_indices; }
 
     MUDA_GENERIC auto total_rows() const { return m_total_rows; }
-    MUDA_GENERIC auto  total_cols() const { return m_total_cols; }
+    MUDA_GENERIC auto total_cols() const { return m_total_cols; }
 
     MUDA_GENERIC auto triplet_count() const { return m_triplet_count; }
-    MUDA_GENERIC auto  tripet_index_offset() const
+    MUDA_GENERIC auto tripet_index_offset() const
     {
         return m_triplet_index_offset;
     }
@@ -474,8 +478,8 @@ class TripletMatrixViewBase<IsConst, Ty, 1> : public ViewBase<IsConst>
     }
 
     MUDA_GENERIC auto submatrix_offset() const { return m_submatrix_offset; }
-    MUDA_GENERIC auto  extent() const { return m_submatrix_extent; }
-    MUDA_GENERIC auto  total_extent() const
+    MUDA_GENERIC auto extent() const { return m_submatrix_extent; }
+    MUDA_GENERIC auto total_extent() const
     {
         return int2{m_total_rows, m_total_cols};
     }

@@ -26,6 +26,9 @@ template <bool IsConst, typename T>
 class Dense1DBase : public ViewerBase<IsConst>
 {
     using Base = ViewerBase<IsConst>;
+    template <typename U>
+    using auto_const_t = typename Base::template auto_const_t<U>;
+
     MUDA_VIEWER_COMMON_NAME(Dense1DBase);
 
   public:
@@ -34,9 +37,6 @@ class Dense1DBase : public ViewerBase<IsConst>
     using ThisViewer     = Dense1DBase<IsConst, T>;
 
   protected:
-    template <typename U>
-    using auto_const_t = typename Base::auto_const_t<U>;
-
     auto_const_t<T>* m_data;
     int              m_dim;
 

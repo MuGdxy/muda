@@ -7,6 +7,10 @@ namespace muda
 template <bool IsConst, typename Ty>
 class DenseMatrixViewBase : public ViewBase<IsConst>
 {
+    using Base = ViewBase<IsConst>;
+    template <typename U>
+    using auto_const_t = typename Base::template auto_const_t<U>;
+
   public:
     static_assert(std::is_same_v<Ty, float> || std::is_same_v<Ty, double>,
                   "now only support real number");

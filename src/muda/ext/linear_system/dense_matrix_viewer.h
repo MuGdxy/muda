@@ -12,6 +12,10 @@ class DenseMatrixViewerBase : public ViewerBase<IsConst>
                   "now only support real number");
     static_assert(!std::is_const_v<T>, "T must be non-const type");
 
+    using Base = ViewerBase<IsConst>;
+    template <typename U>
+    using auto_const_t = typename Base::template auto_const_t<U>;
+
   public:
     using CBuffer2DView = CBuffer2DView<T>;
     using Buffer2DView  = Buffer2DView<T>;

@@ -1,7 +1,5 @@
 #pragma once
-
 #include <muda/ext/linear_system/linear_system_context.h>
-#include <muda/ext/linear_system/vector_format_converter.h>
 #include <muda/ext/linear_system/matrix_format_converter.h>
 #include <muda/ext/linear_system/device_dense_matrix.h>
 #include <muda/ext/linear_system/dense_matrix_view.h>

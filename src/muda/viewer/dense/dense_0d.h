@@ -16,7 +16,7 @@ class DenseViewerBase : public ViewerBase<IsConst>
 
   protected:
     template <typename U>
-    using auto_const_t = typename Base::auto_const_t<U>;
+    using auto_const_t = typename Base::template auto_const_t<U>;
     auto_const_t<T>* m_data;
 
   public:

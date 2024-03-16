@@ -1,4 +1,5 @@
 #pragma once
+
 #include <muda/ext/linear_system/linear_system_handles.h>
 #include <muda/ext/linear_system/device_dense_matrix.h>
 #include <muda/ext/linear_system/device_dense_vector.h>
@@ -8,7 +9,7 @@
 #include <muda/ext/linear_system/device_bcoo_vector.h>
 #include <muda/ext/linear_system/device_bsr_matrix.h>
 #include <muda/ext/linear_system/device_csr_matrix.h>
-
+#include <muda/type_traits/cuda_arch.h>
 namespace muda
 {
 namespace details
@@ -47,8 +48,8 @@ namespace details
         muda::DeviceBuffer<int> sort_index;
         muda::DeviceBuffer<int> sort_index_tmp;
 
-        muda::DeviceBuffer<int>       col_tmp;
-        muda::DeviceBuffer<int>       row_tmp;
+        muda::DeviceBuffer<int> col_tmp;
+        muda::DeviceBuffer<int> row_tmp;
 
         muda::DeviceBCOOMatrix<T, N> temp_bcoo_matrix;
         muda::DeviceBCOOVector<T, N> temp_bcoo_vector;
@@ -138,8 +139,8 @@ namespace details
         muda::DeviceBuffer<int> sort_index;
         muda::DeviceBuffer<int> sort_index_tmp;
 
-        muda::DeviceBuffer<int>       col_tmp;
-        muda::DeviceBuffer<int>       row_tmp;
+        muda::DeviceBuffer<int> col_tmp;
+        muda::DeviceBuffer<int> row_tmp;
 
         muda::DeviceBuffer<int>  unique_indices;
         muda::DeviceCOOMatrix<T> temp_coo_matrix;
@@ -213,3 +214,5 @@ namespace details
 
 #include "details/matrix_format_converter_impl_block.inl"
 #include "details/matrix_format_converter_impl.inl"
+
+

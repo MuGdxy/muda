@@ -12,12 +12,10 @@ class DenseVectorViewerBase : public ViewerBase<IsConst>
 {
     static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>,
                   "now only support real number");
-    // MUDA_VIEWER_COMMON_NAME(DenseVectorViewerBase);
 
     using Base = ViewerBase<IsConst>;
-
-    template <typename T>
-    using auto_const_t = typename Base::auto_const_t<T>;
+    template <typename U>
+    using auto_const_t = typename Base::template auto_const_t<U>;
 
   public:
     using CBufferView    = CBufferView<T>;

@@ -7,6 +7,10 @@ namespace muda
 template <bool IsConst, typename T, int N>
 class DoubletVectorViewBase : public ViewBase<IsConst>
 {
+    using Base = ViewBase<IsConst>;
+    template <typename U>
+    using auto_const_t = typename Base::template auto_const_t<U>;
+
   public:
     using SegmentVector = Eigen::Matrix<T, N, 1>;
     using ConstView     = DoubletVectorViewBase<true, T, N>;

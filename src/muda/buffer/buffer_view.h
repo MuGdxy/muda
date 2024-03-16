@@ -22,13 +22,7 @@ namespace muda
 template <bool IsConst, typename T>
 class BufferViewBase : public ViewBase<IsConst>
 {
-    //template <typename T, typename FConstruct>
-    //friend void resize(int              grid_dim,
-    //                   int              block_dim,
-    //                   cudaStream_t     stream,
-    //                   DeviceBuffer<T>& buffer,
-    //                   size_t           new_size,
-    //                   FConstruct&&     fct);
+    using Base = ViewBase<IsConst>;
   public:
     static_assert(!std::is_const_v<T>, "Ty must be non-const");
     using ConstView    = BufferViewBase<true, T>;
@@ -40,7 +34,7 @@ class BufferViewBase : public ViewBase<IsConst>
     using ThisViewer = std::conditional_t<IsConst, CViewer, Viewer>;
 
     template <typename T>
-    using auto_const_t = ViewBase<IsConst>::template auto_const_t<T>;
+    using auto_const_t = typename Base::template auto_const_t<T>;
 
   protected:
     auto_const_t<T>* m_data   = nullptr;

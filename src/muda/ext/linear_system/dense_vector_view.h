@@ -12,9 +12,8 @@ class DenseVectorViewBase : public ViewBase<IsConst>
                   "now only support real number");
 
     using Base = ViewBase<IsConst>;
-
-    template <typename T>
-    using auto_const_t = typename Base::auto_const_t<T>;
+    template <typename U>
+    using auto_const_t = typename Base::template auto_const_t<U>;
 
   public:
     using NonConstView = DenseVectorViewBase<false, T>;

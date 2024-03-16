@@ -32,14 +32,3 @@ TEST_CASE("hello_muda", "[quick_start]")
     hello_muda();
 }
 
-
-
-
-void main()
-{
-    DeviceBuffer<float3> position(10);
-    std::vector<float3>  host_data;
-
-    position.reserve(1000);
-}
-

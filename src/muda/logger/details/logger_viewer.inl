@@ -1,5 +1,4 @@
 #include <device_atomic_functions.h>
-
 namespace muda
 {
 MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy::Proxy(LoggerViewer& viewer)
