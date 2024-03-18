@@ -90,9 +90,9 @@ void LinearSystemContext::spmv(const T&             a,
                                     y.data());
 }
 template <typename T, int N>
-void muda::LinearSystemContext::spmv(CBSRMatrixView<T, N>& A,
-                                     CDenseVectorView<T>&  x,
-                                     DenseVectorView<T>&   y)
+void muda::LinearSystemContext::spmv(CBSRMatrixView<T, N> A,
+                                     CDenseVectorView<T>  x,
+                                     DenseVectorView<T>   y)
 {
     spmv(T{1}, A, x, T{0}, y);
 }

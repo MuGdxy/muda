@@ -12,9 +12,7 @@ void LinearSystemContext::spmv(const T&            a,
 }
 
 template <typename T>
-void LinearSystemContext::spmv(CCOOMatrixView<T>&   A,
-                               CDenseVectorView<T>& x,
-                               DenseVectorView<T>&  y)
+void LinearSystemContext::spmv(CCOOMatrixView<T> A, CDenseVectorView<T> x, DenseVectorView<T> y)
 {
     spmv(T{1}, A, x, T{0}, y);
 }

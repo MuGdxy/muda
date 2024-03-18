@@ -209,12 +209,12 @@ class LinearSystemContext
               const T&             b,
               DenseVectorView<T>&  y);
     template <typename T, int N>
-    void spmv(CBSRMatrixView<T, N>& A, CDenseVectorView<T>& x, DenseVectorView<T>& y);
+    void spmv(CBSRMatrixView<T, N> A, CDenseVectorView<T> x, DenseVectorView<T> y);
     // CSR
     template <typename T>
     void spmv(const T& a, CCSRMatrixView<T> A, CDenseVectorView<T> x, const T& b, DenseVectorView<T>& y);
     template <typename T>
-    void spmv(CCSRMatrixView<T>& A, CDenseVectorView<T>& x, DenseVectorView<T>& y);
+    void spmv(CCSRMatrixView<T> A, CDenseVectorView<T> x, DenseVectorView<T> y);
     // BCOO & Triplet
     template <typename T, int N>
     void spmv(const T&                 a,
@@ -223,12 +223,12 @@ class LinearSystemContext
               const T&                 b,
               DenseVectorView<T>&      y);
     template <typename T, int N>
-    void spmv(CTripletMatrixView<T, N>& A, CDenseVectorView<T>& x, DenseVectorView<T>& y);
+    void spmv(CTripletMatrixView<T, N> A, CDenseVectorView<T> x, DenseVectorView<T> y);
     // COO
     template <typename T>
     void spmv(const T& a, CCOOMatrixView<T> A, CDenseVectorView<T> x, const T& b, DenseVectorView<T>& y);
     template <typename T>
-    void spmv(CCOOMatrixView<T>& A, CDenseVectorView<T>& x, DenseVectorView<T>& y);
+    void spmv(CCOOMatrixView<T> A, CDenseVectorView<T> x, DenseVectorView<T> y);
 
 
     /***********************************************************************************************
