@@ -1,4 +1,4 @@
-#include <device_atomic_functions.h>
+#include <muda/atomic.h>
 namespace muda
 {
 MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy::Proxy(LoggerViewer& viewer)
@@ -6,7 +6,7 @@ MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy::Proxy(LoggerViewer& viewer)
 {
     MUDA_KERNEL_ASSERT(m_viewer.m_buffer.data() && m_viewer.m_meta_data.data(),
                        "LoggerViewer is not initialized");
-    m_log_id = atomicAdd(&(m_viewer.m_offset_view->log_id), 1u);
+    m_log_id = atomic_add(&(m_viewer.m_offset_view->log_id), 1u);
 }
 template <bool IsFmt>
 MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy& LoggerViewer::Proxy::push_string(const char* str)
@@ -85,7 +85,7 @@ MUDA_INLINE MUDA_DEVICE uint32_t next_idx(uint32_t* data_offset, uint32_t size, 
     {
         assumed         = old;
         auto new_offset = old + size;
-        old             = atomicCAS(data_offset, assumed, new_offset);
+        old             = atomic_cas(data_offset, assumed, new_offset);
         if(old + size >= total_size)
         {
             old = ~0u;
@@ -100,7 +100,7 @@ MUDA_INLINE MUDA_DEVICE uint32_t LoggerViewer::next_meta_data_idx() const
     auto idx = next_idx(&(m_offset_view->meta_data_offset), 1u, m_meta_data.total_size());
     if(idx == ~0u)
     {
-        atomicCAS(&(m_offset_view->exceed_meta_data), 0u, 1u);
+        atomic_cas(&(m_offset_view->exceed_meta_data), 0u, 1u);
         return ~0u;
     }
     return idx;
@@ -111,7 +111,7 @@ MUDA_INLINE MUDA_DEVICE uint32_t LoggerViewer::next_buffer_idx(uint32_t size) co
     auto idx = next_idx(&(m_offset_view->buffer_offset), size, m_buffer.total_size());
     if(idx == ~0u)
     {
-        atomicCAS(&(m_offset_view->exceed_buffer), 0u, 1u);
+        atomic_cas(&(m_offset_view->exceed_buffer), 0u, 1u);
         return ~0u;
     }
     return idx;
@@ -141,11 +141,12 @@ MUDA_INLINE MUDA_DEVICE bool LoggerViewer::push_data(details::LoggerMetaData met
             kernel_name(),
             name(),
             meta.id);
+
         m_meta_data.data()[meta_idx]    = meta;
         m_meta_data_id.data()[meta_idx] = meta.id;
         return false;
     }
-    meta.offset                     = buffer_idx;
+    meta.offset = buffer_idx;
     m_meta_data.data()[meta_idx]    = meta;
     m_meta_data_id.data()[meta_idx] = meta.id;
     for(int i = 0; i < meta.size; ++i)

@@ -194,7 +194,7 @@ MUDA_INLINE void Logger::upload()
     if(m_log_viewer_ptr)
     {
         checkCudaErrors(cudaMemcpyAsync(
-            m_log_viewer_ptr, &m_viewer, sizeof(m_viewer), cudaMemcpyHostToDevice));
+            m_log_viewer_ptr, &m_viewer, sizeof(m_viewer), cudaMemcpyHostToDevice, nullptr));
     }
     on().wait();
 }

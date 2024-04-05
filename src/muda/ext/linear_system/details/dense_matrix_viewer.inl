@@ -20,9 +20,7 @@ MUDA_GENERIC auto DenseMatrixViewerBase<IsConst, T>::block(size_t row_offset,
 
     auto ret = DenseMatrixViewerBase{
         m_view, m_row_offset + row_offset, m_col_offset + col_offset, row_size, col_size};
-    auto acc             = details::ViewerBaseAccessor();
-    acc.kernel_name(ret) = acc.kernel_name(*this);
-    acc.viewer_name(ret) = acc.viewer_name(*this);
+    ret.copy_name(*this);
     return ret;
 }
 

@@ -1,8 +1,7 @@
 #pragma once
-
+#include <device_atomic_functions.h>
 namespace muda
 {
-
 template <typename T>
 __forceinline__ __device__ T atomic_cas(T* address, T compare, T val)
 {

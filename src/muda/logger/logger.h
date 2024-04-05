@@ -105,7 +105,7 @@ class Logger
     DeviceVar<details::LoggerOffset> m_offset;
     details::LoggerOffset            m_h_offset;
 
-    LoggerViewer* m_log_viewer_ptr;
+    LoggerViewer* m_log_viewer_ptr = nullptr;
     LoggerViewer  m_viewer;
     template <typename F>
     void _retrieve(F&&);

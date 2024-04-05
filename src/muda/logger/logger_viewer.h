@@ -57,7 +57,7 @@ class LoggerViewer : public ViewerBase<false>
     MUDA_DEVICE Proxy push_string(const char* str);
     MUDA_DEVICE Proxy proxy() { return Proxy(*this); }
 
-  private:
+  public:
     Dense1D<uint32_t>                    m_meta_data_id;
     Dense1D<details::LoggerMetaData>     m_meta_data;
     Dense1D<char>                        m_buffer;

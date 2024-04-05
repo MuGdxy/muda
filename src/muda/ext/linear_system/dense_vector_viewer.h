@@ -60,9 +60,7 @@ class DenseVectorViewerBase : public ViewerBase<IsConst>
     {
         check_segment(offset, size);
         auto ret = ThisViewer{m_data, m_offset + offset, size, m_origin_size};
-        auto acc = muda::details::ViewerBaseAccessor();
-        acc.kernel_name(ret) = acc.kernel_name(*this);
-        acc.viewer_name(ret) = acc.viewer_name(*this);
+        ret.copy_name(*this);
         return ret;
     }
 

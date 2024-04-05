@@ -31,10 +31,13 @@ class ViewerBase
     using non_const_enable_t = std::enable_if_t<IsNonConst, T>;
 
   private:
-    friend class details::ViewerBaseAccessor;
+    // friend class details::ViewerBaseAccessor;
+
 #if MUDA_CHECK_ON
     details::StringPointer m_viewer_name;
     details::StringPointer m_kernel_name;
+#else
+    char m_dummy = 0; // a dummy member to avoid empty class 
 #endif
   public:
     MUDA_GENERIC ViewerBase()
@@ -84,6 +87,14 @@ class ViewerBase
     {
 #if MUDA_CHECK_ON
         m_viewer_name = pointer;
+#endif
+    }
+
+    MUDA_INLINE MUDA_GENERIC void copy_name(const ViewerBase& other) MUDA_NOEXCEPT
+    {
+#if MUDA_CHECK_ON
+        m_kernel_name = other.m_kernel_name;
+        m_viewer_name = other.m_viewer_name;
 #endif
     }
 };
