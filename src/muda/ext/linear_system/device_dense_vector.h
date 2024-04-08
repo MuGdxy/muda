@@ -3,6 +3,12 @@
 #include <muda/buffer/device_buffer.h>
 #include <cusparse.h>
 
+namespace muda::details
+{
+template <typename T, int N>
+class MatrixFormatConverter;
+}
+
 namespace muda
 {
 template <typename T>

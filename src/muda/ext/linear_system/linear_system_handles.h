@@ -4,17 +4,24 @@
 #include <cusolverDn.h>
 #include <cusolverSp.h>
 #include <muda/muda_def.h>
+#include <muda/check/check_cusparse.h>
+#include <muda/check/check_cublas.h>
+#include <muda/check/check_cusolver.h>
+#include <muda/check/check.h>
 
 namespace muda
 {
+class LinearSystemContext;
 class LinearSystemHandles
 {
+    friend class LinearSystemContext;
     cudaStream_t       m_stream              = nullptr;
     cublasHandle_t     m_cublas              = nullptr;
     cusparseHandle_t   m_cusparse            = nullptr;
     cusolverDnHandle_t m_cusolver_dn         = nullptr;
     cusolverSpHandle_t m_cusolver_sp         = nullptr;
     bool               m_pointer_mode_device = false;
+    float              m_reserve_ratio         = 1.5f;
 
   public:
     LinearSystemHandles(cudaStream_t s)
@@ -74,5 +81,6 @@ class LinearSystemHandles
     cusparseHandle_t   cusparse() const { return m_cusparse; }
     cusolverDnHandle_t cusolver_dn() const { return m_cusolver_dn; }
     cusolverSpHandle_t cusolver_sp() const { return m_cusolver_sp; }
+    auto reserve_ratio() const { return m_reserve_ratio; }
 };
 }  // namespace muda

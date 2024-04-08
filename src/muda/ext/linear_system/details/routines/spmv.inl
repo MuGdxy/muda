@@ -15,7 +15,7 @@ void LinearSystemContext::generic_spmv(const T&                  a,
     checkCudaErrors(cusparseSpMV_bufferSize(
         cusparse(), op, &a, A, x, &b, y, cuda_data_type<T>(), LinearSystemAlgorithm::SPMV_ALG_DEFAULT, &buffer_size));
 
-    auto& buffer = temp_buffer(buffer_size);
+    auto buffer = temp_buffer(buffer_size);
 
     checkCudaErrors(cusparseSpMV(cusparse(),
                                  op,

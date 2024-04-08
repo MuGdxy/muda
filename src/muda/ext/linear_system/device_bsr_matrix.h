@@ -1,6 +1,5 @@
 #pragma once
 #include <muda/buffer/device_buffer.h>
-#include <muda/ext/linear_system/matrix_format_converter.h>
 #include <muda/ext/linear_system/bsr_matrix_view.h>
 #include <cusparse.h>
 
@@ -42,6 +41,8 @@ class DeviceBSRMatrix
     DeviceBSRMatrix& operator=(DeviceBSRMatrix&&);
 
     void reshape(int row, int col);
+    void reserve(int non_zero_blocks);
+    void resize(int non_zero_blocks);
 
     static constexpr int block_size() { return N; }
 

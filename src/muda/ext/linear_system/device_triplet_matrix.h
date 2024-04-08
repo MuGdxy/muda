@@ -46,6 +46,13 @@ class DeviceTripletMatrix
         m_block_col_indices.resize(nonzero_count);
     }
 
+    void reserve_triplets(size_t nonzero_count)
+    {
+        m_block_values.reserve(nonzero_count);
+        m_block_row_indices.reserve(nonzero_count);
+        m_block_col_indices.reserve(nonzero_count);
+    }
+
     void resize(int row, int col, size_t nonzero_count)
     {
         reshape(row, col);
@@ -130,6 +137,13 @@ class DeviceTripletMatrix<T, 1>
         m_values.resize(nonzero_count);
         m_row_indices.resize(nonzero_count);
         m_col_indices.resize(nonzero_count);
+    }
+
+    void reserve_triplets(size_t nonzero_count)
+    {
+        m_values.reserve(nonzero_count);
+        m_row_indices.reserve(nonzero_count);
+        m_col_indices.reserve(nonzero_count);
     }
 
     void resize(int row, int col, size_t nonzero_count)

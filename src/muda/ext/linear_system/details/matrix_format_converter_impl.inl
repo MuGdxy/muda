@@ -30,8 +30,8 @@ void MatrixFormatConverter<T, 1>::merge_sort_indices_and_values(
     auto src_col_indices = from.col_indices();
     auto src_values      = from.values();
 
-    sort_index.resize(src_row_indices.size());
-    ij_pairs.resize(src_row_indices.size());
+    loose_resize(sort_index, src_row_indices.size());
+    loose_resize(ij_pairs, src_row_indices.size());
 
     ParallelFor(256)
         .kernel_name("set ij pairs")
@@ -75,7 +75,7 @@ void MatrixFormatConverter<T, 1>::merge_sort_indices_and_values(
 
     // sort the block values
 
-    unique_values.resize(from.m_values.size());
+    loose_resize(unique_values, from.m_values.size());
 
     ParallelFor(256)
         .kernel_name("set block values")
@@ -95,8 +95,8 @@ void MatrixFormatConverter<T, 1>::make_unique_indices(const DeviceTripletMatrix<
     auto& row_indices = to.m_row_indices;
     auto& col_indices = to.m_col_indices;
 
-    unique_ij_pairs.resize(ij_pairs.size());
-    unique_counts.resize(ij_pairs.size());
+    loose_resize(unique_ij_pairs, ij_pairs.size());
+    loose_resize(unique_counts, ij_pairs.size());
 
     DeviceRunLengthEncode().Encode(ij_pairs.data(),
                                    unique_ij_pairs.data(),
@@ -109,7 +109,7 @@ void MatrixFormatConverter<T, 1>::make_unique_indices(const DeviceTripletMatrix<
     unique_ij_pairs.resize(h_count);
     unique_counts.resize(h_count);
 
-    offsets.resize(unique_counts.size());
+    loose_resize(offset, unique_counts.size());
 
     DeviceScan().ExclusiveSum(
         unique_counts.data(), offsets.data(), unique_counts.size());
@@ -181,7 +181,7 @@ void MatrixFormatConverter<T, 1>::convert(const DeviceCOOMatrix<T>& from,
                    auto value    = values(i);
                    auto row      = value.row_index;
                    auto col      = value.col_index;
-                   dst(row, col) = value.value;
+                   dst(row, col) += value.value;
                });
 }
 
@@ -216,8 +216,8 @@ void MatrixFormatConverter<T, 1>::calculate_block_offsets(const DeviceCOOMatrix<
     col_counts_per_row.resize(to.m_row_offsets.size());
     col_counts_per_row.fill(0);
 
-    unique_indices.resize(from.non_zeros());
-    unique_counts.resize(from.non_zeros());
+    loose_resize(unique_indices, from.non_zeros());
+    loose_resize(unique_counts, from.non_zeros());
 
     // run length encode the row
     DeviceRunLengthEncode().Encode(from.m_row_indices.data(),
@@ -290,7 +290,7 @@ void MatrixFormatConverter<T, 1>::make_unique_indices(const DeviceDoubletVector<
 
     auto& unique_indices = to.m_indices;
     unique_indices.resize(indices.size());
-    unique_counts.resize(indices.size());
+    loose_resize(unique_counts, indices.size());
 
     DeviceRunLengthEncode().Encode(indices.data(),
                                    unique_indices.data(),
@@ -302,7 +302,7 @@ void MatrixFormatConverter<T, 1>::make_unique_indices(const DeviceDoubletVector<
 
     unique_indices.resize(h_count);
     unique_counts.resize(h_count);
-    offsets.resize(unique_counts.size());
+    loose_resize(offsets, unique_counts.size());
 
     DeviceScan().ExclusiveSum(
         unique_counts.data(), offsets.data(), unique_counts.size());
@@ -367,7 +367,7 @@ void MatrixFormatConverter<T, 1>::set_unique_values_to_dense_vector(
                 dst = to.viewer().name("dst_dense_vector")] __device__(int i) mutable
                {
                    auto index = unique_indices(i);
-                   dst(index) = unique_values(i);
+                   dst(index) += unique_values(i);
                });
 }
 

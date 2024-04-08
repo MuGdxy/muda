@@ -1,5 +1,6 @@
 #include <muda/check/check_cusparse.h>
 #include <muda/ext/linear_system/type_mapper/data_type_mapper.h>
+#include "device_bsr_matrix.h"
 namespace muda
 {
 template <typename Ty, int N>
@@ -83,6 +84,18 @@ void DeviceBSRMatrix<Ty, N>::reshape(int row, int col)
     m_block_row_offsets.resize(row + 1);
     m_col   = col;
     m_descr = nullptr;
+}
+template <typename Ty, int N>
+void DeviceBSRMatrix<Ty, N>::reserve(int non_zero_blocks)
+{
+    m_block_col_indices.reserve(non_zero_blocks);
+    m_block_values.reserve(non_zero_blocks);
+}
+template <typename Ty, int N>
+inline void DeviceBSRMatrix<Ty, N>::resize(int non_zero_blocks)
+{
+    m_block_col_indices.resize(non_zero_blocks);
+    m_block_values.resize(non_zero_blocks);
 }
 template <typename Ty, int N>
 cusparseMatDescr_t DeviceBSRMatrix<Ty, N>::legacy_descr() const

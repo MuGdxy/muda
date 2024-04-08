@@ -2,6 +2,14 @@
 #include <muda/buffer/device_buffer.h>
 #include <muda/ext/linear_system/bcoo_matrix_view.h>
 #include <muda/ext/linear_system/device_triplet_matrix.h>
+#include <cusparse.h>
+#include <muda/ext/linear_system/type_mapper/data_type_mapper.h>
+
+namespace muda::details
+{
+    template <typename T, int N>
+    class MatrixFormatConverter;
+}
 
 namespace muda
 {
@@ -140,8 +148,8 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
         return m_descr;
     }
 
-    auto T() const { return view().T(); }
-    auto T() { return view().T(); }
+    //auto T() const { return view().T(); }
+    //auto T() { return view().T(); }
 
     operator COOMatrixView<Ty>() { return view(); }
     operator CCOOMatrixView<Ty>() const { return view(); }

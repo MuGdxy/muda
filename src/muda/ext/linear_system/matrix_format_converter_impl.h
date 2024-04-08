@@ -1,5 +1,4 @@
 #pragma once
-
 #include <muda/ext/linear_system/linear_system_handles.h>
 #include <muda/ext/linear_system/device_dense_matrix.h>
 #include <muda/ext/linear_system/device_dense_vector.h>
@@ -10,6 +9,7 @@
 #include <muda/ext/linear_system/device_bsr_matrix.h>
 #include <muda/ext/linear_system/device_csr_matrix.h>
 #include <muda/type_traits/cuda_arch.h>
+
 namespace muda
 {
 namespace details
@@ -37,6 +37,14 @@ namespace details
         auto cusparse() const { return m_handles.cusparse(); }
         auto cusolver_sp() const { return m_handles.cusolver_sp(); }
         auto cusolver_dn() const { return m_handles.cusolver_dn(); }
+
+        template <typename T>
+        void loose_resize(muda::DeviceBuffer<T>& buf, size_t new_size)
+        {
+            if(buf.capacity() < new_size)
+                buf.reserve(new_size * m_handles.reserve_ratio());
+            buf.resize(new_size);
+        }
     };
 
     template <typename T, int N>
@@ -214,5 +222,3 @@ namespace details
 
 #include "details/matrix_format_converter_impl_block.inl"
 #include "details/matrix_format_converter_impl.inl"
-
-

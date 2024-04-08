@@ -88,6 +88,13 @@ void DeviceCSRMatrix<Ty>::reshape(int row, int col)
 }
 
 template <typename Ty>
+void DeviceCSRMatrix<Ty>::reserve(int non_zeros)
+{
+    m_col_indices.reserve(non_zeros);
+    m_values.reserve(non_zeros);
+}
+
+template <typename Ty>
 cusparseSpMatDescr_t DeviceCSRMatrix<Ty>::descr() const
 {
     if(m_descr == nullptr)

@@ -2,6 +2,12 @@
 #include <muda/ext/linear_system/dense_matrix_view.h>
 #include <muda/buffer/device_buffer_2d.h>
 
+namespace muda::details
+{
+template <typename T, int N>
+class MatrixFormatConverter;
+}
+
 namespace muda
 {
 // A column major dense matrix on device.

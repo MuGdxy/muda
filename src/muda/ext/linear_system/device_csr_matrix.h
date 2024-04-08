@@ -39,6 +39,7 @@ class DeviceCSRMatrix
     DeviceCSRMatrix& operator=(DeviceCSRMatrix&&) noexcept;
 
     void reshape(int row, int col);
+    void reserve(int non_zeros);
 
     auto values() { return m_values.view(); }
     auto values() const { return m_values.view(); }

@@ -81,6 +81,9 @@ class LinearSystemContext
 
     auto& tolerance() { return m_tolerance; }
     auto& reorder() { return m_reorder; }
+    auto  reserve_ratio() const { return m_handles.m_reserve_ratio; }
+    void  reserve_ratio(float ratio) { m_handles.m_reserve_ratio = ratio; }
+
 
   public:
     /***********************************************************************************************

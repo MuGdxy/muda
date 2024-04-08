@@ -19,8 +19,10 @@ template <typename F>
 MUDA_HOST double profile_host(F&& f)
 {
     using namespace std::chrono;
+    wait_device();
     auto start = high_resolution_clock::now();
     f();
+    wait_device();
     auto end = high_resolution_clock::now();
     return duration_cast<microseconds>(end - start).count() / 1000.0;
 }
