@@ -1,6 +1,3 @@
 [submodule "docs/muda-doc"]
 	path = docs/muda-doc
 	url = https://github.com/MuGdxy/muda-doc.git
-[submodule "external/cusplibrary"]
-	path = external/cusplibrary
-	url = https://github.com/cusplibrary/cusplibrary.git
