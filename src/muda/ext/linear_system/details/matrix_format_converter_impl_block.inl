@@ -54,8 +54,6 @@ void MatrixFormatConverter<T, N>::merge_sort_indices_and_blocks(
 {
     using namespace muda;
 
-    double t = 0;
-
     auto src_row_indices = from.block_row_indices();
     auto src_col_indices = from.block_col_indices();
     auto src_blocks      = from.block_values();
