@@ -117,12 +117,15 @@ int main()
             print("hello muda %d!\n", i); 
         }).wait();
     
-    // intellisense-friendly wrapper 
-    Kernel{raw_kernel}();
-    Kernel{32/*grid size*/, 64/*block size*/,0/*shared memory*/, stream, other_kernel}(...)
+    // automatic block size choosing
+    ParallelFor().apply(N,
+        [] __device__(int i) 
+        {
+            print("hello muda %d!\n", i); 
+        }).wait();
     
-    Stream stream;
-    on(stream).wait();
+    // intellisense-friendly wrapper 
+    Kernel{32/*grid size*/, 64/*block size*/,0/*shared memory*/, stream, other_kernel}(...)
 }
 ```
 
@@ -158,7 +161,7 @@ int main()
 {
     // setup global logger
     LoggerViewer* viewer_ptr = nullptr;
-    checkCudaErrors(cudaGetSymbolAddress(&viewer_ptr, foo::cout));
+    checkCudaErrors(cudaGetSymbolAddress((void**)&viewer_ptr, foo::cout));
     Logger logger(viewer_ptr);
     
     Launch().apply([]__device__() mutable
@@ -168,6 +171,30 @@ int main()
     .wait();
     
     logger.retrieve(std::cout);
+}
+```
+
+Further, you can use `muda::Debug::set_sync_callback()` to retrieve the output once `wait()` is called, as:
+
+```cpp
+__device__ LoggerViewer cout;
+
+int main()
+{
+    // setup global logger
+    LoggerViewer* viewer_ptr = nullptr;
+    checkCudaErrors(cudaGetSymbolAddress((void**)&viewer_ptr, foo::cout));
+    Logger logger(viewer_ptr);
+    
+    muda::Debug::set_sync_callback([&] { logger.retrieve(std::cout); });
+    
+    Launch().apply([]__device__() mutable
+        {
+            cout << "hello\n";
+        })
+    .wait();
+    
+    // no need to retrieve manully
 }
 ```
 
@@ -232,7 +259,7 @@ Launch()
         array   = buffer.viewer().name("array"),
         array2d = buffer_2d.viewer().name("array2d"),
         array3d = buffer_3d.viewer().name("array3d"),
-        logger  = logger.viewer().name("logger"),
+        logger  = logger.viewer(),
         ...
     ] __device__ () mutable
     {
