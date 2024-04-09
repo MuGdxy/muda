@@ -109,7 +109,7 @@ void MatrixFormatConverter<T, 1>::make_unique_indices(const DeviceTripletMatrix<
     unique_ij_pairs.resize(h_count);
     unique_counts.resize(h_count);
 
-    loose_resize(offset, unique_counts.size());
+    loose_resize(offsets, unique_counts.size());
 
     DeviceScan().ExclusiveSum(
         unique_counts.data(), offsets.data(), unique_counts.size());

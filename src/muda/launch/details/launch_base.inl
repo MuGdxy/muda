@@ -175,6 +175,11 @@ MUDA_INLINE void LaunchCore::wait_stream(cudaStream_t stream)
     MUDA_ASSERT(ComputeGraphBuilder::is_phase_none(),
                 "`wait_stream()` a stream is meaningless in ComputeGraph");
     checkCudaErrors(cudaStreamSynchronize(stream));
+
+    if constexpr (muda::RUNTIME_CHECK_ON)
+    {
+        Debug::call_sync_callback();
+    }
 }
 
 MUDA_INLINE void LaunchCore::wait_device()

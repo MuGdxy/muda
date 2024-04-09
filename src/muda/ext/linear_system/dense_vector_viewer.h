@@ -75,6 +75,24 @@ class DenseVectorViewerBase : public ViewerBase<IsConst>
         return remove_const(*this).segment(offset, size);
     }
 
+    MUDA_GENERIC const T& operator()(int i) const { return m_data[index(i)]; }
+    MUDA_GENERIC auto_const_t<T>& operator()(int i) { return m_data[index(i)]; }
+
+    template <int N>
+    MUDA_GENERIC auto segment(int offset) const
+    {
+        return remove_const(*this).segment(offset, N);
+    }
+
+    MUDA_GENERIC Eigen::VectorBlock<CMapVector> as_eigen() const
+    {
+        check_data();
+        return CMapVector{m_data,
+                          (int)origin_size(),
+                          Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>{1, 1}}
+            .segment(m_offset, m_size);
+    }
+
     MUDA_GENERIC operator Eigen::VectorBlock<CMapVector>() const
     {
         return as_eigen();
@@ -94,28 +112,11 @@ class DenseVectorViewerBase : public ViewerBase<IsConst>
         return as_eigen();
     }
 
-    MUDA_GENERIC const T& operator()(int i) const { return m_data[index(i)]; }
-    MUDA_GENERIC auto_const_t<T>& operator()(int i) { return m_data[index(i)]; }
-
-    template <int N>
-    MUDA_GENERIC auto segment(int offset) const
-    {
-        return remove_const(*this).segment(offset, N);
-    }
-
-    MUDA_GENERIC Eigen::VectorBlock<CMapVector> as_eigen() const
-    {
-        check_data();
-        return CMapVector{m_data,
-                          (int)origin_size(),
-                          Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>{1, 1}}
-            .segment(m_offset, m_size);
-    }
-
     MUDA_GENERIC auto size() const { return m_size; }
     MUDA_GENERIC auto offset() const { return m_offset; }
     MUDA_GENERIC auto origin_data() const { return m_data; }
     MUDA_GENERIC auto origin_size() const { return m_origin_size; }
+
 
   protected:
     MUDA_INLINE MUDA_GENERIC void check_size_matching(int N)
@@ -250,7 +251,6 @@ class DenseVectorViewer : public DenseVectorViewerBase<false, T>
         T ret = atomic_add(0, val);
         return ret;
     }
-
 
     template <int N>
     MUDA_GENERIC DenseVectorViewer& operator=(const Eigen::Vector<T, N>& other)

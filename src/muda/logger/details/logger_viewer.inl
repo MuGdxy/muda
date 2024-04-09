@@ -1,15 +1,15 @@
 #include <muda/atomic.h>
 namespace muda
 {
-MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy::Proxy(LoggerViewer& viewer)
+MUDA_INLINE MUDA_DEVICE LogProxy::LogProxy(LoggerViewer& viewer)
     : m_viewer(viewer)
 {
-    MUDA_KERNEL_ASSERT(m_viewer.m_buffer.data() && m_viewer.m_meta_data.data(),
+    MUDA_KERNEL_ASSERT(m_viewer.m_buffer && m_viewer.m_meta_data,
                        "LoggerViewer is not initialized");
-    m_log_id = atomic_add(&(m_viewer.m_offset_view->log_id), 1u);
+    m_log_id = atomic_add(&(m_viewer.m_offset->log_id), 1u);
 }
 template <bool IsFmt>
-MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy& LoggerViewer::Proxy::push_string(const char* str)
+MUDA_INLINE MUDA_DEVICE LogProxy& LogProxy::push_string(const char* str)
 {
     auto strlen = [](const char* s)
     {
@@ -36,7 +36,7 @@ MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy& LoggerViewer::Proxy::push_string(co
 }
 
 template <typename T>
-MUDA_DEVICE void LoggerViewer::Proxy::push_fmt_arg(const T& obj, LoggerFmtArg func)
+MUDA_DEVICE void LogProxy::push_fmt_arg(const T& obj, LoggerFmtArg func)
 {
     details::LoggerMetaData meta;
     meta.type    = LoggerBasicType::Object;
@@ -46,30 +46,30 @@ MUDA_DEVICE void LoggerViewer::Proxy::push_fmt_arg(const T& obj, LoggerFmtArg fu
     m_viewer.push_data(meta, &obj);
 }
 
-MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy& LoggerViewer::Proxy::operator<<(const char* str)
+MUDA_INLINE MUDA_DEVICE LogProxy& LogProxy::operator<<(const char* str)
 {
     return push_string<false>(str);
 }
 
 template <typename T>
-MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy LoggerViewer::operator<<(const T& t)
+MUDA_INLINE MUDA_DEVICE LogProxy LoggerViewer::operator<<(const T& t)
 {
-    Proxy p(*this);
+    LogProxy p(*this);
     p << t;
     return p;
 }
 
 template <bool IsFmt>
-MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy LoggerViewer::push_string(const char* str)
+MUDA_INLINE MUDA_DEVICE LogProxy LoggerViewer::push_string(const char* str)
 {
-    Proxy p(*this);
+    LogProxy p(*this);
     p.push_string<IsFmt>(str);
     return p;
 }
 
-MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy LoggerViewer::operator<<(const char* s)
+MUDA_INLINE MUDA_DEVICE LogProxy LoggerViewer::operator<<(const char* s)
 {
-    Proxy p(*this);
+    LogProxy p(*this);
     p << s;
     return p;
 }
@@ -97,10 +97,10 @@ MUDA_INLINE MUDA_DEVICE uint32_t next_idx(uint32_t* data_offset, uint32_t size, 
 
 MUDA_INLINE MUDA_DEVICE uint32_t LoggerViewer::next_meta_data_idx() const
 {
-    auto idx = next_idx(&(m_offset_view->meta_data_offset), 1u, m_meta_data.total_size());
+    auto idx = next_idx(&(m_offset->meta_data_offset), 1u, m_meta_data_size);
     if(idx == ~0u)
     {
-        atomic_cas(&(m_offset_view->exceed_meta_data), 0u, 1u);
+        atomic_cas(&(m_offset->exceed_meta_data), 0u, 1u);
         return ~0u;
     }
     return idx;
@@ -108,10 +108,10 @@ MUDA_INLINE MUDA_DEVICE uint32_t LoggerViewer::next_meta_data_idx() const
 
 MUDA_INLINE MUDA_DEVICE uint32_t LoggerViewer::next_buffer_idx(uint32_t size) const
 {
-    auto idx = next_idx(&(m_offset_view->buffer_offset), size, m_buffer.total_size());
+    auto idx = next_idx(&(m_offset->buffer_offset), size, m_buffer_size);
     if(idx == ~0u)
     {
-        atomic_cas(&(m_offset_view->exceed_buffer), 0u, 1u);
+        atomic_cas(&(m_offset->exceed_buffer), 0u, 1u);
         return ~0u;
     }
     return idx;
@@ -124,10 +124,8 @@ MUDA_INLINE MUDA_DEVICE bool LoggerViewer::push_data(details::LoggerMetaData met
     if(meta_idx == ~0u)
     {
         MUDA_KERNEL_WARN_WITH_LOCATION(
-            "LoggerViewer[%s:%s]: meta data is exceeded, "
+            "LoggerViewer: meta data is exceeded, "
             "the content[id=%d] will be discarded.",
-            kernel_name(),
-            name(),
             meta.id);
         return false;
     }
@@ -136,33 +134,31 @@ MUDA_INLINE MUDA_DEVICE bool LoggerViewer::push_data(details::LoggerMetaData met
     {
         meta.exceeded = true;
         MUDA_KERNEL_WARN_WITH_LOCATION(
-            "LoggerViewer[%s:%s]: log buffer is exceeded, "
+            "LoggerViewer: log buffer is exceeded, "
             "the content[id=%d] will be discarded.",
-            kernel_name(),
-            name(),
             meta.id);
 
-        m_meta_data.data()[meta_idx]    = meta;
-        m_meta_data_id.data()[meta_idx] = meta.id;
+        m_meta_data[meta_idx]    = meta;
+        m_meta_data_id[meta_idx] = meta.id;
         return false;
     }
-    meta.offset = buffer_idx;
-    m_meta_data.data()[meta_idx]    = meta;
-    m_meta_data_id.data()[meta_idx] = meta.id;
+    meta.offset              = buffer_idx;
+    m_meta_data[meta_idx]    = meta;
+    m_meta_data_id[meta_idx] = meta.id;
     for(int i = 0; i < meta.size; ++i)
-        m_buffer.data()[buffer_idx + i] = reinterpret_cast<const char*>(data)[i];
+        m_buffer[buffer_idx + i] = reinterpret_cast<const char*>(data)[i];
     return true;
 }
 
-#define PROXY_OPERATOR(enum_name, T)                                                  \
-    MUDA_INLINE MUDA_DEVICE LoggerViewer::Proxy& LoggerViewer::Proxy::operator<<(T i) \
-    {                                                                                 \
-        details::LoggerMetaData meta;                                                 \
-        meta.type = LoggerBasicType::enum_name;                                       \
-        meta.size = sizeof(T);                                                        \
-        meta.id   = m_log_id;                                                         \
-        m_viewer.push_data(meta, &i);                                                 \
-        return *this;                                                                 \
+#define PROXY_OPERATOR(enum_name, T)                                           \
+    MUDA_INLINE MUDA_DEVICE LogProxy& LogProxy::operator<<(T i)                \
+    {                                                                          \
+        details::LoggerMetaData meta;                                          \
+        meta.type = LoggerBasicType::enum_name;                                \
+        meta.size = sizeof(T);                                                 \
+        meta.id   = m_log_id;                                                  \
+        m_viewer.push_data(meta, &i);                                          \
+        return *this;                                                          \
     }
 
 PROXY_OPERATOR(Int8, int8_t);

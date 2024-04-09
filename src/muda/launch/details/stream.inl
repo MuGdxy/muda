@@ -31,7 +31,7 @@ MUDA_INLINE Stream& Stream::Default()
 
 MUDA_INLINE std::byte* Stream::workspace(size_t byte_size)
 {
-    m_workspace.resize(m_handle, byte_size);
+    m_workspace.resize(byte_size, m_handle);
     return m_workspace.data();
 }
 

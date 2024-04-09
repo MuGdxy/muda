@@ -6,6 +6,7 @@
 #include <muda/logger/logger_viewer.h>
 #include <muda/buffer/device_var.h>
 #include <vector>
+#include <muda/tools/temp_buffer.h>
 
 namespace muda
 {
@@ -88,22 +89,23 @@ class Logger
     //details::LoggerMetaData* m_meta_data;
     //size_t                   m_meta_data_size;
 
-    DeviceBuffer<uint32_t>                m_sorted_meta_data_id;
-    DeviceBuffer<details::LoggerMetaData> m_sorted_meta_data;
 
-    DeviceBuffer<uint32_t>                m_meta_data_id;
-    DeviceBuffer<details::LoggerMetaData> m_meta_data;
+    details::TempBuffer<uint32_t>                m_sorted_meta_data_id;
+    details::TempBuffer<details::LoggerMetaData> m_sorted_meta_data;
+
+    details::TempBuffer<uint32_t>                m_meta_data_id;
+    details::TempBuffer<details::LoggerMetaData> m_meta_data;
 
     std::vector<details::LoggerMetaData> m_h_meta_data;
 
     //char*              m_buffer;
     //size_t             m_buffer_size;
-    DeviceBuffer<char> m_buffer;
-    std::vector<char>  m_h_buffer;
+    details::TempBuffer<char> m_buffer;
+    std::vector<char>         m_h_buffer;
 
     //details::LoggerOffset*           m_offset;
-    DeviceVar<details::LoggerOffset> m_offset;
-    details::LoggerOffset            m_h_offset;
+    details::TempBuffer<details::LoggerOffset> m_offset;
+    details::LoggerOffset                      m_h_offset;
 
     LoggerViewer* m_log_viewer_ptr = nullptr;
     LoggerViewer  m_viewer;

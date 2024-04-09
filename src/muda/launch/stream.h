@@ -4,7 +4,7 @@
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include <muda/check/check_cuda_errors.h>
-#include <muda/tools/byte_temp_buffer.h>
+#include <muda/tools/temp_buffer.h>
 
 namespace muda
 {

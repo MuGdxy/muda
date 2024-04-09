@@ -63,6 +63,7 @@ MUDA_INLINE Logger::Logger(LoggerViewer* global_viewer, size_t meta_size, size_t
     , m_buffer(buffer_size)
     , m_h_buffer(buffer_size)
     , m_log_viewer_ptr(global_viewer)
+    , m_offset(1)
 {
     upload();
 }
@@ -106,6 +107,11 @@ MUDA_INLINE Logger& Logger::operator=(Logger&& other) noexcept
 template <typename F>
 void Logger::_retrieve(F&& f)
 {
+    // don't allow automatic sync in this region
+    // or it may cause infinite loop
+    auto is_debug_sync = muda::Debug::is_debug_sync_all();
+    muda::Debug::debug_sync_all(false);
+
     download();
     //auto meta_data_span =
     //    span<details::LoggerMetaData>{m_h_meta_data}.subspan(0, m_h_offset.meta_data_offset);
@@ -121,6 +127,7 @@ void Logger::_retrieve(F&& f)
 
     expand_if_needed();
     upload();
+    muda::Debug::debug_sync_all(is_debug_sync);
 }
 MUDA_INLINE void Logger::retrieve(std::ostream& os)
 {
@@ -184,25 +191,30 @@ MUDA_INLINE void Logger::upload()
 {
     // reset
     m_h_offset = {};
-    m_offset   = m_h_offset;
+    m_offset   = {m_h_offset};
 
-    m_viewer.m_offset_view  = m_offset.viewer();
-    m_viewer.m_meta_data_id = m_meta_data_id.viewer();
-    m_viewer.m_meta_data    = m_meta_data.viewer();
-    m_viewer.m_buffer       = m_buffer.viewer();
+    m_viewer.m_offset       = m_offset.data();
+    m_viewer.m_meta_data_id      = m_meta_data_id.data();
+    m_viewer.m_meta_data_id_size = m_meta_data_id.size();
+    m_viewer.m_meta_data         = m_meta_data.data();
+    m_viewer.m_meta_data_size    = m_meta_data.size();
+    m_viewer.m_buffer            = m_buffer.data();
+    m_viewer.m_buffer_size       = m_buffer.size();
 
     if(m_log_viewer_ptr)
     {
         checkCudaErrors(cudaMemcpyAsync(
             m_log_viewer_ptr, &m_viewer, sizeof(m_viewer), cudaMemcpyHostToDevice, nullptr));
     }
-    on().wait();
+    checkCudaErrors(cudaDeviceSynchronize());
 }
 
 MUDA_INLINE void Logger::download()
 {
     // copy back
-    m_h_offset = m_offset;
+    std::vector<details::LoggerOffset> h_offset(1);
+    m_offset.copy_to(h_offset);
+    m_h_offset = h_offset[0];
 
     // sort meta data
 
@@ -215,17 +227,20 @@ MUDA_INLINE void Logger::download()
     if(m_h_offset.meta_data_offset > 0)
     {
         m_h_meta_data.resize(m_h_offset.meta_data_offset);
-        BufferLaunch().copy(m_h_meta_data.data(),
-                            m_sorted_meta_data.view(0, m_h_offset.meta_data_offset));
+        checkCudaErrors(cudaMemcpyAsync(m_h_meta_data.data(),
+                                        m_sorted_meta_data.data(),
+                                        m_h_meta_data.size() * sizeof(details::LoggerMetaData),
+                                        cudaMemcpyDeviceToHost));
     }
 
     if(m_h_offset.buffer_offset > 0)
     {
         m_h_buffer.resize(m_h_offset.buffer_offset);
-        BufferLaunch().copy(m_h_buffer.data(), m_buffer.view(0, m_h_offset.buffer_offset));
+        checkCudaErrors(cudaMemcpyAsync(
+            m_h_buffer.data(), m_buffer.data(), m_h_offset.buffer_offset, cudaMemcpyDeviceToHost));
     }
 
-    on().wait();
+    checkCudaErrors(cudaDeviceSynchronize());
 }
 
 MUDA_INLINE void Logger::expand_if_needed()

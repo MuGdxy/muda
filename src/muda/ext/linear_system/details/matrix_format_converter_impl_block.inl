@@ -199,7 +199,7 @@ void MatrixFormatConverter<T, N>::convert(const DeviceBCOOMatrix<T, N>& from,
                    auto block = blocks(i);
                    auto row   = block.block_row_index * N;
                    auto col   = block.block_col_index * N;
-                   dst.block<N, N>(row, col) += block.block_value;
+                   dst.block<N, N>(row, col).as_eigen() += block.block_value;
                });
 }
 
@@ -388,7 +388,7 @@ void MatrixFormatConverter<T, N>::set_unique_segments_to_dense_vector(
                 dst = to.viewer().name("dst_dense_vector")] __device__(int i) mutable
                {
                    auto index = unique_indices(i);
-                   dst.segment<N>(index * N) += unique_segments(i);
+                   dst.segment<N>(index * N).as_eigen() += unique_segments(i);
                });
 }
 
