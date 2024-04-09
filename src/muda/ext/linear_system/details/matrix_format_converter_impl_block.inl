@@ -22,14 +22,6 @@ void MatrixFormatConverter<T, N>::convert(const DeviceTripletMatrix<T, N>& from,
     to.reshape(from.block_rows(), from.block_cols());
     to.resize_triplets(from.triplet_count());
 
-    //auto t = profile_host(
-    //    [&]
-    //    {
-    //        to.reshape(from.block_rows(), from.block_cols());
-    //        to.resize_triplets(from.triplet_count());
-    //    });
-
-    // std::cout << "allocate_time: " << t << " ms" << std::endl;
 
     if(to.triplet_count() == 0)
         return;
@@ -37,15 +29,6 @@ void MatrixFormatConverter<T, N>::convert(const DeviceTripletMatrix<T, N>& from,
     merge_sort_indices_and_blocks(from, to);
     make_unique_indices(from, to);
     make_unique_blocks(from, to);
-
-    //t = profile_host([&] { merge_sort_indices_and_blocks(from, to); });
-    //std::cout << "merge_sort_indices_and_blocks: " << t << " ms" << std::endl;
-
-    //t = profile_host([&] { make_unique_indices(from, to); });
-    //std::cout << "make_unique_indices: " << t << " ms" << std::endl;
-
-    //t = profile_host([&] { make_unique_blocks(from, to); });
-    //std::cout << "make_unique_blocks: " << t << " ms" << std::endl;
 }
 
 template <typename T, int N>
@@ -61,16 +44,6 @@ void MatrixFormatConverter<T, N>::merge_sort_indices_and_blocks(
     loose_resize(sort_index, src_row_indices.size());
     loose_resize(ij_pairs, src_row_indices.size());
 
-    //t = profile_host(
-    //    [&]
-    //    {
-    //        sort_index.resize(src_row_indices.size());
-    //        ij_pairs.resize(src_row_indices.size());
-    //    });
-
-    //std::cout << "allocate_sort_index_ij_pairs_time: " << t << " ms" << std::endl;
-
-
     ParallelFor(256)
         .kernel_name(__FUNCTION__ "-set ij pairs")
         .apply(src_row_indices.size(),
@@ -82,41 +55,11 @@ void MatrixFormatConverter<T, N>::merge_sort_indices_and_blocks(
                    ij_pairs(i).y = col_indices(i);
                });
 
-    //t = profile_host(
-    //    [&]
-    //    {
-    //        ParallelFor(256)
-    //            .kernel_name(__FUNCTION__ "-set ij pairs")
-    //            .apply(src_row_indices.size(),
-    //                   [row_indices = src_row_indices.cviewer().name("row_indices"),
-    //                    col_indices = src_col_indices.cviewer().name("col_indices"),
-    //                    ij_pairs = ij_pairs.viewer().name("ij_pairs")] __device__(int i) mutable
-    //                   {
-    //                       ij_pairs(i).x = row_indices(i);
-    //                       ij_pairs(i).y = col_indices(i);
-    //                   });
-    //    });
-
-    //std::cout << "set_ij_pairs_time: " << t << " ms" << std::endl;
-
-
     ParallelFor(256)
         .kernel_name(__FUNCTION__ "-iota")  //
         .apply(src_row_indices.size(),
                [sort_index = sort_index.viewer().name("sort_index")] __device__(int i) mutable
                { sort_index(i) = i; });
-
-    //t = profile_host(
-    //    [&]
-    //    {
-    //        ParallelFor(256)
-    //            .kernel_name(__FUNCTION__ "-iota")  //
-    //            .apply(src_row_indices.size(),
-    //                   [sort_index = sort_index.viewer().name("sort_index")] __device__(
-    //                       int i) mutable { sort_index(i) = i; });
-    //    });
-
-    //std::cout << "iota_time: " << t << " ms" << std::endl;
 
     DeviceMergeSort().SortPairs(ij_pairs.data(),
                                 sort_index.data(),
@@ -125,19 +68,6 @@ void MatrixFormatConverter<T, N>::merge_sort_indices_and_blocks(
                                     return a.x < b.x || (a.x == b.x && a.y < b.y);
                                 });
 
-    //t = profile_host(
-    //    [&]
-    //    {
-    //        DeviceMergeSort().SortPairs(ij_pairs.data(),
-    //                                    sort_index.data(),
-    //                                    ij_pairs.size(),
-    //                                    [] __device__(const int2& a, const int2& b) {
-    //                                        return a.x < b.x
-    //                                               || (a.x == b.x && a.y < b.y);
-    //                                    });
-    //    });
-
-    //std::cout << "sort_pairs_time: " << t << " ms" << std::endl;
 
     // set ij_pairs back to row_indices and col_indices
 
@@ -155,28 +85,10 @@ void MatrixFormatConverter<T, N>::merge_sort_indices_and_blocks(
                    col_indices(i) = ij_pairs(i).y;
                });
 
-    //t = profile_host(
-    //    [&]
-    //    {
-    //        ParallelFor(256)
-    //            .kernel_name("set col row indices")
-    //            .apply(dst_row_indices.size(),
-    //                   [row_indices = dst_row_indices.viewer().name("row_indices"),
-    //                    col_indices = dst_col_indices.viewer().name("col_indices"),
-    //                    ij_pairs = ij_pairs.viewer().name("ij_pairs")] __device__(int i) mutable
-    //                   {
-    //                       row_indices(i) = ij_pairs(i).x;
-    //                       col_indices(i) = ij_pairs(i).y;
-    //                   });
-    //    });
-    //std::cout << "set_col_row_indices_time: " << t << " ms" << std::endl;
 
     // sort the block values
 
     loose_resize(unique_blocks, from.m_block_values.size());
-
-    //t = profile_host([&] { unique_blocks.resize(from.m_block_values.size()); });
-    //std::cout << "allocate_unique_blocks_time: " << t << " ms" << std::endl;
 
     ParallelFor(256)
         .kernel_name(__FUNCTION__)
@@ -185,19 +97,6 @@ void MatrixFormatConverter<T, N>::merge_sort_indices_and_blocks(
                 sort_index = sort_index.cviewer().name("sort_index"),
                 dst_blocks = unique_blocks.viewer().name("block_values")] __device__(int i) mutable
                { dst_blocks(i) = src_blocks(sort_index(i)); });
-
-    //t = profile_host(
-    //    [&]
-    //    {
-    //        ParallelFor(256)
-    //            .kernel_name(__FUNCTION__)
-    //            .apply(src_blocks.size(),
-    //                   [src_blocks = src_blocks.cviewer().name("blocks"),
-    //                    sort_index = sort_index.cviewer().name("sort_index"),
-    //                    dst_blocks = unique_blocks.viewer().name("block_values")] __device__(int i) mutable
-    //                   { dst_blocks(i) = src_blocks(sort_index(i)); });
-    //    });
-    //std::cout << "sort_block_values_time: " << t << " ms" << std::endl;
 }
 
 template <typename T, int N>
@@ -277,21 +176,6 @@ void MatrixFormatConverter<T, N>::make_unique_blocks(const DeviceTripletMatrix<T
         [] __host__ __device__(const BlockMatrix& a, const BlockMatrix& b) -> BlockMatrix
         { return a + b; },
         BlockMatrix::Zero().eval());
-
-    //auto t = profile_host(
-    //    [&]
-    //    {
-    //        DeviceSegmentedReduce().Reduce(
-    //            unique_blocks.data(),
-    //            blocks.data(),
-    //            blocks.size(),
-    //            begin_offset.data(),
-    //            end_offset.data(),
-    //            [] __host__ __device__(const BlockMatrix& a, const BlockMatrix& b) -> BlockMatrix
-    //            { return a + b; },
-    //            BlockMatrix::Zero().eval());
-    //    });
-    //std::cout << "segmented_reduce_time: " << t << " ms" << std::endl;
 }
 
 template <typename T, int N>
@@ -327,15 +211,6 @@ void MatrixFormatConverter<T, N>::convert(const DeviceBCOOMatrix<T, N>& from,
 
     to.m_block_col_indices = from.m_block_col_indices;
     to.m_block_values      = from.m_block_values;
-
-    //auto t = profile_host(
-    //    [&]
-    //    {
-    //        to.m_block_col_indices = from.m_block_col_indices;
-    //        to.m_block_values      = from.m_block_values;
-    //    });
-
-    //std::cout << "bsr resize and copy_time: " << t << " ms" << std::endl;
 }
 
 template <typename T, int N>
@@ -512,7 +387,7 @@ void MatrixFormatConverter<T, N>::set_unique_segments_to_dense_vector(
                 unique_indices = from.m_segment_indices.cviewer().name("unique_indices"),
                 dst = to.viewer().name("dst_dense_vector")] __device__(int i) mutable
                {
-                   auto index                = unique_indices(i);
+                   auto index = unique_indices(i);
                    dst.segment<N>(index * N) += unique_segments(i);
                });
 }
