@@ -127,5 +127,4 @@
 
 #define MUDA_ERROR(fmt, ...) MUDA_KERNEL_ERROR(fmt, ##__VA_ARGS__)
 
-#define MUDA_ERROR_WITH_LOCATION(fmt, ...)                                     \
-    MUDA_KERNEL_ERROR_WITH_LOCATION(fmt, ##__VA_ARGS__)
+#define MUDA_ERROR_WITH_LOCATION(fmt, ...) MUDA_KERNEL_ERROR_WITH_LOCATION(fmt, ##__VA_ARGS__)
