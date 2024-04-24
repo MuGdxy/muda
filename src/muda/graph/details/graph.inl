@@ -1,4 +1,3 @@
-#include "graph.h"
 namespace muda
 {
 MUDA_INLINE Graph::Graph()
