@@ -9,10 +9,11 @@ namespace muda
 class LoggerViewer;
 class LogProxy
 {
-    LoggerViewer& m_viewer;
+    LoggerViewer* m_viewer = nullptr;
     uint32_t      m_log_id;
 
   public:
+    MUDA_DEVICE LogProxy() = default;
     MUDA_DEVICE LogProxy(LoggerViewer& viewer);
 
     MUDA_DEVICE LogProxy(const LogProxy& other)
@@ -40,6 +41,11 @@ class LogProxy
     MUDA_DEVICE LogProxy& operator<<(float f);
     MUDA_DEVICE LogProxy& operator<<(double d);
 
+#ifdef __linux__
+    MUDA_DEVICE LogProxy& operator<<(long long ll);
+    MUDA_DEVICE LogProxy& operator<<(unsigned long long ull);
+#endif
+
     template <typename T>
     MUDA_DEVICE void push_fmt_arg(const T& obj, LoggerFmtArg fmt_arg_func);
 };
@@ -49,12 +55,13 @@ class LoggerViewer
     friend class Logger;
 
     template <typename T>
-    MUDA_DEVICE LogProxy operator<<(const T& t);
-    MUDA_DEVICE LogProxy operator<<(const char* s);
+    MUDA_DEVICE LogProxy& operator<<(const T& t);
+    MUDA_DEVICE LogProxy& operator<<(const char* s);
     template <bool IsFmt>
-    MUDA_DEVICE LogProxy push_string(const char* str);
+    MUDA_DEVICE LogProxy& push_string(const char* str);
     MUDA_DEVICE LogProxy proxy() { return LogProxy(*this); }
-
+    
+    LogProxy m_proxy;
   public:
     // Don't use viewer, cuda don't allow to use constructor in __device__ global variable
     // However, LoggerViewer should be able to use as a global variable for debugging

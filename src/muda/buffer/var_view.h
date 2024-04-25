@@ -79,7 +79,7 @@ class VarView : public VarViewBase<false, T>
 
     MUDA_GENERIC auto as_const() const MUDA_NOEXCEPT
     {
-        return CVarView<T>{m_data};
+        return CVarView<T>{this->m_data};
     }
 
     void copy_from(const T* data);

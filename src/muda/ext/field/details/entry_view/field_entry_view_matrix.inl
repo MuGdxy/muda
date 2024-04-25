@@ -7,7 +7,7 @@ class FieldEntryViewBase : public FieldEntryViewCore<IsConst, T, Layout, M, N>
     using ViewerBase = FieldEntryViewerBase<IsConst, T, Layout, M, N>;
 
     template <typename U>
-    using auto_const_t = Base::template auto_const_t<U>;
+    using auto_const_t = typename Base::auto_const_t<U>;
 
   public:
     using Base::Base;
@@ -27,7 +27,7 @@ class FieldEntryViewBase : public FieldEntryViewCore<IsConst, T, Layout, M, N>
 
     MUDA_GENERIC auto as_const() const
     {
-        return ConstView{m_core, Base::offset(), Base::size()};
+        return ConstView{this->m_core, Base::offset(), Base::size()};
     }
     MUDA_GENERIC operator ConstView() const { return as_const(); }
 
@@ -44,22 +44,22 @@ class FieldEntryViewBase : public FieldEntryViewCore<IsConst, T, Layout, M, N>
 
     MUDA_GENERIC auto subview(int offset) const
     {
-        return ConstView{m_core, m_offset + offset, m_size - offset};
+        return ConstView{this->m_core, this->m_offset + offset, this->m_size - offset};
     }
 
     MUDA_GENERIC auto subview(int offset, int size) const
     {
-        return ConstView{m_core, m_offset + offset, size};
+        return ConstView{this->m_core, this->m_offset + offset, size};
     }
 
     MUDA_GENERIC auto subview(int offset)
     {
-        return ThisView{m_core, m_offset + offset, m_size - offset};
+        return ThisView{this->m_core, this->m_offset + offset, this->m_size - offset};
     }
 
     MUDA_GENERIC auto subview(int offset, int size)
     {
-        return ThisView{m_core, m_offset + offset, size};
+        return ThisView{this->m_core, this->m_offset + offset, size};
     }
 
     /**********************************************************************************
@@ -87,7 +87,7 @@ class FieldEntryViewBase : public FieldEntryViewCore<IsConst, T, Layout, M, N>
 
     MUDA_GENERIC ThisView operator+(int i)
     {
-        return ThisView{m_core, m_offset + i, m_size - i, typename Base::AsIterator{}};
+        return ThisView{this->m_core, this->m_offset + i, this->m_size - i, typename Base::AsIterator{}};
     }
     MUDA_GENERIC ConstView operator+(int i) const
     {

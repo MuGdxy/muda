@@ -7,9 +7,9 @@
 #include <muda/tools/debug_log.h>
 #include <muda/exception.h>
 #include <string>
-
-
-#include <cusparse.h>
+#include <muda/check/check_cusparse.h>
+#include <muda/check/check_cublas.h>
+#include <muda/check/check_cusolver.h>
 
 MUDA_INLINE MUDA_GENERIC const char* mudaCudaGetErrorEnum(cudaError_t error)
 {

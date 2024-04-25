@@ -238,6 +238,7 @@ MUDA_INLINE MUDA_DEVICE int ParallelForDetails::active_num_in_block() const MUDA
     else
     {
         MUDA_KERNEL_ERROR("invalid paralell for type");
+        return 0;
     }
 }
 
@@ -254,6 +255,7 @@ MUDA_INLINE MUDA_DEVICE bool ParallelForDetails::is_final_block() const MUDA_NOE
     else
     {
         MUDA_KERNEL_ERROR("invalid paralell for type");
+        return false;
     }
 }
 }  // namespace muda

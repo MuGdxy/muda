@@ -38,14 +38,14 @@ class DeviceVector : public thrust::device_vector<T, thrust::device_allocator<T>
 
     DeviceVector& operator=(CBufferView<T> v)
     {
-        resize(v.size());
+        this->resize(v.size());
         view().copy_from(v);
         return *this;
     }
 
     void copy_to(std::vector<T>& v) const
     {
-        v.resize(size());
+        v.resize(this->size());
         view().copy_to(v.data());
     }
 

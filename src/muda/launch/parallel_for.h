@@ -51,7 +51,7 @@ class ParallelForDetails
   public:
     MUDA_NODISCARD MUDA_DEVICE int  active_num_in_block() const MUDA_NOEXCEPT;
     MUDA_NODISCARD MUDA_DEVICE bool is_final_block() const MUDA_NOEXCEPT;
-    MUDA_NODISCARD MUDA_DEVICE auto parallel_for_type() const MUDA_NOEXCEPT
+    MUDA_NODISCARD MUDA_DEVICE ParallelForType parallel_for_type() const MUDA_NOEXCEPT
     {
         return m_type;
     }

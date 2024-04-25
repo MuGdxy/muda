@@ -50,8 +50,8 @@ class FieldEntryViewerCore : protected ViewerBase<IsConst>
     using ThisMatMap = std::conditional_t<IsConst, ConstMatMap, NonConstMatMap>;
 
   protected:
-    template <typename T>
-    using auto_const_t = Base::template auto_const_t<T>;
+    template <typename U>
+    using auto_const_t = typename Base::auto_const_t<U>;
 
     HostDeviceConfigView<FieldEntryCore> m_core;
     MatStride                            m_stride;
@@ -70,9 +70,9 @@ class FieldEntryViewerCore : protected ViewerBase<IsConst>
 
         MUDA_KERNEL_ASSERT(m_offset >= 0 && m_size >= 0 && m_offset + m_size <= total_count(),
                            "FieldEntryViewer[%s:%s]: offset/size indexing out of range, size=%d, offset=%d, size=%d",
-                           name(),
-                           kernel_name(),
-                           total_count(),
+                           this->name(),
+                           this->kernel_name(),
+                           this->total_count(),
                            m_offset,
                            m_size);
 
@@ -95,8 +95,8 @@ class FieldEntryViewerCore : protected ViewerBase<IsConst>
 
         MUDA_KERNEL_ASSERT(j < shape().x,
                            "FieldEntry[%s:%s]: vector component indexing out of range, shape=(%d, %d), index=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            shape().x,
                            shape().y,
                            j);
@@ -109,8 +109,8 @@ class FieldEntryViewerCore : protected ViewerBase<IsConst>
 
         MUDA_KERNEL_ASSERT(row_index < shape().x && col_index < shape().y,
                            "FieldEntry[%s:%s]: vector component indexing out of range, shape=(%d,%d), index=(%d,%d)",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            shape().x,
                            shape().y,
                            row_index,
@@ -137,12 +137,12 @@ class FieldEntryViewerCore : protected ViewerBase<IsConst>
     {
         MUDA_KERNEL_ASSERT(i < m_size,
                            "FieldEntryViewer[%s:%s]: indexing out of range, index=%d, size=%d, offset=%d, entry_total_count=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            i,
                            m_size,
                            m_offset,
-                           total_count());
+                           this->total_count());
     }
 };
 }  // namespace muda

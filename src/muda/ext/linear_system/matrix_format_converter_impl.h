@@ -50,8 +50,8 @@ namespace details
     template <typename T, int N>
     class MatrixFormatConverter : public MatrixFormatConverterBase
     {
-        using BlockMatrix   = DeviceTripletMatrix<T, N>::BlockMatrix;
-        using SegmentVector = DeviceDoubletVector<T, N>::SegmentVector;
+        using BlockMatrix   = typename DeviceTripletMatrix<T, N>::BlockMatrix;
+        using SegmentVector = typename DeviceDoubletVector<T, N>::SegmentVector;
 
         muda::DeviceBuffer<int> sort_index;
         muda::DeviceBuffer<int> sort_index_tmp;

@@ -17,12 +17,12 @@ namespace details
 {
     class ViewerBaseAccessor;
 }
-template <bool IsConst = false>
+template <bool IsConst_ = false>
 class ViewerBase
 {
   public:
-    constexpr static bool IsConst    = IsConst;
-    constexpr static bool IsNonConst = !IsConst;
+    constexpr static bool IsConst    = IsConst_;
+    constexpr static bool IsNonConst = !IsConst_;
 
   protected:
     template <typename T>
@@ -105,13 +105,13 @@ class ViewerBase
                                                                                \
     MUDA_INLINE MUDA_HOST this_type& name(const char* n) noexcept              \
     {                                                                          \
-        ::muda::ViewerBase<IsConst>::name(n);                                  \
+        ::muda::ViewerBase<viewer_name::IsConst>::name(n);                     \
         return *this;                                                          \
     }                                                                          \
                                                                                \
     MUDA_INLINE MUDA_GENERIC const char* name() const noexcept                 \
     {                                                                          \
-        return ::muda::ViewerBase<IsConst>::name();                            \
+        return ::muda::ViewerBase<viewer_name::IsConst>::name();               \
     }                                                                          \
                                                                                \
   private:

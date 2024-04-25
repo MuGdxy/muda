@@ -194,6 +194,10 @@ class DoubletVectorViewBase : public ViewBase<IsConst>
 template <bool IsConst, typename T>
 class DoubletVectorViewBase<IsConst, T, 1> : public ViewBase<IsConst>
 {
+    using Base = ViewBase<IsConst>;
+  protected:
+    template <typename U>
+    using auto_const_t = typename Base::template auto_const_t<U>;
   public:
     using ConstView    = DoubletVectorViewBase<true, T, 1>;
     using NonConstView = DoubletVectorViewBase<false, T, 1>;

@@ -26,10 +26,10 @@ class Buffer2DViewBase : public ViewBase<IsConst>
     using ThisViewer = std::conditional_t<IsConst, CViewer, Viewer>;
 
   private:
-    template <typename T>
+    template <typename U>
     using auto_const_t = typename Base::template auto_const_t<T>;
     friend class BufferLaunch;
-    friend class OtherView;
+    friend class Buffer2DViewBase<!IsConst, T>;
     friend class details::buffer::BufferInfoAccessor<ThisView>;
 
   protected:

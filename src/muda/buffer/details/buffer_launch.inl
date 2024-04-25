@@ -180,6 +180,7 @@ MUDA_HOST BufferLaunch& BufferLaunch::alloc(DeviceBuffer2D<T>& buffer, Extent2D 
                 "cannot alloc a buffer in a compute graph");
     MUDA_ASSERT(!buffer.m_data, "The buffer is already allocated");
     resize(buffer, extent);
+    return *this;
 }
 
 template <typename T>
@@ -189,6 +190,7 @@ MUDA_HOST BufferLaunch& BufferLaunch::alloc(DeviceBuffer3D<T>& buffer, Extent3D 
                 "cannot alloc a buffer in a compute graph");
     MUDA_ASSERT(!buffer.m_data, "The buffer is already allocated");
     resize(buffer, extent);
+    return *this;
 }
 
 template <typename T>

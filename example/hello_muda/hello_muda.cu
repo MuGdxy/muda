@@ -6,7 +6,7 @@ using namespace muda;
 void hello_muda()
 {
     example_desc("say hello in muda");
-
+    cudaSetDevice(1);
     Launch(1, 1).apply([] __device__() { print("hello muda!\n"); }).wait();
 }
 

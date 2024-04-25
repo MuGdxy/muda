@@ -44,26 +44,6 @@ target_link_libraries(muda_linear_sysytem_test PRIVATE muda cusparse cublas cuso
 source_group(TREE "${PROJECT_SOURCE_DIR}/test" PREFIX "test" FILES ${MUDA_LINEAR_SYSTEM_TEST_SOURCE_FILES})
 source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
 
-# iterative sparse solver cusp test
-# check if external/cusp is available
-if (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/cusplibrary/.git")
-  message(STATUS "cusplibrary is not available, `git submodule update --init` to download cusplibrary")
-else()
-  file(GLOB_RECURSE MUDA_CUSP_TEST_SOURCE_FILES
-    "${PROJECT_SOURCE_DIR}/test/cusp_test/*.cpp"
-    "${PROJECT_SOURCE_DIR}/test/cusp_test/*.cu"
-    "${PROJECT_SOURCE_DIR}/test/cusp_test/*.h")
-  add_executable(muda_cusp_test ${MUDA_CUSP_TEST_SOURCE_FILES})
-  set_target_properties(muda_cusp_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-  target_include_directories(muda_cusp_test PRIVATE
-    "${PROJECT_SOURCE_DIR}/test/"
-    "${PROJECT_SOURCE_DIR}/external"
-    "${PROJECT_SOURCE_DIR}/external/cusplibrary")
-  target_link_libraries(muda_cusp_test PRIVATE muda cusparse cublas cusolver)
-  source_group(TREE "${PROJECT_SOURCE_DIR}/test" PREFIX "test" FILES ${MUDA_CUSP_TEST_SOURCE_FILES})
-  source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
-endif()
-
 if(MSVC)
   # when using c++ compiler, ignore C4819
   set(disable_warning -Xcompiler "/wd 4819")

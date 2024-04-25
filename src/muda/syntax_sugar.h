@@ -8,7 +8,7 @@
 // });
 //
 // you don't need to write mutable and __device__
-#define $(...) MUDA_DEVICE(##__VA_ARGS__) mutable
+#define $(...) MUDA_DEVICE(__VA_ARGS__) mutable
 
 // usage:
 // Launch().apply(

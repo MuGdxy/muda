@@ -87,31 +87,31 @@ class TripletMatrixViewerBase : public ViewerBase<IsConst>
         MUDA_KERNEL_ASSERT(triplet_index_offset + triplet_count <= total_triplet_count,
                            "TripletMatrixViewer [%s:%s]: out of range, m_total_triplet_count=%d, "
                            "your triplet_index_offset=%d, triplet_count=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            total_triplet_count,
                            triplet_index_offset,
                            triplet_count);
 
         MUDA_KERNEL_ASSERT(submatrix_offset.x >= 0 && submatrix_offset.y >= 0,
                            "TripletMatrixViewer[%s:%s]: submatrix_offset is out of range, submatrix_offset.x=%d, submatrix_offset.y=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            submatrix_offset.x,
                            submatrix_offset.y);
 
         MUDA_KERNEL_ASSERT(submatrix_offset.x + submatrix_extent.x <= total_block_rows,
                            "TripletMatrixViewer[%s:%s]: submatrix is out of range, submatrix_offset.x=%d, submatrix_extent.x=%d, total_block_rows=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            submatrix_offset.x,
                            submatrix_extent.x,
                            total_block_rows);
 
         MUDA_KERNEL_ASSERT(submatrix_offset.y + submatrix_extent.y <= total_block_cols,
                            "TripletMatrixViewer[%s:%s]: submatrix is out of range, submatrix_offset.y=%d, submatrix_extent.y=%d, total_block_cols=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            submatrix_offset.y,
                            submatrix_extent.y,
                            total_block_cols);
@@ -172,8 +172,8 @@ class TripletMatrixViewerBase : public ViewerBase<IsConst>
 
         MUDA_KERNEL_ASSERT(i >= 0 && i < m_triplet_count,
                            "TripletMatrixViewer [%s:%s]: triplet_index out of range, block_count=%d, your index=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            m_triplet_count,
                            i);
         auto index = i + m_triplet_index_offset;
@@ -184,15 +184,15 @@ class TripletMatrixViewerBase : public ViewerBase<IsConst>
     {
         MUDA_KERNEL_ASSERT(i >= 0 && i < m_submatrix_extent.x,
                            "TripletMatrixViewer [%s:%s]: row index out of submatrix range,  submatrix_extent.x=%d, your i=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            m_submatrix_extent.x,
                            i);
 
         MUDA_KERNEL_ASSERT(j >= 0 && j < m_submatrix_extent.y,
                            "TripletMatrixViewer [%s:%s]: col index out of submatrix range,  submatrix_extent.y=%d, your j=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            m_submatrix_extent.y,
                            j);
     }
@@ -279,6 +279,11 @@ class TripletMatrixViewer : public TripletMatrixViewerBase<false, T, N>
 template <bool IsConst, typename T>
 class TripletMatrixViewerBase<IsConst, T, 1> : public ViewerBase<IsConst>
 {
+    using Base = ViewerBase<IsConst>;
+  protected:
+    template <typename U>
+    using auto_const_t = typename Base::template auto_const_t<U>;
+
   public:
     using ConstViewer    = TripletMatrixViewerBase<true, T, 1>;
     using NonConstViewer = TripletMatrixViewerBase<false, T, 1>;
@@ -345,31 +350,31 @@ class TripletMatrixViewerBase<IsConst, T, 1> : public ViewerBase<IsConst>
         MUDA_KERNEL_ASSERT(triplet_index_offset + triplet_count <= total_triplet_count,
                            "TripletMatrixViewer [%s:%s]: out of range, m_total_triplet_count=%d, "
                            "your triplet_index_offset=%d, triplet_count=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            total_triplet_count,
                            triplet_index_offset,
                            triplet_count);
 
         MUDA_KERNEL_ASSERT(submatrix_offset.x >= 0 && submatrix_offset.y >= 0,
                            "TripletMatrixViewer [%s:%s]: submatrix_offset is out of range, submatrix_offset.x=%d, submatrix_offset.y=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            submatrix_offset.x,
                            submatrix_offset.y);
 
         MUDA_KERNEL_ASSERT(submatrix_offset.x + submatrix_extent.x <= total_rows,
                            "TripletMatrixViewer [%s:%s]: submatrix is out of range, submatrix_offset.x=%d, submatrix_extent.x=%d, rows=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            submatrix_offset.x,
                            submatrix_extent.x,
                            total_rows);
 
         MUDA_KERNEL_ASSERT(submatrix_offset.y + submatrix_extent.y <= total_cols,
                            "TripletMatrixViewer [%s:%s]: submatrix is out of range, submatrix_offset.y=%d, submatrix_extent.y=%d, cols=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            submatrix_offset.y,
                            submatrix_extent.y,
                            total_cols);
@@ -423,8 +428,8 @@ class TripletMatrixViewerBase<IsConst, T, 1> : public ViewerBase<IsConst>
 
         MUDA_KERNEL_ASSERT(i >= 0 && i < m_triplet_count,
                            "TripletMatrixViewer [%s:%s]: triplet_index out of range, block_count=%d, your index=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            m_triplet_count,
                            i);
         auto index = i + m_triplet_index_offset;
@@ -435,15 +440,15 @@ class TripletMatrixViewerBase<IsConst, T, 1> : public ViewerBase<IsConst>
     {
         MUDA_KERNEL_ASSERT(i >= 0 && i < m_submatrix_extent.x,
                            "TripletMatrixViewer [%s:%s]: row index out of submatrix range, submatrix_extent.x=%d, yours=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            m_submatrix_extent.x,
                            i);
 
         MUDA_KERNEL_ASSERT(j >= 0 && j < m_submatrix_extent.y,
                            "TripletMatrixViewer [%s:%s]: col index out of submatrix range, submatrix_extent.y=%d, yours=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            m_submatrix_extent.y,
                            j);
     }

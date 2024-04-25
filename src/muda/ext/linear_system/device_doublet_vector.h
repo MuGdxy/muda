@@ -15,7 +15,7 @@ namespace muda
 template <typename T, int N>
 class DeviceDoubletVector
 {
-    template <typename T, int N>
+    template <typename U, int M>
     friend class details::MatrixFormatConverter;
 
   public:
@@ -75,7 +75,7 @@ class DeviceDoubletVector
 template <typename T>
 class DeviceDoubletVector<T, 1>
 {
-    template <typename T, int N>
+    template <typename U, int M>
     friend class details::MatrixFormatConverter;
 
   protected:

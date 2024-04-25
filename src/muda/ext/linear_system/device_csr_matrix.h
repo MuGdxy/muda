@@ -14,7 +14,7 @@ namespace muda
 template <typename Ty>
 class DeviceCSRMatrix
 {
-    template <typename Ty, int N>
+    template <typename T, int N>
     friend class details::MatrixFormatConverter;
 
   public:

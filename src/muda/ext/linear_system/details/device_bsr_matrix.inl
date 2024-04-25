@@ -1,6 +1,6 @@
 #include <muda/check/check_cusparse.h>
 #include <muda/ext/linear_system/type_mapper/data_type_mapper.h>
-#include "device_bsr_matrix.h"
+
 namespace muda
 {
 template <typename Ty, int N>
@@ -149,8 +149,8 @@ cusparseSpMatDescr_t DeviceBSRMatrix<Ty, N>::descr() const
             remove_const(m_block_row_offsets.data()),
             remove_const(m_block_col_indices.data()),
             remove_const(m_block_values.data()),
-            cusparse_index_type<decltype(m_block_row_offsets)::value_type>(),
-            cusparse_index_type<decltype(m_block_col_indices)::value_type>(),
+            cusparse_index_type<typename decltype(m_block_row_offsets)::value_type>(),
+            cusparse_index_type<typename decltype(m_block_col_indices)::value_type>(),
             CUSPARSE_INDEX_BASE_ZERO,
             cuda_data_type<Ty>(),
             cusparseOrder_t::CUSPARSE_ORDER_COL));

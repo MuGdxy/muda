@@ -7,7 +7,7 @@ class FieldEntryViewerBase<IsConst, T, Layout, 1, 1>
     using Base = FieldEntryViewerCore<IsConst, T, Layout, 1, 1>;
 
     template <typename U>
-    using auto_const_t = Base::template auto_const_t<U>;
+    using auto_const_t = typename Base::auto_const_t<U>;
 
   public:
     using Base::Base;
@@ -15,7 +15,7 @@ class FieldEntryViewerBase<IsConst, T, Layout, 1, 1>
     using NonConstViewer = FieldEntryViewerBase<false, T, Layout, 1, 1>;
     using ThisViewer     = FieldEntryViewerBase<IsConst, T, Layout, 1, 1>;
 
-    MUDA_GENERIC auto as_const() const { return ConstViewer{m_core}; }
+    MUDA_GENERIC auto as_const() const { return ConstViewer{this->m_core}; }
     MUDA_GENERIC operator ConstViewer() const { return as_const(); }
 
     MUDA_GENERIC auto_const_t<T>* data(int i) { return Base::data(i); }

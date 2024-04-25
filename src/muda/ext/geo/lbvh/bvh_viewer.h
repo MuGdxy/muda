@@ -124,7 +124,7 @@ namespace details
         template <typename U>
         using auto_const_t = typename Base::auto_const_t<U>;
 
-        template <typename Real, typename Object, typename AABBGetter, typename MortonCodeCalculator>
+        template <typename Real_, typename Object_, typename AABBGetter, typename MortonCodeCalculator>
         friend class BVH;
 
       public:
@@ -160,8 +160,8 @@ namespace details
                                "nodes=%p,"
                                "aabbs=%p,"
                                "objects=%p\n",
-                               name(),
-                               kernel_name(),
+                               this->name(),
+                               this->kernel_name(),
                                m_nodes,
                                m_aabbs,
                                m_objects);
@@ -169,7 +169,7 @@ namespace details
 
         MUDA_GENERIC auto as_const() const noexcept
         {
-            return ConstViewer{m_num_nodes, m_num_objects, nodes, aabbs, objects};
+            return ConstViewer{m_num_nodes, m_num_objects, m_nodes, m_aabbs, m_objects};
         }
 
         MUDA_GENERIC operator ConstViewer() const noexcept
@@ -234,8 +234,8 @@ namespace details
                 }
                 MUDA_KERNEL_ASSERT(stack_ptr < stack_end,
                                    "LBVHQuery[%s:%s]: stack overflow, try use a larger StackNum.",
-                                   name(),
-                                   kernel_name());
+                                   this->name(),
+                                   this->kernel_name());
             } while(stack < stack_ptr);
             return num_found;
         }
@@ -318,8 +318,8 @@ namespace details
                 }
                 MUDA_KERNEL_ASSERT(stack_ptr < stack_end,
                                    "LBVHQuery[%s:%s]: stack overflow, try use a larger StackNum.",
-                                   name(),
-                                   kernel_name());
+                                   this->name(),
+                                   this->kernel_name());
             } while(stack < stack_ptr);
             return thrust::make_pair(nearest, dist_to_nearest_object);
         }
@@ -348,8 +348,8 @@ namespace details
         {
             MUDA_KERNEL_ASSERT(idx < m_num_objects,
                                "BVHViewer[%s:%s]: index out of range, idx=%u, num_objects=%u",
-                               name(),
-                               kernel_name(),
+                               this->name(),
+                               this->kernel_name(),
                                idx,
                                m_num_objects);
         }

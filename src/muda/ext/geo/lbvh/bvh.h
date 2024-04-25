@@ -293,7 +293,7 @@ class BVH
                                      // wait the other thread from the other child node.
                                      return;
                                  }
-                                 MUDA_KERNEL_ASSERT(old == 1);
+                                 MUDA_KERNEL_ASSERT(old == 1,"old=%d",old);
                                  // here, the flag has already been 1. it means that this
                                  // thread is the 2nd thread. merge AABB of both childlen.
 

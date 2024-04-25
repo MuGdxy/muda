@@ -40,7 +40,7 @@ struct GaussEliminationInverse
                         break;
                 }
                 if(j == dim)
-                    return;
+                    return result;
                 for(int r = i; r < 2 * dim; r++)
                 {
                     mat[i][r] += mat[j][r];

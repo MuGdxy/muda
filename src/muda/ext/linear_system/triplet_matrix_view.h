@@ -252,6 +252,10 @@ class TripletMatrixViewBase : public ViewBase<IsConst>
 template <bool IsConst, typename Ty>
 class TripletMatrixViewBase<IsConst, Ty, 1> : public ViewBase<IsConst>
 {
+    using Base = ViewBase<IsConst>;
+  protected:
+    template <typename U>
+    using auto_const_t = typename Base::template auto_const_t<U>;
   public:
     static_assert(!std::is_const_v<Ty>, "Ty must be non-const");
     using ConstView    = TripletMatrixViewBase<true, Ty, 1>;

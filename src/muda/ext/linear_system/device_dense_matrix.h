@@ -43,7 +43,7 @@ class DeviceDenseMatrix
     void copy_to(Eigen::MatrixX<Ty>& mat) const;
     void copy_to(std::vector<Ty>& vec) const;
 
-    DeviceDenseMatrix(const const Eigen::MatrixX<Ty>&);
+    DeviceDenseMatrix(const Eigen::MatrixX<Ty>&);
     DeviceDenseMatrix& operator=(const Eigen::MatrixX<Ty>&);
 
     DenseMatrixViewer<Ty>  viewer() { return view().viewer(); }

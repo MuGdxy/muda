@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
 #include <example_common.h>
+#include <muda/logger.h>
 #include <Eigen/Core>
 using namespace muda;
 

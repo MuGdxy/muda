@@ -11,8 +11,8 @@ MUDA_GENERIC auto DenseMatrixViewerBase<IsConst, T>::block(size_t row_offset,
 {
     MUDA_KERNEL_ASSERT(row_offset + row_size <= m_row_size && col_offset + col_size <= m_col_size,
                        "DenseMatrixViewerBase [%s:%s]: block index out of range, shape=(%lld,%lld), yours index=(%lld,%lld)",
-                       name(),
-                       kernel_name(),
+                       this->name(),
+                       this->kernel_name(),
                        m_row_size,
                        m_col_size,
                        row_offset,
@@ -45,14 +45,14 @@ MUDA_GENERIC auto DenseMatrixViewerBase<IsConst, T>::operator()(size_t i, size_t
     {
         MUDA_KERNEL_ASSERT(m_view.data(0),
                            "DenseMatrixViewer [%s:%s]: data is null",
-                           name(),
-                           kernel_name());
+                           this->name(),
+                           this->kernel_name());
         if(m_row_offset == 0 && m_col_offset == 0)
         {
             MUDA_KERNEL_ASSERT(i < m_row_size && j < m_col_size,
                                "DenseMatrixViewer [%s:%s]: index out of range, shape=(%lld,%lld), yours index=(%lld,%lld)",
-                               name(),
-                               kernel_name(),
+                               this->name(),
+                               this->kernel_name(),
                                m_row_size,
                                m_col_size,
                                i,
@@ -62,8 +62,8 @@ MUDA_GENERIC auto DenseMatrixViewerBase<IsConst, T>::operator()(size_t i, size_t
         {
             MUDA_KERNEL_ASSERT(i < m_row_size && j < m_col_size,
                                "DenseMatrixViewer [%s:%s]:index out of range, block shape=(%lld,%lld), your index=(%lld,%lld)",
-                               name(),
-                               kernel_name(),
+                               this->name(),
+                               this->kernel_name(),
                                m_row_size,
                                m_col_size,
                                i,
@@ -159,7 +159,7 @@ MUDA_GENERIC DenseMatrixViewer<T>& DenseMatrixViewer<T>::operator=(const Eigen::
 template <typename T>
 MUDA_DEVICE T DenseMatrixViewer<T>::atomic_add(size_t i, size_t j, T val)
 {
-    auto ptr = &operator()(i, j);
+    auto ptr = &this->operator()(i, j);
     muda::atomic_add(ptr, val);
     return val;
 }
@@ -167,12 +167,12 @@ MUDA_DEVICE T DenseMatrixViewer<T>::atomic_add(size_t i, size_t j, T val)
 template <typename T>
 MUDA_INLINE MUDA_GENERIC void DenseMatrixViewer<T>::check_size_matching(int M, int N) const
 {
-    MUDA_KERNEL_ASSERT(m_row_size == M && m_col_size == N,
+    MUDA_KERNEL_ASSERT(this->m_row_size == M && this->m_col_size == N,
                        "DenseMatrixViewer [%s:%s] shape mismatching, Viewer=(%lld,%lld), yours=(%lld,%lld)",
-                       name(),
-                       kernel_name(),
-                       m_row_size,
-                       m_col_size,
+                       this->name(),
+                       this->kernel_name(),
+                       this->m_row_size,
+                       this->m_col_size,
                        M,
                        N);
 }
