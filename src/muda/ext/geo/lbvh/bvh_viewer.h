@@ -122,7 +122,7 @@ namespace details
 
         using Base = muda::ViewerBase<IsConst>;
         template <typename U>
-        using auto_const_t = typename Base::auto_const_t<U>;
+        using auto_const_t = typename Base::template auto_const_t<U>;
 
         template <typename Real_, typename Object_, typename AABBGetter, typename MortonCodeCalculator>
         friend class BVH;

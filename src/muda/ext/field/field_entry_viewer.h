@@ -51,7 +51,7 @@ class FieldEntryViewerCore : protected ViewerBase<IsConst>
 
   protected:
     template <typename U>
-    using auto_const_t = typename Base::auto_const_t<U>;
+    using auto_const_t = typename Base::template auto_const_t<U>;
 
     HostDeviceConfigView<FieldEntryCore> m_core;
     MatStride                            m_stride;

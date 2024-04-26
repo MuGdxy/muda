@@ -6,7 +6,7 @@ class FieldEntryViewerBase : public FieldEntryViewerCore<IsConst, T, Layout, M, 
     using Base = FieldEntryViewerCore<IsConst, T, Layout, M, N>;
 
     template <typename U>
-    using auto_const_t = typename Base::auto_const_t<U>;
+    using auto_const_t = typename Base::template auto_const_t<U>;
 
   public:
     using ConstViewer    = FieldEntryViewerBase<true, T, Layout, M, N>;

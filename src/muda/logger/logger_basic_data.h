@@ -11,17 +11,22 @@ enum class LoggerBasicType : uint16_t
     Int,
     Int32 = Int,
     Int64,
+    Long,
+    LongLong,
 
     UInt8,
     UInt16,
     UInt,
     UInt32 = UInt,
     UInt64,
+    ULong,
+    ULongLong,
 
     Float,
     Double,
     String,
     FmtString,
+
 
     Object,  // user defined object
 };
