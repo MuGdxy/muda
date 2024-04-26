@@ -7,3 +7,6 @@ build/
 .vscode
 vsxmake2019
 vsxmake2022
+
+# CMake Cache
+CMakeBuild/

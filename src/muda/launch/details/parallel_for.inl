@@ -13,7 +13,7 @@ namespace details
     * UserTag: the tag struct for user to recognize on profiling             *
     **************************************************************************
     */
-    template <typename F, typename UserTag = DefaultTag>
+    template <typename F, typename UserTag>
     MUDA_GLOBAL void parallel_for_kernel(ParallelForCallable<F> f)
     {
         if constexpr(std::is_invocable_v<F, int>)
@@ -42,7 +42,7 @@ namespace details
         }
     }
 
-    template <typename F, typename UserTag = DefaultTag>
+    template <typename F, typename UserTag>
     MUDA_GLOBAL void grid_stride_loop_kernel(ParallelForCallable<F> f)
     {
         if constexpr(std::is_invocable_v<F, int>)
