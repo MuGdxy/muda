@@ -64,7 +64,7 @@ namespace details
         void check_allow_node_adding() const;
 
       private:
-        friend class ComputeGraphVarBase;
+        friend class muda::ComputeGraphVarBase;
         void set_var_usage(VarId id, ComputeGraphVarUsage usage);
 
         template <typename T>

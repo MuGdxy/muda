@@ -1,5 +1,6 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
+#include <muda/logger.h>
 #include <example_common.h>
 using namespace muda;
 
@@ -13,7 +14,7 @@ void logger_simple()
             [logger = logger.viewer()] __device__() mutable
             {
                 //print hello world
-                logger << "hello world! from block (" << blockIdx << ")\n";
+                logger << "hello world! from block (" << (uint3)blockIdx << ")\n";
             })
         .wait();
     logger.retrieve(std::cout);

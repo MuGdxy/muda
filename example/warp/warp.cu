@@ -8,7 +8,6 @@
 #include <muda/cuda/cooperative_groups/reduce.h>
 #include <muda/cuda/cooperative_groups/scan.h>
 #include <muda/cuda/device_atomic_functions.h>
-#include <muda/cuda/device_functions.h>
 #include <muda/cuda/cuda_runtime.h>
 #include <muda/cuda/cuda_runtime_api.h>
 

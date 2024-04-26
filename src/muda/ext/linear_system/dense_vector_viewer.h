@@ -27,9 +27,9 @@ class DenseVectorViewerBase : public ViewerBase<IsConst>
     using ThisViewer = std::conditional_t<IsConst, ConstViewer, NonConstViewer>;
 
     using VectorType = Eigen::Vector<T, Eigen::Dynamic>;
-    template <typename T>
+    template <typename U>
     using MapVectorT =
-        Eigen::Map<T, Eigen::AlignmentType::Unaligned, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>;
+        Eigen::Map<U, Eigen::AlignmentType::Unaligned, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>;
     using MapVector     = MapVectorT<VectorType>;
     using CMapVector    = MapVectorT<const VectorType>;
     using ThisMapVector = std::conditional_t<IsConst, CMapVector, MapVector>;
@@ -123,8 +123,8 @@ class DenseVectorViewerBase : public ViewerBase<IsConst>
     {
         MUDA_KERNEL_ASSERT(m_size == N,
                            "DenseVectorViewerBase [%s:%s]: size not match, yours size=%d, expected size=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            m_size,
                            N);
     }
@@ -133,12 +133,12 @@ class DenseVectorViewerBase : public ViewerBase<IsConst>
     {
         MUDA_KERNEL_ASSERT(origin_data(),
                            "DenseVectorViewerBase [%s:%s]: data is null",
-                           name(),
-                           kernel_name());
+                           this->name(),
+                           this->kernel_name());
         MUDA_KERNEL_ASSERT(i < m_size,
                            "DenseVectorViewerBase [%s:%s]: index out of range, size=%d, yours index=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            m_size,
                            i);
         return m_offset + i;
@@ -148,16 +148,16 @@ class DenseVectorViewerBase : public ViewerBase<IsConst>
     {
         MUDA_KERNEL_ASSERT(origin_data(),
                            "DenseVectorViewerBase [%s:%s]: data is null",
-                           name(),
-                           kernel_name());
+                           this->name(),
+                           this->kernel_name());
     }
 
     MUDA_INLINE MUDA_GENERIC void check_segment(int offset, int size) const
     {
         MUDA_KERNEL_ASSERT(offset + size <= m_size,
                            "DenseVectorViewerBase [%s:%s]: segment out of range, m_size=%d, offset=%d, size=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            m_size,
                            offset,
                            size);
@@ -228,7 +228,7 @@ class DenseVectorViewer : public DenseVectorViewerBase<false, T>
 
     MUDA_DEVICE T atomic_add(int i, T val)
     {
-        auto ptr = &operator()(i);
+        auto ptr = &this->operator()(i);
         return muda::atomic_add(ptr, val);
     }
 
@@ -247,7 +247,7 @@ class DenseVectorViewer : public DenseVectorViewerBase<false, T>
 
     MUDA_DEVICE T atomic_add(const T& val)
     {
-        check_size_matching(1);
+        this->check_size_matching(1);
         T ret = atomic_add(0, val);
         return ret;
     }
@@ -255,11 +255,11 @@ class DenseVectorViewer : public DenseVectorViewerBase<false, T>
     template <int N>
     MUDA_GENERIC DenseVectorViewer& operator=(const Eigen::Vector<T, N>& other)
     {
-        check_size_matching(N);
+        this->check_size_matching(N);
 #pragma unroll
         for(int i = 0; i < N; ++i)
         {
-            operator()(i) = other(i);
+            this->operator()(i) = other(i);
         }
         return *this;
     }

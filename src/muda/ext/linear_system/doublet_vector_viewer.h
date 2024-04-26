@@ -124,20 +124,20 @@ class DoubletVectorViewerBase : public ViewerBase<IsConst>
     {
         MUDA_KERNEL_ASSERT(i >= 0 && i < m_doublet_count,
                            "DoubletVectorViewer [%s:%s]: index out of range, m_doublet_count=%d, your index=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            m_doublet_count,
                            i);
         auto index = i + m_doublet_index_offset;
         return index;
     }
 
-    MUDA_INLINE MUDA_GENERIC int check_in_subvector(int i) const noexcept
+    MUDA_INLINE MUDA_GENERIC void check_in_subvector(int i) const noexcept
     {
         MUDA_KERNEL_ASSERT(i >= 0 && i < m_subvector_extent,
                            "DoubletVectorViewer [%s:%s]: index out of range, m_subvector_extent=%d, your index=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            m_subvector_extent,
                            i);
     }
@@ -215,6 +215,10 @@ class DoubletVectorViewer : public DoubletVectorViewerBase<false, T, N>
 template <bool IsConst, typename T>
 class DoubletVectorViewerBase<IsConst, T, 1> : public ViewerBase<IsConst>
 {
+    using Base = ViewerBase<IsConst>;
+  protected:
+    template <typename U>
+    using auto_const_t = typename Base::template auto_const_t<U>;
   public:
     using ConstViewer = DoubletVectorViewerBase<true, T, 1>;
     using Viewer      = DoubletVectorViewerBase<false, T, 1>;
@@ -328,20 +332,20 @@ class DoubletVectorViewerBase<IsConst, T, 1> : public ViewerBase<IsConst>
 
         MUDA_KERNEL_ASSERT(i >= 0 && i < m_doublet_count,
                            "DoubletVectorViewer [%s:%s]: index out of range, m_doublet_count=%d, your index=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            m_doublet_count,
                            i);
         auto index = i + m_doublet_index_offset;
         return index;
     }
 
-    MUDA_INLINE MUDA_GENERIC int check_in_subvector(int i) const noexcept
+    MUDA_INLINE MUDA_GENERIC void check_in_subvector(int i) const noexcept
     {
         MUDA_KERNEL_ASSERT(i >= 0 && i < m_subvector_extent,
                            "DoubletVectorViewer [%s:%s]: index out of range, m_subvector_extent=%d, your index=%d",
-                           name(),
-                           kernel_name(),
+                           this->name(),
+                           this->kernel_name(),
                            m_subvector_extent,
                            i);
     }

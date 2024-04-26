@@ -19,8 +19,8 @@ class FieldEntryViewCore : public ViewBase<IsConst>
     friend class FieldEntryLaunch;
 
   public:
-    template <typename T>
-    using auto_const_t = typename Base::auto_const_t<T>;
+    template <typename U>
+    using auto_const_t = typename Base::template auto_const_t<U>;
 
     using ConstViewer    = CFieldEntryViewer<T, Layout, M, N>;
     using NonConstViewer = FieldEntryViewer<T, Layout, M, N>;

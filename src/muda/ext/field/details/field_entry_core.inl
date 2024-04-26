@@ -1,3 +1,4 @@
+#include "muda/type_traits/always.h"
 namespace muda
 {
 
@@ -46,7 +47,7 @@ MUDA_INLINE MUDA_GENERIC std::byte* FieldEntryCore::elem_addr(int i) const
         }
         else
         {
-            static_assert(false, "invalid layout");
+            static_assert("invalid layout");
         }
     }
     MUDA_KERNEL_ERROR_WITH_LOCATION("invalid layout: %d", static_cast<int>(layout()));
@@ -84,7 +85,7 @@ MUDA_INLINE MUDA_GENERIC std::byte* FieldEntryCore::elem_addr(int i, int j) cons
         }
         else
         {
-            static_assert(false, "invalid layout");
+            static_assert("invalid layout");
         }
     }
     MUDA_KERNEL_ERROR_WITH_LOCATION("invalid layout: %d", static_cast<int>(layout()));
@@ -124,7 +125,7 @@ MUDA_INLINE MUDA_GENERIC std::byte* FieldEntryCore::elem_addr(int i, int j, int 
         }
         else
         {
-            static_assert(false, "invalid layout");
+            static_assert("invalid layout");
         }
     }
     MUDA_KERNEL_ERROR_WITH_LOCATION("invalid layout: %d", static_cast<int>(layout()));

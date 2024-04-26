@@ -13,7 +13,7 @@ template <typename T, int N>
 class DeviceTripletMatrix
 {
   public:
-    template <typename T, int N>
+    template <typename U, int M>
     friend class details::MatrixFormatConverter;
     using BlockMatrix = Eigen::Matrix<T, N, N>;
 
@@ -107,7 +107,7 @@ template <typename T>
 class DeviceTripletMatrix<T, 1>
 {
   public:
-    template <typename T, int N>
+    template <typename U, int M>
     friend class details::MatrixFormatConverter;
 
   protected:

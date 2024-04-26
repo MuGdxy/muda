@@ -9,6 +9,8 @@ void dense_viewer(HostVector<int>& ground_truth, HostVector<int>& res)
 {
     example_desc(R"(an example for using dense viewer.)");
 
+    cudaSetDevice(0);
+
     DeviceVar<int> scalar = 2;
     // thrust device_vector
     DeviceVector<int> vector(32, 1);

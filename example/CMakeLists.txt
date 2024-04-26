@@ -22,3 +22,5 @@ target_include_directories(muda_example PRIVATE
 target_link_libraries(muda_example PRIVATE muda Eigen3::Eigen)
 source_group(TREE "${PROJECT_SOURCE_DIR}/example" PREFIX "example" FILES ${MUDA_EXAMPLE_SOURCE_FILES})
 source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})
+# set cuda sm75
+set_property(TARGET muda_example PROPERTY CUDA_ARCHITECTURES 75)

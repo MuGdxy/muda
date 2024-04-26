@@ -31,20 +31,20 @@ template <FieldEntryLayout Layout>
 template <typename T>
 FieldEntry<T, Layout, 2, 1>& FieldBuilder<Layout>::EntryProxy::vector2() &&
 {
-    return std::move(*this).vector<T, 2>();
+    return std::move(*this).template vector<T, 2>();
 }
 
 template <FieldEntryLayout Layout>
 template <typename T>
 FieldEntry<T, Layout, 3, 1>& FieldBuilder<Layout>::EntryProxy::vector3() &&
 {
-    return std::move(*this).vector<T, 3>();
+    return std::move(*this).template vector<T, 3>();
 }
 template <FieldEntryLayout Layout>
 template <typename T>
 FieldEntry<T, Layout, 4, 1>& FieldBuilder<Layout>::EntryProxy::vector4() &&
 {
-    return std::move(*this).vector<T, 4>();
+    return std::move(*this).template vector<T, 4>();
 }
 
 template <FieldEntryLayout Layout>
@@ -58,21 +58,21 @@ template <FieldEntryLayout Layout>
 template <typename T>
 FieldEntry<T, Layout, 2, 2>& FieldBuilder<Layout>::EntryProxy::matrix2x2() &&
 {
-    return std::move(*this).matrix<T, 2, 2>();
+    return std::move(*this).template matrix<T, 2, 2>();
 }
 
 template <FieldEntryLayout Layout>
 template <typename T>
 FieldEntry<T, Layout, 3, 3>& FieldBuilder<Layout>::EntryProxy::matrix3x3() &&
 {
-    return std::move(*this).matrix<T, 3, 3>();
+    return std::move(*this).template matrix<T, 3, 3>();
 }
 
 template <FieldEntryLayout Layout>
 template <typename T>
 FieldEntry<T, Layout, 4, 4>& FieldBuilder<Layout>::EntryProxy::matrix4x4() &&
 {
-    return std::move(*this).matrix<T, 4, 4>();
+    return std::move(*this).template matrix<T, 4, 4>();
 }
 
 template <FieldEntryLayout Layout>
@@ -80,7 +80,7 @@ template <typename T, int M, int N>
 FieldEntry<T, Layout, M, N>& FieldBuilder<Layout>::create_entry(std::string_view name,
                                                                 FieldEntryType type)
 {
-    return m_subfield.create_entry<T, Layout, M, N>(
+    return m_subfield.template create_entry<T, Layout, M, N>(
         name, m_layout, type, make_uint2(static_cast<uint32_t>(M), static_cast<uint32_t>(N)));
 }
 

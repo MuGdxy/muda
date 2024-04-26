@@ -44,8 +44,7 @@ class ComputeGraphClosure
         , m_closure(f)
     {
     }
-    template <typename T>
-    using S = std::shared_ptr<T>;
+
     std::function<void()>                 m_closure;
     std::map<VarId, ComputeGraphVarUsage> m_var_usages;
     ClosureId                             m_clousure_id;

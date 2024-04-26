@@ -33,7 +33,7 @@ class DeviceBCOOMatrix : public DeviceTripletMatrix<T, N>
 template <typename Ty>
 class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
 {
-    template <typename Ty, int N>
+    template <typename U, int M>
     friend class details::MatrixFormatConverter;
 
   protected:
@@ -87,12 +87,12 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
 
     auto view()
     {
-        return COOMatrixView<Ty>{m_rows,
-                                 m_cols,
-                                 (int)m_values.size(),
-                                 m_row_indices.data(),
-                                 m_col_indices.data(),
-                                 m_values.data(),
+        return COOMatrixView<Ty>{this->m_rows,
+                                 this->m_cols,
+                                 (int)this->m_values.size(),
+                                 this->m_row_indices.data(),
+                                 this->m_col_indices.data(),
+                                 this->m_values.data(),
                                  descr(),
                                  legacy_descr(),
                                  false};
@@ -100,12 +100,12 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
 
     auto view() const
     {
-        return CCOOMatrixView<Ty>{m_rows,
-                                  m_cols,
-                                  (int)m_values.size(),
-                                  m_row_indices.data(),
-                                  m_col_indices.data(),
-                                  m_values.data(),
+        return CCOOMatrixView<Ty>{this->m_rows,
+                                  this->m_cols,
+                                  (int)this->m_values.size(),
+                                  this->m_row_indices.data(),
+                                  this->m_col_indices.data(),
+                                  this->m_values.data(),
                                   descr(),
                                   legacy_descr(),
                                   false};
@@ -117,7 +117,7 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
 
     auto cviewer() const { return view().cviewer(); }
 
-    auto non_zeros() const { return m_values.size(); }
+    auto non_zeros() const { return this->m_values.size(); }
 
     auto legacy_descr() const
     {
@@ -135,12 +135,12 @@ class DeviceBCOOMatrix<Ty, 1> : public DeviceTripletMatrix<Ty, 1>
         if(m_descr == nullptr)
         {
             checkCudaErrors(cusparseCreateCoo(&m_descr,
-                                              m_rows,
-                                              m_cols,
+                                              this->m_rows,
+                                              this->m_cols,
                                               non_zeros(),
-                                              (void*)m_row_indices.data(),
-                                              (void*)m_col_indices.data(),
-                                              (void*)m_values.data(),
+                                              (void*)this->m_row_indices.data(),
+                                              (void*)this->m_col_indices.data(),
+                                              (void*)this->m_values.data(),
                                               CUSPARSE_INDEX_32I,
                                               CUSPARSE_INDEX_BASE_ZERO,
                                               cuda_data_type<Ty>()));

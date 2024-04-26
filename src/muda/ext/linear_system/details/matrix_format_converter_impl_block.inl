@@ -45,7 +45,7 @@ void MatrixFormatConverter<T, N>::merge_sort_indices_and_blocks(
     loose_resize(ij_pairs, src_row_indices.size());
 
     ParallelFor(256)
-        .kernel_name(__FUNCTION__ "-set ij pairs")
+        .kernel_name(__FUNCTION__)
         .apply(src_row_indices.size(),
                [row_indices = src_row_indices.cviewer().name("row_indices"),
                 col_indices = src_col_indices.cviewer().name("col_indices"),
@@ -56,7 +56,7 @@ void MatrixFormatConverter<T, N>::merge_sort_indices_and_blocks(
                });
 
     ParallelFor(256)
-        .kernel_name(__FUNCTION__ "-iota")  //
+        .kernel_name(__FUNCTION__)  //
         .apply(src_row_indices.size(),
                [sort_index = sort_index.viewer().name("sort_index")] __device__(int i) mutable
                { sort_index(i) = i; });
@@ -546,7 +546,7 @@ void MatrixFormatConverter<T, N>::sort_indices_and_values(const DeviceBCOOMatrix
     ij_pairs.resize(row_indices.size());
 
     ParallelFor(256)
-        .kernel_name(__FUNCTION__ "-set ij pairs")
+        .kernel_name(__FUNCTION__)
         .apply(row_indices.size(),
                [row_indices = row_indices.cviewer().name("row_indices"),
                 col_indices = col_indices.cviewer().name("col_indices"),
@@ -569,7 +569,7 @@ void MatrixFormatConverter<T, N>::sort_indices_and_values(const DeviceBCOOMatrix
     auto dst_col_indices = to.col_indices();
 
     ParallelFor(256)
-        .kernel_name(__FUNCTION__ "-set col row indices")
+        .kernel_name(__FUNCTION__)
         .apply(dst_row_indices.size(),
                [row_indices = dst_row_indices.viewer().name("row_indices"),
                 col_indices = dst_col_indices.viewer().name("col_indices"),

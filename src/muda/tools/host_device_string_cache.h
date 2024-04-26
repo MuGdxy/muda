@@ -6,6 +6,9 @@
 #include <unordered_map>
 #include <string>
 #include <muda/tools/string_pointer.h>
+#include <vector>
+#include <cstring>
+
 namespace muda::details
 {
 class HostDeviceStringCache

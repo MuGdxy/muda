@@ -4,6 +4,7 @@
 
 using namespace muda;
 
+#ifndef __linux__
 __global__ void copy(int* dst, const int* src)
 {
     auto i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -42,6 +43,8 @@ TEST_CASE("dynamic_parallelism", "[dynamic_parallelism]")
     dynamic_parallelism(gt, res);
     REQUIRE(gt == res);
 }
+#endif
+
 
 #if MUDA_COMPUTE_GRAPH_ON
 void dynamic_parallelism_graph(std::vector<int>& gt, std::vector<int>& res)

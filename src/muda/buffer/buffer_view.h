@@ -33,8 +33,8 @@ class BufferViewBase : public ViewBase<IsConst>
     using Viewer     = Dense1D<T>;
     using ThisViewer = std::conditional_t<IsConst, CViewer, Viewer>;
 
-    template <typename T>
-    using auto_const_t = typename Base::template auto_const_t<T>;
+    template <typename U>
+    using auto_const_t = typename Base::template auto_const_t<U>;
 
   protected:
     auto_const_t<T>* m_data   = nullptr;

@@ -26,9 +26,9 @@ class DenseMatrixViewerBase : public ViewerBase<IsConst>
     using ThisViewer = std::conditional_t<IsConst, ConstViewer, NonConstViewer>;
 
     using MatrixType = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
-    template <typename T>
+    template <typename U>
     using MapMatrixT =
-        Eigen::Map<T, Eigen::AlignmentType::Unaligned, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>;
+        Eigen::Map<U, Eigen::AlignmentType::Unaligned, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>;
     using MapMatrix     = MapMatrixT<MatrixType>;
     using CMapMatrix    = MapMatrixT<const MatrixType>;
     using ThisMapMatrix = std::conditional_t<IsConst, CMapMatrix, MapMatrix>;

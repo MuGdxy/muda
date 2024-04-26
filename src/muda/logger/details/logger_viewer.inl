@@ -1,12 +1,13 @@
 #include <muda/atomic.h>
+
 namespace muda
 {
 MUDA_INLINE MUDA_DEVICE LogProxy::LogProxy(LoggerViewer& viewer)
-    : m_viewer(viewer)
+    : m_viewer(&viewer)
 {
-    MUDA_KERNEL_ASSERT(m_viewer.m_buffer && m_viewer.m_meta_data,
+    MUDA_KERNEL_ASSERT(m_viewer->m_buffer && m_viewer->m_meta_data,
                        "LoggerViewer is not initialized");
-    m_log_id = atomic_add(&(m_viewer.m_offset->log_id), 1u);
+    m_log_id = atomic_add(&(m_viewer->m_offset->log_id), 1u);
 }
 template <bool IsFmt>
 MUDA_INLINE MUDA_DEVICE LogProxy& LogProxy::push_string(const char* str)
@@ -31,7 +32,7 @@ MUDA_INLINE MUDA_DEVICE LogProxy& LogProxy::push_string(const char* str)
     }
     meta.size = size;
     meta.id   = m_log_id;
-    m_viewer.push_data(meta, str);
+    m_viewer->push_data(meta, str);
     return *this;
 }
 
@@ -43,7 +44,13 @@ MUDA_DEVICE void LogProxy::push_fmt_arg(const T& obj, LoggerFmtArg func)
     meta.size    = sizeof(T);
     meta.id      = m_log_id;
     meta.fmt_arg = func;
-    m_viewer.push_data(meta, &obj);
+    m_viewer->push_data(meta, &obj);
+}
+
+MUDA_INLINE MUDA_DEVICE bool LogProxy::push_data(const details::LoggerMetaData& meta,
+                                            const void*                    data)
+{
+    return m_viewer->push_data(meta, data);
 }
 
 MUDA_INLINE MUDA_DEVICE LogProxy& LogProxy::operator<<(const char* str)
@@ -52,26 +59,26 @@ MUDA_INLINE MUDA_DEVICE LogProxy& LogProxy::operator<<(const char* str)
 }
 
 template <typename T>
-MUDA_INLINE MUDA_DEVICE LogProxy LoggerViewer::operator<<(const T& t)
+MUDA_INLINE MUDA_DEVICE LogProxy& LoggerViewer::operator<<(const T& t)
 {
-    LogProxy p(*this);
-    p << t;
-    return p;
+    m_proxy = LogProxy(*this);
+    m_proxy << t;
+    return m_proxy;
 }
 
 template <bool IsFmt>
-MUDA_INLINE MUDA_DEVICE LogProxy LoggerViewer::push_string(const char* str)
+MUDA_INLINE MUDA_DEVICE LogProxy& LoggerViewer::push_string(const char* str)
 {
-    LogProxy p(*this);
-    p.push_string<IsFmt>(str);
-    return p;
+    m_proxy = LogProxy(*this);
+    m_proxy.push_string<IsFmt>(str);
+    return m_proxy;
 }
 
-MUDA_INLINE MUDA_DEVICE LogProxy LoggerViewer::operator<<(const char* s)
+MUDA_INLINE MUDA_DEVICE LogProxy& LoggerViewer::operator<<(const char* s)
 {
-    LogProxy p(*this);
-    p << s;
-    return p;
+    m_proxy = LogProxy(*this);
+    m_proxy << s;
+    return m_proxy;
 }
 
 MUDA_INLINE MUDA_DEVICE uint32_t next_idx(uint32_t* data_offset, uint32_t size, uint32_t total_size)
@@ -149,30 +156,4 @@ MUDA_INLINE MUDA_DEVICE bool LoggerViewer::push_data(details::LoggerMetaData met
         m_buffer[buffer_idx + i] = reinterpret_cast<const char*>(data)[i];
     return true;
 }
-
-#define PROXY_OPERATOR(enum_name, T)                                           \
-    MUDA_INLINE MUDA_DEVICE LogProxy& LogProxy::operator<<(T i)                \
-    {                                                                          \
-        details::LoggerMetaData meta;                                          \
-        meta.type = LoggerBasicType::enum_name;                                \
-        meta.size = sizeof(T);                                                 \
-        meta.id   = m_log_id;                                                  \
-        m_viewer.push_data(meta, &i);                                          \
-        return *this;                                                          \
-    }
-
-PROXY_OPERATOR(Int8, int8_t);
-PROXY_OPERATOR(Int16, int16_t);
-PROXY_OPERATOR(Int32, int32_t);
-PROXY_OPERATOR(Int64, int64_t);
-
-PROXY_OPERATOR(UInt8, uint8_t);
-PROXY_OPERATOR(UInt16, uint16_t);
-PROXY_OPERATOR(UInt32, uint32_t);
-PROXY_OPERATOR(UInt64, uint64_t);
-
-PROXY_OPERATOR(Float, float);
-PROXY_OPERATOR(Double, double);
-
-#undef PROXY_OPERATOR
 }  // namespace muda

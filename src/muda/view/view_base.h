@@ -3,12 +3,12 @@
 
 namespace muda
 {
-template <bool IsConst>
+template <bool IsConst_>
 class ViewBase
 {
   public:
-    constexpr static bool IsConst    = IsConst;
-    constexpr static bool IsNonConst = !IsConst;
+    constexpr static bool IsConst    = IsConst_;
+    constexpr static bool IsNonConst = !IsConst_;
     template <typename T>
     using auto_const_t = std::conditional_t<IsConst, const T, T>;
     template <typename T>

@@ -101,14 +101,14 @@ cusparseSpMatDescr_t DeviceCSRMatrix<Ty>::descr() const
     {
         checkCudaErrors(cusparseCreateCsr(
             &m_descr,
-            m_row,
-            m_col,
-            m_values.size(),
-            remove_const(m_row_offsets.data()),
-            remove_const(m_col_indices.data()),
-            remove_const(m_values.data()),
-            cusparse_index_type<decltype(m_row_offsets)::value_type>(),
-            cusparse_index_type<decltype(m_col_indices)::value_type>(),
+            this->m_row,
+            this->m_col,
+            this->m_values.size(),
+            remove_const(this->m_row_offsets.data()),
+            remove_const(this->m_col_indices.data()),
+            remove_const(this->m_values.data()),
+            cusparse_index_type<typename decltype(this->m_row_offsets)::value_type>(),
+            cusparse_index_type<typename decltype(this->m_col_indices)::value_type>(),
             CUSPARSE_INDEX_BASE_ZERO,
             cuda_data_type<Ty>()));
     }

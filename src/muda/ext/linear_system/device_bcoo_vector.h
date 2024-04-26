@@ -26,7 +26,7 @@ class DeviceBCOOVector : public DeviceDoubletVector<T, N>
 template <typename T>
 class DeviceBCOOVector<T, 1> : public DeviceDoubletVector<T, 1>
 {
-    template <typename T, int N>
+    template <typename U, int N>
     friend class details::MatrixFormatConverter;
 
   protected:
@@ -72,11 +72,11 @@ class DeviceBCOOVector<T, 1> : public DeviceDoubletVector<T, 1>
         {
             checkCudaErrors(cusparseCreateSpVec(
                 &m_descr,
-                m_size,
-                m_values.size(),
+                this->m_size,
+                this->m_values.size(),
                 (int*)this->m_indices.data(),
                 (T*)this->m_values.data(),
-                cusparse_index_type<decltype(m_indices)::value_type>(),
+                cusparse_index_type<decltype(this->m_indices)::value_type>(),
                 CUSPARSE_INDEX_BASE_ZERO,
                 cuda_data_type<T>()));
         }

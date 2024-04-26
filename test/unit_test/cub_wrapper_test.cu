@@ -7,6 +7,23 @@
 #undef min
 using namespace muda;
 
+struct Sortable
+{
+    int id = -1;
+    int data;
+};
+
+__host__ __device__ int operator<(const Sortable& lhs, const Sortable& rhs)
+{
+    return lhs.id < rhs.id;
+}
+
+__host__ __device__ int operator>(const Sortable& lhs, const Sortable& rhs)
+{
+    return lhs.id > rhs.id;
+}
+
+ 
 
 struct Reducable
 {
@@ -31,7 +48,7 @@ void device_reduce_reduce(Reducable& h_output, Reducable& gt_output)
 
     std::for_each(gt_input.begin(),
                   gt_input.end(),
-                  [](Reducable& r) { r.id = std::rand(); });
+                  [](Reducable& r) { r.id = std::rand() % 101; });
     input = gt_input;
 
     on(nullptr)
@@ -55,18 +72,18 @@ void device_reduce_reduce(Reducable& h_output, Reducable& gt_output)
 }
 
 
-void device_reduce_min(float& h_output, float& gt_output)
+void device_reduce_min(int& h_output, int& gt_output)
 {
 
     size_t size = 100;
 
-    std::vector<float> gt_input(size);
+    std::vector<int> gt_input(size);
 
-    DeviceBuffer<float> input;
-    DeviceVar<float>    output;
+    DeviceBuffer<int> input;
+    DeviceVar<int>    output;
 
     std::for_each(
-        gt_input.begin(), gt_input.end(), [](float& r) { r = std::rand(); });
+        gt_input.begin(), gt_input.end(), [](int& r) { r = std::rand() % 101; });
     input = gt_input;
 
     on().next<DeviceReduce>().Min(input.data(), output.data(), size).wait();
@@ -76,18 +93,18 @@ void device_reduce_min(float& h_output, float& gt_output)
     h_output = output;
 }
 
-void device_reduce_max(float& h_output, float& gt_output)
+void device_reduce_max(int& h_output, int& gt_output)
 {
 
     size_t size = 100;
 
-    std::vector<float> gt_input(size);
+    std::vector<int> gt_input(size);
 
-    DeviceBuffer<float> input;
-    DeviceVar<float>    output;
+    DeviceBuffer<int> input;
+    DeviceVar<int>    output;
 
     std::for_each(
-        gt_input.begin(), gt_input.end(), [](float& r) { r = std::rand(); });
+        gt_input.begin(), gt_input.end(), [](int& r) { r = std::rand() % 101; });
     input = gt_input;
 
     on().next<DeviceReduce>().Max(input.data(), output.data(), size).wait();
@@ -98,18 +115,18 @@ void device_reduce_max(float& h_output, float& gt_output)
 }
 
 
-void device_reduce_sum(float& h_output, float& gt_output)
+void device_reduce_sum(int& h_output, int& gt_output)
 {
 
     size_t size = 100;
 
-    std::vector<float> gt_input(size);
+    std::vector<int> gt_input(size);
 
-    DeviceBuffer<float> input;
-    DeviceVar<float>    output;
+    DeviceBuffer<int> input;
+    DeviceVar<int>    output;
 
     std::for_each(
-        gt_input.begin(), gt_input.end(), [](float& r) { r = std::rand(); });
+        gt_input.begin(), gt_input.end(), [](int& r) { r = std::rand() % 101; });
     input = gt_input;
 
     on().next<DeviceReduce>().Sum(input.data(), output.data(), size).wait();
@@ -121,18 +138,18 @@ void device_reduce_sum(float& h_output, float& gt_output)
 
 void device_reduce_argmin(int& h_output, int& gt_output)
 {
-    using KVP = cub::KeyValuePair<int, float>;
+    using KVP = cub::KeyValuePair<int, int>;
 
     size_t size = 100;
 
-    std::vector<float>  gt_input(size);
-    DeviceBuffer<float> input;
+    std::vector<int>  gt_input(size);
+    DeviceBuffer<int> input;
     DeviceVar<KVP>      output;
     KVP                 h_output_kvp;
 
 
     std::for_each(
-        gt_input.begin(), gt_input.end(), [](float& r) { r = std::rand(); });
+        gt_input.begin(), gt_input.end(), [](int& r) { r = std::rand() % 101; });
     input = gt_input;
 
     // using std to get the index of the min element
@@ -147,17 +164,17 @@ void device_reduce_argmin(int& h_output, int& gt_output)
 
 void device_reduce_argmax(int& h_output, int& gt_output)
 {
-    using KVP = cub::KeyValuePair<int, float>;
+    using KVP = cub::KeyValuePair<int, int>;
 
     size_t size = 100;
 
-    std::vector<float>  gt_input(size);
-    DeviceBuffer<float> input;
+    std::vector<int>  gt_input(size);
+    DeviceBuffer<int> input;
     DeviceVar<KVP>      output;
     KVP                 h_output_kvp;
 
     std::for_each(
-        gt_input.begin(), gt_input.end(), [](float& r) { r = std::rand(); });
+        gt_input.begin(), gt_input.end(), [](int& r) { r = std::rand() % 101; });
     input = gt_input;
 
     // using std to get the index of the max element
@@ -190,8 +207,8 @@ void device_reduce_reduce_by_key(std::vector<int>& h_unique_out,
 
     size_t size = 100;
 
-    std::vector<float>  gt_input(size);
-    DeviceBuffer<float> input;
+    std::vector<int>  gt_input(size);
+    DeviceBuffer<int> input;
 
     // Declare, allocate, and initialize device-accessible pointers for input and output
     int num_items = 8;  // e.g., 8
@@ -239,24 +256,24 @@ TEST_CASE("device_reduce", "[cub]")
 
     SECTION("Min")
     {
-        float h_output;
-        float gt_output;
+        int h_output;
+        int gt_output;
         device_reduce_min(h_output, gt_output);
         REQUIRE(h_output == gt_output);
     }
 
     SECTION("Max")
     {
-        float h_output;
-        float gt_output;
+        int h_output;
+        int gt_output;
         device_reduce_max(h_output, gt_output);
         REQUIRE(h_output == gt_output);
     }
 
     SECTION("Sum")
     {
-        float h_output;
-        float gt_output;
+        int h_output;
+        int gt_output;
         device_reduce_sum(h_output, gt_output);
         REQUIRE(h_output == gt_output);
     }
@@ -293,18 +310,18 @@ TEST_CASE("device_reduce", "[cub]")
     }
 }
 
-void device_scan_inclusive_sum(std::vector<float>& h_output, std::vector<float>& gt_output)
+void device_scan_inclusive_sum(std::vector<int>& h_output, std::vector<int>& gt_output)
 {
 
     size_t size = 100;
 
-    std::vector<float> gt_input(size);
+    std::vector<int> gt_input(size);
     gt_output.resize(size);
-    DeviceBuffer<float> input(size);
-    DeviceBuffer<float> output(size);
+    DeviceBuffer<int> input(size);
+    DeviceBuffer<int> output(size);
 
     std::for_each(
-        gt_input.begin(), gt_input.end(), [](float& r) { r = std::rand(); });
+        gt_input.begin(), gt_input.end(), [](int& r) { r = std::rand() % 101; });
     input = gt_input;
 
     // using std to get the inclusive sum
@@ -315,18 +332,18 @@ void device_scan_inclusive_sum(std::vector<float>& h_output, std::vector<float>&
     output.copy_to(h_output);
 }
 
-void device_scan_exclusive_sum(std::vector<float>& h_output, std::vector<float>& gt_output)
+void device_scan_exclusive_sum(std::vector<int>& h_output, std::vector<int>& gt_output)
 {
 
     size_t size = 100;
 
-    std::vector<float> gt_input(size);
+    std::vector<int> gt_input(size);
     gt_output.resize(size);
-    DeviceBuffer<float> input(size);
-    DeviceBuffer<float> output(size);
+    DeviceBuffer<int> input(size);
+    DeviceBuffer<int> output(size);
 
     std::for_each(
-        gt_input.begin(), gt_input.end(), [](float& r) { r = std::rand(); });
+        gt_input.begin(), gt_input.end(), [](int& r) { r = std::rand() % 101; });
     input = gt_input;
 
     // using std to get the exclusive sum
@@ -338,18 +355,18 @@ void device_scan_exclusive_sum(std::vector<float>& h_output, std::vector<float>&
     output.copy_to(h_output);
 }
 
-void device_scan_inclusive_scan(std::vector<float>& h_output, std::vector<float>& gt_output)
+void device_scan_inclusive_scan(std::vector<int>& h_output, std::vector<int>& gt_output)
 {
 
     size_t size = 100;
 
-    std::vector<float> gt_input(size);
+    std::vector<int> gt_input(size);
     gt_output.resize(size);
-    DeviceBuffer<float> input(size);
-    DeviceBuffer<float> output(size);
+    DeviceBuffer<int> input(size);
+    DeviceBuffer<int> output(size);
 
     std::for_each(
-        gt_input.begin(), gt_input.end(), [](float& r) { r = std::rand(); });
+        gt_input.begin(), gt_input.end(), [](int& r) { r = std::rand() % 101; });
     input = gt_input;
 
     // using std to get the inclusive scan
@@ -360,7 +377,7 @@ void device_scan_inclusive_scan(std::vector<float>& h_output, std::vector<float>
 
             input.data(),
             output.data(),
-            [] __host__ __device__(const float& a, const float& b)
+            [] __host__ __device__(const int& a, const int& b)
             { return a + b; },
             size)
         .wait();
@@ -368,18 +385,18 @@ void device_scan_inclusive_scan(std::vector<float>& h_output, std::vector<float>
     output.copy_to(h_output);
 }
 
-void device_scan_exclusive_scan(std::vector<float>& h_output, std::vector<float>& gt_output)
+void device_scan_exclusive_scan(std::vector<int>& h_output, std::vector<int>& gt_output)
 {
 
     size_t size = 100;
 
-    std::vector<float> gt_input(size);
+    std::vector<int> gt_input(size);
     gt_output.resize(size);
-    DeviceBuffer<float> input(size);
-    DeviceBuffer<float> output(size);
+    DeviceBuffer<int> input(size);
+    DeviceBuffer<int> output(size);
 
     std::for_each(
-        gt_input.begin(), gt_input.end(), [](float& r) { r = std::rand(); });
+        gt_input.begin(), gt_input.end(), [](int& r) { r = std::rand() % 101; });
     input = gt_input;
 
     // using std to get the exclusive scan
@@ -391,7 +408,7 @@ void device_scan_exclusive_scan(std::vector<float>& h_output, std::vector<float>
 
             input.data(),
             output.data(),
-            [] __host__ __device__(const float& a, const float& b)
+            [] __host__ __device__(const int& a, const int& b)
             { return a + b; },
             0.0f,
             size)
@@ -511,14 +528,14 @@ TEST_CASE("device_scan", "[cub]")
 {
     SECTION("InclusiveSum")
     {
-        std::vector<float> h_output, gt_output;
+        std::vector<int> h_output, gt_output;
         device_scan_inclusive_sum(h_output, gt_output);
         REQUIRE(h_output == gt_output);
     }
 
     SECTION("ExclusiveSum")
     {
-        std::vector<float> h_output, gt_output;
+        std::vector<int> h_output, gt_output;
         device_scan_exclusive_sum(h_output, gt_output);
         REQUIRE(h_output == gt_output);
     }
@@ -526,7 +543,7 @@ TEST_CASE("device_scan", "[cub]")
 
     SECTION("InclusiveScan")
     {
-        std::vector<float> h_output, gt_output;
+        std::vector<int> h_output, gt_output;
         device_scan_inclusive_scan(h_output, gt_output);
         REQUIRE(h_output == gt_output);
     }
@@ -534,7 +551,7 @@ TEST_CASE("device_scan", "[cub]")
 
     SECTION("ExclusiveScan")
     {
-        std::vector<float> h_output, gt_output;
+        std::vector<int> h_output, gt_output;
         device_scan_exclusive_scan(h_output, gt_output);
         REQUIRE(h_output == gt_output);
     }
@@ -668,40 +685,45 @@ TEST_CASE("device_run_length_encode", "[cub]")
 }
 
 void device_radix_sort_sort_pairs(std::vector<int>&   h_keys_out,
-                                  std::vector<float>& h_values_out,
+                                  std::vector<int>& h_values_out,
                                   std::vector<int>&   gt_keys_out,
-                                  std::vector<float>& gt_values_out)
+                                  std::vector<int>& gt_values_out)
 {
     size_t size = 100;
 
     // Generate random input data
     std::vector<int>   h_keys_in(size);
-    std::vector<float> h_values_in(size);
+    std::vector<int> h_values_in(size);
     std::for_each(
-        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand(); });
+        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand() % 101; });
     std::for_each(h_values_in.begin(),
                   h_values_in.end(),
-                  [](float& r) { r = std::rand(); });
+                  [](int& r) { r = std::rand() % 101; });
 
-    // Sort input data using std::sort
+    // Sort input data using std::stable_sort
     gt_keys_out   = h_keys_in;
     gt_values_out = h_values_in;
-    std::vector<size_t> indices(size);
-    std::iota(indices.begin(), indices.end(), 0);
-    std::sort(indices.begin(),
-              indices.end(),
-              [&](size_t a, size_t b) { return h_keys_in[a] < h_keys_in[b]; });
+
+    std::vector<Sortable> sortable(size);
+
     for(size_t i = 0; i < size; ++i)
     {
-        gt_keys_out[i]   = h_keys_in[indices[i]];
-        gt_values_out[i] = h_values_in[indices[i]];
+        sortable[i].id   = h_keys_in[i];
+        sortable[i].data = h_values_in[i];
+    }
+
+    std::stable_sort(sortable.begin(), sortable.end());
+    for(size_t i = 0; i < size; ++i)
+    {
+        gt_keys_out[i]   = sortable[i].id;
+        gt_values_out[i] = sortable[i].data;
     }
 
     // Sort input data using DeviceRadixSort::SortPairs
     DeviceBuffer<int>   d_keys_in   = h_keys_in;
-    DeviceBuffer<float> d_values_in = h_values_in;
+    DeviceBuffer<int> d_values_in = h_values_in;
     DeviceBuffer<int>   d_keys_out(size);
-    DeviceBuffer<float> d_values_out(size);
+    DeviceBuffer<int> d_values_out(size);
 
 
     on().next<DeviceRadixSort>()
@@ -716,43 +738,49 @@ void device_radix_sort_sort_pairs(std::vector<int>&   h_keys_out,
     d_keys_out.copy_to(h_keys_out);
     d_values_out.copy_to(h_values_out);
 }
-
+ 
 
 void device_radix_sort_sort_pairs_descending(std::vector<int>&   h_keys_out,
-                                             std::vector<float>& h_values_out,
+                                             std::vector<int>& h_values_out,
                                              std::vector<int>&   gt_keys_out,
-                                             std::vector<float>& gt_values_out)
+                                             std::vector<int>& gt_values_out)
 {
     size_t size = 100;
 
     // Generate random input data
     std::vector<int>   h_keys_in(size);
-    std::vector<float> h_values_in(size);
+    std::vector<int> h_values_in(size);
     std::for_each(
-        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand(); });
+        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand() % 101; });
     std::for_each(h_values_in.begin(),
                   h_values_in.end(),
-                  [](float& r) { r = std::rand(); });
+                  [](int& r) { r = std::rand() % 101; });
 
-    // Sort input data using std::sort in descending order
+    // Sort input data using std::stable_sort in descending order
     gt_keys_out   = h_keys_in;
     gt_values_out = h_values_in;
-    std::vector<size_t> indices(size);
-    std::iota(indices.begin(), indices.end(), 0);
-    std::sort(indices.begin(),
-              indices.end(),
-              [&](size_t a, size_t b) { return h_keys_in[a] > h_keys_in[b]; });
+
+    std::vector<Sortable> sortable(size);
+
     for(size_t i = 0; i < size; ++i)
     {
-        gt_keys_out[i]   = h_keys_in[indices[i]];
-        gt_values_out[i] = h_values_in[indices[i]];
+        sortable[i].id   = h_keys_in[i];
+        sortable[i].data = h_values_in[i];
+    }
+
+    std::stable_sort(sortable.begin(), sortable.end(), std::greater<Sortable>());
+
+    for(size_t i = 0; i < size; ++i)
+    {
+        gt_keys_out[i]   = sortable[i].id;
+        gt_values_out[i] = sortable[i].data;
     }
 
     // Sort input data using DeviceRadixSort::SortPairsDescending
     DeviceBuffer<int>   d_keys_in   = h_keys_in;
-    DeviceBuffer<float> d_values_in = h_values_in;
+    DeviceBuffer<int> d_values_in = h_values_in;
     DeviceBuffer<int>   d_keys_out(size);
-    DeviceBuffer<float> d_values_out(size);
+    DeviceBuffer<int> d_values_out(size);
 
 
     on().next<DeviceRadixSort>()
@@ -778,11 +806,11 @@ void device_radix_sort_sort_keys(std::vector<int>& h_keys_out, std::vector<int>&
     // Generate random input data
     std::vector<int> h_keys_in(size);
     std::for_each(
-        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand(); });
+        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand() % 101; });
 
-    // Sort input data using std::sort
+    // Sort input data using std::stable_sort
     gt_keys_out = h_keys_in;
-    std::sort(gt_keys_out.begin(), gt_keys_out.end());
+    std::stable_sort(gt_keys_out.begin(), gt_keys_out.end());
 
     // Sort input data using DeviceRadixSort::SortKeys
     DeviceBuffer<int> d_keys_in = h_keys_in;
@@ -806,11 +834,11 @@ void device_radix_sort_sort_keys_descending(std::vector<int>& h_keys_out,
     // Generate random input data
     std::vector<int> h_keys_in(size);
     std::for_each(
-        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand(); });
+        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand() % 101; });
 
-    // Sort input data using std::sort in descending order
+    // Sort input data using std::stable_sort in descending order
     gt_keys_out = h_keys_in;
-    std::sort(gt_keys_out.begin(), gt_keys_out.end(), std::greater<int>());
+    std::stable_sort(gt_keys_out.begin(), gt_keys_out.end(), std::greater<int>());
 
     // Sort input data using DeviceRadixSort::SortKeysDescending
     DeviceBuffer<int> d_keys_in = h_keys_in;
@@ -831,9 +859,9 @@ TEST_CASE("device_radix_sort", "[cub]")
     SECTION("SortPairsDescending")
     {
         std::vector<int>   h_keys_out;
-        std::vector<float> h_values_out;
+        std::vector<int> h_values_out;
         std::vector<int>   gt_keys_out;
-        std::vector<float> gt_values_out;
+        std::vector<int> gt_values_out;
 
         device_radix_sort_sort_pairs_descending(h_keys_out, h_values_out, gt_keys_out, gt_values_out);
 
@@ -844,9 +872,9 @@ TEST_CASE("device_radix_sort", "[cub]")
     SECTION("SortPairs")
     {
         std::vector<int>   h_keys_out;
-        std::vector<float> h_values_out;
+        std::vector<int> h_values_out;
         std::vector<int>   gt_keys_out;
-        std::vector<float> gt_values_out;
+        std::vector<int> gt_values_out;
 
         device_radix_sort_sort_pairs(h_keys_out, h_values_out, gt_keys_out, gt_values_out);
         // Check if the results are equal
@@ -871,38 +899,44 @@ TEST_CASE("device_radix_sort", "[cub]")
 
 
 void device_merge_sort_sort_pairs(std::vector<int>&   h_keys_out,
-                                  std::vector<float>& h_values_out,
+                                  std::vector<int>& h_values_out,
                                   std::vector<int>&   gt_keys_out,
-                                  std::vector<float>& gt_values_out)
+                                  std::vector<int>& gt_values_out)
 {
     size_t size = 100;
 
     // Generate random input data
     std::vector<int>   h_keys_in(size);
-    std::vector<float> h_values_in(size);
+    std::vector<int> h_values_in(size);
     std::for_each(
-        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand(); });
+        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand() % 101; });
     std::for_each(h_values_in.begin(),
                   h_values_in.end(),
-                  [](float& r) { r = std::rand(); });
+                  [](int& r) { r = std::rand() % 101; });
 
-    // Sort input data using std::sort
+    // Sort input data using std::stable_sort
     gt_keys_out   = h_keys_in;
     gt_values_out = h_values_in;
-    std::vector<size_t> indices(size);
-    std::iota(indices.begin(), indices.end(), 0);
-    std::sort(indices.begin(),
-              indices.end(),
-              [&](size_t a, size_t b) { return h_keys_in[a] < h_keys_in[b]; });
+
+    std::vector<Sortable> sortable(size);
+
     for(size_t i = 0; i < size; ++i)
     {
-        gt_keys_out[i]   = h_keys_in[indices[i]];
-        gt_values_out[i] = h_values_in[indices[i]];
+        sortable[i].id   = h_keys_in[i];
+        sortable[i].data = h_values_in[i];
     }
 
+    std::stable_sort(sortable.begin(), sortable.end());
+
+    for(size_t i = 0; i < size; ++i)
+    {
+        gt_keys_out[i]   = sortable[i].id;
+        gt_values_out[i] = sortable[i].data;
+    }
+    
     // Sort input data using DeviceMergeSort::SortPairs
     DeviceBuffer<int>   d_keys   = h_keys_in;
-    DeviceBuffer<float> d_values = h_values_in;
+    DeviceBuffer<int> d_values = h_values_in;
 
 
     on().next<DeviceMergeSort>()
@@ -919,27 +953,27 @@ void device_merge_sort_sort_pairs(std::vector<int>&   h_keys_out,
 
 
 void device_merge_sort_sort_pairs_copy(std::vector<int>&   h_keys_out,
-                                       std::vector<float>& h_values_out,
+                                       std::vector<int>& h_values_out,
                                        std::vector<int>&   gt_keys_out,
-                                       std::vector<float>& gt_values_out)
+                                       std::vector<int>& gt_values_out)
 {
     size_t size = 100;
 
     // Generate random input data
     std::vector<int>   h_keys_in(size);
-    std::vector<float> h_values_in(size);
+    std::vector<int> h_values_in(size);
     std::for_each(
-        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand(); });
+        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand() % 101; });
     std::for_each(h_values_in.begin(),
                   h_values_in.end(),
-                  [](float& r) { r = std::rand(); });
+                  [](int& r) { r = std::rand() % 101; });
 
-    // Sort input data using std::sort
+    // Sort input data using std::stable_sort
     gt_keys_out   = h_keys_in;
     gt_values_out = h_values_in;
     std::vector<size_t> indices(size);
     std::iota(indices.begin(), indices.end(), 0);
-    std::sort(indices.begin(),
+    std::stable_sort(indices.begin(),
               indices.end(),
               [&](size_t a, size_t b) { return h_keys_in[a] < h_keys_in[b]; });
     for(size_t i = 0; i < size; ++i)
@@ -950,9 +984,9 @@ void device_merge_sort_sort_pairs_copy(std::vector<int>&   h_keys_out,
 
     // Sort input data using DeviceMergeSort::SortPairsCopy
     DeviceBuffer<int>   d_keys_in   = h_keys_in;
-    DeviceBuffer<float> d_values_in = h_values_in;
+    DeviceBuffer<int> d_values_in = h_values_in;
     DeviceBuffer<int>   d_keys_out(size);
-    DeviceBuffer<float> d_values_out(size);
+    DeviceBuffer<int> d_values_out(size);
 
 
     on().next<DeviceMergeSort>()
@@ -976,11 +1010,11 @@ void device_merge_sort_sort_keys(std::vector<int>& h_keys_out, std::vector<int>&
     // Generate random input data
     std::vector<int> h_keys_in(size);
     std::for_each(
-        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand(); });
+        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand() % 101; });
 
-    // Sort input data using std::sort
+    // Sort input data using std::stable_sort
     gt_keys_out = h_keys_in;
-    std::sort(gt_keys_out.begin(), gt_keys_out.end());
+    std::stable_sort(gt_keys_out.begin(), gt_keys_out.end());
 
     // Sort input data using DeviceMergeSort::SortKeys
     DeviceBuffer<int> d_keys = h_keys_in;
@@ -1003,11 +1037,11 @@ void device_merge_sort_sort_keys_copy(std::vector<int>& h_keys_out, std::vector<
     // Generate random input data
     std::vector<int> h_keys_in(size);
     std::for_each(
-        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand(); });
+        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand() % 101; });
 
-    // Sort input data using std::sort
+    // Sort input data using std::stable_sort
     gt_keys_out = h_keys_in;
-    std::sort(gt_keys_out.begin(), gt_keys_out.end());
+    std::stable_sort(gt_keys_out.begin(), gt_keys_out.end());
 
     // Sort input data using DeviceMergeSort::SortKeysCopy
     DeviceBuffer<int> d_keys_in = h_keys_in;
@@ -1026,20 +1060,20 @@ void device_merge_sort_sort_keys_copy(std::vector<int>& h_keys_out, std::vector<
 }
 
 void device_merge_sort_stable_sort_pairs(std::vector<int>&   h_keys_out,
-                                         std::vector<float>& h_values_out,
+                                         std::vector<int>& h_values_out,
                                          std::vector<int>&   gt_keys_out,
-                                         std::vector<float>& gt_values_out)
+                                         std::vector<int>& gt_values_out)
 {
     size_t size = 100;
 
     // Generate random input data
     std::vector<int>   h_keys_in(size);
-    std::vector<float> h_values_in(size);
+    std::vector<int> h_values_in(size);
     std::for_each(
-        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand(); });
+        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand() % 101; });
     std::for_each(h_values_in.begin(),
                   h_values_in.end(),
-                  [](float& r) { r = std::rand(); });
+                  [](int& r) { r = std::rand() % 101; });
 
     // Sort input data using std::stable_sort
     gt_keys_out   = h_keys_in;
@@ -1058,7 +1092,7 @@ void device_merge_sort_stable_sort_pairs(std::vector<int>&   h_keys_out,
 
     // Sort input data using DeviceMergeSort::StableSortPairs
     DeviceBuffer<int>   d_keys   = h_keys_in;
-    DeviceBuffer<float> d_values = h_values_in;
+    DeviceBuffer<int> d_values = h_values_in;
 
 
     on().next<DeviceMergeSort>()
@@ -1081,7 +1115,7 @@ void device_merge_sort_stable_sort_keys(std::vector<int>& h_keys_out,
     // Generate random input data
     std::vector<int> h_keys_in(size);
     std::for_each(
-        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand(); });
+        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand() % 101; });
 
     // Sort input data using std::stable_sort
     gt_keys_out = h_keys_in;
@@ -1106,9 +1140,9 @@ TEST_CASE("device_merge_sort", "[cub]")
     SECTION("SortPairs")
     {
         std::vector<int>   h_keys_out;
-        std::vector<float> h_values_out;
+        std::vector<int> h_values_out;
         std::vector<int>   gt_keys_out;
-        std::vector<float> gt_values_out;
+        std::vector<int> gt_values_out;
 
         device_merge_sort_sort_pairs(h_keys_out, h_values_out, gt_keys_out, gt_values_out);
 
@@ -1119,9 +1153,9 @@ TEST_CASE("device_merge_sort", "[cub]")
     SECTION("SortPairsCopy")
     {
         std::vector<int>   h_keys_out;
-        std::vector<float> h_values_out;
+        std::vector<int> h_values_out;
         std::vector<int>   gt_keys_out;
-        std::vector<float> gt_values_out;
+        std::vector<int> gt_values_out;
 
         device_merge_sort_sort_pairs_copy(h_keys_out, h_values_out, gt_keys_out, gt_values_out);
 
@@ -1149,9 +1183,9 @@ TEST_CASE("device_merge_sort", "[cub]")
     SECTION("StableSortPairs")
     {
         std::vector<int>   h_keys_out;
-        std::vector<float> h_values_out;
+        std::vector<int> h_values_out;
         std::vector<int>   gt_keys_out;
-        std::vector<float> gt_values_out;
+        std::vector<int> gt_values_out;
 
         device_merge_sort_stable_sort_pairs(h_keys_out, h_values_out, gt_keys_out, gt_values_out);
 
@@ -1174,12 +1208,12 @@ void device_select_flagged(std::vector<int>& h_keys_out, std::vector<int>& gt_ke
     // Generate random input data
     std::vector<int> h_keys_in(size);
     std::for_each(
-        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand(); });
+        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand() % 101; });
 
     // Generate flags
     std::vector<int> h_flags(size);
     std::for_each(
-        h_flags.begin(), h_flags.end(), [](int& r) { r = std::rand() % 2; });
+        h_flags.begin(), h_flags.end(), [](int& r) { r = std::rand() % 101 % 2; });
 
     // Filter input data using std::copy_if
     gt_keys_out.reserve(size);
@@ -1217,7 +1251,7 @@ void device_select_if(std::vector<int>& h_keys_out, std::vector<int>& gt_keys_ou
     // Generate random input data
     std::vector<int> h_keys_in(size);
     std::for_each(
-        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand(); });
+        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand() % 101; });
 
     // Filter input data using std::copy_if
     gt_keys_out.reserve(size);
@@ -1252,7 +1286,7 @@ void device_select_unique(std::vector<int>& h_keys_out, std::vector<int>& gt_key
     // Generate random input data
     std::vector<int> h_keys_in(size);
     std::for_each(
-        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand(); });
+        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand() % 101; });
 
     // Filter input data using std::unique
     gt_keys_out.reserve(size);
@@ -1305,7 +1339,7 @@ void device_partition_if(std::vector<int>& h_keys_out, std::vector<int>& gt_keys
     // Generate random input data
     std::vector<int> h_keys_in(size);
     std::for_each(
-        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand(); });
+        h_keys_in.begin(), h_keys_in.end(), [](int& r) { r = std::rand() % 101; });
 
     // Partition input data using std::partition
     gt_keys_out   = h_keys_in;
@@ -1322,7 +1356,7 @@ void device_partition_if(std::vector<int>& h_keys_out, std::vector<int>& gt_keys
                        return false;
                    });
     gt_keys_out.resize(select);
-    std::sort(gt_keys_out.begin(), gt_keys_out.end());
+    std::stable_sort(gt_keys_out.begin(), gt_keys_out.end());
 
     // Partition input data using DevicePartition::If
     DeviceBuffer<int> d_keys_in = h_keys_in;
@@ -1341,7 +1375,7 @@ void device_partition_if(std::vector<int>& h_keys_out, std::vector<int>& gt_keys
     d_keys_out.resize(d_num_selected_out);
     // Copy results from device to host
     d_keys_out.copy_to(h_keys_out);
-    std::sort(h_keys_out.begin(), h_keys_out.end());
+    std::stable_sort(h_keys_out.begin(), h_keys_out.end());
 }
 
 TEST_CASE("device_partition", "[cub]")

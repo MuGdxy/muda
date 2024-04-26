@@ -140,7 +140,7 @@ template <typename T>
 void DeviceBuffer3D<T>::reserve(Extent3D new_capacity)
 {
     BufferLaunch()
-        .reserve(*this, new_size)  //
+        .reserve(*this, new_capacity)  //
         .wait();
 }
 
