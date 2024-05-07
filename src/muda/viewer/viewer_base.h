@@ -37,7 +37,7 @@ class ViewerBase
     details::StringPointer m_viewer_name;
     details::StringPointer m_kernel_name;
 #else
-    char m_dummy = 0; // a dummy member to avoid empty class 
+    char m_dummy = 0;  // a dummy member to avoid empty class
 #endif
   public:
     MUDA_GENERIC ViewerBase()
@@ -63,7 +63,7 @@ class ViewerBase
     {
 #if MUDA_CHECK_ON
         auto n = m_kernel_name.auto_select();
-        if(n && n != '\0')
+        if(n && *n != '\0')
             return n;
 #endif
         return "~";
