@@ -133,6 +133,9 @@ Contributions are welcome. We are looking for or are working on:
 
   ![braiding](/docs/img/braiding.png)
 
+- [solid-sim-muda](https://github.com/Roushelfy/solid-sim-muda): a tiny solid simulator using muda.
+  
+  
   
 
 
