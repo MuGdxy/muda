@@ -71,17 +71,21 @@ class LoggerViewer
 {
   public:
     friend class Logger;
+    friend class LogProxy;
 
     template <typename T>
-    MUDA_DEVICE LogProxy& operator<<(const T& t);
-    MUDA_DEVICE LogProxy& operator<<(const char* s);
+    MUDA_DEVICE LogProxy operator<<(const T& t);
+    MUDA_DEVICE LogProxy operator<<(const char* s);
     template <bool IsFmt>
-    MUDA_DEVICE LogProxy& push_string(const char* str);
-    MUDA_DEVICE LogProxy  proxy() { return LogProxy(*this); }
+    MUDA_DEVICE LogProxy push_string(const char* str);
+    MUDA_DEVICE LogProxy proxy() { return LogProxy(*this); }
 
-    LogProxy m_proxy;
+    MUDA_GENERIC operator bool() const
+    {
+        return m_meta_data && m_buffer && m_offset;
+    }
 
-  public:
+  private:
     // Don't use viewer, cuda don't allow to use constructor in __device__ global variable
     // However, LoggerViewer should be able to use as a global variable for debugging
     uint32_t*                m_meta_data_id      = nullptr;

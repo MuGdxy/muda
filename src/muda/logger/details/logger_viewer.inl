@@ -59,26 +59,26 @@ MUDA_INLINE MUDA_DEVICE LogProxy& LogProxy::operator<<(const char* str)
 }
 
 template <typename T>
-MUDA_INLINE MUDA_DEVICE LogProxy& LoggerViewer::operator<<(const T& t)
+MUDA_INLINE MUDA_DEVICE LogProxy LoggerViewer::operator<<(const T& t)
 {
-    m_proxy = LogProxy(*this);
-    m_proxy << t;
-    return m_proxy;
+    auto p = LogProxy(*this);
+    p << t;
+    return p;
 }
 
 template <bool IsFmt>
-MUDA_INLINE MUDA_DEVICE LogProxy& LoggerViewer::push_string(const char* str)
+MUDA_INLINE MUDA_DEVICE LogProxy LoggerViewer::push_string(const char* str)
 {
-    m_proxy = LogProxy(*this);
-    m_proxy.push_string<IsFmt>(str);
-    return m_proxy;
+    auto p = LogProxy(*this);
+    p.push_string<IsFmt>(str);
+    return p;
 }
 
-MUDA_INLINE MUDA_DEVICE LogProxy& LoggerViewer::operator<<(const char* s)
+MUDA_INLINE MUDA_DEVICE LogProxy LoggerViewer::operator<<(const char* s)
 {
-    m_proxy = LogProxy(*this);
-    m_proxy << s;
-    return m_proxy;
+    auto p = LogProxy(*this);
+    p << s;
+    return p;
 }
 
 MUDA_INLINE MUDA_DEVICE uint32_t next_idx(uint32_t* data_offset, uint32_t size, uint32_t total_size)
