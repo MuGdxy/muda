@@ -3,6 +3,7 @@
 #include <muda/cub/device/device_scan.h>
 #include <muda/cub/device/device_segmented_reduce.h>
 #include <muda/launch.h>
+#include <muda/cub/device/device_reduce.h>
 
 namespace muda::details
 {
@@ -159,6 +160,92 @@ void MatrixFormatConverter<T, 1>::make_unique_values(const DeviceTripletMatrix<T
                                 end_offset.data());
 }
 
+template <typename T>
+void MatrixFormatConverter<T, 1>::radix_sort_indices_and_blocks(
+    const DeviceTripletMatrix<T, 1>& from, DeviceBCOOMatrix<T, 1>& to)
+{
+    auto src_row_indices = from.row_indices();
+    auto src_col_indices = from.col_indices();
+    auto src_blocks      = from.values();
+
+    loose_resize(ij_hash_input, src_row_indices.size());
+    loose_resize(sort_index_input, src_row_indices.size());
+
+    loose_resize(ij_hash, src_row_indices.size());
+    loose_resize(sort_index, src_row_indices.size());
+    ij_pairs.resize(src_row_indices.size());
+
+
+    // hash ij
+    ParallelFor(256)
+        .kernel_name(__FUNCTION__ "-set ij pairs")
+        .apply(src_row_indices.size(),
+               [row_indices = src_row_indices.cviewer().name("row_indices"),
+                col_indices = src_col_indices.cviewer().name("col_indices"),
+                ij_hash     = ij_hash_input.viewer().name("ij_hash"),
+                sort_index = sort_index_input.viewer().name("sort_index")] __device__(int i) mutable
+               {
+                   ij_hash(i) =
+                       (uint64_t{row_indices(i)} << 32) + uint64_t{col_indices(i)};
+                   sort_index(i) = i;
+               });
+
+    DeviceRadixSort().SortPairs(ij_hash_input.data(),
+                                ij_hash.data(),
+                                sort_index_input.data(),
+                                sort_index.data(),
+                                ij_hash.size());
+
+    // sort the block values
+
+    {
+        loose_resize(values_sorted, from.values().size());
+        ParallelFor(256)
+            .kernel_name(__FUNCTION__ "-sort block values")
+            .apply(src_blocks.size(),
+                   [src_blocks = src_blocks.cviewer().name("blocks"),
+                    sort_index = sort_index.cviewer().name("sort_index"),
+                    dst_blocks = values_sorted.viewer().name("block_values")] __device__(int i) mutable
+                   { dst_blocks(i) = src_blocks(sort_index(i)); });
+    }
+}
+
+template <typename T>
+void MatrixFormatConverter<T, 1>::make_unique_indices_and_blocks(
+    const DeviceTripletMatrix<T, 1>& from, DeviceBCOOMatrix<T, 1>& to)
+{
+    // alias to reuse the memory
+    auto& unique_ij_hash = ij_hash_input;
+
+    muda::DeviceReduce().ReduceByKey(
+        ij_hash.data(),
+        unique_ij_hash.data(),
+        values_sorted.data(),
+        to.values().data(),
+        count.data(),
+        [] CUB_RUNTIME_FUNCTION(const T& l, const T& r) -> T { return l + r; },
+        ij_hash.size());
+
+    int h_count = count;
+
+    to.resize_triplets(h_count);
+
+    // set ij_hash back to row_indices and col_indices
+    ParallelFor()
+        .kernel_name("set col row indices")
+        .apply(to.row_indices().size(),
+               [ij_hash     = unique_ij_hash.viewer().name("ij_hash"),
+                row_indices = to.row_indices().viewer().name("row_indices"),
+                col_indices = to.col_indices().viewer().name("col_indices")] __device__(int i) mutable
+               {
+                   auto hash      = ij_hash(i);
+                   auto row_index = int{hash >> 32};
+                   auto col_index = int{hash & 0xFFFFFFFF};
+                   row_indices(i) = row_index;
+                   col_indices(i) = col_index;
+               });
+}
+
 
 template <typename T>
 void MatrixFormatConverter<T, 1>::convert(const DeviceCOOMatrix<T>& from,
@@ -178,9 +265,9 @@ void MatrixFormatConverter<T, 1>::convert(const DeviceCOOMatrix<T>& from,
                [values = from.cviewer().name("src_sparse_matrix"),
                 dst = to.viewer().name("dst_dense_matrix")] __device__(int i) mutable
                {
-                   auto value    = values(i);
-                   auto row      = value.row_index;
-                   auto col      = value.col_index;
+                   auto value = values(i);
+                   auto row   = value.row_index;
+                   auto col   = value.col_index;
                    dst(row, col) += value.value;
                });
 }

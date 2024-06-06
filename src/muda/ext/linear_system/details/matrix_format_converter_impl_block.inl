@@ -2,8 +2,9 @@
 #include <muda/cub/device/device_run_length_encode.h>
 #include <muda/cub/device/device_scan.h>
 #include <muda/cub/device/device_segmented_reduce.h>
+#include <muda/cub/device/device_reduce.h>
 #include <muda/launch.h>
-#include <muda/profiler.h>
+
 // for encode run length usage
 MUDA_GENERIC constexpr bool operator==(const int2& a, const int2& b)
 {
@@ -26,10 +27,123 @@ void MatrixFormatConverter<T, N>::convert(const DeviceTripletMatrix<T, N>& from,
     if(to.triplet_count() == 0)
         return;
 
-    merge_sort_indices_and_blocks(from, to);
-    make_unique_indices(from, to);
-    make_unique_blocks(from, to);
+    if constexpr(N <= 3)
+    {
+        radix_sort_indices_and_blocks(from, to);
+        make_unique_indices_and_blocks(from, to);
+    }
+    else
+    {
+        merge_sort_indices_and_blocks(from, to);
+        make_unique_indices(from, to);
+        make_unique_blocks(from, to);
+    }
 }
+
+template <typename T, int N>
+void MatrixFormatConverter<T, N>::radix_sort_indices_and_blocks(
+    const DeviceTripletMatrix<T, N>& from, DeviceBCOOMatrix<T, N>& to)
+{
+    auto src_row_indices = from.block_row_indices();
+    auto src_col_indices = from.block_col_indices();
+    auto src_blocks      = from.block_values();
+
+    loose_resize(ij_hash_input, src_row_indices.size());
+    loose_resize(sort_index_input, src_row_indices.size());
+
+    loose_resize(ij_hash, src_row_indices.size());
+    loose_resize(sort_index, src_row_indices.size());
+    ij_pairs.resize(src_row_indices.size());
+
+
+    // hash ij
+    ParallelFor(256)
+        .kernel_name(__FUNCTION__ "-set ij pairs")
+        .apply(src_row_indices.size(),
+               [row_indices = src_row_indices.cviewer().name("row_indices"),
+                col_indices = src_col_indices.cviewer().name("col_indices"),
+                ij_hash     = ij_hash_input.viewer().name("ij_hash"),
+                sort_index = sort_index_input.viewer().name("sort_index")] __device__(int i) mutable
+               {
+                   ij_hash(i) =
+                       (uint64_t{row_indices(i)} << 32) + uint64_t{col_indices(i)};
+                   sort_index(i) = i;
+               });
+
+    DeviceRadixSort().SortPairs(ij_hash_input.data(),
+                                ij_hash.data(),
+                                sort_index_input.data(),
+                                sort_index.data(),
+                                ij_hash.size());
+
+    // set ij_hash back to row_indices and col_indices
+    auto dst_row_indices = to.block_row_indices();
+    auto dst_col_indices = to.block_col_indices();
+
+    ParallelFor(256)
+        .kernel_name(__FUNCTION__ "-set col row indices")
+        .apply(dst_row_indices.size(),
+               [ij_hash = ij_hash.viewer().name("ij_hash"),
+                ij_pairs = ij_pairs.viewer().name("ij_pairs")] __device__(int i) mutable
+               {
+                   auto hash      = ij_hash(i);
+                   auto row_index = int{hash >> 32};
+                   auto col_index = int{hash & 0xFFFFFFFF};
+                   ij_pairs(i).x  = row_index;
+                   ij_pairs(i).y  = col_index;
+               });
+
+    // sort the block values
+
+    {
+        loose_resize(blocks_sorted, from.block_values().size());
+        ParallelFor(256)
+            .kernel_name(__FUNCTION__ "-sort block values")
+            .apply(src_blocks.size(),
+                   [src_blocks = src_blocks.cviewer().name("blocks"),
+                    sort_index = sort_index.cviewer().name("sort_index"),
+                    dst_blocks = blocks_sorted.viewer().name("block_values")] __device__(int i) mutable
+                   { dst_blocks(i) = src_blocks(sort_index(i)); });
+    }
+}
+
+template <typename T, int N>
+void MatrixFormatConverter<T, N>::make_unique_indices_and_blocks(
+    const DeviceTripletMatrix<T, N>& from, DeviceBCOOMatrix<T, N>& to)
+{
+    // alias to reuse the memory
+    auto& unique_ij_hash = ij_hash_input;
+
+    muda::DeviceReduce().ReduceByKey(
+        ij_hash.data(),
+        unique_ij_hash.data(),
+        blocks_sorted.data(),
+        to.block_values().data(),
+        count.data(),
+        [] CUB_RUNTIME_FUNCTION(const BlockMatrix& l, const BlockMatrix& r) -> BlockMatrix
+        { return l + r; },
+        ij_hash.size());
+
+    int h_count = count;
+
+    to.resize_triplets(h_count);
+
+    // set ij_hash back to row_indices and col_indices
+    ParallelFor()
+        .kernel_name("set col row indices")
+        .apply(to.block_row_indices().size(),
+               [ij_hash = unique_ij_hash.viewer().name("ij_hash"),
+                row_indices = to.block_row_indices().viewer().name("row_indices"),
+                col_indices = to.block_col_indices().viewer().name("col_indices")] __device__(int i) mutable
+               {
+                   auto hash      = ij_hash(i);
+                   auto row_index = int{hash >> 32};
+                   auto col_index = int{hash & 0xFFFFFFFF};
+                   row_indices(i) = row_index;
+                   col_indices(i) = col_index;
+               });
+}
+
 
 template <typename T, int N>
 void MatrixFormatConverter<T, N>::merge_sort_indices_and_blocks(

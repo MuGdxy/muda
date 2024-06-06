@@ -39,7 +39,7 @@ namespace details
         auto cusolver_dn() const { return m_handles.cusolver_dn(); }
 
         template <typename T>
-        void loose_resize(muda::DeviceBuffer<T>& buf, size_t new_size)
+        void loose_resize(DeviceBuffer<T>& buf, size_t new_size)
         {
             if(buf.capacity() < new_size)
                 buf.reserve(new_size * m_handles.reserve_ratio());
@@ -53,29 +53,33 @@ namespace details
         using BlockMatrix   = typename DeviceTripletMatrix<T, N>::BlockMatrix;
         using SegmentVector = typename DeviceDoubletVector<T, N>::SegmentVector;
 
-        muda::DeviceBuffer<int> sort_index;
-        muda::DeviceBuffer<int> sort_index_tmp;
+        DeviceBuffer<int> sort_index;
+        DeviceBuffer<int> sort_index_input;
+        DeviceBuffer<int> sort_index_tmp;
 
-        muda::DeviceBuffer<int> col_tmp;
-        muda::DeviceBuffer<int> row_tmp;
+        DeviceBuffer<int> col_tmp;
+        DeviceBuffer<int> row_tmp;
 
-        muda::DeviceBCOOMatrix<T, N> temp_bcoo_matrix;
-        muda::DeviceBCOOVector<T, N> temp_bcoo_vector;
+        DeviceBCOOMatrix<T, N> temp_bcoo_matrix;
+        DeviceBCOOVector<T, N> temp_bcoo_vector;
 
-        muda::DeviceBuffer<int> unique_indices;
-        muda::DeviceBuffer<int> unique_counts;
-        muda::DeviceBuffer<int> offsets;
+        DeviceBuffer<int> unique_indices;
+        DeviceBuffer<int> unique_counts;
+        DeviceBuffer<int> offsets;
 
-        muda::DeviceVar<int> count;
+        DeviceVar<int> count;
 
-        muda::DeviceBuffer<int2> ij_pairs;
-        muda::DeviceBuffer<int2> unique_ij_pairs;
+        DeviceBuffer<int2>     ij_pairs;
+        DeviceBuffer<uint64_t> ij_hash;
+        DeviceBuffer<uint64_t> ij_hash_input;
+        DeviceBuffer<int2>     unique_ij_pairs;
 
-        muda::DeviceBuffer<BlockMatrix>   unique_blocks;
-        muda::DeviceBuffer<SegmentVector> unique_segments;
-        muda::DeviceBuffer<SegmentVector> temp_segments;
+        muda::DeviceBuffer<BlockMatrix> blocks_sorted;
+        DeviceBuffer<BlockMatrix>       unique_blocks;
+        DeviceBuffer<SegmentVector>     unique_segments;
+        DeviceBuffer<SegmentVector>     temp_segments;
 
-        muda::DeviceBuffer<T> unique_values;
+        DeviceBuffer<T> unique_values;
 
       public:
         MatrixFormatConverter(LinearSystemHandles& handles)
@@ -88,6 +92,11 @@ namespace details
 
         // Triplet -> BCOO
         void convert(const DeviceTripletMatrix<T, N>& from, DeviceBCOOMatrix<T, N>& to);
+
+        void radix_sort_indices_and_blocks(const DeviceTripletMatrix<T, N>& from,
+                                           DeviceBCOOMatrix<T, N>& to);
+        void make_unique_indices_and_blocks(const DeviceTripletMatrix<T, N>& from,
+                                            DeviceBCOOMatrix<T, N>& to);
 
         void merge_sort_indices_and_blocks(const DeviceTripletMatrix<T, N>& from,
                                            DeviceBCOOMatrix<T, N>& to);
@@ -144,26 +153,30 @@ namespace details
     template <typename T>
     class MatrixFormatConverter<T, 1> : public MatrixFormatConverterBase
     {
-        muda::DeviceBuffer<int> sort_index;
-        muda::DeviceBuffer<int> sort_index_tmp;
+        DeviceBuffer<int> sort_index;
+        DeviceBuffer<int> sort_index_input;
+        DeviceBuffer<int> sort_index_tmp;
 
-        muda::DeviceBuffer<int> col_tmp;
-        muda::DeviceBuffer<int> row_tmp;
+        DeviceBuffer<int> col_tmp;
+        DeviceBuffer<int> row_tmp;
 
-        muda::DeviceBuffer<int>  unique_indices;
-        muda::DeviceCOOMatrix<T> temp_coo_matrix;
-        muda::DeviceCOOVector<T> temp_coo_vector;
+        DeviceBuffer<int>  unique_indices;
+        DeviceCOOMatrix<T> temp_coo_matrix;
+        DeviceCOOVector<T> temp_coo_vector;
 
-        muda::DeviceBuffer<int> unique_counts;
-        muda::DeviceBuffer<int> offsets;
+        DeviceBuffer<int> unique_counts;
+        DeviceBuffer<int> offsets;
 
-        muda::DeviceVar<int> count;
+        DeviceVar<int> count;
 
-        muda::DeviceBuffer<int2> ij_pairs;
-        muda::DeviceBuffer<int2> unique_ij_pairs;
+        DeviceBuffer<int2>     ij_pairs;
+        DeviceBuffer<uint64_t> ij_hash;
+        DeviceBuffer<uint64_t> ij_hash_input;
+        DeviceBuffer<int2>     unique_ij_pairs;
 
-        muda::DeviceBuffer<T> unique_values;
-        muda::DeviceBuffer<T> temp_values;
+        muda::DeviceBuffer<T> values_sorted;
+        DeviceBuffer<T>       unique_values;
+        DeviceBuffer<T>       temp_values;
 
       public:
         MatrixFormatConverter(LinearSystemHandles& handles)
@@ -175,6 +188,12 @@ namespace details
 
         // Triplet -> COO
         void convert(const DeviceTripletMatrix<T, 1>& from, DeviceCOOMatrix<T>& to);
+
+        void radix_sort_indices_and_blocks(const DeviceTripletMatrix<T, 1>& from,
+                                           DeviceBCOOMatrix<T, 1>& to);
+        void make_unique_indices_and_blocks(const DeviceTripletMatrix<T, 1>& from,
+                                            DeviceBCOOMatrix<T, 1>& to);
+
         void merge_sort_indices_and_values(const DeviceTripletMatrix<T, 1>& from,
                                            DeviceCOOMatrix<T>& to);
         void make_unique_indices(const DeviceTripletMatrix<T, 1>& from,

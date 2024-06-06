@@ -126,5 +126,4 @@ class DeviceDoubletVector<T, 1>
 };
 }  // namespace muda
 
-
 #include "details/device_doublet_vector.inl"
