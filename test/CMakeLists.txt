@@ -5,6 +5,7 @@ file(GLOB_RECURSE MUDA_UNIT_TEST_SOURCE_FILES
   "${PROJECT_SOURCE_DIR}/test/unit_test/*.cu"
   "${PROJECT_SOURCE_DIR}/test/unit_test/*.h")
 add_executable(muda_unit_test ${MUDA_UNIT_TEST_SOURCE_FILES})
+target_compile_features(muda_unit_test PRIVATE cxx_std_20)
 set_target_properties(muda_unit_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_include_directories(muda_unit_test PRIVATE
   "${PROJECT_SOURCE_DIR}/test"
@@ -21,6 +22,7 @@ file(GLOB_RECURSE MUDA_EIGEN_TEST_SOURCE_FILES
   "${PROJECT_SOURCE_DIR}/test/eigen_test/*.cu"
   "${PROJECT_SOURCE_DIR}/test/eigen_test/*.h")
 add_executable(muda_eigen_test ${MUDA_EIGEN_TEST_SOURCE_FILES})
+target_compile_features(muda_eigen_test PRIVATE cxx_std_20)
 set_target_properties(muda_eigen_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_include_directories(muda_eigen_test PRIVATE
   "${PROJECT_SOURCE_DIR}/test"
@@ -36,6 +38,7 @@ file(GLOB_RECURSE MUDA_LINEAR_SYSTEM_TEST_SOURCE_FILES
   "${PROJECT_SOURCE_DIR}/test/linear_system_test/*.cu"
   "${PROJECT_SOURCE_DIR}/test/linear_system_test/*.h")
 add_executable(muda_linear_sysytem_test ${MUDA_LINEAR_SYSTEM_TEST_SOURCE_FILES})
+target_compile_features(muda_linear_sysytem_test PRIVATE cxx_std_20)
 set_target_properties(muda_linear_sysytem_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_include_directories(muda_linear_sysytem_test PRIVATE
   "${PROJECT_SOURCE_DIR}/test"

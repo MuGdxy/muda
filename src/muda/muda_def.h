@@ -36,3 +36,10 @@
 #define MUDA_NOEXCEPT noexcept
 #define MUDA_INLINE inline
 #define MUDA_CONSTEXPR constexpr
+
+// Concepts
+#if MUDA_HAS_CXX20
+#define MUDA_REQUIRES(...) requires (__VA_ARGS__)
+#else
+#define MUDA_REQUIRES(...)
+#endif

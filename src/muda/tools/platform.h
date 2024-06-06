@@ -28,3 +28,9 @@
 #define MUDA_FASTCALL __attribute__((__fastcall__))
 #define MUDA_FUNCTION_SIG __PRETTY_FUNCTION__
 #endif
+
+#if defined(_MSVC_LANG)
+#define MUDA_HAS_CXX20 _HAS_CXX20
+#else
+#define MUDA_HAS_CXX20 __cplusplus >= 202002L
+#endif

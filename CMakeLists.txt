@@ -28,7 +28,6 @@ project(muda LANGUAGES CXX CUDA)
 find_package(CUDAToolkit REQUIRED)
 
 enable_language(CUDA)
-set(CMAKE_CXX_STANDARD 17)
 
 # muda
 add_library(muda INTERFACE)

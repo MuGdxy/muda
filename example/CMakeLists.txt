@@ -6,13 +6,15 @@ else()
     message(FATAL_ERROR "Eigen3 not found")
 endif()
 
-# find_package(fmt REQUIRED)
+
+
 file(GLOB_RECURSE MUDA_EXAMPLE_SOURCE_FILES
     "${PROJECT_SOURCE_DIR}/example/*.cu"
     "${PROJECT_SOURCE_DIR}/example/*.cpp"
     "${PROJECT_SOURCE_DIR}/example/*.h")
 
 add_executable(muda_example ${MUDA_EXAMPLE_SOURCE_FILES})
+target_compile_features(muda_example PRIVATE cxx_std_20)
 set_target_properties(muda_example PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 # target_link_libraries(muda_example PRIVATE fmt::fmt-header-only)

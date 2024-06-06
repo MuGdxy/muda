@@ -7,6 +7,8 @@
 #include <vector>
 #include <thrust/random.h>
 
+
+
 using namespace muda;
 
 struct AABBGetter
