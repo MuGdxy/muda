@@ -28,7 +28,7 @@ class LogProxy
     MUDA_DEVICE LogProxy& operator<<(const char* str);
 
 #define PROXY_OPERATOR(enum_name, T)                                           \
-    MUDA_INLINE MUDA_DEVICE friend LogProxy& operator<<(LogProxy& p, T v)      \
+    MUDA_INLINE MUDA_DEVICE friend LogProxy operator<<(LogProxy p, T v)        \
     {                                                                          \
         details::LoggerMetaData meta;                                          \
         meta.type = LoggerBasicType::enum_name;                                \

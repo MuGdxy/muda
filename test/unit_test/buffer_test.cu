@@ -2,7 +2,7 @@
 #include <muda/muda.h>
 #include <muda/container.h>
 #include <muda/buffer.h>
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 using namespace muda;
 
 template <typename T>

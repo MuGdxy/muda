@@ -2,7 +2,7 @@
 #include <muda/launch/parallel_for.h>
 #include <muda/ext/field/field_entry_view.h>
 #include <muda/buffer/buffer_view.h>
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 namespace muda
 {
 class FieldEntryLaunch : public LaunchBase<FieldEntryLaunch>

@@ -1,5 +1,5 @@
 #pragma once
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 #include <Eigen/Geometry>
 #include <muda/muda_def.h>
 

@@ -3,7 +3,7 @@
 #include <muda/viewer/viewer_base.h>
 #include <muda/buffer/device_buffer.h>
 #include <muda/tools/cuda_vec_utils.h>
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 
 
 /*

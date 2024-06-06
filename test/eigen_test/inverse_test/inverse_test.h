@@ -2,7 +2,7 @@
 #include <muda/muda.h>
 #include <muda/syntax_sugar.h>
 #include <muda/ext/eigen/inverse.h>
-#include <Eigen/Dense>
+#include <muda/ext/eigen/eigen_dense_cxx20.h>
 #include "../eigen_test_common.h"
 
 using namespace muda;

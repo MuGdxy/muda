@@ -45,7 +45,7 @@ namespace details
 }  // namespace muda::eigen
 #endif
 
-#include <Eigen/Dense>
+#include <muda/ext/eigen/eigen_dense_cxx20.h>
 namespace muda::eigen
 {
 MUDA_INLINE MUDA_GENERIC void svd(const Eigen::Matrix<float, 3, 3>& F,

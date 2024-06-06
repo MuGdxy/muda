@@ -1,5 +1,5 @@
 #pragma once
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 template <typename T, int M, int N>
 bool approx_equal(const Eigen::Matrix<T, M, N>& a, const Eigen::Matrix<T, M, N>& b)
 {

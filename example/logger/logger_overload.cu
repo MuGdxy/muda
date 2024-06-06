@@ -2,7 +2,7 @@
 #include <muda/muda.h>
 #include <example_common.h>
 #include <muda/logger.h>
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 using namespace muda;
 
 namespace muda

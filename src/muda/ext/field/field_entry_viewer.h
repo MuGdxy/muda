@@ -5,7 +5,7 @@
 #include <muda/ext/field/field_entry_core.h>
 #include <muda/ext/field/matrix_map_info.h>
 #include <muda/tools/host_device_config.h>
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 
 namespace muda
 {

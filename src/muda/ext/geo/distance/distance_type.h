@@ -1,7 +1,7 @@
 #pragma once
 #include <muda/muda_def.h>
 #include <muda/tools/debug_log.h>
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 #include <Eigen/Geometry>
 
 namespace muda::distance

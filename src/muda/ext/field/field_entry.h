@@ -7,7 +7,6 @@
 #include <muda/ext/field/field_entry_base_data.h>
 #include <muda/ext/field/field_entry_view.h>
 #include <muda/tools/host_device_config.h>
-#include <muda/ext/field/field_entry.h>
 
 namespace muda
 {

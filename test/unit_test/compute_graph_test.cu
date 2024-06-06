@@ -3,7 +3,7 @@
 #include <muda/muda.h>
 #include <muda/cub/device/device_scan.h>
 #include <muda/syntax_sugar.h>
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 
 using namespace muda;
 using Vector3 = Eigen::Vector3f;

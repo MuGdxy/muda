@@ -1,4 +1,4 @@
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
 #include <muda/container.h>

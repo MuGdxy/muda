@@ -1,7 +1,7 @@
 #pragma once
 #include <muda/muda_def.h>
 #include <cinttypes>
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 
 namespace muda::spatial_hash
 {

@@ -1,6 +1,6 @@
 #pragma once
 #include <muda/ext/geo/lbvh/bvh_viewer.h>
-
+#include <muda/ext/geo/lbvh/aabb.h>
 #include <thrust/swap.h>
 #include <thrust/pair.h>
 #include <thrust/tuple.h>
@@ -17,6 +17,7 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/unique.h>
 #include <thrust/execution_policy.h>
+#include <muda/cub/device/device_reduce.h>
 
 namespace muda::lbvh
 {
@@ -180,14 +181,21 @@ class BVH
                           m_aabbs.begin() + num_internal_nodes,
                           aabb_getter_type());
 
-        const auto aabb_whole =
-            thrust::reduce(policy,
-                           m_aabbs.begin() + num_internal_nodes,
-                           m_aabbs.end(),
-                           default_aabb,
-                           [] __device__ __host__(const aabb_type& lhs, const aabb_type& rhs)
-                           { return merge(lhs, rhs); });
+        //muda::DeviceReduce(stream).Reduce(
+        //    m_aabbs.data() + num_internal_nodes,
+        //    m_aabb_whole.data(),
+        //    m_aabbs.size() - num_internal_nodes,
+        //    [] CUB_RUNTIME_FUNCTION(const aabb_type& lhs, const aabb_type& rhs) -> aabb_type
+        //    { return merge(lhs, rhs); },
+        //    default_aabb);
 
+        const auto aabb_whole = thrust::reduce(
+            policy,
+            m_aabbs.data() + num_internal_nodes,
+            m_aabbs.data() + m_aabbs.size(),
+            default_aabb,
+            [] __device__ __host__(const aabb_type& lhs, const aabb_type& rhs) -> aabb_type
+            { return merge(lhs, rhs); });
 
         thrust::transform(policy,
                           this->m_objects.begin(),
@@ -276,6 +284,7 @@ class BVH
 
         const auto flags = thrust::raw_pointer_cast(m_flag_container.data());
 
+
         thrust::for_each(policy,
                          thrust::make_counting_iterator<index_type>(num_internal_nodes),
                          thrust::make_counting_iterator<index_type>(num_nodes),
@@ -293,7 +302,7 @@ class BVH
                                      // wait the other thread from the other child node.
                                      return;
                                  }
-                                 MUDA_KERNEL_ASSERT(old == 1,"old=%d",old);
+                                 MUDA_KERNEL_ASSERT(old == 1, "old=%d", old);
                                  // here, the flag has already been 1. it means that this
                                  // thread is the 2nd thread. merge AABB of both childlen.
 

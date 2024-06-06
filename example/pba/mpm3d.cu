@@ -1,7 +1,7 @@
 #if MUDA_COMPUTE_GRAPH_ON
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
-#include <Eigen/Dense>
+#include <muda/ext/eigen/eigen_dense_cxx20.h>
 #include <memory>
 #include <chrono>
 #include <iostream>

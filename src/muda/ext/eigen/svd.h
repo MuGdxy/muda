@@ -1,6 +1,6 @@
 #pragma once
 #include <muda/muda_def.h>
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 #include <muda/ext/eigen/svd/svd_impl.h>
 
 namespace muda

@@ -1,6 +1,5 @@
 #pragma once
 #include <muda/ext/geo/lbvh/utility.h>
-
 #include <thrust/swap.h>
 #include <cmath>
 #include <cuda_runtime.h>
@@ -12,6 +11,12 @@ struct AABB
 {
     typename vector_of<T>::type upper;
     typename vector_of<T>::type lower;
+
+    MUDA_GENERIC       AABB() noexcept                    = default;
+    MUDA_GENERIC       AABB(const AABB<T>&) noexcept      = default;
+    MUDA_GENERIC       AABB(AABB<T>&&) noexcept           = default;
+    MUDA_GENERIC AABB& operator=(const AABB<T>&) noexcept = default;
+    MUDA_GENERIC AABB& operator=(AABB<T>&&) noexcept      = default;
 };
 
 template <typename T>

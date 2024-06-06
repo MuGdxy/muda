@@ -1,6 +1,6 @@
 #pragma once
 #include <muda/atomic.h>
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 
 namespace muda::eigen
 {

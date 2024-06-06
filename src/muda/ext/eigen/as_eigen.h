@@ -1,5 +1,5 @@
 #pragma once
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 #include <vector_types.h>
 namespace muda
 {

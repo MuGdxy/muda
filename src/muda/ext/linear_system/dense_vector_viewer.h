@@ -1,5 +1,5 @@
 #pragma once
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 #include <muda/buffer/buffer_2d_view.h>
 #include <muda/viewer/viewer_base.h>
 #include <muda/viewer/viewer_base_accessor.h>
@@ -235,7 +235,7 @@ class DenseVectorViewer : public DenseVectorViewerBase<false, T>
     template <int N>
     MUDA_DEVICE Eigen::Vector<T, N> atomic_add(const Eigen::Vector<T, N>& val)
     {
-        check_size_matching(N);
+        this->check_size_matching(N);
         Eigen::Vector<T, N> ret;
 #pragma unroll
         for(int i = 0; i < N; ++i)

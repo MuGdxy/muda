@@ -1,7 +1,7 @@
 //#include <catch2/catch.hpp>
 //#include <muda/muda.h>
 //#include <example_common.h>
-//#include <Eigen/Core>
+//#include <muda/ext/eigen/eigen_core_cxx20.h>
 //#include <fmt/printf.h>
 //#include <fmt/args.h>
 //#include <fmt/core.h>

@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
-#include <Eigen/Dense>
+
+#include <muda/ext/eigen/eigen_dense_cxx20.h>
 #include <muda/ext/linear_system.h>
 using namespace muda;
 using namespace Eigen;

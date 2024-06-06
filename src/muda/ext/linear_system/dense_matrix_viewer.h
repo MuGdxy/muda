@@ -1,5 +1,5 @@
 #pragma once
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 #include <muda/buffer/buffer_2d_view.h>
 #include <muda/viewer/viewer_base.h>
 #include <cublas_v2.h>

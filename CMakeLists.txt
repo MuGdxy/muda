@@ -40,6 +40,7 @@ target_compile_options(muda INTERFACE
 file(GLOB_RECURSE MUDA_HEADER_FILES "${PROJECT_SOURCE_DIR}/src/*.h" "${PROJECT_SOURCE_DIR}/src/*.inl" "${PROJECT_SOURCE_DIR}/src/*.cuh")
 
 target_sources(muda PUBLIC ${MUDA_HEADER_FILES})
+target_compile_features(muda INTERFACE cxx_std_17)
 target_link_libraries(muda INTERFACE CUDA::cudart)
 target_include_directories(muda INTERFACE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_include_directories(muda INTERFACE "${PROJECT_SOURCE_DIR}/src/")

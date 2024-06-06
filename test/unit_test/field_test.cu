@@ -2,8 +2,8 @@
 #include <muda/muda.h>
 #include <muda/container.h>
 #include <muda/syntax_sugar.h>
-#include <muda/ext/field.h>
 #include <muda/ext/eigen.h>
+#include <muda/ext/field.h>
 #include <muda/cub/device/device_reduce.h>
 
 using namespace muda;

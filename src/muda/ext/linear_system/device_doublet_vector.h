@@ -1,7 +1,6 @@
 #pragma once
-#pragma once
 #include <muda/buffer/device_buffer.h>
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 #include <muda/ext/linear_system/doublet_vector_view.h>
 
 namespace muda::details

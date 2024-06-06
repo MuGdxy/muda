@@ -2,7 +2,7 @@
 
 #include <string>
 #include <muda/viewer/viewer_base.h>
-#include <Eigen/Core>
+#include <muda/ext/eigen/eigen_core_cxx20.h>
 
 /*
 * - 2024/2/23 remove viewer's subview, view's subview is enough

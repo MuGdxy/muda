@@ -29,7 +29,17 @@ struct DistanceCalculator
                + (point.z - object.z) * (point.z - object.z);
     }
 };
+struct MyAABB
+{
+  public:
+    MyAABB()                    = default;
+    MyAABB(const MyAABB& other) = default;
+    MyAABB(MyAABB&& other)      = default;
+    MyAABB& operator=(const MyAABB& other) = default;
+    MyAABB& operator=(MyAABB&& other) = default;
 
+    int a;
+};
 void lbvh_test()
 {
     constexpr std::size_t N = 10;
@@ -46,6 +56,10 @@ void lbvh_test()
     }
 
     lbvh::BVH<float, float4, AABBGetter> bvh;
+
+    //cub::detail::value_t<thrust::device_ptr<muda::lbvh::AABB<float>>>;
+
+
     bvh.objects() = ps;
     bvh.build();
 
