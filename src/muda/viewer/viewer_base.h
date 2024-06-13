@@ -69,6 +69,14 @@ class ViewerBase
         return "~";
     }
 
+    MUDA_INLINE MUDA_GENERIC void copy_name(const ViewerBase& other) MUDA_NOEXCEPT
+    {
+#if MUDA_CHECK_ON
+        m_kernel_name = other.m_kernel_name;
+        m_viewer_name = other.m_viewer_name;
+#endif
+    }
+
     // default copy / move
     ViewerBase(const ViewerBase&)            = default;
     ViewerBase(ViewerBase&&)                 = default;
@@ -87,14 +95,6 @@ class ViewerBase
     {
 #if MUDA_CHECK_ON
         m_viewer_name = pointer;
-#endif
-    }
-
-    MUDA_INLINE MUDA_GENERIC void copy_name(const ViewerBase& other) MUDA_NOEXCEPT
-    {
-#if MUDA_CHECK_ON
-        m_kernel_name = other.m_kernel_name;
-        m_viewer_name = other.m_viewer_name;
 #endif
     }
 };
