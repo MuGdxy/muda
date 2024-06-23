@@ -29,14 +29,16 @@ class DenseVectorViewBase : public ViewBase<IsConst>
     using ThisViewer = std::conditional_t<IsConst, CViewer, Viewer>;
 
   protected:
-    auto_const_t<T>*             m_data;
-    mutable cusparseDnVecDescr_t m_descr;
-    int                          m_offset;
-    int                          m_inc;
-    int                          m_size;
-    int                          m_origin_size;
+    auto_const_t<T>*             m_data        = nullptr;
+    mutable cusparseDnVecDescr_t m_descr       = nullptr;
+    int                          m_offset      = -1;
+    int                          m_inc         = -1;
+    int                          m_size        = -1;
+    int                          m_origin_size = -1;
 
   public:
+    DenseVectorViewBase() = default;
+
     DenseVectorViewBase(auto_const_t<T>*     data,
                         cusparseDnVecDescr_t descr,
                         int                  offset,
