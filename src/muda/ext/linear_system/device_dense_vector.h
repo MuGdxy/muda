@@ -42,6 +42,7 @@ class DeviceDenseVector
     DenseVectorViewer<T>  viewer() { return view().viewer(); }
     CDenseVectorViewer<T> viewer() const { return view().cviewer(); }
 
+    auto capacity() const { return m_data.capacity(); }
     auto size() const { return m_data.size(); }
     auto buffer_view() const { return m_data.view(); }
     auto buffer_view() { return m_data.view(); }
