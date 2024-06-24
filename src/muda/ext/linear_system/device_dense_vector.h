@@ -30,6 +30,7 @@ class DeviceDenseVector
     DeviceDenseVector& operator=(const DeviceDenseVector&);
     DeviceDenseVector& operator=(DeviceDenseVector&&);
 
+    void reserve(size_t size);
     void resize(size_t size);
     void fill(T value);
     void copy_to(Eigen::VectorX<T>& vec) const;

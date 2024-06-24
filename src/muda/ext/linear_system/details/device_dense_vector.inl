@@ -53,6 +53,11 @@ DeviceDenseVector<T>& DeviceDenseVector<T>::operator=(DeviceDenseVector<T>&& oth
     return *this;
 }
 template <typename T>
+void DeviceDenseVector<T>::reserve(size_t size)
+{
+    m_data.reserve(size);
+}
+template <typename T>
 void DeviceDenseVector<T>::resize(size_t size)
 {
     if(m_descr)

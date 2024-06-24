@@ -92,7 +92,12 @@ void DeviceBSRMatrix<Ty, N>::reserve(int non_zero_blocks)
     m_block_values.reserve(non_zero_blocks);
 }
 template <typename Ty, int N>
-inline void DeviceBSRMatrix<Ty, N>::resize(int non_zero_blocks)
+void DeviceBSRMatrix<Ty, N>::reserve_offsets(int size)
+{
+    m_block_row_offsets.reserve(size);
+}
+template <typename Ty, int N>
+void DeviceBSRMatrix<Ty, N>::resize(int non_zero_blocks)
 {
     m_block_col_indices.resize(non_zero_blocks);
     m_block_values.resize(non_zero_blocks);

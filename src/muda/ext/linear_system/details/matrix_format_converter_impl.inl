@@ -1,9 +1,10 @@
 #include <muda/cub/device/device_merge_sort.h>
+#include <muda/cub/device/device_radix_sort.h>
 #include <muda/cub/device/device_run_length_encode.h>
 #include <muda/cub/device/device_scan.h>
 #include <muda/cub/device/device_segmented_reduce.h>
-#include <muda/launch.h>
 #include <muda/cub/device/device_reduce.h>
+#include <muda/launch.h>
 
 namespace muda::details
 {

@@ -42,6 +42,7 @@ class DeviceBSRMatrix
 
     void reshape(int row, int col);
     void reserve(int non_zero_blocks);
+    void reserve_offsets(int size);
     void resize(int non_zero_blocks);
 
     static constexpr int block_size() { return N; }
