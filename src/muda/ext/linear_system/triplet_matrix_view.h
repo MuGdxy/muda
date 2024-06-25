@@ -203,16 +203,20 @@ class TripletMatrixViewBase : public ViewBase<IsConst>
     MUDA_GENERIC auto submatrix(int2 offset, int2 extent) const
     {
         MUDA_KERNEL_ASSERT(offset.x >= 0 && offset.y >= 0,
-                           "TripletMatrixView: submatrix is out of range, submatrix_offset.x=%d, submatrix_offset.y=%d",
+                           "TripletMatrixView: submatrix is out of range, offset=(%d, %d)",
                            offset.x,
                            offset.y);
 
         MUDA_KERNEL_ASSERT(offset.x + extent.x <= m_submatrix_extent.x
                                && offset.y + extent.y <= m_submatrix_extent.y,
-                           "TripletMatrixView: submatrix is out of range, submatrix_offset.x=%d, submatrix_extent.x=%d, submatrix_offset.y=%d, submatrix_extent.y=%d",
+                           "TripletMatrixView: submatrix is out of range, offset=(%d, %d), extent=(%d, %d), origin offset=(%d,%d), extent(%d,%d).",
                            offset.x,
-                           m_submatrix_extent.x,
                            offset.y,
+                           extent.x,
+                           extent.y,
+                           m_submatrix_offset.x,
+                           m_submatrix_offset.y,
+                           m_submatrix_extent.x,
                            m_submatrix_extent.y);
 
         return ThisView{m_total_block_rows,
@@ -253,9 +257,11 @@ template <bool IsConst, typename Ty>
 class TripletMatrixViewBase<IsConst, Ty, 1> : public ViewBase<IsConst>
 {
     using Base = ViewBase<IsConst>;
+
   protected:
     template <typename U>
     using auto_const_t = typename Base::template auto_const_t<U>;
+
   public:
     static_assert(!std::is_const_v<Ty>, "Ty must be non-const");
     using ConstView    = TripletMatrixViewBase<true, Ty, 1>;
