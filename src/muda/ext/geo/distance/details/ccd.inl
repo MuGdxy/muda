@@ -3,10 +3,7 @@
 #include <thrust/swap.h>
 namespace muda::distance
 {
-using T            = float;
-constexpr auto dim = 3;
-
-// template <class T, int dim>
+template <typename T, int dim>
 MUDA_GENERIC bool point_edge_cd_broadphase(const Eigen::Matrix<T, dim, 1>& x0,
                                            const Eigen::Matrix<T, dim, 1>& x1,
                                            const Eigen::Matrix<T, dim, 1>& x2,
@@ -24,7 +21,7 @@ MUDA_GENERIC bool point_edge_cd_broadphase(const Eigen::Matrix<T, dim, 1>& x0,
     }
 }
 
-// template <class T>
+template <typename T>
 MUDA_GENERIC bool point_edge_ccd_broadphase(const Eigen::Matrix<T, 2, 1>& p,
                                             const Eigen::Matrix<T, 2, 1>& e0,
                                             const Eigen::Matrix<T, 2, 1>& e1,
@@ -49,7 +46,7 @@ MUDA_GENERIC bool point_edge_ccd_broadphase(const Eigen::Matrix<T, 2, 1>& p,
     }
 }
 
-// template <class T>
+template <typename T>
 MUDA_GENERIC bool point_triangle_cd_broadphase(const Eigen::Matrix<T, 3, 1>& p,
                                                const Eigen::Matrix<T, 3, 1>& t0,
                                                const Eigen::Matrix<T, 3, 1>& t1,
@@ -68,7 +65,7 @@ MUDA_GENERIC bool point_triangle_cd_broadphase(const Eigen::Matrix<T, 3, 1>& p,
     }
 }
 
-// template <class T>
+template <typename T>
 MUDA_GENERIC bool edge_edge_cd_broadphase(const Eigen::Matrix<T, 3, 1>& ea0,
                                           const Eigen::Matrix<T, 3, 1>& ea1,
                                           const Eigen::Matrix<T, 3, 1>& eb0,
@@ -89,7 +86,7 @@ MUDA_GENERIC bool edge_edge_cd_broadphase(const Eigen::Matrix<T, 3, 1>& ea0,
     }
 }
 
-// template <class T>
+template <typename T>
 MUDA_GENERIC bool point_triangle_ccd_broadphase(const Eigen::Matrix<T, 3, 1>& p,
                                                 const Eigen::Matrix<T, 3, 1>& t0,
                                                 const Eigen::Matrix<T, 3, 1>& t1,
@@ -124,7 +121,7 @@ MUDA_GENERIC bool point_triangle_ccd_broadphase(const Eigen::Matrix<T, 3, 1>& p,
     }
 }
 
-// template <class T>
+template <typename T>
 MUDA_GENERIC bool edge_edge_ccd_broadphase(const Eigen::Matrix<T, 3, 1>& ea0,
                                            const Eigen::Matrix<T, 3, 1>& ea1,
                                            const Eigen::Matrix<T, 3, 1>& eb0,
@@ -153,7 +150,7 @@ MUDA_GENERIC bool edge_edge_ccd_broadphase(const Eigen::Matrix<T, 3, 1>& ea0,
     }
 }
 
-// template <class T>
+template <typename T>
 MUDA_GENERIC bool point_edge_ccd_broadphase(const Eigen::Matrix<T, 3, 1>& p,
                                             const Eigen::Matrix<T, 3, 1>& e0,
                                             const Eigen::Matrix<T, 3, 1>& e1,
@@ -178,7 +175,7 @@ MUDA_GENERIC bool point_edge_ccd_broadphase(const Eigen::Matrix<T, 3, 1>& p,
     }
 }
 
-// template <class T>
+template <typename T>
 MUDA_GENERIC bool point_point_ccd_broadphase(const Eigen::Matrix<T, 3, 1>& p0,
                                              const Eigen::Matrix<T, 3, 1>& p1,
                                              const Eigen::Matrix<T, 3, 1>& dp0,
@@ -199,7 +196,7 @@ MUDA_GENERIC bool point_point_ccd_broadphase(const Eigen::Matrix<T, 3, 1>& p0,
     }
 }
 
-// template <class T>
+template <typename T>
 MUDA_GENERIC bool point_triangle_ccd(Eigen::Matrix<T, 3, 1> p,
                                      Eigen::Matrix<T, 3, 1> t0,
                                      Eigen::Matrix<T, 3, 1> t1,
@@ -264,7 +261,7 @@ MUDA_GENERIC bool point_triangle_ccd(Eigen::Matrix<T, 3, 1> p,
     return true;
 }
 
-// template <class T>
+template <typename T>
 MUDA_GENERIC bool edge_edge_ccd(Eigen::Matrix<T, 3, 1> ea0,
                                 Eigen::Matrix<T, 3, 1> ea1,
                                 Eigen::Matrix<T, 3, 1> eb0,
@@ -351,7 +348,7 @@ MUDA_GENERIC bool edge_edge_ccd(Eigen::Matrix<T, 3, 1> ea0,
     return true;
 }
 
-// template <class T>
+template <typename T>
 MUDA_GENERIC bool point_edge_ccd(const Eigen::Matrix<T, 2, 1>& x0,
                                  const Eigen::Matrix<T, 2, 1>& x1,
                                  const Eigen::Matrix<T, 2, 1>& x2,
@@ -471,7 +468,7 @@ MUDA_GENERIC bool point_edge_ccd(const Eigen::Matrix<T, 2, 1>& x0,
     return false;
 }
 
-// template <class T>
+template <typename T>
 MUDA_GENERIC bool point_edge_ccd(Eigen::Matrix<T, 3, 1> p,
                                  Eigen::Matrix<T, 3, 1> e0,
                                  Eigen::Matrix<T, 3, 1> e1,
@@ -530,7 +527,7 @@ MUDA_GENERIC bool point_edge_ccd(Eigen::Matrix<T, 3, 1> p,
     return true;
 }
 
-// template <class T>
+template <typename T>
 MUDA_GENERIC bool point_point_ccd(Eigen::Matrix<T, 3, 1> p0,
                                   Eigen::Matrix<T, 3, 1> p1,
                                   Eigen::Matrix<T, 3, 1> dp0,
