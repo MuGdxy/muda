@@ -62,17 +62,17 @@ point_edge_distance_type(const Eigen::Vector<T, dim>& p,
 
 template <class T>
 MUDA_GENERIC PointTriangleDistanceType
-point_triangle_distance_type(Eigen::Vector<T, 3>& p,
-                             Eigen::Vector<T, 3>& t0,
-                             Eigen::Vector<T, 3>& t1,
-                             Eigen::Vector<T, 3>& t2);
+point_triangle_distance_type(const Eigen::Vector<T, 3>& p,
+                             const Eigen::Vector<T, 3>& t0,
+                             const Eigen::Vector<T, 3>& t1,
+                             const Eigen::Vector<T, 3>& t2);
 
 // a more robust implementation of http://geomalgorithms.com/a07-_distance.html
 template <class T>
-MUDA_GENERIC EdgeEdgeDistanceType edge_edge_distance_type(Eigen::Vector<T, 3>& ea0,
-                                                          Eigen::Vector<T, 3>& ea1,
-                                                          Eigen::Vector<T, 3>& eb0,
-                                                          Eigen::Vector<T, 3>& eb1);
+MUDA_GENERIC EdgeEdgeDistanceType edge_edge_distance_type(const Eigen::Vector<T, 3>& ea0,
+                                                          const Eigen::Vector<T, 3>& ea1,
+                                                          const Eigen::Vector<T, 3>& eb0,
+                                                          const Eigen::Vector<T, 3>& eb1);
 
 }  // namespace muda::distance
 
