@@ -5,6 +5,7 @@
 #include <muda/ext/geo/distance/point_edge.h>
 #include <muda/ext/geo/distance/point_point.h>
 #include <muda/ext/geo/distance/edge_edge.h>
+#include <muda/ext/geo/distance/edge_edge_mollified.h>
 
 namespace muda::distance
 {
