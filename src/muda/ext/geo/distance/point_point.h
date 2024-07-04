@@ -18,6 +18,6 @@ template <class T, int dim>
 MUDA_GENERIC void point_point_distance_hessian(const Eigen::Vector<T, dim>& a,
                                                const Eigen::Vector<T, dim>& b,
                                                Eigen::Matrix<T, dim * 2, dim * 2>& Hessian);
-}  // namespace muda
+}  // namespace muda::distance
 
 #include "details/point_point.inl"

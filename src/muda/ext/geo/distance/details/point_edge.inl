@@ -3,10 +3,10 @@
 namespace muda::distance
 {
 template <class T, int dim>
-MUDA_GENERIC void point_edge_distance(const Eigen::Matrix<T, dim, 1>& p,
-                                      const Eigen::Matrix<T, dim, 1>& e0,
-                                      const Eigen::Matrix<T, dim, 1>& e1,
-                                      T&                              dist2)
+MUDA_GENERIC void point_edge_distance(const Eigen::Vector<T, dim>& p,
+                                      const Eigen::Vector<T, dim>& e0,
+                                      const Eigen::Vector<T, dim>& e1,
+                                      T&                           dist2)
 {
     if constexpr(dim == 2)
     {
@@ -566,10 +566,10 @@ namespace details
 
 
 template <class T, int dim>
-MUDA_GENERIC void point_edge_distance_gradient(const Eigen::Matrix<T, dim, 1>& p,
-                                               const Eigen::Matrix<T, dim, 1>& e0,
-                                               const Eigen::Matrix<T, dim, 1>& e1,
-                                               Eigen::Matrix<T, dim * 3, 1>& grad)
+MUDA_GENERIC void point_edge_distance_gradient(const Eigen::Vector<T, dim>& p,
+                                               const Eigen::Vector<T, dim>& e0,
+                                               const Eigen::Vector<T, dim>& e1,
+                                               Eigen::Vector<T, dim * 3>& grad)
 {
     if constexpr(dim == 2)
     {
@@ -582,9 +582,9 @@ MUDA_GENERIC void point_edge_distance_gradient(const Eigen::Matrix<T, dim, 1>& p
 }
 
 template <class T, int dim>
-MUDA_GENERIC void point_edge_distance_hessian(const Eigen::Matrix<T, dim, 1>& p,
-                                              const Eigen::Matrix<T, dim, 1>& e0,
-                                              const Eigen::Matrix<T, dim, 1>& e1,
+MUDA_GENERIC void point_edge_distance_hessian(const Eigen::Vector<T, dim>& p,
+                                              const Eigen::Vector<T, dim>& e0,
+                                              const Eigen::Vector<T, dim>& e1,
                                               Eigen::Matrix<T, dim * 3, dim * 3>& Hessian)
 {
     if constexpr(dim == 2)
