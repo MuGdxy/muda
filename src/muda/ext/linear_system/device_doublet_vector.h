@@ -31,16 +31,22 @@ class DeviceDoubletVector
 
     void reshape(int num_segment) { m_segment_count = num_segment; }
 
-    void resize_doublet(size_t nonzero_count)
+    void resize_doublets(size_t nonzero_count)
     {
         m_segment_values.resize(nonzero_count);
         m_segment_indices.resize(nonzero_count);
     }
 
+    void reserve_doublets(size_t nonzero_count)
+    {
+        m_segment_values.reserve(nonzero_count);
+        m_segment_indices.reserve(nonzero_count);
+    }
+
     void resize(int num_segment, size_t nonzero_count)
     {
         reshape(num_segment);
-        resize_doublet(nonzero_count);
+        resize_doublets(nonzero_count);
     }
 
     void clear()
@@ -56,6 +62,7 @@ class DeviceDoubletVector
     auto segment_indices() const { return m_segment_indices.view(); }
 
     auto doublet_count() const { return m_segment_values.size(); }
+    auto doublet_capacity() const { return m_segment_values.capacity(); }
 
     auto view()
     {

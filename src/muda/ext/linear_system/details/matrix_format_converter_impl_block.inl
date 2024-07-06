@@ -396,7 +396,7 @@ void MatrixFormatConverter<T, N>::convert(const DeviceDoubletVector<T, N>& from,
                                           DeviceBCOOVector<T, N>&          to)
 {
     to.reshape(from.segment_count());
-    to.resize_doublet(N * from.doublet_count());
+    to.resize_doublet(from.doublet_count());
     merge_sort_indices_and_segments(from, to);
     make_unique_indices(from, to);
     make_unique_segments(from, to);

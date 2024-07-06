@@ -71,6 +71,7 @@ class DeviceTripletMatrix
     auto block_rows() const { return m_block_rows; }
     auto block_cols() const { return m_block_cols; }
     auto triplet_count() const { return m_block_values.size(); }
+    auto triplet_capacity() const { return m_block_values.capacity(); }
 
     auto view()
     {
