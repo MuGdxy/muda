@@ -17,12 +17,12 @@ point_edge_distance_type(const Eigen::Vector<T, dim>& p,
 {
     const Eigen::Vector<T, dim> e = e1 - e0;
     ratio                         = e.dot(p - e0) / e.squaredNorm();
-    if(ratio < 0)
+    if(ratio <= 0)
     {
         // return 0;
         return PointEdgeDistanceType::PP_PE0;  // PP (p-e0)
     }
-    else if(ratio > 1)
+    else if(ratio >= 1)
     {
         // return 1;
         return PointEdgeDistanceType::PP_PE1;  // PP (p-e1)
