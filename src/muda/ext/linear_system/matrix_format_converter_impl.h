@@ -9,6 +9,7 @@
 #include <muda/ext/linear_system/device_bsr_matrix.h>
 #include <muda/ext/linear_system/device_csr_matrix.h>
 #include <muda/type_traits/cuda_arch.h>
+#include <muda/buffer/device_var.h>
 
 namespace muda
 {

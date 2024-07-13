@@ -179,7 +179,7 @@ void MatrixFormatConverter<T, 1>::radix_sort_indices_and_blocks(
 
     // hash ij
     ParallelFor(256)
-        .kernel_name(__FUNCTION__ "-set ij pairs")
+        .kernel_name(__FUNCTION__)
         .apply(src_row_indices.size(),
                [row_indices = src_row_indices.cviewer().name("row_indices"),
                 col_indices = src_col_indices.cviewer().name("col_indices"),
@@ -202,7 +202,7 @@ void MatrixFormatConverter<T, 1>::radix_sort_indices_and_blocks(
     {
         loose_resize(values_sorted, from.values().size());
         ParallelFor(256)
-            .kernel_name(__FUNCTION__ "-sort block values")
+            .kernel_name(__FUNCTION__)
             .apply(src_blocks.size(),
                    [src_blocks = src_blocks.cviewer().name("blocks"),
                     sort_index = sort_index.cviewer().name("sort_index"),
