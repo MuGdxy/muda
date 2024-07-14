@@ -348,3 +348,8 @@ TEST_CASE("buffer_3d_test", "[buffer]")
     REQUIRE(dense3d(99, 98, 99) == 3);
     REQUIRE(dense3d(99, 99, 99) == 3);
 }
+
+TEST_CASE("buffer_view_test", "[buffer]")
+{
+
+}

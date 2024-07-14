@@ -4,21 +4,13 @@
 namespace muda
 {
 template <bool IsConst, typename T>
-MUDA_GENERIC auto BufferViewBase<IsConst, T>::subview(size_t offset, size_t size) const
-    MUDA_NOEXCEPT->ConstView
-{
-    return remove_const(*this).subview(offset, size);
-}
-
-template <bool IsConst, typename T>
-MUDA_GENERIC auto BufferViewBase<IsConst, T>::subview(size_t offset,
-                                                      size_t size) MUDA_NOEXCEPT->ThisView
+MUDA_GENERIC auto BufferViewT<IsConst, T>::subview(size_t offset, size_t size) const
+    MUDA_NOEXCEPT->ThisView
 {
 #ifndef __CUDA_ARCH__
     if(ComputeGraphBuilder::is_topo_building())
         return ThisView{};  // dummy
 #endif
-
     if(size == ~0)
         size = m_size - offset;
     MUDA_KERNEL_ASSERT(offset + size <= m_size,
@@ -29,43 +21,51 @@ MUDA_GENERIC auto BufferViewBase<IsConst, T>::subview(size_t offset,
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto BufferViewBase<IsConst, T>::viewer() MUDA_NOEXCEPT->ThisViewer
+MUDA_GENERIC auto BufferViewT<IsConst, T>::viewer() const MUDA_NOEXCEPT->ThisViewer
 {
     return ThisViewer{data(), static_cast<int>(m_size)};
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto BufferViewBase<IsConst, T>::cviewer() const MUDA_NOEXCEPT->CViewer
+MUDA_GENERIC auto BufferViewT<IsConst, T>::cviewer() const MUDA_NOEXCEPT->CViewer
 {
     return CViewer{data(), static_cast<int>(m_size)};
 }
 
-template <typename T>
-MUDA_HOST void BufferView<T>::fill(const T& v)
+template <bool IsConst, typename T>
+MUDA_HOST void BufferViewT<IsConst, T>::fill(const T& v) const MUDA_REQUIRES(!IsConst)
 {
+    static_assert(!IsConst, "This must be non-const");
+
     BufferLaunch()
         .fill(*this, v)  //
         .wait();
 }
 
-template <typename T>
-MUDA_HOST void BufferView<T>::copy_from(CBufferView<T> other)
+template <bool IsConst, typename T>
+MUDA_HOST void BufferViewT<IsConst, T>::copy_from(const BufferViewT<true, T>& other) const
+    MUDA_REQUIRES(!IsConst)
 {
+    static_assert(!IsConst, "This must be non-const");
+
     BufferLaunch()
-        .copy(*this, other)  //
+        .template copy<T>(*this, other)  //
         .wait();
 }
 
-template <typename T>
-MUDA_HOST void BufferView<T>::copy_from(const T* host)
+template <bool IsConst, typename T>
+MUDA_HOST void BufferViewT<IsConst, T>::copy_from(const T* host) const
+    MUDA_REQUIRES(!IsConst)
 {
+    static_assert(!IsConst, "This must be non-const");
+
     BufferLaunch()
-        .copy(*this, host)  //
+        .copy(host, *this)  //
         .wait();
 }
 
-template <typename T>
-MUDA_HOST void CBufferView<T>::copy_to(T* host) const
+template <bool IsConst, typename T>
+MUDA_HOST void BufferViewT<IsConst, T>::copy_to(T* host) const
 {
     BufferLaunch()
         .copy(host, *this)  //

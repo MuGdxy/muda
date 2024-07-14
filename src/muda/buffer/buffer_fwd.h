@@ -8,11 +8,14 @@ class VarView;
 template <typename T>
 class CVarView;
 
-template <typename T>
-class BufferView;
+template <bool IsConst, typename T>
+class BufferViewT;
 
 template <typename T>
-class CBufferView;
+using BufferView = BufferViewT<false, T>;
+
+template <typename T>
+using CBufferView = BufferViewT<true, T>;
 
 template <typename T>
 class Buffer2DView;

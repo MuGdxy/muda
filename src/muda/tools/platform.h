@@ -34,3 +34,9 @@
 #else
 #define MUDA_HAS_CXX20 __cplusplus >= 202002L
 #endif
+
+#if defined(MUDA_HAS_CXX20)
+#define MUDA_REQUIRES(...) requires(__VA_ARGS__)
+#else
+#define MUDA_REQUIRES(...)
+#endif
