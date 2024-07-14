@@ -18,13 +18,6 @@
 #define MUDA_GENERIC
 #endif
 
-
-#ifdef MUDA_THREAD_ONLY_AS_GENERIC
-#define MUDA_THREAD_ONLY MUDA_GENERIC
-#else
-#define MUDA_THREAD_ONLY MUDA_DEVICE
-#endif
-
 // Attributes
 #define MUDA_NODISCARD [[nodiscard]]
 #define MUDA_DEPRECATED [[deprecated]]

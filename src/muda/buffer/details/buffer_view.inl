@@ -38,7 +38,7 @@ MUDA_HOST void BufferViewT<IsConst, T>::fill(const T& v) const MUDA_REQUIRES(!Is
     static_assert(!IsConst, "This must be non-const");
 
     BufferLaunch()
-        .fill(*this, v)  //
+        .template fill<T>(*this, v)  //
         .wait();
 }
 
@@ -60,7 +60,7 @@ MUDA_HOST void BufferViewT<IsConst, T>::copy_from(const T* host) const
     static_assert(!IsConst, "This must be non-const");
 
     BufferLaunch()
-        .copy(host, *this)  //
+        .template copy<T>(*this, host)  //
         .wait();
 }
 
@@ -68,7 +68,7 @@ template <bool IsConst, typename T>
 MUDA_HOST void BufferViewT<IsConst, T>::copy_to(T* host) const
 {
     BufferLaunch()
-        .copy(host, *this)  //
+        .template copy<T>(host, *this)  //
         .wait();
 }
 }  // namespace muda

@@ -7,9 +7,12 @@
 namespace muda
 {
 template <bool IsConst, typename T>
-class VarViewBase : public ViewBase<IsConst>
+class VarViewT : public ViewBase<IsConst>
 {
     using Base = ViewBase<IsConst>;
+
+    template <bool OtherIsConst, typename U>
+    friend class VarViewT;
 
   protected:
     template <typename U>
@@ -18,28 +21,31 @@ class VarViewBase : public ViewBase<IsConst>
     auto_const_t<T>* m_data = nullptr;
 
   public:
-    using ConstView    = VarViewBase<true, T>;
-    using NonConstView = VarViewBase<false, T>;
-    using ThisView     = VarViewBase<IsConst, T>;
+    using ConstView = VarViewT<true, T>;
+    using ThisView  = VarViewT<IsConst, T>;
 
     using ConstViewer    = CDense<T>;
     using NonConstViewer = Dense<T>;
     using ThisViewer = typename std::conditional_t<IsConst, ConstViewer, NonConstViewer>;
 
+    MUDA_GENERIC VarViewT() MUDA_NOEXCEPT = default;
+    MUDA_GENERIC VarViewT(auto_const_t<T>* data) MUDA_NOEXCEPT;
 
-    MUDA_GENERIC VarViewBase() MUDA_NOEXCEPT : m_data(nullptr) {}
-    MUDA_GENERIC VarViewBase(auto_const_t<T>* data) MUDA_NOEXCEPT : m_data(data)
-    {
-    }
+    MUDA_GENERIC VarViewT(const VarViewT& other) MUDA_NOEXCEPT = default;
+    template <bool OtherIsConst>
+    MUDA_GENERIC VarViewT(const VarViewT<OtherIsConst, T>& other) MUDA_NOEXCEPT;
 
-    MUDA_GENERIC auto_const_t<T>* data() MUDA_NOEXCEPT { return m_data; }
-    MUDA_GENERIC const T*         data() const MUDA_NOEXCEPT { return m_data; }
+    MUDA_GENERIC auto_const_t<T>* data() const MUDA_NOEXCEPT;
 
-    MUDA_GENERIC auto cviewer() const MUDA_NOEXCEPT
-    {
-        return ConstViewer{m_data};
-    }
-    MUDA_GENERIC auto viewer() MUDA_NOEXCEPT { return ThisViewer{m_data}; }
+    MUDA_GENERIC ConstView as_const() const MUDA_NOEXCEPT;
+
+    MUDA_GENERIC ConstViewer cviewer() const MUDA_NOEXCEPT;
+    MUDA_GENERIC ThisViewer  viewer() const MUDA_NOEXCEPT;
+
+    MUDA_HOST void fill(const T& value) const MUDA_REQUIRES(!IsConst);
+    MUDA_HOST void copy_to(T* data) const;
+    MUDA_HOST void copy_from(const T* data) const MUDA_REQUIRES(!IsConst);
+    MUDA_HOST void copy_from(const ConstView& val) const MUDA_REQUIRES(!IsConst);
 
     /**********************************************************************************
     * VarView As Iterator
@@ -53,40 +59,14 @@ class VarViewBase : public ViewBase<IsConst>
     using difference_type   = size_t;
 
     MUDA_GENERIC reference operator*() { return *data(); }
-    MUDA_GENERIC auto_const_t<T>& operator[](int i) { return *data(); }
-    MUDA_GENERIC const T&         operator[](int i) const { return *data(); }
+    MUDA_GENERIC auto_const_t<T>& operator[](int i) const { return *data(); }
 };
 
 template <typename T>
-class CVarView : public VarViewBase<true, T>
-{
-    using Base = VarViewBase<true, T>;
-
-  public:
-    using Base::Base;
-    MUDA_GENERIC CVarView(const Base& base) MUDA_NOEXCEPT : Base(base){};
-    void         copy_to(T* data) const;
-};
+using VarView = VarViewT<false, T>;
 
 template <typename T>
-class VarView : public VarViewBase<false, T>
-{
-    using Base = VarViewBase<false, T>;
-
-  public:
-    using Base::Base;
-    MUDA_GENERIC VarView(const Base& base) MUDA_NOEXCEPT : Base(base) {}
-
-    MUDA_GENERIC auto as_const() const MUDA_NOEXCEPT
-    {
-        return CVarView<T>{this->m_data};
-    }
-
-    void copy_from(const T* data);
-    void copy_from(CVarView<T> data);
-    void fill(const T& value);
-    void copy_to(T* data) const { as_const().copy_to(data); }
-};
+using CVarView = VarViewT<true, T>;
 
 // viewer traits
 template <typename T>
@@ -100,13 +80,6 @@ struct read_write_viewer<CVarView<T>>
 {
     using type = VarView<T>;
 };
-
-// CTAD
-template <typename T>
-CVarView(T*) -> CVarView<T>;
-
-template <typename T>
-VarView(T*) -> VarView<T>;
 }  // namespace muda
 
 
