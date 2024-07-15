@@ -317,32 +317,6 @@ MUDA_HOST BufferLaunch& BufferLaunch::copy(Buffer3DView<T> dst, CBuffer3DView<T>
     return *this;
 }
 
-
-template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::copy(VarView<T> dst, VarView<T> src)
-{
-    return copy(dst, src.operator CVarView<T>());
-}
-
-template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::copy(BufferView<T> dst, BufferView<T> src)
-{
-    return copy(dst, src.operator CBufferView<T>());
-}
-
-template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::copy(Buffer2DView<T> dst, Buffer2DView<T> src)
-{
-    return copy(dst, src.operator CBuffer2DView<T>());
-}
-
-template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::copy(Buffer3DView<T> dst, Buffer3DView<T> src)
-{
-    return copy(dst, src.operator CBuffer3DView<T>());
-}
-
-
 template <typename T>
 MUDA_HOST BufferLaunch& BufferLaunch::copy(ComputeGraphVar<VarView<T>>& dst,
                                            const ComputeGraphVar<VarView<T>>& src)
@@ -422,30 +396,6 @@ MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, CBuffer3DView<T> src)
 
     Memory(m_stream).download(parms);
     return *this;
-}
-
-template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, VarView<T> src)
-{
-    return copy(dst, src.operator CVarView<T>());
-}
-
-template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, BufferView<T> src)
-{
-    return copy(dst, src.operator CBufferView<T>());
-}
-
-template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, Buffer2DView<T> src)
-{
-    return copy(dst, src.operator CBuffer2DView<T>());
-}
-
-template <typename T>
-MUDA_HOST BufferLaunch& BufferLaunch::copy(T* dst, Buffer3DView<T> src)
-{
-    return copy(dst, src.operator CBuffer3DView<T>());
 }
 
 template <typename T>

@@ -20,14 +20,17 @@
 namespace muda
 {
 template <bool IsConst, typename T>
-class BufferViewBase : public ViewBase<IsConst>
+class BufferViewT : public ViewBase<IsConst>
 {
     using Base = ViewBase<IsConst>;
+
+    template <bool OtherIsConst, typename U>
+    friend class BufferViewT;
+
   public:
     static_assert(!std::is_const_v<T>, "Ty must be non-const");
-    using ConstView    = BufferViewBase<true, T>;
-    using NonConstView = BufferViewBase<false, T>;
-    using ThisView     = BufferViewBase<IsConst, T>;
+    using ConstView = BufferViewT<true, T>;
+    using ThisView  = BufferViewT<IsConst, T>;
 
     using CViewer    = CDense1D<T>;
     using Viewer     = Dense1D<T>;
@@ -42,68 +45,79 @@ class BufferViewBase : public ViewBase<IsConst>
     size_t           m_size   = ~0;
 
   public:
-    MUDA_GENERIC BufferViewBase() MUDA_NOEXCEPT = default;
-    MUDA_GENERIC BufferViewBase(auto_const_t<T>* data, size_t offset, size_t size) MUDA_NOEXCEPT
+    MUDA_GENERIC BufferViewT() MUDA_NOEXCEPT = default;
+
+    MUDA_GENERIC BufferViewT(const BufferViewT& other) MUDA_NOEXCEPT = default;
+
+    MUDA_GENERIC BufferViewT(auto_const_t<T>* data, size_t offset, size_t size) MUDA_NOEXCEPT
         : m_data(data),
           m_offset(offset),
           m_size(size)
     {
     }
-    MUDA_GENERIC BufferViewBase(auto_const_t<T>* data, size_t size) MUDA_NOEXCEPT
-        : BufferViewBase(data, 0, size)
+
+    MUDA_GENERIC BufferViewT(auto_const_t<T>* data, size_t size) MUDA_NOEXCEPT
+        : m_data(data),
+          m_offset(0),
+          m_size(size)
     {
     }
+
+    template <bool OtherIsConst>
+    BufferViewT(const BufferViewT<OtherIsConst, T>& other) MUDA_NOEXCEPT
+        MUDA_REQUIRES(!OtherIsConst)
+        : m_data(other.m_data)
+        , m_offset(other.m_offset)
+        , m_size(other.m_size)
+
+    {
+        static_assert(!OtherIsConst, "Can only convert from non-const to const");
+    };
 
     MUDA_GENERIC ConstView as_const() const MUDA_NOEXCEPT
     {
-        return ConstView{m_data, m_offset, m_size};
+        return ConstView{*this};
     }
 
-    MUDA_GENERIC operator ConstView() const MUDA_NOEXCEPT { return as_const(); }
-
-    // non-const accessor
-    MUDA_GENERIC auto_const_t<T>* data() MUDA_NOEXCEPT
+    MUDA_GENERIC auto_const_t<T>* data() const MUDA_NOEXCEPT
     {
         return m_data + m_offset;
     }
 
-    MUDA_GENERIC auto_const_t<T>* data(size_t i) MUDA_NOEXCEPT
+    MUDA_GENERIC auto_const_t<T>* data(size_t i) const MUDA_NOEXCEPT
     {
         i += m_offset;
         return m_data + i;
     }
 
-    MUDA_GENERIC auto_const_t<T>* origin_data() MUDA_NOEXCEPT { return m_data; }
-    MUDA_GENERIC ThisView subview(size_t offset, size_t size = ~0) MUDA_NOEXCEPT;
-    MUDA_GENERIC ThisViewer viewer() MUDA_NOEXCEPT;
-
-    // const accessor
-
-    MUDA_GENERIC size_t   size() const MUDA_NOEXCEPT { return m_size; }
-    MUDA_GENERIC const T* data() const MUDA_NOEXCEPT
+    MUDA_GENERIC auto_const_t<T>* origin_data() const MUDA_NOEXCEPT
     {
-        return remove_const(*this).data();
+        return m_data;
     }
-    MUDA_GENERIC const T* data(size_t i) const MUDA_NOEXCEPT
-    {
-        return remove_const(*this).data(i);
-    }
-    MUDA_GENERIC const T* origin_data() const MUDA_NOEXCEPT { return m_data; }
-    MUDA_GENERIC size_t   offset() const MUDA_NOEXCEPT { return m_offset; }
 
-    MUDA_GENERIC ConstView subview(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT;
+    MUDA_GENERIC ThisView subview(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT;
+
+    MUDA_GENERIC ThisViewer viewer() const MUDA_NOEXCEPT;
+
     MUDA_GENERIC CViewer cviewer() const MUDA_NOEXCEPT;
 
+    MUDA_GENERIC size_t size() const MUDA_NOEXCEPT { return m_size; }
 
-    MUDA_GENERIC auto_const_t<T>& operator[](size_t i) MUDA_NOEXCEPT
+    MUDA_GENERIC size_t offset() const MUDA_NOEXCEPT { return m_offset; }
+
+    MUDA_GENERIC auto_const_t<T>& operator[](size_t i) const MUDA_NOEXCEPT
     {
         return *data(i);
     }
 
-    MUDA_GENERIC const T& operator[](size_t i) const MUDA_NOEXCEPT
-    {
-        return *data(i);
-    }
+    MUDA_HOST void copy_from(const BufferViewT<true, T>& other) const
+        MUDA_REQUIRES(!IsConst);
+
+    MUDA_HOST void fill(const T& value) const MUDA_REQUIRES(!IsConst);
+
+    MUDA_HOST void copy_from(const T* host) const MUDA_REQUIRES(!IsConst);
+
+    MUDA_HOST void copy_to(T* host) const;
 
     /**********************************************************************************
     * BufferView As Iterator
@@ -116,97 +130,19 @@ class BufferViewBase : public ViewBase<IsConst>
     using iterator_category = std::random_access_iterator_tag;
     using difference_type   = size_t;
 
-    MUDA_GENERIC ThisView operator+(int i)
+    MUDA_GENERIC ThisView operator+(int i) const MUDA_NOEXCEPT
     {
         return ThisView{m_data, m_offset + i, m_size - i};
     }
-    MUDA_GENERIC ConstView operator+(int i) const
-    {
-        return remove_const(*this).operator+(i).as_const();
-    }
-    MUDA_GENERIC reference operator*() { return *data(0); }
-    MUDA_GENERIC auto_const_t<T>& operator[](int i) { return *data(i); }
-    MUDA_GENERIC const T&         operator[](int i) const { return *data(i); }
+    MUDA_GENERIC reference operator*() const { return *data(0); }
+    MUDA_GENERIC auto_const_t<T>& operator[](int i) const { return *data(i); }
 };
 
 template <typename T>
-class CBufferView : public BufferViewBase<true, T>
-{
-    using Base = BufferViewBase<true, T>;
-
-  public:
-    using Base::Base;
-
-    MUDA_GENERIC CBufferView(const Base& base)
-        : Base(base)
-    {
-    }
-
-    MUDA_GENERIC CBufferView<T> subview(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT
-    {
-        return CBufferView{Base::subview(offset, size)};
-    }
-
-    MUDA_GENERIC CBufferView<T> subview(size_t offset, size_t size = ~0) MUDA_NOEXCEPT
-    {
-        return CBufferView{Base::subview(offset, size)};
-    }
-
-    MUDA_HOST void copy_to(T* host) const;
-
-    MUDA_GENERIC auto as_const() const MUDA_NOEXCEPT { return *this; }
-};
+using BufferView = BufferViewT<false, T>;
 
 template <typename T>
-class BufferView : public BufferViewBase<false, T>
-{
-    using Base = BufferViewBase<false, T>;
-
-  public:
-    using Base::BufferViewBase;
-    using Base::data;
-    using Base::origin_data;
-
-    MUDA_GENERIC BufferView(const Base& base)
-        : Base(base)
-    {
-    }
-
-    MUDA_GENERIC BufferView(const CBufferView<T>&) = delete;
-
-    MUDA_GENERIC BufferView(Dense1D<T> viewer) MUDA_NOEXCEPT
-        : Base(viewer.data(), 0, (size_t)viewer.total_size())
-    {
-    }
-
-    MUDA_GENERIC CBufferView<T> as_const() const MUDA_NOEXCEPT
-    {
-        return CBufferView<T>{Base::as_const()};
-    }
-
-    MUDA_GENERIC operator CBufferView<T>() const MUDA_NOEXCEPT
-    {
-        return as_const();
-    }
-
-    MUDA_GENERIC BufferView<T> subview(size_t offset, size_t size = ~0) MUDA_NOEXCEPT
-    {
-        return BufferView{Base::subview(offset, size)};
-    }
-
-    MUDA_GENERIC CBufferView<T> subview(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT
-    {
-        return CBufferView{Base::subview(offset, size)};
-    }
-
-    MUDA_HOST void fill(const T& v);
-    MUDA_HOST void copy_from(CBufferView<T> other);
-    MUDA_HOST void copy_from(const T* host);
-    MUDA_HOST void copy_to(T* host) const
-    {
-        CBufferView<T>{*this}.copy_to(host);
-    }
-};
+using CBufferView = BufferViewT<true, T>;
 
 template <typename T>
 struct read_only_viewer<BufferView<T>>

@@ -23,18 +23,18 @@ namespace muda
  *****************************************************************************/
 
 template <bool IsConst, typename T>
-class Dense1DBase : public ViewerBase<IsConst>
+class Dense1DT : public ViewerBase<IsConst>
 {
     using Base = ViewerBase<IsConst>;
     template <typename U>
     using auto_const_t = typename Base::template auto_const_t<U>;
 
-    MUDA_VIEWER_COMMON_NAME(Dense1DBase);
+    MUDA_VIEWER_COMMON_NAME(Dense1DT);
 
   public:
-    using ConstViewer    = Dense1DBase<true, T>;
-    using NonConstViewer = Dense1DBase<false, T>;
-    using ThisViewer     = Dense1DBase<IsConst, T>;
+    using ConstViewer    = Dense1DT<true, T>;
+    using NonConstViewer = Dense1DT<false, T>;
+    using ThisViewer     = Dense1DT<IsConst, T>;
 
   protected:
     auto_const_t<T>* m_data;
@@ -43,43 +43,42 @@ class Dense1DBase : public ViewerBase<IsConst>
   public:
     using value_type = T;
 
-    MUDA_GENERIC Dense1DBase() MUDA_NOEXCEPT : m_data(nullptr) {}
+    MUDA_GENERIC Dense1DT() MUDA_NOEXCEPT : m_data(nullptr) {}
 
-    MUDA_GENERIC Dense1DBase(auto_const_t<T>* p, int dim) MUDA_NOEXCEPT : m_data(p),
-                                                                          m_dim(dim)
+    MUDA_GENERIC Dense1DT(auto_const_t<T>* p, int dim) MUDA_NOEXCEPT : m_data(p),
+                                                                       m_dim(dim)
     {
+    }
+
+    MUDA_GENERIC Dense1DT(const Dense1DT& other) = default;
+
+    template <bool OtherIsConst>
+    MUDA_GENERIC Dense1DT(const Dense1DT<OtherIsConst, T>& other) MUDA_NOEXCEPT
+        MUDA_REQUIRES(!OtherIsConst)
+        : m_data(other.data())
+        , m_dim(other.dim())
+    {
+        static_assert(OtherIsConst, "Only non-const viewer can be convert to const viewer");
     }
 
     MUDA_GENERIC auto as_const() const MUDA_NOEXCEPT
     {
-        return ConstViewer{m_data, m_dim};
+        return ConstViewer{*this};
     }
 
-    MUDA_GENERIC operator ConstViewer() const MUDA_NOEXCEPT
-    {
-        return as_const();
-    }
-
-
-    MUDA_GENERIC auto_const_t<T>& operator()(int x) MUDA_NOEXCEPT
+    MUDA_GENERIC auto_const_t<T>& operator()(int x) const MUDA_NOEXCEPT
     {
         check();
         return m_data[map(x)];
     }
 
-    MUDA_GENERIC const T& operator()(int x) const MUDA_NOEXCEPT
-    {
-        return remove_const(*this)(x);
-    }
-
-    MUDA_GENERIC auto_const_t<T>* data() MUDA_NOEXCEPT { return m_data; }
-    MUDA_GENERIC const T*         data() const MUDA_NOEXCEPT { return m_data; }
-
+    MUDA_GENERIC auto_const_t<T>* data() const MUDA_NOEXCEPT { return m_data; }
 
     MUDA_GENERIC int total_size() const MUDA_NOEXCEPT { return m_dim; }
+
     MUDA_GENERIC int dim() const MUDA_NOEXCEPT { return m_dim; }
 
-    MUDA_GENERIC ThisViewer subview(int offset) MUDA_NOEXCEPT
+    MUDA_GENERIC ThisViewer subview(int offset) const MUDA_NOEXCEPT
     {
         auto size = this->m_dim - offset;
         if constexpr(DEBUG_VIEWER)
@@ -95,7 +94,7 @@ class Dense1DBase : public ViewerBase<IsConst>
         return ThisViewer{this->m_data + offset, size};
     }
 
-    MUDA_GENERIC ThisViewer subview(int offset, int size) MUDA_NOEXCEPT
+    MUDA_GENERIC ThisViewer subview(int offset, int size) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
         {
@@ -108,16 +107,6 @@ class Dense1DBase : public ViewerBase<IsConst>
                                   this->m_dim);
         }
         return ThisViewer{this->m_data + offset, size};
-    }
-
-    MUDA_GENERIC ConstViewer subview(int offset) const MUDA_NOEXCEPT
-    {
-        return remove_const(*this).subview(offset).as_const();
-    }
-
-    MUDA_GENERIC ConstViewer subview(int offset, int size) const MUDA_NOEXCEPT
-    {
-        return remove_const(*this).subview(offset, size).as_const();
     }
 
   protected:
@@ -144,10 +133,10 @@ class Dense1DBase : public ViewerBase<IsConst>
 };
 
 template <typename T>
-using Dense1D = Dense1DBase<false, T>;
+using Dense1D = Dense1DT<false, T>;
 
 template <typename T>
-using CDense1D = Dense1DBase<true, T>;
+using CDense1D = Dense1DT<true, T>;
 
 // viewer traits
 template <typename T>

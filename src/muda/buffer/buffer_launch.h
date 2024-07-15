@@ -2,34 +2,10 @@
 #include <muda/launch/launch_base.h>
 #include <muda/muda_config.h>
 #include <muda/tools/extent.h>
+#include <muda/buffer/buffer_fwd.h>
 
 namespace muda
 {
-template <typename T>
-class DeviceVar;
-template <typename T>
-class DeviceBuffer;
-template <typename T>
-class DeviceBuffer2D;
-template <typename T>
-class DeviceBuffer3D;
-
-template <typename T>
-class VarView;
-template <typename T>
-class CVarView;
-template <typename T>
-class BufferView;
-template <typename T>
-class CBufferView;
-template <typename T>
-class Buffer2DView;
-template <typename T>
-class CBuffer2DView;
-template <typename T>
-class Buffer3DView;
-template <typename T>
-class CBuffer3DView;
 template <typename T>
 class ComputeGraphVar;
 
@@ -135,15 +111,6 @@ class BufferLaunch : public LaunchBase<BufferLaunch>
     MUDA_HOST BufferLaunch& copy(Buffer3DView<T> dst, CBuffer3DView<T> src);
 
     template <typename T>
-    MUDA_HOST BufferLaunch& copy(VarView<T> dst, VarView<T> src);
-    template <typename T>
-    MUDA_HOST BufferLaunch& copy(BufferView<T> dst, BufferView<T> src);
-    template <typename T>
-    MUDA_HOST BufferLaunch& copy(Buffer2DView<T> dst, Buffer2DView<T> src);
-    template <typename T>
-    MUDA_HOST BufferLaunch& copy(Buffer3DView<T> dst, Buffer3DView<T> src);
-
-    template <typename T>
     MUDA_HOST BufferLaunch& copy(ComputeGraphVar<VarView<T>>&       dst,
                                  const ComputeGraphVar<VarView<T>>& src);
     template <typename T>
@@ -169,15 +136,6 @@ class BufferLaunch : public LaunchBase<BufferLaunch>
     MUDA_HOST BufferLaunch& copy(T* dst, CBuffer2DView<T> src);
     template <typename T>
     MUDA_HOST BufferLaunch& copy(T* dst, CBuffer3DView<T> src);
-
-    template <typename T>
-    MUDA_HOST BufferLaunch& copy(T* dst, VarView<T> src);
-    template <typename T>
-    MUDA_HOST BufferLaunch& copy(T* dst, BufferView<T> src);
-    template <typename T>
-    MUDA_HOST BufferLaunch& copy(T* dst, Buffer2DView<T> src);
-    template <typename T>
-    MUDA_HOST BufferLaunch& copy(T* dst, Buffer3DView<T> src);
 
     template <typename T>
     MUDA_HOST BufferLaunch& copy(ComputeGraphVar<T*>&                  dst,

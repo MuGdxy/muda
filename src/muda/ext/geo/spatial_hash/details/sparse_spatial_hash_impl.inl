@@ -432,7 +432,7 @@ void SparseSpatialHashImpl<Hash>::balanced_setup_collision_pairs(
     // e.g.
     // count = 14
     int collisionPairCountUpperBound = 0;
-    BufferLaunch(m_stream).copy(&collisionPairCountUpperBound,
+    BufferLaunch(m_stream).copy<int>(&collisionPairCountUpperBound,
                                 cellToCollisionPairUpperBoundPrefixSum.view(validCellCount));
 
     // e.g.

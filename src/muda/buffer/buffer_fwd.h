@@ -2,17 +2,23 @@
 
 namespace muda
 {
-template <typename T>
-class VarView;
+template <bool IsConst, typename T>
+class VarViewT;
 
 template <typename T>
-class CVarView;
+using VarView = VarViewT<false, T>;
 
 template <typename T>
-class BufferView;
+using CVarView = VarViewT<true, T>;
+
+template <bool IsConst, typename T>
+class BufferViewT;
 
 template <typename T>
-class CBufferView;
+using BufferView = BufferViewT<false, T>;
+
+template <typename T>
+using CBufferView = BufferViewT<true, T>;
 
 template <typename T>
 class Buffer2DView;

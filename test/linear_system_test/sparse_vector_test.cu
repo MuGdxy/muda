@@ -14,7 +14,7 @@ void test_doublet_vector(int segment_size, int doublet_count)
 
     DeviceDoubletVector<T, BlockDim> doublet;
     doublet.reshape(segment_size);
-    doublet.resize_doublet(doublet_count);
+    doublet.resize_doublets(doublet_count);
 
     std::vector<int>                        segment_indices(doublet_count);
     std::vector<Eigen::Vector<T, BlockDim>> segment_values(doublet_count);
