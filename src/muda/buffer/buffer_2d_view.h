@@ -11,15 +11,14 @@
 namespace muda
 {
 template <bool IsConst, typename T>
-class Buffer2DViewBase : public ViewBase<IsConst>
+class Buffer2DViewT : public ViewBase<IsConst>
 {
     using Base = ViewBase<IsConst>;
+
   public:
     static_assert(!std::is_const_v<T>, "Ty must be non-const");
-    using ConstView    = Buffer2DViewBase<true, T>;
-    using NonConstView = Buffer2DViewBase<false, T>;
-    using ThisView     = Buffer2DViewBase<IsConst, T>;
-    using OtherView    = Buffer2DViewBase<!IsConst, T>;
+    using ConstView = Buffer2DViewT<true, T>;
+    using ThisView  = Buffer2DViewT<IsConst, T>;
 
     using CViewer    = CDense2D<T>;
     using Viewer     = Dense2D<T>;
@@ -29,7 +28,10 @@ class Buffer2DViewBase : public ViewBase<IsConst>
     template <typename U>
     using auto_const_t = typename Base::template auto_const_t<T>;
     friend class BufferLaunch;
-    friend class Buffer2DViewBase<!IsConst, T>;
+
+    template <bool OtherIsConst, typename U>
+    friend class Buffer2DViewT;
+
     friend class details::buffer::BufferInfoAccessor<ThisView>;
 
   protected:
@@ -41,139 +43,64 @@ class Buffer2DViewBase : public ViewBase<IsConst>
     Extent2D         m_extent;
 
   public:
-    MUDA_GENERIC Buffer2DViewBase() MUDA_NOEXCEPT {}
+    MUDA_GENERIC Buffer2DViewT() MUDA_NOEXCEPT = default;
 
-    MUDA_GENERIC Buffer2DViewBase(auto_const_t<T>* data,
-                                  size_t           pitch_bytes,
-                                  size_t           origin_width,
-                                  size_t           origin_height,
-                                  const Offset2D&  offset,
-                                  const Extent2D&  extent) MUDA_NOEXCEPT
-        : m_data(data),
-          m_pitch_bytes(pitch_bytes),
-          m_origin_width(origin_width),
-          m_origin_height(origin_height),
-          m_offset(offset),
-          m_extent(extent)
-    {
-    }
+    MUDA_GENERIC Buffer2DViewT(const Buffer2DViewT&) MUDA_NOEXCEPT = default;
 
-    MUDA_GENERIC Buffer2DViewBase(auto_const_t<T>* data,
-                                  size_t           pitch_bytes,
-                                  const Offset2D&  offset,
-                                  const Extent2D&  extent) MUDA_NOEXCEPT
-        : Buffer2DViewBase(data, pitch_bytes, extent.width(), extent.height(), offset, extent)
-    {
-    }
+    template <bool OtherIsConst>
+    MUDA_GENERIC Buffer2DViewT(const Buffer2DViewT<OtherIsConst, T>& other) MUDA_NOEXCEPT
+        MUDA_REQUIRES(!OtherIsConst);
 
-    // implicit conversion
+    MUDA_GENERIC Buffer2DViewT(auto_const_t<T>* data,
+                               size_t           pitch_bytes,
+                               size_t           origin_width,
+                               size_t           origin_height,
+                               const Offset2D&  offset,
+                               const Extent2D&  extent) MUDA_NOEXCEPT;
 
-    ConstView as_const() const MUDA_NOEXCEPT
-    {
-        return ConstView{m_data, m_pitch_bytes, m_origin_width, m_origin_height, m_offset, m_extent};
-    }
+    MUDA_GENERIC Buffer2DViewT(auto_const_t<T>* data,
+                               size_t           pitch_bytes,
+                               const Offset2D&  offset,
+                               const Extent2D&  extent) MUDA_NOEXCEPT;
 
-    operator ConstView() const MUDA_NOEXCEPT { return as_const(); }
+    ConstView as_const() const MUDA_NOEXCEPT;
 
-    // non-const accessor
+    MUDA_GENERIC auto_const_t<T>* data(size_t x, size_t y) const MUDA_NOEXCEPT;
 
-    MUDA_GENERIC auto_const_t<T>* data(size_t x, size_t y) MUDA_NOEXCEPT;
-    MUDA_GENERIC auto_const_t<T>* data(size_t flatten_i) MUDA_NOEXCEPT;
-    MUDA_GENERIC auto_const_t<T>* origin_data() MUDA_NOEXCEPT { return m_data; }
-    MUDA_GENERIC ThisView subview(Offset2D offset, Extent2D extent = {}) MUDA_NOEXCEPT;
-    MUDA_GENERIC ThisViewer viewer() MUDA_NOEXCEPT;
+    MUDA_GENERIC auto_const_t<T>* data(size_t flatten_i) const MUDA_NOEXCEPT;
 
-    // const accessor
+    MUDA_GENERIC auto_const_t<T>* origin_data() const MUDA_NOEXCEPT;
 
-    MUDA_GENERIC auto   extent() const MUDA_NOEXCEPT { return m_extent; }
-    MUDA_GENERIC size_t pitch_bytes() const MUDA_NOEXCEPT
-    {
-        return m_pitch_bytes;
-    }
-    MUDA_GENERIC auto data(size_t x, size_t y) const MUDA_NOEXCEPT
-    {
-        return remove_const(*this).data(x, y);
-    }
-    MUDA_GENERIC auto data(size_t flatten_i) const MUDA_NOEXCEPT
-    {
-        return remove_const(*this).data(flatten_i);
-    }
-    MUDA_GENERIC auto origin_data() const MUDA_NOEXCEPT { return m_data; }
-    MUDA_GENERIC auto offset() const MUDA_NOEXCEPT { return m_offset; }
-    MUDA_GENERIC auto total_size() const MUDA_NOEXCEPT
-    {
-        return m_extent.width() * m_extent.height();
-    }
+    MUDA_GENERIC ThisView subview(Offset2D offset, Extent2D extent = {}) const MUDA_NOEXCEPT;
 
-    MUDA_GENERIC ConstView subview(Offset2D offset, Extent2D extent = {}) const MUDA_NOEXCEPT;
-    MUDA_GENERIC CViewer cviewer() const MUDA_NOEXCEPT;
+    MUDA_GENERIC Extent2D extent() const MUDA_NOEXCEPT;
+
+    MUDA_GENERIC size_t pitch_bytes() const MUDA_NOEXCEPT;
+
+    MUDA_GENERIC Offset2D offset() const MUDA_NOEXCEPT;
+
+    MUDA_GENERIC size_t total_size() const MUDA_NOEXCEPT;
 
     MUDA_GENERIC cudaPitchedPtr cuda_pitched_ptr() const MUDA_NOEXCEPT;
-};
 
-template <typename T>
-class CBuffer2DView : public Buffer2DViewBase<true, T>
-{
-    using Base = Buffer2DViewBase<true, T>;
+    MUDA_GENERIC CViewer cviewer() const MUDA_NOEXCEPT;
 
-  public:
-    using Base::Base;
-
-    MUDA_GENERIC CBuffer2DView(const Base& base) MUDA_NOEXCEPT : Base(base) {}
-
-    MUDA_GENERIC CBuffer2DView<T> subview(Offset2D offset, Extent2D extent = {}) const MUDA_NOEXCEPT
-    {
-        return CBuffer2DView<T>{Base::subview(offset, extent)};
-    }
+    MUDA_GENERIC ThisViewer viewer() const MUDA_NOEXCEPT;
 
     MUDA_HOST void copy_to(T* host) const;
 
-    MUDA_GENERIC auto as_const() const MUDA_NOEXCEPT { return *this; }
+    MUDA_HOST void fill(const T& v) MUDA_REQUIRES(!IsConst);
+
+    MUDA_HOST void copy_from(const Buffer2DViewT<true, T>& other) MUDA_REQUIRES(!IsConst);
+
+    MUDA_HOST void copy_from(const T* host) MUDA_REQUIRES(!IsConst);
 };
 
 template <typename T>
-class Buffer2DView : public Buffer2DViewBase<false, T>
-{
-    using Base = Buffer2DViewBase<false, T>;
+using Buffer2DView = Buffer2DViewT<false, T>;
 
-  public:
-    using Base::Base;
-
-    MUDA_GENERIC Buffer2DView(const Base& base)
-        : Base(base)
-    {
-    }
-
-    MUDA_GENERIC Buffer2DView(const CBuffer2DView<T>&) = delete;
-
-    MUDA_GENERIC CBuffer2DView<T> as_const() const MUDA_NOEXCEPT
-    {
-        return CBuffer2DView<T>{Base::as_const()};
-    }
-
-    MUDA_GENERIC operator CBuffer2DView<T>() const MUDA_NOEXCEPT
-    {
-        return as_const();
-    }
-
-    MUDA_GENERIC Buffer2DView<T> subview(Offset2D offset, Extent2D extent = {}) MUDA_NOEXCEPT
-    {
-        return Buffer2DView<T>{Base::subview(offset, extent)};
-    }
-
-    MUDA_GENERIC CBuffer2DView<T> subview(Offset2D offset, Extent2D extent = {}) const MUDA_NOEXCEPT
-    {
-        return CBuffer2DView<T>{Base::subview(offset, extent)};
-    }
-
-    MUDA_HOST void fill(const T& v);
-    MUDA_HOST void copy_from(CBuffer2DView<T> other);
-    MUDA_HOST void copy_from(const T* host);
-    MUDA_HOST void copy_to(T* host) const
-    {
-        return CBuffer2DView<T>{*this}.copy_to(host);
-    }
-};
+template <typename T>
+using CBuffer2DView = Buffer2DViewT<true, T>;
 
 template <typename T>
 struct read_only_viewer<Buffer2DView<T>>
