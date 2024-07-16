@@ -135,6 +135,7 @@ Contributions are welcome. We are looking for or are working on:
 
 - [solid-sim-muda](https://github.com/Roushelfy/solid-sim-muda): a tiny solid simulator using muda.
   
+  ![solid-sim-muda](/docs/img/solid-sim-muda.png)
   
   
 
