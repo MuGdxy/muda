@@ -4,6 +4,7 @@
 #include <muda/buffer/buffer_view.h>
 #include <muda/buffer/buffer_2d_view.h>
 #include <muda/buffer/buffer_3d_view.h>
+#include <muda/buffer/buffer_info_accessor.h>
 
 namespace muda::details::buffer
 {
@@ -76,9 +77,11 @@ MUDA_INLINE MUDA_HOST void kernel_copy_construct(int              grid_dim,
     {
         // trivially copy constructible, use cudaMemcpy
         cudaMemcpy3DParms parms = {0};
-        parms.srcPtr = src.cuda_pitched_ptr();
+        parms.srcPtr =
+            details::buffer::BufferInfoAccessor::template cuda_pitched_ptr(src);
         parms.srcPos = src.offset().template cuda_pos<T>();
-        parms.dstPtr = dst.cuda_pitched_ptr();
+        parms.dstPtr =
+            details::buffer::BufferInfoAccessor::template cuda_pitched_ptr(dst);
         parms.extent = dst.extent().template cuda_extent<T>();
         parms.dstPos = dst.offset().template cuda_pos<T>();
 
@@ -116,9 +119,11 @@ MUDA_INLINE MUDA_HOST void kernel_copy_construct(int              grid_dim,
     {
         // trivially copy constructible, use cudaMemcpy
         cudaMemcpy3DParms parms = {0};
-        parms.srcPtr = src.cuda_pitched_ptr();
+        parms.srcPtr =
+            details::buffer::BufferInfoAccessor::template cuda_pitched_ptr(src);
         parms.srcPos = src.offset().template cuda_pos<T>();
-        parms.dstPtr = dst.cuda_pitched_ptr();
+        parms.dstPtr =
+            details::buffer::BufferInfoAccessor::template cuda_pitched_ptr(dst);
         parms.extent = dst.extent().template cuda_extent<T>();
         parms.dstPos = dst.offset().template cuda_pos<T>();
 

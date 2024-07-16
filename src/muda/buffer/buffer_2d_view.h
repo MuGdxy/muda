@@ -15,6 +15,15 @@ class Buffer2DViewT : public ViewBase<IsConst>
 {
     using Base = ViewBase<IsConst>;
 
+    template <typename U>
+    using auto_const_t = typename Base::template auto_const_t<T>;
+
+    friend class BufferLaunch;
+
+    template <bool OtherIsConst, typename U>
+    friend class Buffer2DViewT;
+
+
   public:
     static_assert(!std::is_const_v<T>, "Ty must be non-const");
     using ConstView = Buffer2DViewT<true, T>;
@@ -25,14 +34,7 @@ class Buffer2DViewT : public ViewBase<IsConst>
     using ThisViewer = std::conditional_t<IsConst, CViewer, Viewer>;
 
   private:
-    template <typename U>
-    using auto_const_t = typename Base::template auto_const_t<T>;
-    friend class BufferLaunch;
-
-    template <bool OtherIsConst, typename U>
-    friend class Buffer2DViewT;
-
-    friend class details::buffer::BufferInfoAccessor<ThisView>;
+    friend class details::buffer::BufferInfoAccessor;
 
   protected:
     auto_const_t<T>* m_data          = nullptr;
@@ -81,8 +83,6 @@ class Buffer2DViewT : public ViewBase<IsConst>
 
     MUDA_GENERIC size_t total_size() const MUDA_NOEXCEPT;
 
-    MUDA_GENERIC cudaPitchedPtr cuda_pitched_ptr() const MUDA_NOEXCEPT;
-
     MUDA_GENERIC CViewer cviewer() const MUDA_NOEXCEPT;
 
     MUDA_GENERIC ThisViewer viewer() const MUDA_NOEXCEPT;
@@ -94,6 +94,9 @@ class Buffer2DViewT : public ViewBase<IsConst>
     MUDA_HOST void copy_from(const Buffer2DViewT<true, T>& other) MUDA_REQUIRES(!IsConst);
 
     MUDA_HOST void copy_from(const T* host) MUDA_REQUIRES(!IsConst);
+
+  private:
+    MUDA_GENERIC cudaPitchedPtr cuda_pitched_ptr() const MUDA_NOEXCEPT;
 };
 
 template <typename T>
