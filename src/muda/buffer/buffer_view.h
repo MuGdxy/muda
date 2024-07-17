@@ -49,51 +49,21 @@ class BufferViewT : public ViewBase<IsConst>
 
     MUDA_GENERIC BufferViewT(const BufferViewT& other) MUDA_NOEXCEPT = default;
 
-    MUDA_GENERIC BufferViewT(auto_const_t<T>* data, size_t offset, size_t size) MUDA_NOEXCEPT
-        : m_data(data),
-          m_offset(offset),
-          m_size(size)
-    {
-    }
+    MUDA_GENERIC BufferViewT(auto_const_t<T>* data, size_t offset, size_t size) MUDA_NOEXCEPT;
 
-    MUDA_GENERIC BufferViewT(auto_const_t<T>* data, size_t size) MUDA_NOEXCEPT
-        : m_data(data),
-          m_offset(0),
-          m_size(size)
-    {
-    }
+    MUDA_GENERIC BufferViewT(auto_const_t<T>* data, size_t size) MUDA_NOEXCEPT;
 
     template <bool OtherIsConst>
     BufferViewT(const BufferViewT<OtherIsConst, T>& other) MUDA_NOEXCEPT
-        MUDA_REQUIRES(!OtherIsConst)
-        : m_data(other.m_data)
-        , m_offset(other.m_offset)
-        , m_size(other.m_size)
+        MUDA_REQUIRES(!OtherIsConst);
 
-    {
-        static_assert(!OtherIsConst, "Can only convert from non-const to const");
-    };
+    MUDA_GENERIC ConstView as_const() const MUDA_NOEXCEPT;
 
-    MUDA_GENERIC ConstView as_const() const MUDA_NOEXCEPT
-    {
-        return ConstView{*this};
-    }
+    MUDA_GENERIC auto_const_t<T>* data() const MUDA_NOEXCEPT;
 
-    MUDA_GENERIC auto_const_t<T>* data() const MUDA_NOEXCEPT
-    {
-        return m_data + m_offset;
-    }
+    MUDA_GENERIC auto_const_t<T>* data(size_t i) const MUDA_NOEXCEPT;
 
-    MUDA_GENERIC auto_const_t<T>* data(size_t i) const MUDA_NOEXCEPT
-    {
-        i += m_offset;
-        return m_data + i;
-    }
-
-    MUDA_GENERIC auto_const_t<T>* origin_data() const MUDA_NOEXCEPT
-    {
-        return m_data;
-    }
+    MUDA_GENERIC auto_const_t<T>* origin_data() const MUDA_NOEXCEPT;
 
     MUDA_GENERIC ThisView subview(size_t offset, size_t size = ~0) const MUDA_NOEXCEPT;
 
@@ -105,10 +75,7 @@ class BufferViewT : public ViewBase<IsConst>
 
     MUDA_GENERIC size_t offset() const MUDA_NOEXCEPT { return m_offset; }
 
-    MUDA_GENERIC auto_const_t<T>& operator[](size_t i) const MUDA_NOEXCEPT
-    {
-        return *data(i);
-    }
+    MUDA_GENERIC auto_const_t<T>& operator[](size_t i) const MUDA_NOEXCEPT;
 
     MUDA_HOST void copy_from(const BufferViewT<true, T>& other) const
         MUDA_REQUIRES(!IsConst);
@@ -130,12 +97,9 @@ class BufferViewT : public ViewBase<IsConst>
     using iterator_category = std::random_access_iterator_tag;
     using difference_type   = size_t;
 
-    MUDA_GENERIC ThisView operator+(int i) const MUDA_NOEXCEPT
-    {
-        return ThisView{m_data, m_offset + i, m_size - i};
-    }
-    MUDA_GENERIC reference operator*() const { return *data(0); }
-    MUDA_GENERIC auto_const_t<T>& operator[](int i) const { return *data(i); }
+    MUDA_GENERIC ThisView  operator+(int i) const MUDA_NOEXCEPT;
+    MUDA_GENERIC reference operator*() const MUDA_NOEXCEPT;
+    MUDA_GENERIC auto_const_t<T>& operator[](int i) const MUDA_NOEXCEPT;
 };
 
 template <typename T>
