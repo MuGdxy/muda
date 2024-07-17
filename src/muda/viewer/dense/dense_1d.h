@@ -37,13 +37,13 @@ class Dense1DT : public ViewerBase<IsConst>
     using ThisViewer     = Dense1DT<IsConst, T>;
 
   protected:
-    auto_const_t<T>* m_data;
-    int              m_dim;
+    auto_const_t<T>* m_data = nullptr;
+    int              m_dim = 0;
 
   public:
     using value_type = T;
 
-    MUDA_GENERIC Dense1DT() MUDA_NOEXCEPT : m_data(nullptr) {}
+    MUDA_GENERIC Dense1DT() MUDA_NOEXCEPT = default;
 
     MUDA_GENERIC Dense1DT(auto_const_t<T>* p, int dim) MUDA_NOEXCEPT : m_data(p),
                                                                        m_dim(dim)
