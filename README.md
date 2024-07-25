@@ -8,7 +8,9 @@ MUDA is **μ-CUDA**, yet another painless CUDA programming **paradigm**.
 
 ## Quick Overview
 
-**Detailed Introduction And Overview [Highly Recommend]**  :arrow_right: https://mugdxy.github.io/muda-doc/ 
+**Detailed Introduction And Overview [Highly ecommended]**  :arrow_right: https://mugdxy.github.io/muda-doc/ 
+
+**Project Templates** :arrow_right: https://github.com/MuGdxy/muda-app, start your project with minimal effort.
 
 ```c++
 #include <muda/muda.h>
@@ -44,7 +46,18 @@ int main()
 }
 ```
 
+
+
 ## Build
+
+### Cmake
+
+```shell
+$ mkdir CMakeBuild
+$ cd CMakeBuild
+$ cmake -S ..
+$ cmake --build .
+```
 
 ### Xmake
 
@@ -64,14 +77,6 @@ Play all examples:
 
 ```shell
 $ xmake run muda_example
-```
-### Cmake
-
-```shell
-$ mkdir CMakeBuild
-$ cd CMakeBuild
-$ cmake -S ..
-$ cmake --build .
 ```
 
 ### Copy Headers
@@ -102,7 +107,7 @@ Documentation is maintained on https://mugdxy.github.io/muda-doc/. And you can a
 
 All examples in `muda/example` are self-explanatory,  enjoy it.
 
-![image-20231102030703199](/docs/img/example-img.png)
+![image-20231102030703199](./docs/img/example-img.png)
 
 ## Contributing
 
@@ -131,11 +136,11 @@ Contributions are welcome. We are looking for or are working on:
   }
   ```
 
-  ![braiding](/docs/img/braiding.png)
+  ![braiding](./docs/img/braiding.png)
 
 - [solid-sim-muda](https://github.com/Roushelfy/solid-sim-muda): a tiny solid simulator using muda.
   
-  ![solid-sim-muda](/docs/img/solid-sim-muda.png)
+  ![solid-sim-muda](./docs/img/solid-sim-muda.png)
   
   
 
