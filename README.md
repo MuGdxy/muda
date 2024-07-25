@@ -8,7 +8,7 @@ MUDA is **μ-CUDA**, yet another painless CUDA programming **paradigm**.
 
 ## Quick Overview
 
-**Detailed Introduction And Overview [Highly ecommended]**  :arrow_right: https://mugdxy.github.io/muda-doc/ 
+**Detailed Introduction And Overview [Highly Recommended]**  :arrow_right: https://mugdxy.github.io/muda-doc/ 
 
 **Project Templates** :arrow_right: https://github.com/MuGdxy/muda-app, start your project with minimal effort.
 
