@@ -82,11 +82,13 @@ class Dense2DBase : public ViewerBase<IsConst>  // TODO
         if constexpr(DEBUG_VIEWER)
         {
             MUDA_KERNEL_ASSERT(i >= 0 && i < total_size(),
-                               "Dense2D[%s:%s]: out of range, index=%d, total_size=%d",
+                               "Dense2D[%s:%s]: out of range, index=%d, total_size=%d. %s(%d)",
                                this->name(),
                                this->kernel_name(),
                                i,
-                               total_size());
+                               total_size(),
+                               this->kernel_file(),
+                               this->kernel_line());
         }
         auto x = i / m_dim.y;
         auto y = i % m_dim.y;
@@ -134,13 +136,15 @@ class Dense2DBase : public ViewerBase<IsConst>  // TODO
         if constexpr(DEBUG_VIEWER)
             if(!(x >= 0 && x < m_dim.x && y >= 0 && y < m_dim.y))
             {
-                MUDA_KERNEL_ERROR("Dense2D[%s:%s]: out of range, index=(%d,%d) dim=(%d,%d)",
+                MUDA_KERNEL_ERROR("Dense2D[%s:%s]: out of range, index=(%d,%d) dim=(%d,%d). %s(%d)",
                                   this->name(),
                                   this->kernel_name(),
                                   x,
                                   y,
                                   m_dim.x,
-                                  m_dim.y);
+                                  m_dim.y,
+                                  this->kernel_file(),
+                                  this->kernel_line());
             }
     }
 
@@ -149,9 +153,11 @@ class Dense2DBase : public ViewerBase<IsConst>  // TODO
         if constexpr(DEBUG_VIEWER)
         {
             MUDA_KERNEL_ASSERT(m_data,
-                               "Dense2D[%s:%s]: m_data is null",
+                               "Dense2D[%s:%s]: m_data is null. %s(%d)",
                                this->name(),
-                               this->kernel_name());
+                               this->kernel_name(),
+                               this->kernel_file(),
+                               this->kernel_line());
         }
     }
 };

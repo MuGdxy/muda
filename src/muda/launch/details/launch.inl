@@ -171,7 +171,7 @@ MUDA_HOST Launch& Launch::apply(F&& f)
     {
         invoke<F, UserTag>(std::forward<F>(f));
     }
-    pop_kernel_name();
+    pop_kernel_label();
     return *this;
 }
 
@@ -203,7 +203,7 @@ MUDA_HOST Launch& muda::Launch::apply(const dim3& active_dim, F&& f)
     {
         invoke<F, UserTag>(active_dim, std::forward<F>(f));
     }
-    pop_kernel_name();
+    pop_kernel_label();
 
     return *this;
 }

@@ -1,4 +1,3 @@
-#include <muda/viewer/viewer_base_accessor.h>
 #include <muda/atomic.h>
 
 namespace muda
@@ -20,7 +19,7 @@ MUDA_GENERIC auto DenseMatrixViewerBase<IsConst, T>::block(size_t row_offset,
 
     auto ret = DenseMatrixViewerBase{
         m_view, m_row_offset + row_offset, m_col_offset + col_offset, row_size, col_size};
-    ret.copy_name(*this);
+    ret.copy_label(*this);
     return ret;
 }
 

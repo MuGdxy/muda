@@ -3,6 +3,7 @@
 #include <muda/compute_graph/compute_graph_var.h>
 #include <muda/graph/graph.h>
 #include <iostream>
+#include "launch_base.h"
 
 namespace muda
 {
@@ -138,19 +139,23 @@ MUDA_INLINE void LaunchCore::kernel_name(std::string_view name)
         details::LaunchInfoCache::current_kernel_name(name);
 }
 
-MUDA_INLINE std::string_view muda::LaunchCore::kernel_name()
+MUDA_INLINE void muda::LaunchCore::file_line(std::string_view file, int line)
 {
     if constexpr(muda::RUNTIME_CHECK_ON)
-        return details::LaunchInfoCache::current_kernel_name().host_string;
-    else
-        return "";
+    {
+        details::LaunchInfoCache::current_kernel_file(file);
+        details::LaunchInfoCache::current_kernel_line(line);
+    }
 }
 
-MUDA_INLINE MUDA_HOST void LaunchCore::pop_kernel_name()
+MUDA_INLINE MUDA_HOST void LaunchCore::pop_kernel_label()
 {
-#if MUDA_CHECK_ON
-    details::LaunchInfoCache::current_kernel_name("");
-#endif
+    if constexpr(muda::RUNTIME_CHECK_ON)
+    {
+        details::LaunchInfoCache::current_kernel_name("");
+        details::LaunchInfoCache::current_kernel_file("");
+        details::LaunchInfoCache::current_kernel_line(0ull);
+    }
 }
 
 
@@ -314,9 +319,16 @@ T& LaunchBase<T>::kernel_name(std::string_view name)
 }
 
 template <typename T>
-T& LaunchBase<T>::pop_kernel_name()
+T& muda::LaunchBase<T>::file_line(std::string_view file, int line)
 {
-    LaunchCore::pop_kernel_name();
+    LaunchCore::file_line(file, line);
+    return derived();
+}
+
+template <typename T>
+T& LaunchBase<T>::pop_kernel_label()
+{
+    LaunchCore::pop_kernel_label();
     return derived();
 }
 
