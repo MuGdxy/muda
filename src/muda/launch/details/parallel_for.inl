@@ -111,7 +111,7 @@ MUDA_HOST ParallelFor& ParallelFor::apply(int count, F&& f)
     {
         invoke<F, UserTag>(count, std::forward<F>(f));
     }
-    pop_kernel_name();
+    pop_kernel_label();
     return *this;
 }
 

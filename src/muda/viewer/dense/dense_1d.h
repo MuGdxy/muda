@@ -37,13 +37,13 @@ class Dense1DT : public ViewerBase<IsConst>
     using ThisViewer     = Dense1DT<IsConst, T>;
 
   protected:
-    auto_const_t<T>* m_data;
-    int              m_dim;
+    auto_const_t<T>* m_data = nullptr;
+    int              m_dim  = 0;
 
   public:
     using value_type = T;
 
-    MUDA_GENERIC Dense1DT() MUDA_NOEXCEPT : m_data(nullptr) {}
+    MUDA_GENERIC Dense1DT() MUDA_NOEXCEPT = default;
 
     MUDA_GENERIC Dense1DT(auto_const_t<T>* p, int dim) MUDA_NOEXCEPT : m_data(p),
                                                                        m_dim(dim)
@@ -84,12 +84,14 @@ class Dense1DT : public ViewerBase<IsConst>
         if constexpr(DEBUG_VIEWER)
         {
             if(offset < 0)
-                MUDA_KERNEL_ERROR("Dense1D[%s:%s]: subview out of range, offset=%d size=%d m_dim=(%d)",
+                MUDA_KERNEL_ERROR("Dense1D[%s:%s]: subview out of range, offset=%d size=%d m_dim=(%d). %s(%d)",
                                   this->name(),
                                   this->kernel_name(),
                                   offset,
                                   size,
-                                  this->m_dim);
+                                  this->m_dim,
+                                  this->kernel_file(),
+                                  this->kernel_line());
         }
         return ThisViewer{this->m_data + offset, size};
     }
@@ -99,12 +101,14 @@ class Dense1DT : public ViewerBase<IsConst>
         if constexpr(DEBUG_VIEWER)
         {
             if(offset < 0 || offset + size > m_dim)
-                MUDA_KERNEL_ERROR("Dense1D[%s:%s]: subview out of range, offset=%d size=%d m_dim=(%d)",
+                MUDA_KERNEL_ERROR("Dense1D[%s:%s]: subview out of range, offset=%d size=%d m_dim=(%d). %s(%d)",
                                   this->name(),
                                   this->kernel_name(),
                                   offset,
                                   size,
-                                  this->m_dim);
+                                  this->m_dim,
+                                  this->kernel_file(),
+                                  this->kernel_line());
         }
         return ThisViewer{this->m_data + offset, size};
     }
@@ -114,20 +118,24 @@ class Dense1DT : public ViewerBase<IsConst>
     {
         if constexpr(DEBUG_VIEWER)
             if(m_data == nullptr)
-                MUDA_KERNEL_ERROR("Dense1D[%s:%s]: m_data is null",
+                MUDA_KERNEL_ERROR("Dense1D[%s:%s]: m_data is null. %s(%d)",
                                   this->name(),
-                                  this->kernel_name());
+                                  this->kernel_name(),
+                                  this->kernel_file(),
+                                  this->kernel_line());
     }
 
     MUDA_GENERIC int map(int x) const MUDA_NOEXCEPT
     {
         if constexpr(DEBUG_VIEWER)
             if(!(x >= 0 && x < m_dim))
-                MUDA_KERNEL_ERROR("Dense1D[%s:%s]: out of range, index=(%d) m_dim=(%d)",
+                MUDA_KERNEL_ERROR("Dense1D[%s:%s]: out of range, index=(%d) m_dim=(%d). %s(%d)",
                                   this->name(),
                                   this->kernel_name(),
                                   x,
-                                  m_dim);
+                                  m_dim,
+                                  this->kernel_file(),
+                                  this->kernel_line());
         return x;
     }
 };

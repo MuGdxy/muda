@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 #include <muda/muda.h>
-#include <muda/container.h>
+#include <muda/buffer.h>
 #include <example_common.h>
 using namespace muda;
 
@@ -13,17 +13,20 @@ ALERT: this example will ruin the cuda context and it's impossible
 to recover from the error!)");
     try
     {
-        auto v = make_dense((int*)nullptr).name("my_viewer");
-        // host access
-        // print("v.name()=%s, v.kernel_name()=%s\n", v.name(), v.kernel_name());
+        DeviceBuffer<int> buffer(1);
 
         Launch(1, 1)
             .kernel_name("kernel_A")
+            .file_line(__FILE__, __LINE__)
             .apply(
-                [v = make_dense_1d((int*)nullptr, 1).name("my_viewer")] __device__() mutable
+                [v = buffer.viewer().name("my_viewer")] __device__() mutable
                 {
                     // device access
-                    print("v.name()=%s, v.kernel_name()=%s\n", v.name(), v.kernel_name());
+                    print("device: v.name()=%s, v.kernel_name()=%s, v.kernel_file()=%s, v.kernel_line()=%d\n",
+                          v.name(),
+                          v.kernel_name(),
+                          v.kernel_file(),
+                          v.kernel_line());
                     v(v.dim());
                 })
             .wait();

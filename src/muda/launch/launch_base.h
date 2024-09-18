@@ -46,11 +46,11 @@ class LaunchCore
     MUDA_GENERIC ::cudaStream_t stream() const { return m_stream; }
 
     ::cudaStream_t m_stream;
-    MUDA_HOST void pop_kernel_name();
+    MUDA_HOST void pop_kernel_label();
 
   public:
-    static void             kernel_name(std::string_view name);
-    static std::string_view kernel_name();
+    static void kernel_name(std::string_view name);
+    static void file_line(std::string_view file, int line);
 
     MUDA_GENERIC LaunchCore(::cudaStream_t stream) MUDA_NOEXCEPT;
 
@@ -105,8 +105,8 @@ class LaunchBase : public LaunchCore
 
     // create a name for the following kernel launch
     // viewers will record this name for the sake of better recognization when debugging
-    T&               kernel_name(std::string_view name);
-    std::string_view kernel_name() const { return Base::kernel_name(); }
+    T& kernel_name(std::string_view name);
+    T& file_line(std::string_view file, int line);
 
     // record an event on this point with current stream, you could use .when() to
     // capture this event for synchronization
@@ -157,7 +157,7 @@ class LaunchBase : public LaunchCore
     ~LaunchBase() MUDA_NOEXCEPT;
 
   protected:
-    T& pop_kernel_name();
+    T& pop_kernel_label();
 
   private:
     T& derived() MUDA_NOEXCEPT { return *(T*)(this); }

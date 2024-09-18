@@ -2,7 +2,6 @@
 #include <muda/ext/eigen/eigen_core_cxx20.h>
 #include <muda/buffer/buffer_2d_view.h>
 #include <muda/viewer/viewer_base.h>
-#include <muda/viewer/viewer_base_accessor.h>
 #include <cublas_v2.h>
 #include <muda/atomic.h>
 namespace muda
@@ -60,7 +59,7 @@ class DenseVectorViewerBase : public ViewerBase<IsConst>
     {
         check_segment(offset, size);
         auto ret = ThisViewer{m_data, m_offset + offset, size, m_origin_size};
-        ret.copy_name(*this);
+        ret.copy_label(*this);
         return ret;
     }
 

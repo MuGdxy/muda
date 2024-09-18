@@ -13,10 +13,6 @@
 
 namespace muda
 {
-namespace details
-{
-    class ViewerBaseAccessor;
-}
 template <bool IsConst_ = false>
 class ViewerBase
 {
@@ -36,45 +32,75 @@ class ViewerBase
 #if MUDA_CHECK_ON
     details::StringPointer m_viewer_name;
     details::StringPointer m_kernel_name;
+    details::StringPointer m_kernel_file;
+    int                    m_kernel_line = -1;
 #else
-    char m_dummy = 0;  // a dummy member to avoid empty class
+    int m_dummy = 0;  // a dummy member to avoid empty class
 #endif
   public:
-    MUDA_GENERIC ViewerBase()
+    MUDA_GENERIC ViewerBase() MUDA_NOEXCEPT
     {
-#if MUDA_CHECK_ON
+        if constexpr(muda::RUNTIME_CHECK_ON)
+        {
 #ifndef __CUDA_ARCH__
-        m_kernel_name = details::LaunchInfoCache::current_kernel_name();
+            m_kernel_name = details::LaunchInfoCache::current_kernel_name();
+            m_kernel_file = details::LaunchInfoCache::current_kernel_file();
+            m_kernel_line = details::LaunchInfoCache::current_kernel_line();
 #endif
-#endif
+        }
     }
 
     MUDA_GENERIC const char* name() const MUDA_NOEXCEPT
     {
-#if MUDA_CHECK_ON
-        auto n = m_viewer_name.auto_select();
-        if(n && *n != '\0')
-            return n;
-#endif
+        if constexpr(muda::RUNTIME_CHECK_ON)
+        {
+            auto n = m_viewer_name.auto_select();
+            if(n && *n != '\0')
+                return n;
+        }
         return "~";
     }
 
     MUDA_GENERIC const char* kernel_name() const MUDA_NOEXCEPT
     {
-#if MUDA_CHECK_ON
-        auto n = m_kernel_name.auto_select();
-        if(n && *n != '\0')
-            return n;
-#endif
+        if constexpr(muda::RUNTIME_CHECK_ON)
+        {
+            auto n = m_kernel_name.auto_select();
+            if(n && *n != '\0')
+                return n;
+        }
         return "~";
     }
 
-    MUDA_INLINE MUDA_GENERIC void copy_name(const ViewerBase& other) MUDA_NOEXCEPT
+    MUDA_GENERIC const char* kernel_file() const MUDA_NOEXCEPT
     {
-#if MUDA_CHECK_ON
-        m_kernel_name = other.m_kernel_name;
-        m_viewer_name = other.m_viewer_name;
-#endif
+        if constexpr(muda::RUNTIME_CHECK_ON)
+        {
+            auto n = m_kernel_file.auto_select();
+            if(n && *n != '\0')
+                return n;
+        }
+        return "~";
+    }
+
+    MUDA_GENERIC int kernel_line() const MUDA_NOEXCEPT
+    {
+        if constexpr(muda::RUNTIME_CHECK_ON)
+        {
+            return m_kernel_line;
+        }
+        return -1;
+    }
+
+    MUDA_INLINE MUDA_GENERIC void copy_label(const ViewerBase& other) MUDA_NOEXCEPT
+    {
+        if constexpr(muda::RUNTIME_CHECK_ON)
+        {
+            m_viewer_name = other.m_viewer_name;
+            m_kernel_name = other.m_kernel_name;
+            m_kernel_file = other.m_kernel_file;
+            m_kernel_line = other.m_kernel_line;
+        }
     }
 
     // default copy / move
@@ -86,16 +112,18 @@ class ViewerBase
   protected:
     MUDA_INLINE MUDA_HOST void name(const char* n) MUDA_NOEXCEPT
     {
-#if MUDA_CHECK_ON
-        m_viewer_name = details::LaunchInfoCache::view_name(n);
-#endif
+        if constexpr(muda::RUNTIME_CHECK_ON)
+        {
+            m_viewer_name = details::LaunchInfoCache::view_name(n);
+        }
     }
 
     MUDA_INLINE MUDA_GENERIC void name(details::StringPointer pointer) MUDA_NOEXCEPT
     {
-#if MUDA_CHECK_ON
-        m_viewer_name = pointer;
-#endif
+        if constexpr(muda::RUNTIME_CHECK_ON)
+        {
+            m_viewer_name = pointer;
+        }
     }
 };
 
