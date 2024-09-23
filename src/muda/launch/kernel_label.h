@@ -6,7 +6,7 @@ namespace muda
 class KernelLabel
 {
   public:
-    KernelLabel(std::string_view name, std::string_view file = "", size_t line = ~0ull)
+    KernelLabel(std::string_view name, std::string_view file = "", int line = -1)
     {
         if constexpr(muda::RUNTIME_CHECK_ON)
         {
@@ -22,7 +22,7 @@ class KernelLabel
         {
             details::LaunchInfoCache::current_kernel_name("");
             details::LaunchInfoCache::current_kernel_file("");
-            details::LaunchInfoCache::current_kernel_line(~0ull);
+            details::LaunchInfoCache::current_kernel_line(-1);
         }
     }
 };
