@@ -60,7 +60,7 @@ using namespace thrust;
 constexpr auto N = 10;
 DeviceVector<float> x(N); // DeviceVector is derived from thrust::device_vector  
 
-KernelLabel lebal{"setup_concise"}; // give a kernel label for better debug info
+KernelLabel label{"thrust"}; // give a kernel label for better debug info
 
 // equivalent to parallel for 
 for_each(thrust::cuda::par_nosync, // no sync after execution
@@ -243,7 +243,9 @@ The old data will be safely kept if you resize a 2D or 3D buffer. If you don't w
 
 ## Viewer In Kernel
 
-MUDA **Viewers** provide safe inner-kernel memory access, which checks all input to ensure access does not go out of range and does not dereference a null pointer. If something goes wrong, they report the debug information as much as possible and trap the kernel to prevent further errors. Don't forget to fill the `kernel_name()` and `name()` out.
+MUDA **Viewers** provide safe inner-kernel memory access, which checks all input to ensure access does not go out of range and does not dereference a null pointer. If something goes wrong, they report the debug information as much as possible and trap the kernel to prevent further errors.
+
+You can fill out the `name` of a viewer and `kernel_name` or ``file_line` of a **Launcher** to get more readable debug information. These information only be removed in the release version.
 
 ```cpp
 DeviceVar<int> single;
@@ -253,6 +255,7 @@ DeviceBuffer3D<int> array3d;
 Logger logger;
 Launch()
     .kernel_name(__FUNCTION__)
+    .file_line(__FILE__, __LINE__)
     .apply(
     [
         single  = single.viewer().name("single"), // give a name for more readable debug info
@@ -330,8 +333,6 @@ It's a good practice to keep **Launchers** asynchronous while keeping other APIs
 
 ## [Extension] Linear System Support
 
-[We are still working on this part]
-
 **MUDA** supports basic linear system operations. e.g.:
 
 1. Sparse Matrix Format Conversion
@@ -340,7 +341,7 @@ It's a good practice to keep **Launchers** asynchronous while keeping other APIs
 
 <img src="./img/linear_system.drawio.svg" style="zoom:50%;" />
 
-The only thing you need to do is to declare a `muda::LinearSystemContext`.
+The only thing you need to do is to declare a `muda::LinearSystemContext`. Note: `LinearSystemContext` is a relative heavy resource, so you should keep and reuse it as much as possible.
 
 ```cpp
 LinearSystemContext ctx;
@@ -411,7 +412,7 @@ ctx.convert(A_bcoo, A_bsr);
 ctx.spmv(A_bsr.cview(), x.cview(), b.view());
 ```
 
-[TODO:] Later, we may involve [Expression Template](https://en.wikipedia.org/wiki/Expression_templates) to strengthen the linear algebra calculation and use lazy evaluation to arrange as many element-wise/scattering operations as possible in a single kernel.
+<!-- [TODO:] Later, we may involve [Expression Template](https://en.wikipedia.org/wiki/Expression_templates) to strengthen the linear algebra calculation and use lazy evaluation to arrange as many element-wise/scattering operations as possible in a single kernel. -->
 
 ## [Extension] Field Layout
 
