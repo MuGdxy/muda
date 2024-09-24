@@ -3,7 +3,6 @@
 #include <muda/compute_graph/compute_graph_var.h>
 #include <muda/graph/graph.h>
 #include <iostream>
-#include "launch_base.h"
 
 namespace muda
 {

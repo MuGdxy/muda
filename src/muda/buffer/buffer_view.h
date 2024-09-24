@@ -54,7 +54,7 @@ class BufferViewT : public ViewBase<IsConst>
     MUDA_GENERIC BufferViewT(auto_const_t<T>* data, size_t size) MUDA_NOEXCEPT;
 
     template <bool OtherIsConst>
-    BufferViewT(const BufferViewT<OtherIsConst, T>& other) MUDA_NOEXCEPT
+    MUDA_GENERIC BufferViewT(const BufferViewT<OtherIsConst, T>& other) MUDA_NOEXCEPT
         MUDA_REQUIRES(!OtherIsConst);
 
     MUDA_GENERIC ConstView as_const() const MUDA_NOEXCEPT;
