@@ -130,9 +130,9 @@ To update the document on the website, run:
 ```shell
 cd muda/scripts
 python build_docs.py -o <path of your local muda-doc repo>
-``` 
+```
 
-If you put the local muda-doc repo in the same directory as muda kike:
+If you put the local muda-doc repo in the same directory as muda like:
 ```
 - PARENT_FOLDER
   - muda
