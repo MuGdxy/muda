@@ -1,21 +1,17 @@
-\mainpage Main Page
+## Introduction
 
 MUDA is **μ-CUDA**, yet another painless CUDA programming **paradigm**.
 
 > COVER THE LAST MILE OF CUDA
 
-[TOC]
-
-# Introduction
-
-## What is muda?
+### What is muda?
 
 - Header-only library right out of the box
 - Depends only on CUDA and standard libraries
 - Improve readability, maintainability, security, and debugging efficiency of CUDA code.
 - Reduce the difficulty of building CUDA Graphs and increase automation.
 
-## Why muda?
+### Why muda?
 
 Think that you wanna try a new idea or implement a demo with CUDA. If the demo works well, you want to embed it into your project quickly. But you find that using CUDA directly will be a catastrophic disaster.
 
@@ -41,7 +37,7 @@ Simple to extend.
 - User can obey the primary interface of muda to define their own object to reuse the MUDA facility
 - Almost all "Resource View Type" can be used directly in the MUDA `ComputeGraph`.
 
-## A substitution of thrust?
+### A substitution of thrust?
 
 **Nop!** MUDA is a supplement of thrust!
 
@@ -71,13 +67,13 @@ for_each(thrust::cuda::par_nosync, // no sync after execution
          });
 ```
 
-# Overview
+## Overview
 
 This is a quick overview of some muda APIs. 
 
 You can check it to find out something useful for you. A comprehensive description of MUDA is placed at [Tutorial](#Tutorial).
 
-## Launch
+### Launch
 
 Simple, self-explanatory, intellisense-friendly Launcher.
 
@@ -129,7 +125,7 @@ int main()
 }
 ```
 
-## Logger
+### Logger
 
 A `std::cout` like output stream with overload formatting.
 
@@ -198,7 +194,7 @@ int main()
 }
 ```
 
-## Buffer
+### Buffer
 
 A lightweight `std::vector`-like cuda device memory container. 
 
@@ -241,7 +237,7 @@ The old data will be safely kept if you resize a 2D or 3D buffer. If you don't w
 
 <img src="img/buffer2d_resize.svg" alt="buffer2d_resize" style="zoom: 80%;" />
 
-## Viewer In Kernel
+### Viewer In Kernel
 
 MUDA **Viewers** provide safe inner-kernel memory access, which checks all input to ensure access does not go out of range and does not dereference a null pointer. If something goes wrong, they report the debug information as much as possible and trap the kernel to prevent further errors.
 
@@ -274,7 +270,7 @@ Launch()
     });
 ```
 
-## Event And Stream
+### Event And Stream
 
 If you don't want to launch something on the default stream, use `Stream` to create async streams. And you can use `Event` to synchronize between streams.
 
@@ -305,7 +301,7 @@ on(s2)
            { int res = v; });
 ```
 
-## Asynchronous Operation
+### Asynchronous Operation
 
 MUDA **Launchers**' functions are Asynchronous, meaning we need to call `.wait()` to synchronize it on the host, unlike some APIs such as `BufferView::copy_fom`. NOTE: Operations of a **Launcher** will be asynchronous as possible, so you should synchronize the stream by yourself, while other APIs will synchronize themselves.
 
@@ -331,7 +327,7 @@ Feel free to ignore `Memory` `BufferLaunch` **Launcher** when building your fast
 
 It's a good practice to keep **Launchers** asynchronous while keeping other APIs synchronous, which obeys the 80/20 rule.
 
-## [Extension] Linear System Support
+### [Extension] Linear System Support
 
 **MUDA** supports basic linear system operations. e.g.:
 
@@ -414,7 +410,7 @@ ctx.spmv(A_bsr.cview(), x.cview(), b.view());
 
 <!-- [TODO:] Later, we may involve [Expression Template](https://en.wikipedia.org/wiki/Expression_templates) to strengthen the linear algebra calculation and use lazy evaluation to arrange as many element-wise/scattering operations as possible in a single kernel. -->
 
-## [Extension] Field Layout
+### [Extension] Field Layout
 
 MUDA now supports the `SoA/AoS/AoSoA` layouts. Users can switch between them seamlessly(with different builder parameters). The copy operation in all directions and layouts is well-supported.
 
@@ -538,7 +534,7 @@ It'd be useful if the topology will change in your simulation. For example, the 
 
 Note that every `FieldEntry` has a `View` called `FieldEntryView`. A `FieldEntryView` can be regarded as a `ComputeGraphVar`(see below), which means `FieldEntry` can also be used in `ComputeGraph`. 
 
-## Compute Graph
+### Compute Graph
 
 Define `MUDA_WITH_COMPUTE_GRAPH`  to turn on `Compute Graph` support.
 
@@ -626,7 +622,7 @@ void compute_graph_simple()
 }
 ```
 
-## Dynamic Parallelism
+### Dynamic Parallelism
 
 MUDA support dynamic parallelism based on MUDA ComputeGraph.
 
@@ -677,7 +673,7 @@ void dynamic_parallelism_graph()
 
 ![image-20231119161837442](./img/dynamic_parallelism.svg)
 
-## MUDA vs. CUDA
+### MUDA vs. CUDA
 
 ```cpp
 /* 
@@ -735,9 +731,18 @@ void cuda()
 }
 ```
 
-# Build
+## Build
 
-## Xmake
+### Cmake
+
+```shell
+$ mkdir CMakeBuild
+$ cd CMakeBuild
+$ cmake -S ..
+$ cmake --build .
+```
+
+### Xmake
 
 Run example:
 
@@ -756,20 +761,12 @@ Play all examples:
 ```shell
 $ xmake run muda_example
 ```
-## Cmake
 
-```shell
-$ mkdir CMakeBuild
-$ cd CMakeBuild
-$ cmake -S ..
-$ cmake --build .
-```
-
-## Copy Headers
+### Copy Headers
 
 Because **muda** is header-only, copy the `src/muda/` folder to your project, set the include directory, and everything is done.
 
-## Macro
+### Macro
 
 | Macro                     | Value               | Details                                                      |
 | ------------------------- | ------------------- | ------------------------------------------------------------ |
@@ -778,17 +775,13 @@ Because **muda** is header-only, copy the `src/muda/` folder to your project, se
 
 If you manually copy the header files, don't forget to define the macros yourself. If you use cmake or xmake, just set the project dependency to muda.
 
-# Tutorial
-
-[TODO]
-
-# Examples
+## Examples
 
 All examples in `muda/example` are self-explanatory,  enjoy it.
 
 <img src="./img/example-img.png" alt="image-20231102030703199" style="zoom:67%;" />
 
-# Contributing
+## Contributing
 
 Contributions are welcome. We are looking for or are working on:
 
@@ -798,7 +791,7 @@ Contributions are welcome. We are looking for or are working on:
 
 3. better documentation of **muda**
 
-# Related Work
+## Related Work
 
 - Topological braiding simulation using **muda** (old version)
 
@@ -817,8 +810,9 @@ Contributions are welcome. We are looking for or are working on:
 
   <img src="./img/braiding.png" alt="braiding" style="zoom:67%;" />
 
-  
+- [solid-sim-muda](https://github.com/Roushelfy/solid-sim-muda): a tiny solid simulator using muda.
 
+  ![solid-sim-muda](./img/solid-sim-muda.png)
 
 
 
