@@ -86,35 +86,43 @@ class TripletMatrixViewerBase : public ViewerBase<IsConst>
     {
         MUDA_KERNEL_ASSERT(triplet_index_offset + triplet_count <= total_triplet_count,
                            "TripletMatrixViewer [%s:%s]: out of range, m_total_triplet_count=%d, "
-                           "your triplet_index_offset=%d, triplet_count=%d",
+                           "your triplet_index_offset=%d, triplet_count=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            total_triplet_count,
                            triplet_index_offset,
-                           triplet_count);
+                           triplet_count,
+                           this->kernel_file(),
+                           this->kernel_line());
 
         MUDA_KERNEL_ASSERT(submatrix_offset.x >= 0 && submatrix_offset.y >= 0,
-                           "TripletMatrixViewer[%s:%s]: submatrix_offset is out of range, submatrix_offset.x=%d, submatrix_offset.y=%d",
+                           "TripletMatrixViewer[%s:%s]: submatrix_offset is out of range, submatrix_offset.x=%d, submatrix_offset.y=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            submatrix_offset.x,
-                           submatrix_offset.y);
+                           submatrix_offset.y,
+                           this->kernel_file(),
+                           this->kernel_line());
 
         MUDA_KERNEL_ASSERT(submatrix_offset.x + submatrix_extent.x <= total_block_rows,
-                           "TripletMatrixViewer[%s:%s]: submatrix is out of range, submatrix_offset.x=%d, submatrix_extent.x=%d, total_block_rows=%d",
+                           "TripletMatrixViewer[%s:%s]: submatrix is out of range, submatrix_offset.x=%d, submatrix_extent.x=%d, total_block_rows=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            submatrix_offset.x,
                            submatrix_extent.x,
-                           total_block_rows);
+                           total_block_rows,
+                           this->kernel_file(),
+                           this->kernel_line());
 
         MUDA_KERNEL_ASSERT(submatrix_offset.y + submatrix_extent.y <= total_block_cols,
-                           "TripletMatrixViewer[%s:%s]: submatrix is out of range, submatrix_offset.y=%d, submatrix_extent.y=%d, total_block_cols=%d",
+                           "TripletMatrixViewer[%s:%s]: submatrix is out of range, submatrix_offset.y=%d, submatrix_extent.y=%d, total_block_cols=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            submatrix_offset.y,
                            submatrix_extent.y,
-                           total_block_cols);
+                           total_block_cols,
+                           this->kernel_file(),
+                           this->kernel_line());
     }
 
     MUDA_GENERIC ConstViewer as_const() const
@@ -171,11 +179,13 @@ class TripletMatrixViewerBase : public ViewerBase<IsConst>
     {
 
         MUDA_KERNEL_ASSERT(i >= 0 && i < m_triplet_count,
-                           "TripletMatrixViewer [%s:%s]: triplet_index out of range, block_count=%d, your index=%d",
+                           "TripletMatrixViewer [%s:%s]: triplet_index out of range, block_count=%d, your index=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            m_triplet_count,
-                           i);
+                           i,
+                           this->kernel_file(),
+                           this->kernel_line());
         auto index = i + m_triplet_index_offset;
         return index;
     }
@@ -183,18 +193,22 @@ class TripletMatrixViewerBase : public ViewerBase<IsConst>
     MUDA_INLINE MUDA_GENERIC void check_in_submatrix(int i, int j) const noexcept
     {
         MUDA_KERNEL_ASSERT(i >= 0 && i < m_submatrix_extent.x,
-                           "TripletMatrixViewer [%s:%s]: row index out of submatrix range,  submatrix_extent.x=%d, your i=%d",
+                           "TripletMatrixViewer [%s:%s]: row index out of submatrix range,  submatrix_extent.x=%d, your i=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            m_submatrix_extent.x,
-                           i);
+                           i,
+                           this->kernel_file(),
+                           this->kernel_line());
 
         MUDA_KERNEL_ASSERT(j >= 0 && j < m_submatrix_extent.y,
-                           "TripletMatrixViewer [%s:%s]: col index out of submatrix range,  submatrix_extent.y=%d, your j=%d",
+                           "TripletMatrixViewer [%s:%s]: col index out of submatrix range,  submatrix_extent.y=%d, your j=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            m_submatrix_extent.y,
-                           j);
+                           j,
+                           this->kernel_file(),
+                           this->kernel_line());
     }
 };
 
@@ -280,6 +294,7 @@ template <bool IsConst, typename T>
 class TripletMatrixViewerBase<IsConst, T, 1> : public ViewerBase<IsConst>
 {
     using Base = ViewerBase<IsConst>;
+
   protected:
     template <typename U>
     using auto_const_t = typename Base::template auto_const_t<U>;
@@ -349,35 +364,43 @@ class TripletMatrixViewerBase<IsConst, T, 1> : public ViewerBase<IsConst>
     {
         MUDA_KERNEL_ASSERT(triplet_index_offset + triplet_count <= total_triplet_count,
                            "TripletMatrixViewer [%s:%s]: out of range, m_total_triplet_count=%d, "
-                           "your triplet_index_offset=%d, triplet_count=%d",
+                           "your triplet_index_offset=%d, triplet_count=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            total_triplet_count,
                            triplet_index_offset,
-                           triplet_count);
+                           triplet_count,
+                           this->kernel_file(),
+                           this->kernel_line());
 
         MUDA_KERNEL_ASSERT(submatrix_offset.x >= 0 && submatrix_offset.y >= 0,
-                           "TripletMatrixViewer [%s:%s]: submatrix_offset is out of range, submatrix_offset.x=%d, submatrix_offset.y=%d",
+                           "TripletMatrixViewer [%s:%s]: submatrix_offset is out of range, submatrix_offset.x=%d, submatrix_offset.y=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            submatrix_offset.x,
-                           submatrix_offset.y);
+                           submatrix_offset.y,
+                           this->kernel_file(),
+                           this->kernel_line());
 
         MUDA_KERNEL_ASSERT(submatrix_offset.x + submatrix_extent.x <= total_rows,
-                           "TripletMatrixViewer [%s:%s]: submatrix is out of range, submatrix_offset.x=%d, submatrix_extent.x=%d, rows=%d",
+                           "TripletMatrixViewer [%s:%s]: submatrix is out of range, submatrix_offset.x=%d, submatrix_extent.x=%d, rows=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            submatrix_offset.x,
                            submatrix_extent.x,
-                           total_rows);
+                           total_rows,
+                           this->kernel_file(),
+                           this->kernel_line());
 
         MUDA_KERNEL_ASSERT(submatrix_offset.y + submatrix_extent.y <= total_cols,
-                           "TripletMatrixViewer [%s:%s]: submatrix is out of range, submatrix_offset.y=%d, submatrix_extent.y=%d, cols=%d",
+                           "TripletMatrixViewer [%s:%s]: submatrix is out of range, submatrix_offset.y=%d, submatrix_extent.y=%d, cols=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            submatrix_offset.y,
                            submatrix_extent.y,
-                           total_cols);
+                           total_cols,
+                           this->kernel_file(),
+                           this->kernel_line());
     }
 
     // implicit conversion
@@ -427,11 +450,13 @@ class TripletMatrixViewerBase<IsConst, T, 1> : public ViewerBase<IsConst>
     {
 
         MUDA_KERNEL_ASSERT(i >= 0 && i < m_triplet_count,
-                           "TripletMatrixViewer [%s:%s]: triplet_index out of range, block_count=%d, your index=%d",
+                           "TripletMatrixViewer [%s:%s]: triplet_index out of range, block_count=%d, your index=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            m_triplet_count,
-                           i);
+                           i,
+                           this->kernel_file(),
+                           this->kernel_line());
         auto index = i + m_triplet_index_offset;
         return index;
     }
@@ -439,18 +464,22 @@ class TripletMatrixViewerBase<IsConst, T, 1> : public ViewerBase<IsConst>
     MUDA_INLINE MUDA_GENERIC void check_in_submatrix(int i, int j) const noexcept
     {
         MUDA_KERNEL_ASSERT(i >= 0 && i < m_submatrix_extent.x,
-                           "TripletMatrixViewer [%s:%s]: row index out of submatrix range, submatrix_extent.x=%d, yours=%d",
+                           "TripletMatrixViewer [%s:%s]: row index out of submatrix range, submatrix_extent.x=%d, yours=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            m_submatrix_extent.x,
-                           i);
+                           i,
+                           this->kernel_file(),
+                           this->kernel_line());
 
         MUDA_KERNEL_ASSERT(j >= 0 && j < m_submatrix_extent.y,
-                           "TripletMatrixViewer [%s:%s]: col index out of submatrix range, submatrix_extent.y=%d, yours=%d",
+                           "TripletMatrixViewer [%s:%s]: col index out of submatrix range, submatrix_extent.y=%d, yours=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            m_submatrix_extent.y,
-                           j);
+                           j,
+                           this->kernel_file(),
+                           this->kernel_line());
     }
 };
 

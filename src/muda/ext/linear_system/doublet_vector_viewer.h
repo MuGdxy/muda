@@ -73,17 +73,21 @@ class DoubletVectorViewerBase : public ViewerBase<IsConst>
     {
         MUDA_KERNEL_ASSERT(doublet_index_offset + doublet_count <= total_doublet_count,
                            "DoubletVectorViewer: out of range, m_total_doublet_count=%d, "
-                           "your doublet_index_offset=%d, doublet_count=%d",
+                           "your doublet_index_offset=%d, doublet_count=%d. %s(%d)",
                            m_total_doublet_count,
                            doublet_index_offset,
-                           doublet_count);
+                           doublet_count,
+                           this->kernel_file(),
+                           this->kernel_line());
 
         MUDA_KERNEL_ASSERT(subvector_offset + subvector_extent <= total_segment_count,
                            "DoubletVectorViewer: out of range, m_total_segment_count=%d, "
-                           "your subvector_offset=%d, subvector_extent=%d",
+                           "your subvector_offset=%d, subvector_extent=%d. %s(%d)",
                            m_total_segment_count,
                            subvector_offset,
-                           subvector_extent);
+                           subvector_extent,
+                           this->kernel_file(),
+                           this->kernel_line());
     }
 
     // implicit conversion
@@ -123,11 +127,13 @@ class DoubletVectorViewerBase : public ViewerBase<IsConst>
     MUDA_INLINE MUDA_GENERIC int get_index(int i) const noexcept
     {
         MUDA_KERNEL_ASSERT(i >= 0 && i < m_doublet_count,
-                           "DoubletVectorViewer [%s:%s]: index out of range, m_doublet_count=%d, your index=%d",
+                           "DoubletVectorViewer [%s:%s]: index out of range, m_doublet_count=%d, your index=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            m_doublet_count,
-                           i);
+                           i,
+                           this->kernel_file(),
+                           this->kernel_line());
         auto index = i + m_doublet_index_offset;
         return index;
     }
@@ -135,11 +141,13 @@ class DoubletVectorViewerBase : public ViewerBase<IsConst>
     MUDA_INLINE MUDA_GENERIC void check_in_subvector(int i) const noexcept
     {
         MUDA_KERNEL_ASSERT(i >= 0 && i < m_subvector_extent,
-                           "DoubletVectorViewer [%s:%s]: index out of range, m_subvector_extent=%d, your index=%d",
+                           "DoubletVectorViewer [%s:%s]: index out of range, m_subvector_extent=%d, your index=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            m_subvector_extent,
-                           i);
+                           i,
+                           this->kernel_file(),
+                           this->kernel_line());
     }
 };
 
@@ -216,9 +224,11 @@ template <bool IsConst, typename T>
 class DoubletVectorViewerBase<IsConst, T, 1> : public ViewerBase<IsConst>
 {
     using Base = ViewerBase<IsConst>;
+
   protected:
     template <typename U>
     using auto_const_t = typename Base::template auto_const_t<U>;
+
   public:
     using ConstViewer = DoubletVectorViewerBase<true, T, 1>;
     using Viewer      = DoubletVectorViewerBase<false, T, 1>;
@@ -271,17 +281,21 @@ class DoubletVectorViewerBase<IsConst, T, 1> : public ViewerBase<IsConst>
     {
         MUDA_KERNEL_ASSERT(doublet_index_offset + doublet_count <= total_doublet_count,
                            "DoubletVectorViewer: out of range, m_total_doublet_count=%d, "
-                           "your doublet_index_offset=%d, doublet_count=%d",
+                           "your doublet_index_offset=%d, doublet_count=%d. %s(%d)",
                            m_total_doublet_count,
                            doublet_index_offset,
-                           doublet_count);
+                           doublet_count,
+                           this->kernel_file(),
+                           this->kernel_line());
 
         MUDA_KERNEL_ASSERT(subvector_offset + subvector_extent <= total_count,
                            "DoubletVectorViewer: out of range, m_total_segment_count=%d, "
-                           "your subvector_offset=%d, subvector_extent=%d",
+                           "your subvector_offset=%d, subvector_extent=%d. %s(%d)",
                            m_total_count,
                            subvector_offset,
-                           subvector_extent);
+                           subvector_extent,
+                           this->kernel_file(),
+                           this->kernel_line());
     }
 
     // implicit conversion
@@ -331,11 +345,13 @@ class DoubletVectorViewerBase<IsConst, T, 1> : public ViewerBase<IsConst>
     {
 
         MUDA_KERNEL_ASSERT(i >= 0 && i < m_doublet_count,
-                           "DoubletVectorViewer [%s:%s]: index out of range, m_doublet_count=%d, your index=%d",
+                           "DoubletVectorViewer [%s:%s]: index out of range, m_doublet_count=%d, your index=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            m_doublet_count,
-                           i);
+                           i,
+                           this->kernel_file(),
+                           this->kernel_line());
         auto index = i + m_doublet_index_offset;
         return index;
     }
@@ -343,11 +359,13 @@ class DoubletVectorViewerBase<IsConst, T, 1> : public ViewerBase<IsConst>
     MUDA_INLINE MUDA_GENERIC void check_in_subvector(int i) const noexcept
     {
         MUDA_KERNEL_ASSERT(i >= 0 && i < m_subvector_extent,
-                           "DoubletVectorViewer [%s:%s]: index out of range, m_subvector_extent=%d, your index=%d",
+                           "DoubletVectorViewer [%s:%s]: index out of range, m_subvector_extent=%d, your index=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            m_subvector_extent,
-                           i);
+                           i,
+                           this->kernel_file(),
+                           this->kernel_line());
     }
 };
 

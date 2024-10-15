@@ -121,45 +121,55 @@ class DenseVectorViewerBase : public ViewerBase<IsConst>
     MUDA_INLINE MUDA_GENERIC void check_size_matching(int N)
     {
         MUDA_KERNEL_ASSERT(m_size == N,
-                           "DenseVectorViewerBase [%s:%s]: size not match, yours size=%d, expected size=%d",
+                           "DenseVectorViewerBase [%s:%s]: size not match, yours size=%d, expected size=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            m_size,
-                           N);
+                           N,
+                           this->kernel_file(),
+                           this->kernel_line());
     }
 
     MUDA_INLINE MUDA_GENERIC int index(int i) const
     {
         MUDA_KERNEL_ASSERT(origin_data(),
-                           "DenseVectorViewerBase [%s:%s]: data is null",
+                           "DenseVectorViewerBase [%s:%s]: data is null. %s(%d)",
                            this->name(),
-                           this->kernel_name());
+                           this->kernel_name(),
+                           this->kernel_file(),
+                           this->kernel_line());
         MUDA_KERNEL_ASSERT(i < m_size,
-                           "DenseVectorViewerBase [%s:%s]: index out of range, size=%d, yours index=%d",
+                           "DenseVectorViewerBase [%s:%s]: index out of range, size=%d, yours index=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            m_size,
-                           i);
+                           i,
+                           this->kernel_file(),
+                           this->kernel_line());
         return m_offset + i;
     }
 
     MUDA_INLINE MUDA_GENERIC void check_data() const
     {
         MUDA_KERNEL_ASSERT(origin_data(),
-                           "DenseVectorViewerBase [%s:%s]: data is null",
+                           "DenseVectorViewerBase [%s:%s]: data is null. %s(%d)",
                            this->name(),
-                           this->kernel_name());
+                           this->kernel_name(),
+                           this->kernel_file(),
+                           this->kernel_line());
     }
 
     MUDA_INLINE MUDA_GENERIC void check_segment(int offset, int size) const
     {
         MUDA_KERNEL_ASSERT(offset + size <= m_size,
-                           "DenseVectorViewerBase [%s:%s]: segment out of range, m_size=%d, offset=%d, size=%d",
+                           "DenseVectorViewerBase [%s:%s]: segment out of range, m_size=%d, offset=%d, size=%d. %s(%d)",
                            this->name(),
                            this->kernel_name(),
                            m_size,
                            offset,
-                           size);
+                           size,
+                           this->kernel_file(),
+                           this->kernel_line());
     }
 };
 
