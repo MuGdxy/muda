@@ -6,7 +6,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # build targets:
 option(MUDA_BUILD_EXAMPLE "build muda examples. if you want to see how to use muda, you could enable this option." ON)
 option(MUDA_BUILD_TEST "build muda test. if you're the developer, you could enable this option." OFF)
-option(MUDA_BUILD_DOC "build muda document. if you're the developer, you could enable this option." OFF)
 
 # short cut
 option(MUDA_DEV "build muda example and unit test. if you're the developer, you could enable this option." OFF)
@@ -73,10 +72,4 @@ endif()
 
 if(MUDA_BUILD_TEST)
   add_subdirectory("test")
-endif()
-
-if(MUDA_BUILD_DOC)
-  # don't rename this directory
-  # github page will not work
-  add_subdirectory("docs") 
 endif()

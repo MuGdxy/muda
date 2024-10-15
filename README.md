@@ -101,6 +101,50 @@ If you manually copy the header files, don't forget to define the macros yoursel
 
 Documentation is maintained on https://mugdxy.github.io/muda-doc/. And you can also build the doc by yourself. 
 
+### Build Document
+
+Download and install doxygen https://www.doxygen.nl/download.html.
+
+Install [mkdocs](https://www.mkdocs.org/) and its plugins:
+
+```shell
+pip install mkdocs mkdocs-material mkdocs-literate-nav mkdoxy
+```
+
+Turn on the local server:
+
+```shell
+mkdocs serve
+```
+
+If you are writing the document, you can use the following command to avoid generating the API documentation all the time:
+
+```shell
+mkdocs serve -f mkdocs-no-api.yaml
+```
+
+Open the browser and visit the [localhost:8000](http://127.0.0.1:8000/)
+
+To update the document on the website, run:
+
+```shell
+cd muda/scripts
+python build_docs.py -o <path of your local muda-doc repo>
+```
+
+If you put the local muda-doc repo in the same directory as muda like:
+```
+- PARENT_FOLDER
+  - muda
+  - muda-doc
+```
+
+Then the following instruction is enough:
+```shell
+cd muda/scripts
+python build_docs.py
+```
+
 ## Examples
 
 - [examples](./example/)
