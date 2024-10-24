@@ -10,8 +10,7 @@
 #include <cooperative_groups.h>
 
 #include <cuda_profiler_api.h>
-#include <nvtx3/nvToolsExt.h>
-#include <nvtx3/nvToolsExtCuda.h>
+
 #include <muda/type_traits/type_modifier.h>
 #include <muda/tools/launch_info_cache.h>
 
@@ -101,7 +100,6 @@ class LaunchBase : public LaunchCore
     //      .wait();
     T& push_range(const std::string& name);
     T& pop_range();
-
 
     // create a name for the following kernel launch
     // viewers will record this name for the sake of better recognization when debugging

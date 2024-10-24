@@ -12,6 +12,7 @@ option(MUDA_DEV "build muda example and unit test. if you're the developer, you 
 option(MUDA_FORCE_CHECK "turn on muda runtime check for all mode (Debug/RelWithDebInfo/Release)" OFF)
 option(MUDA_WITH_CHECK "turn on muda runtime check when mode != Release" ON)
 option(MUDA_WITH_COMPUTE_GRAPH "turn on muda compute graph" OFF)
+option(MUDA_WITH_NVTX3 "turn on nividia tools extension library" OFF)
 
 if(MUDA_DEV)
   set(MUDA_BUILD_EXAMPLE ON)
@@ -63,6 +64,11 @@ if (MUDA_WITH_COMPUTE_GRAPH)
   target_compile_definitions(muda INTERFACE "-DMUDA_COMPUTE_GRAPH_ON=1")
 else()
   target_compile_definitions(muda INTERFACE "-DMUDA_COMPUTE_GRAPH_ON=0")
+endif()
+if (MUDA_WITH_NVTX3)
+  target_compile_definitions(muda INTERFACE "-DMUDA_NVTX3_ON=1")
+else()
+  target_compile_definitions(muda INTERFACE "-DMUDA_NVTX3_ON=0")
 endif()
 
 

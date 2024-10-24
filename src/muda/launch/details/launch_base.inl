@@ -1,4 +1,8 @@
 #include <muda/exception.h>
+#if MUDA_WITH_NVTX3
+#include <nvtx3/nvToolsExt.h>
+#include <nvtx3/nvToolsExtCuda.h>
+#endif
 #include <muda/compute_graph/compute_graph_accessor.h>
 #include <muda/compute_graph/compute_graph_var.h>
 #include <muda/graph/graph.h>
@@ -29,8 +33,10 @@ MUDA_INLINE MUDA_GENERIC LaunchCore::LaunchCore(cudaStream_t stream) MUDA_NOEXCE
 #endif
 }
 
+
 MUDA_INLINE void LaunchCore::push_range(const std::string& name)
 {
+#if MUDA_WITH_NVTX3
     MUDA_ASSERT(ComputeGraphBuilder::is_phase_none(),
                 "`push_range()` is meaningless in ComputeGraph");
 
@@ -42,14 +48,18 @@ MUDA_INLINE void LaunchCore::push_range(const std::string& name)
     eventAttrib.messageType           = NVTX_MESSAGE_TYPE_ASCII;
     eventAttrib.message.ascii         = name.c_str();
     nvtxRangePushEx(&eventAttrib);
+#endif
 }
 
 MUDA_INLINE void LaunchCore::pop_range()
 {
+#if MUDA_WITH_NVTX3
     MUDA_ASSERT(ComputeGraphBuilder::is_phase_none(),
                 "`pop_range()` is meaningless in ComputeGraph");
     nvtxRangePop();
+#endif
 }
+
 
 MUDA_INLINE void LaunchCore::record(cudaEvent_t e, int flag)
 {
