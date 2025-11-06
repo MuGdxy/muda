@@ -110,10 +110,12 @@ template <bool IsConst, typename T>
 MUDA_GENERIC cudaPitchedPtr Buffer2DViewT<IsConst, T>::cuda_pitched_ptr() const MUDA_NOEXCEPT
 {
     // don't use make_cudaPitchedPtr (__host__ only function)
-    return cudaPitchedPtr{.ptr   = remove_const(m_data),
-                          .pitch = remove_const(m_pitch_bytes),
-                          .xsize = m_origin_width * sizeof(T),
-                          .ysize = m_origin_height};
+    cudaPitchedPtr R;
+    R.ptr = remove_const(m_data);
+    R.pitch = remove_const(m_pitch_bytes);
+    R.xsize = m_origin_width * sizeof(T);
+    R.ysize = m_origin_height;
+    return R;
 }
 
 template <bool IsConst, typename T>
