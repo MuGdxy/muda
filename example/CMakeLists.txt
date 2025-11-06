@@ -13,7 +13,7 @@ file(GLOB_RECURSE SOURCE_FILES
 
 add_executable(muda_example)
 target_sources(muda_example PRIVATE ${SOURCE_FILES} ${MUDA_HEADER_FILES})
-target_compile_features(muda_example PRIVATE cxx_std_20)
+target_compile_features(muda_example PRIVATE "cxx_std_${MUDA_APP_CXX_STANDARD}")
 set_target_properties(muda_example PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 # target_link_libraries(muda_example PRIVATE fmt::fmt-header-only)

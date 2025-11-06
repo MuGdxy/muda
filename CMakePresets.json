@@ -17,32 +17,54 @@
         "MUDA_FORCE_CHECK": "ON",
         "MUDA_WITH_CHECK": "ON",
         "MUDA_WITH_COMPUTE_GRAPH": "ON",
-        "MUDA_WITH_NVTX3": "ON"
+        "MUDA_WITH_NVTX3": "OFF"
       }
     },
     {
-      "name": "ci-release",
-      "displayName": "CI-Release Configuration",
+      "name": "ci-release-20",
+      "displayName": "CI-Release Configuration (C++20)",
       "inherits": ["config-base"],
       "description": "Configuration for CI builds",
       "cacheVariables": {
         "MUDA_BUILD_TEST": "ON",
         "MUDA_BUILD_EXAMPLE": "OFF",
         "CMAKE_CUDA_ARCHITECTURES": "89",
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "MUDA_APP_CXX_STANDARD": "20"
+      }
+    },
+    {
+      "name": "ci-release-17",
+      "displayName": "CI-Release Configuration (C++17)",
+      "inherits": ["config-base"],
+      "description": "Configuration for CI builds",
+      "cacheVariables": {
+        "MUDA_BUILD_TEST": "ON",
+        "MUDA_BUILD_EXAMPLE": "OFF",
+        "CMAKE_CUDA_ARCHITECTURES": "89",
+        "CMAKE_BUILD_TYPE": "Release",
+        "MUDA_APP_CXX_STANDARD": "17"
       }
     }
   ],
   "buildPresets": [
     {
-      "name": "ci-release",
-      "configurePreset": "ci-release"
+      "name": "ci-release-20",
+      "configurePreset": "ci-release-20"
+    },
+    {
+      "name": "ci-release-17",
+      "configurePreset": "ci-release-17"
     }
   ],
   "testPresets": [
     {
-      "name": "ci-release",
-      "configurePreset": "ci-release"
+      "name": "ci-release-20",
+      "configurePreset": "ci-release-20"
+    },
+    {
+      "name": "ci-release-17",
+      "configurePreset": "ci-release-17"
     }
   ]
 }
