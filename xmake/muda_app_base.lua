@@ -11,7 +11,7 @@ function muda_app_base(kind)
     add_undefines("min","max")
     add_packages("eigen", {public = false})
     set_kind("binary")
-    add_includedirs("external/", {public = false})
+    add_includedirs("third_party/", {public = false})
     add_headerfiles("src/muda/**.h","src/muda/**.inl")
     
     add_cugencodes("native")
