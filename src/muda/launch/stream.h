@@ -77,7 +77,7 @@ class Stream
     std::byte* workspace(size_t byte_size);
 
   private:
-    Stream(nullptr_t)
+    Stream(std::nullptr_t)
         : m_handle(nullptr)
     {
     }

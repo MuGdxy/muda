@@ -169,7 +169,7 @@ class ParallelFor : public LaunchBase<ParallelFor>
           m_block_dim(blockDim),
           m_shared_mem_size(shared_mem_size)
     {
-        std::cout << "[DEBUG]" << "blockDim: " << blockDim << std::endl;
+        // std::cout << "[DEBUG]" << "blockDim: " << blockDim << std::endl;
     }
 
 

@@ -1,5 +1,6 @@
 #pragma once
 #include <muda/buffer/device_buffer.h>
+#include <muda/ext/linear_system/type_mapper/data_type_mapper.h>
 #include <muda/ext/linear_system/bcoo_vector_view.h>
 #include <muda/ext/linear_system/device_doublet_vector.h>
 

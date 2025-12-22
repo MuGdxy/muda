@@ -19,7 +19,7 @@ set_target_properties(muda_example PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 # target_link_libraries(muda_example PRIVATE fmt::fmt-header-only)
 target_include_directories(muda_example PRIVATE
     "${PROJECT_SOURCE_DIR}/example"
-    "${PROJECT_SOURCE_DIR}/external")
+    "${PROJECT_SOURCE_DIR}/third_party")
 target_link_libraries(muda_example PRIVATE muda Eigen3::Eigen)
 source_group(TREE "${PROJECT_SOURCE_DIR}/example" PREFIX "example" FILES ${SOURCE_FILES})
 source_group(TREE "${PROJECT_SOURCE_DIR}/src" PREFIX "src" FILES ${MUDA_HEADER_FILES})

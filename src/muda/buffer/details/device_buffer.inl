@@ -6,9 +6,7 @@ namespace muda
 template <typename T>
 DeviceBuffer<T>::DeviceBuffer(size_t n)
 {
-    BufferLaunch()
-        .alloc(*this, n)  //
-        .wait();
+    BufferLaunch().alloc(*this, n);
 }
 
 template <typename T>
@@ -24,8 +22,7 @@ DeviceBuffer<T>::DeviceBuffer(const DeviceBuffer<T>& other)
 {
     BufferLaunch()
         .alloc(*this, other.size())  //
-        .copy(view(), other.view())  //
-        .wait();
+        .copy(view(), other.view());
 }
 
 template <typename T>
@@ -47,8 +44,7 @@ DeviceBuffer<T>& DeviceBuffer<T>::operator=(const DeviceBuffer<T>& other)
 
     BufferLaunch()
         .resize(*this, other.size())  //
-        .copy(view(), other.view())   //
-        .wait();
+        .copy(view(), other.view());
 
     return *this;
 }
@@ -61,9 +57,7 @@ DeviceBuffer<T>& DeviceBuffer<T>::operator=(DeviceBuffer<T>&& other)
 
     if(m_data)
     {
-        BufferLaunch()
-            .free(*this)  //
-            .wait();
+        BufferLaunch().free(*this);
     }
 
     m_data     = other.m_data;
@@ -82,8 +76,7 @@ DeviceBuffer<T>::DeviceBuffer(CBufferView<T> other)
 {
     BufferLaunch()
         .alloc(*this, other.size())  //
-        .copy(view(), other)         //
-        .wait();
+        .copy(view(), other);
 }
 
 template <typename T>
@@ -100,8 +93,7 @@ DeviceBuffer<T>& DeviceBuffer<T>::operator=(CBufferView<T> other)
 {
     BufferLaunch()
         .resize(*this, other.size())  //
-        .copy(view(), other)          //
-        .wait();
+        .copy(view(), other);
     return *this;
 }
 
@@ -134,41 +126,31 @@ void DeviceBuffer<T>::copy_from(const std::vector<T, Alloc>& host)
 template <typename T>
 void DeviceBuffer<T>::resize(size_t new_size)
 {
-    BufferLaunch()
-        .resize(*this, new_size)  //
-        .wait();
+    BufferLaunch().resize(*this, new_size);
 }
 
 template <typename T>
 void DeviceBuffer<T>::resize(size_t new_size, const value_type& value)
 {
-    BufferLaunch()
-        .resize(*this, new_size, value)  //
-        .wait();
+    BufferLaunch().resize(*this, new_size, value);
 }
 
 template <typename T>
 void DeviceBuffer<T>::reserve(size_t new_capacity)
 {
-    BufferLaunch()
-        .reserve(*this, new_capacity)  //
-        .wait();
+    BufferLaunch().reserve(*this, new_capacity);
 }
 
 template <typename T>
 void DeviceBuffer<T>::clear()
 {
-    BufferLaunch()
-        .clear(*this)  //
-        .wait();
+    BufferLaunch().clear(*this);
 }
 
 template <typename T>
 void DeviceBuffer<T>::shrink_to_fit()
 {
-    BufferLaunch()
-        .shrink_to_fit(*this)  //
-        .wait();
+    BufferLaunch().shrink_to_fit(*this);
 }
 
 template <typename T>
@@ -218,9 +200,7 @@ DeviceBuffer<T>::~DeviceBuffer()
 {
     if(m_data)
     {
-        BufferLaunch()
-            .free(*this)  //
-            .wait();
+        BufferLaunch().free(*this);
     }
 }
 }  // namespace muda

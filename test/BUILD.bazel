@@ -1,0 +1,75 @@
+load("@rules_cuda//cuda:defs.bzl", "cuda_test")
+
+cuda_test(
+    name = "muda_unit_test",
+    srcs = glob([
+        "unit_test/**/*.cu",
+        "unit_test/**/*.cpp",
+    ]),
+    copts = [
+        "--expt-relaxed-constexpr",
+        "--extended-lambda",
+        "-std=c++20",
+    ],
+    rdc = True,
+    deps = [
+        "//:muda",
+        "//third_party:catch2",
+        "@eigen",
+    ],
+)
+
+cuda_test(
+    name = "muda_eigen_test",
+    srcs = glob([
+        "eigen_test/**/*.cu",
+        "eigen_test/**/*.cpp",
+    ]),
+    hdrs = glob(
+        [
+            "eigen_test/**/*.h",
+            "eigen_test/**/*.hpp",
+        ],
+        allow_empty = True,
+    ),
+    copts = [
+        "--expt-relaxed-constexpr",
+        "--extended-lambda",
+        "-std=c++20",
+    ],
+    rdc = True,
+    deps = [
+        "//:muda",
+        "//third_party:catch2",
+        "@eigen",
+    ],
+)
+
+cuda_test(
+    name = "muda_linear_system_test",
+    srcs = glob([
+        "linear_system_test/**/*.cu",
+        "linear_system_test/**/*.cpp",
+    ]),
+    hdrs = glob(
+        [
+            "linear_system_test/**/*.h",
+            "linear_system_test/**/*.hpp",
+        ],
+        allow_empty = True,
+    ),
+    copts = [
+        "--expt-relaxed-constexpr",
+        "--extended-lambda",
+        "-std=c++20",
+    ],
+    rdc = True,
+    deps = [
+        "//:muda",
+        "//third_party:catch2",
+        "@eigen",
+        "@cuda//:cublas",
+        "@cuda//:cusolver",
+        "@cuda//:cusparse",
+    ],
+)

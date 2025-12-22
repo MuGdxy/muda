@@ -5,9 +5,7 @@ namespace muda
 template <typename T>
 DeviceBuffer3D<T>::DeviceBuffer3D(const Extent3D& n)
 {
-    BufferLaunch()
-        .resize(*this, n)  //
-        .wait();
+    BufferLaunch().resize(*this, n);
 }
 
 template <typename T>
@@ -25,8 +23,7 @@ DeviceBuffer3D<T>::DeviceBuffer3D(const DeviceBuffer3D<T>& other)
 {
     BufferLaunch()
         .resize(*this, other.extent())  //
-        .copy(view(), other.view())     //
-        .wait();
+        .copy(view(), other.view());
 }
 
 template <typename T>
@@ -52,8 +49,7 @@ DeviceBuffer3D<T>& DeviceBuffer3D<T>::operator=(const DeviceBuffer3D<T>& other)
 
     BufferLaunch()
         .resize(*this, other.extent())  //
-        .copy(view(), other.view())     //
-        .wait();
+        .copy(view(), other.view());
 
     return *this;
 }
@@ -87,8 +83,7 @@ DeviceBuffer3D<T>::DeviceBuffer3D(CBuffer3DView<T> other)
 {
     BufferLaunch()
         .alloc(*this, other.extent())  //
-        .copy(view(), other)           //
-        .wait();
+        .copy(view(), other);
 }
 
 template <typename T>
@@ -96,8 +91,7 @@ DeviceBuffer3D<T>& DeviceBuffer3D<T>::operator=(CBuffer3DView<T> other)
 {
     BufferLaunch()
         .resize(*this, other.extent())  //
-        .copy(view(), other)            //
-        .wait();
+        .copy(view(), other);
 
     return *this;
 }
@@ -125,49 +119,43 @@ void DeviceBuffer3D<T>::copy_from(const std::vector<T, Alloc>& host)
 template <typename T>
 void DeviceBuffer3D<T>::resize(Extent3D new_extent)
 {
-    BufferLaunch()
-        .resize(*this, new_extent)  //
-        .wait();
+    BufferLaunch().resize(*this, new_extent);
 }
 
 template <typename T>
 void DeviceBuffer3D<T>::resize(Extent3D new_extent, const T& value)
 {
-    BufferLaunch()
-        .resize(*this, new_extent, value)  //
-        .wait();
+    BufferLaunch().resize(*this, new_extent, value);
 }
 
 template <typename T>
 void DeviceBuffer3D<T>::reserve(Extent3D new_capacity)
 {
-    BufferLaunch()
-        .reserve(*this, new_capacity)  //
-        .wait();
+    BufferLaunch().reserve(*this, new_capacity);
 }
 
 template <typename T>
 void DeviceBuffer3D<T>::clear()
 {
-    BufferLaunch().clear(*this).wait();
+    BufferLaunch().clear(*this);
 }
 
 template <typename T>
 void DeviceBuffer3D<T>::shrink_to_fit()
 {
-    BufferLaunch().shrink_to_fit(*this).wait();
+    BufferLaunch().shrink_to_fit(*this);
 }
 
 template <typename T>
 void DeviceBuffer3D<T>::fill(const T& v)
 {
-    BufferLaunch().fill(view(), v).wait();
+    BufferLaunch().fill(view(), v);
 }
 
 template <typename T>
 DeviceBuffer3D<T>::~DeviceBuffer3D()
 {
     if(m_data)
-        BufferLaunch().free(*this).wait();
+        BufferLaunch().free(*this);
 }
 }  // namespace muda

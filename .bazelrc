@@ -1,0 +1,30 @@
+# +------------------------------------------------------------+
+# | Build Configurations                                       |
+# +------------------------------------------------------------+
+# Do not show warnings from external dependencies.
+build --output_filter="^//"
+
+build --show_timestamps
+
+build --flag_alias=cuda_archs=@rules_cuda//cuda:archs
+
+# Work around the sandbox issue.
+build --spawn_strategy=local
+
+
+# Consider warning as error.
+# inference is not included because tensorflow uses the same log macros with glog and it will
+# cause re-definition warning.
+build --per_file_copt="-\\.$@-Wall,-Wextra,-Werror"
+build --per_file_copt="-\\.$,external/.*@-w"
+build --per_file_copt="-\\.$,third_party/.*@-w"
+
+# If a command fails, print out the full command line.
+build --verbose_failures
+
+# Enable C++17
+build --cxxopt="-std=c++17"
+# Workaround as cpp toolchain: stop passing -std=c++0x per default · Issue #18181 · bazelbuild/bazel
+build --host_cxxopt="-std=c++17"
+# Enable colorful output of GCC
+build --cxxopt="-fdiagnostics-color=always"

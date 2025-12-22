@@ -21,11 +21,25 @@
 
 #include <muda/launch.h>
 
-// for encode run length usage
-MUDA_GENERIC constexpr bool operator==(const int2& a, const int2& b)
+
+namespace muda
 {
-    return a.x == b.x && a.y == b.y;
-}
+namespace details
+{
+    struct IntPair
+    {
+        int x;
+        int y;
+    };
+
+    // A internal muda pair type to avoid int2 equality redefinition conflict
+    constexpr bool operator==(const IntPair& l, const IntPair& r)
+    {
+        return l.x == r.x && l.y == r.y;
+    }
+}  // namespace details
+}  // namespace muda
+
 
 namespace muda
 {
@@ -113,10 +127,10 @@ namespace details
 
         DeviceVar<int> count;
 
-        DeviceBuffer<int2>    ij_pairs;
+        DeviceBuffer<IntPair> ij_pairs;
         DeviceBuffer<int64_t> ij_hash;
         DeviceBuffer<int64_t> ij_hash_input;
-        DeviceBuffer<int2>    unique_ij_pairs;
+        DeviceBuffer<IntPair> unique_ij_pairs;
 
         muda::DeviceBuffer<MatrixValueT> blocks_sorted;
         DeviceBuffer<MatrixValueT>       unique_blocks;
@@ -292,13 +306,12 @@ namespace details
                        [sort_index = sort_index.viewer().name("sort_index")] __device__(
                            int i) mutable { sort_index(i) = i; });
 
-            DeviceMergeSort().SortPairs(ij_pairs.data(),
-                                        sort_index.data(),
-                                        ij_pairs.size(),
-                                        [] __device__(const int2& a, const int2& b) {
-                                            return a.x < b.x
-                                                   || (a.x == b.x && a.y < b.y);
-                                        });
+            DeviceMergeSort().SortPairs(
+                ij_pairs.data(),
+                sort_index.data(),
+                ij_pairs.size(),
+                [] __device__(const IntPair& a, const IntPair& b)
+                { return a.x < b.x || (a.x == b.x && a.y < b.y); });
 
 
             // set ij_pairs back to row_indices and col_indices
@@ -527,13 +540,12 @@ namespace details
                            ij_pairs(i).y = col_indices(i);
                        });
 
-            DeviceMergeSort().SortPairs(ij_pairs.data(),
-                                        to.m_values.data(),
-                                        ij_pairs.size(),
-                                        [] __device__(const int2& a, const int2& b) {
-                                            return a.x < b.x
-                                                   || (a.x == b.x && a.y < b.y);
-                                        });
+            DeviceMergeSort().SortPairs(
+                ij_pairs.data(),
+                to.m_values.data(),
+                ij_pairs.size(),
+                [] __device__(const IntPair& a, const IntPair& b)
+                { return a.x < b.x || (a.x == b.x && a.y < b.y); });
 
             // set ij_pairs back to row_indices and col_indices
 

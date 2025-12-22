@@ -1,0 +1,74 @@
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_license//rules:license.bzl", "license")
+
+package(
+    default_applicable_licenses = [":license"],
+    default_visibility = ["//visibility:public"],
+)
+
+license(
+    name = "license",
+    package_name = "hugooole_muda",
+    package_url = "https://github.com/hugooole/muda",
+    license_text = "LICENSE",
+    license_kinds = ["@rules_license//licenses/spdx:Apache-2.0"],
+)
+
+bool_flag(
+    name = "muda_check",
+    build_setting_default = True,
+)
+
+config_setting(
+    name = "muda_check_on",
+    flag_values = {":muda_check": "True"},
+)
+
+bool_flag(
+    name = "muda_compute_graph",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "muda_compute_graph_on",
+    flag_values = {":muda_compute_graph": "True"},
+)
+
+bool_flag(
+    name = "muda_nvtx3",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "muda_nvtx3_on",
+    flag_values = {":muda_nvtx3": "True"},
+)
+
+cc_library(
+    name = "muda",
+    hdrs = glob(
+        [
+            "src/**/*.h",
+            "src/**/*.hpp",
+            "src/**/*.inl",
+            "src/**/*.cuh",
+        ],
+        allow_empty = True,
+    ),
+    copts = [
+        "--expt-relaxed-constexpr",
+        "--extended-lambda",
+    ],
+    defines = select({
+        ":muda_check_on": ["MUDA_CHECK_ON"],
+        "//conditions:default": ["MUDA_CHECK_ON=0"],
+    }) + select({
+        ":muda_compute_graph_on": ["MUDA_COMPUTE_GRAPH_ON"],
+        "//conditions:default": [],
+    }) + select({
+        ":muda_nvtx3_on": ["MUDA_NVTX3_ON"],
+        "//conditions:default": [],
+    }),
+    includes = ["src"],
+)

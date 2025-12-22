@@ -45,14 +45,14 @@ MUDA_GENERIC Buffer3DViewT<IsConst, T>::Buffer3DViewT(T*     data,
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::as_const() const MUDA_NOEXCEPT->ConstView
+MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::as_const() const MUDA_NOEXCEPT -> ConstView
 {
     return ConstView{*this};
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::data(size_t x, size_t y, size_t z) const
-    MUDA_NOEXCEPT->auto_const_t<T>*
+MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::data(size_t x, size_t y, size_t z) const MUDA_NOEXCEPT
+    -> auto_const_t<T>*
 {
     x += m_offset.offset_in_depth();
     y += m_offset.offset_in_height();
@@ -64,8 +64,8 @@ MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::data(size_t x, size_t y, size_t z) 
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::data(size_t flatten_i) const
-    MUDA_NOEXCEPT->auto_const_t<T>*
+MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::data(size_t flatten_i) const MUDA_NOEXCEPT
+    -> auto_const_t<T>*
 {
     auto area       = m_extent.width() * m_extent.height();
     auto x          = flatten_i / area;
@@ -77,39 +77,39 @@ MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::data(size_t flatten_i) const
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::origin_data() const MUDA_NOEXCEPT->auto_const_t<T>*
+MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::origin_data() const MUDA_NOEXCEPT
+    -> auto_const_t<T>*
 {
     return m_data;
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::extent() const MUDA_NOEXCEPT->Extent3D
+MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::extent() const MUDA_NOEXCEPT -> Extent3D
 {
     return m_extent;
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::offset() const MUDA_NOEXCEPT->Offset3D
+MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::offset() const MUDA_NOEXCEPT -> Offset3D
 {
     return m_offset;
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::pitch_bytes() const MUDA_NOEXCEPT->size_t
+MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::pitch_bytes() const MUDA_NOEXCEPT -> size_t
 {
     return m_pitch_bytes;
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::pitch_bytes_area() const
-    MUDA_NOEXCEPT->size_t
+MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::pitch_bytes_area() const MUDA_NOEXCEPT -> size_t
 {
     return m_pitch_bytes_area;
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::cuda_pitched_ptr() const
-    MUDA_NOEXCEPT->cudaPitchedPtr
+MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::cuda_pitched_ptr() const MUDA_NOEXCEPT
+    -> cudaPitchedPtr
 {
     // don't use make_cudaPitchedPtr (__host__ only function)
     cudaPitchedPtr R;
@@ -127,8 +127,8 @@ MUDA_GENERIC size_t Buffer3DViewT<IsConst, T>::total_size() const MUDA_NOEXCEPT
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::subview(
-    Offset3D offset, Extent3D extent) const MUDA_NOEXCEPT->ThisView
+MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::subview(Offset3D offset, Extent3D extent) const MUDA_NOEXCEPT
+    -> ThisView
 {
 #ifndef __CUDA_ARCH__
     if(ComputeGraphBuilder::is_topo_building())
@@ -150,7 +150,7 @@ MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::subview(
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::viewer() const MUDA_NOEXCEPT->ThisViewer
+MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::viewer() const MUDA_NOEXCEPT -> ThisViewer
 {
     return ThisViewer{m_data,
                       make_int3(m_offset.offset_in_depth(),
@@ -162,7 +162,7 @@ MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::viewer() const MUDA_NOEXCEPT->ThisV
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::cviewer() const MUDA_NOEXCEPT->CViewer
+MUDA_GENERIC auto Buffer3DViewT<IsConst, T>::cviewer() const MUDA_NOEXCEPT -> CViewer
 {
     return viewer();
 }
@@ -171,7 +171,7 @@ template <bool IsConst, typename T>
 MUDA_HOST void Buffer3DViewT<IsConst, T>::fill(const T& v) const MUDA_REQUIRES(!IsConst)
 {
     static_assert(!IsConst, "This must be non-const buffer.");
-    BufferLaunch().template fill<T>(*this, v).wait();
+    BufferLaunch().template fill<T>(*this, v);
 }
 
 template <bool IsConst, typename T>
@@ -179,7 +179,7 @@ MUDA_HOST void Buffer3DViewT<IsConst, T>::copy_from(const Buffer3DViewT<true, T>
     MUDA_REQUIRES(!IsConst)
 {
     static_assert(!IsConst, "This must be non-const buffer.");
-    BufferLaunch().template copy<T>(*this, other).wait();
+    BufferLaunch().template copy<T>(*this, other);
 }
 
 template <bool IsConst, typename T>

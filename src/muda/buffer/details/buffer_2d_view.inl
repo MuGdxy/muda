@@ -42,14 +42,14 @@ MUDA_GENERIC Buffer2DViewT<IsConst, T>::Buffer2DViewT(auto_const_t<T>* data,
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::as_const() const MUDA_NOEXCEPT->ConstView
+MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::as_const() const MUDA_NOEXCEPT -> ConstView
 {
     return ConstView{*this};
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::data(size_t x,
-                                                  size_t y) const MUDA_NOEXCEPT->auto_const_t<T>*
+MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::data(size_t x, size_t y) const MUDA_NOEXCEPT
+    -> auto_const_t<T>*
 {
     x += m_offset.offset_in_height();
     y += m_offset.offset_in_width();
@@ -60,8 +60,8 @@ MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::data(size_t x,
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::data(size_t flatten_i) const
-    MUDA_NOEXCEPT->auto_const_t<T>*
+MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::data(size_t flatten_i) const MUDA_NOEXCEPT
+    -> auto_const_t<T>*
 {
     auto x = flatten_i / m_extent.width();
     auto y = flatten_i % m_extent.width();
@@ -69,15 +69,16 @@ MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::data(size_t flatten_i) const
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::origin_data() const MUDA_NOEXCEPT->auto_const_t<T>*
+MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::origin_data() const MUDA_NOEXCEPT
+    -> auto_const_t<T>*
 
 {
     return m_data;
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::subview(
-    Offset2D offset, Extent2D extent) const MUDA_NOEXCEPT->ThisView
+MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::subview(Offset2D offset, Extent2D extent) const MUDA_NOEXCEPT
+    -> ThisView
 {
 #ifndef __CUDA_ARCH__
     if(ComputeGraphBuilder::is_topo_building())
@@ -97,7 +98,7 @@ MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::subview(
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::viewer() const MUDA_NOEXCEPT->ThisViewer
+MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::viewer() const MUDA_NOEXCEPT -> ThisViewer
 {
     return ThisViewer{m_data,
                       make_int2((int)m_offset.offset_in_height(),
@@ -119,30 +120,30 @@ MUDA_GENERIC cudaPitchedPtr Buffer2DViewT<IsConst, T>::cuda_pitched_ptr() const 
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::extent() const MUDA_NOEXCEPT->Extent2D
+MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::extent() const MUDA_NOEXCEPT -> Extent2D
 {
     return m_extent;
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::pitch_bytes() const MUDA_NOEXCEPT->size_t
+MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::pitch_bytes() const MUDA_NOEXCEPT -> size_t
 {
     return m_pitch_bytes;
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::offset() const MUDA_NOEXCEPT->Offset2D
+MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::offset() const MUDA_NOEXCEPT -> Offset2D
 {
     return m_offset;
 }
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::total_size() const MUDA_NOEXCEPT->size_t
+MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::total_size() const MUDA_NOEXCEPT -> size_t
 {
     return m_extent.width() * m_extent.height();
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::cviewer() const MUDA_NOEXCEPT->CViewer
+MUDA_GENERIC auto Buffer2DViewT<IsConst, T>::cviewer() const MUDA_NOEXCEPT -> CViewer
 {
     return viewer();
 }
@@ -156,14 +157,14 @@ MUDA_HOST void Buffer2DViewT<IsConst, T>::copy_to(T* host) const
 template <bool IsConst, typename T>
 MUDA_HOST void Buffer2DViewT<IsConst, T>::fill(const T& val) MUDA_REQUIRES(!IsConst)
 {
-    BufferLaunch().template fill(*this, val).wait();
+    BufferLaunch().template fill(*this, val);
 }
 
 template <bool IsConst, typename T>
 MUDA_HOST void Buffer2DViewT<IsConst, T>::copy_from(const Buffer2DViewT<true, T>& other)
     MUDA_REQUIRES(!IsConst)
 {
-    BufferLaunch().template copy<T>(*this, other).wait();
+    BufferLaunch().template copy<T>(*this, other);
 }
 
 template <bool IsConst, typename T>

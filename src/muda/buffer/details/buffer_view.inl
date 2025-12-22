@@ -31,41 +31,45 @@ MUDA_GENERIC BufferViewT<IsConst, T>::BufferViewT(const BufferViewT<OtherIsConst
 {
     static_assert(!OtherIsConst, "This must be non-const");
 }
+
 template <bool IsConst, typename T>
-MUDA_GENERIC auto BufferViewT<IsConst, T>::as_const() const MUDA_NOEXCEPT->ConstView
+MUDA_GENERIC auto BufferViewT<IsConst, T>::as_const() const MUDA_NOEXCEPT -> ConstView
 {
     return ConstView{*this};
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto BufferViewT<IsConst, T>::data() const MUDA_NOEXCEPT->auto_const_t<T>*
+MUDA_GENERIC auto BufferViewT<IsConst, T>::data() const MUDA_NOEXCEPT
+    -> auto_const_t<T>*
 {
     return m_data + m_offset;
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto BufferViewT<IsConst, T>::data(size_t i) const MUDA_NOEXCEPT->auto_const_t<T>*
+MUDA_GENERIC auto BufferViewT<IsConst, T>::data(size_t i) const MUDA_NOEXCEPT
+    -> auto_const_t<T>*
 {
     i += m_offset;
     return m_data + i;
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto BufferViewT<IsConst, T>::origin_data() const MUDA_NOEXCEPT->auto_const_t<T>*
+MUDA_GENERIC auto BufferViewT<IsConst, T>::origin_data() const MUDA_NOEXCEPT
+    -> auto_const_t<T>*
 {
     return m_data;
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto BufferViewT<IsConst, T>::operator[](size_t i) const
-    MUDA_NOEXCEPT->auto_const_t<T>&
+MUDA_GENERIC auto BufferViewT<IsConst, T>::operator[](size_t i) const MUDA_NOEXCEPT
+    -> auto_const_t<T>&
 {
     return *data(i);
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto BufferViewT<IsConst, T>::subview(size_t offset, size_t size) const
-    MUDA_NOEXCEPT->ThisView
+MUDA_GENERIC auto BufferViewT<IsConst, T>::subview(size_t offset, size_t size) const MUDA_NOEXCEPT
+    -> ThisView
 {
 #ifndef __CUDA_ARCH__
     if(ComputeGraphBuilder::is_topo_building())
@@ -81,13 +85,13 @@ MUDA_GENERIC auto BufferViewT<IsConst, T>::subview(size_t offset, size_t size) c
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto BufferViewT<IsConst, T>::viewer() const MUDA_NOEXCEPT->ThisViewer
+MUDA_GENERIC auto BufferViewT<IsConst, T>::viewer() const MUDA_NOEXCEPT -> ThisViewer
 {
     return ThisViewer{data(), static_cast<int>(m_size)};
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto BufferViewT<IsConst, T>::cviewer() const MUDA_NOEXCEPT->CViewer
+MUDA_GENERIC auto BufferViewT<IsConst, T>::cviewer() const MUDA_NOEXCEPT -> CViewer
 {
     return CViewer{data(), static_cast<int>(m_size)};
 }
@@ -97,9 +101,7 @@ MUDA_HOST void BufferViewT<IsConst, T>::fill(const T& v) const MUDA_REQUIRES(!Is
 {
     static_assert(!IsConst, "This must be non-const");
 
-    BufferLaunch()
-        .template fill<T>(*this, v)  //
-        .wait();
+    BufferLaunch().template fill<T>(*this, v);
 }
 
 template <bool IsConst, typename T>
@@ -108,9 +110,7 @@ MUDA_HOST void BufferViewT<IsConst, T>::copy_from(const BufferViewT<true, T>& ot
 {
     static_assert(!IsConst, "This must be non-const");
 
-    BufferLaunch()
-        .template copy<T>(*this, other)  //
-        .wait();
+    BufferLaunch().template copy<T>(*this, other);
 }
 
 template <bool IsConst, typename T>
@@ -133,19 +133,20 @@ MUDA_HOST void BufferViewT<IsConst, T>::copy_to(T* host) const
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto BufferViewT<IsConst, T>::operator+(int i) const MUDA_NOEXCEPT->ThisView
+MUDA_GENERIC auto BufferViewT<IsConst, T>::operator+(int i) const MUDA_NOEXCEPT -> ThisView
 {
     return ThisView{m_data, m_offset + i, m_size - i};
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto BufferViewT<IsConst, T>::operator*() const MUDA_NOEXCEPT->reference
+MUDA_GENERIC auto BufferViewT<IsConst, T>::operator*() const MUDA_NOEXCEPT -> reference
 {
     return *data(0);
 }
 
 template <bool IsConst, typename T>
-MUDA_GENERIC auto BufferViewT<IsConst, T>::operator[](int i) const MUDA_NOEXCEPT->auto_const_t<T>&
+MUDA_GENERIC auto BufferViewT<IsConst, T>::operator[](int i) const MUDA_NOEXCEPT
+    -> auto_const_t<T>&
 {
     return *data(i);
 }
