@@ -10,7 +10,7 @@ target_compile_features(muda_unit_test PRIVATE cxx_std_20)
 set_target_properties(muda_unit_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_include_directories(muda_unit_test PRIVATE
   "${PROJECT_SOURCE_DIR}/test"
-  "${PROJECT_SOURCE_DIR}/external")
+  "${PROJECT_SOURCE_DIR}/third_party")
 target_link_libraries(muda_unit_test PRIVATE muda cusparse cublas cusolver Eigen3::Eigen)
 target_compile_definitions(muda_unit_test PRIVATE "-DMUDA_TEST_DATA_DIR=R\"(${PROJECT_SOURCE_DIR}/test/data)\"")
 source_group(TREE "${PROJECT_SOURCE_DIR}/test" PREFIX "test" FILES ${SOURCE})
