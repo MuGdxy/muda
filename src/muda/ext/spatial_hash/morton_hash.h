@@ -8,7 +8,7 @@ namespace muda::spatial_hash
 template <typename T>
 class Morton
 {
-    static_assert("Morton not implemented for this type.");
+    static_assert(always_false_v<T>, "Morton not implemented for this type.");
 };
 
 template <>

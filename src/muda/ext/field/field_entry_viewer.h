@@ -217,7 +217,7 @@ class FieldEntryViewerT : public FieldEntryViewerCore<IsConst, T, Layout, M, N>
         }
         else
         {
-            static_assert("invalid M, N");
+            static_assert(always_false_v<T>, "invalid M, N");
         }
     }
 };

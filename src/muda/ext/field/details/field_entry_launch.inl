@@ -40,7 +40,7 @@ MUDA_HOST FieldEntryLaunch& FieldEntryLaunch::copy(
                    }
                    else
                    {
-                       static_assert("Invalid");
+                       static_assert(always_false_v<T>, "Invalid");
                    }
                });
     return *this;
@@ -83,7 +83,7 @@ MUDA_HOST FieldEntryLaunch& FieldEntryLaunch::fill(
                    }
                    else
                    {
-                       static_assert("Invalid");
+                       static_assert(always_false_v<T>, "Invalid");
                    }
                });
 
@@ -131,7 +131,7 @@ MUDA_HOST FieldEntryLaunch& FieldEntryLaunch::copy(
                    }
                    else
                    {
-                       static_assert("Invalid");
+                       static_assert(always_false_v<T>, "Invalid");
                    }
                });
 
@@ -178,7 +178,7 @@ MUDA_HOST FieldEntryLaunch& FieldEntryLaunch::copy(
                             }
                             else
                             {
-                                static_assert("Invalid");
+                                static_assert(always_false_v<T>, "Invalid");
                             }
                         });
 
