@@ -48,7 +48,7 @@ namespace details
             else if constexpr(std::is_invocable_v<F, int>
                               || std::is_invocable_v<F, unsigned int>)
             {
-                static_assert("You should use `ParallelFor()` instead of `Launch()` for better semantics");
+                static_assert(always_false_v<F>, "You should use `ParallelFor()` instead of `Launch()` for better semantics");
             }
             else
             {

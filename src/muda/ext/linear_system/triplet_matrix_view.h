@@ -256,21 +256,22 @@ class TripletMatrixViewT : public ViewBase<IsConst>
     MUDA_GENERIC auto row_indices() const
     {
         return BufferViewT<IsConst, int>{m_row_indices,
-                                         size_t{m_triplet_index_offset},
-                                         size_t{m_triplet_count}};
+                                         static_cast<size_t>(m_triplet_index_offset),
+                                         static_cast<size_t>(m_triplet_count)};
     }
 
     MUDA_GENERIC auto col_indices() const
     {
         return BufferViewT<IsConst, int>{m_col_indices,
-                                         size_t{m_triplet_index_offset},
-                                         size_t{m_triplet_count}};
+                                         static_cast<size_t>(m_triplet_index_offset),
+                                         static_cast<size_t>(m_triplet_count)};
     }
 
     MUDA_GENERIC auto values() const
     {
-        return BufferViewT<IsConst, ValueT>{
-            m_values, size_t{m_triplet_index_offset}, size_t{m_triplet_count}};
+        return BufferViewT<IsConst, ValueT>{m_values,
+                                            static_cast<size_t>(m_triplet_index_offset),
+                                            static_cast<size_t>(m_triplet_count)};
     }
 };
 

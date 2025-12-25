@@ -204,14 +204,16 @@ class DoubletVectorViewT : public ViewBase<IsConst>
 
     MUDA_GENERIC auto indices() const noexcept
     {
-        return BufferViewT<IsConst, int>{
-            m_indices, size_t{m_doublet_index_offset}, size_t{m_doublet_count}};
+        return BufferViewT<IsConst, int>{m_indices,
+                                         static_cast<size_t>(m_doublet_index_offset),
+                                         static_cast<size_t>(m_doublet_count)};
     }
 
     MUDA_GENERIC auto values() const noexcept
     {
-        return BufferViewT<IsConst, ValueT>{
-            m_values, size_t{m_doublet_index_offset}, size_t{m_doublet_count}};
+        return BufferViewT<IsConst, ValueT>{m_values,
+                                            static_cast<size_t>(m_doublet_index_offset),
+                                            static_cast<size_t>(m_doublet_count)};
     }
 };
 
