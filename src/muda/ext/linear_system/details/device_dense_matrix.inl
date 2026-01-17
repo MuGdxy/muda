@@ -105,13 +105,13 @@ DeviceDenseMatrix<Ty>& DeviceDenseMatrix<Ty>::operator=(const Eigen::MatrixX<Ty>
 template <typename Ty>
 DenseMatrixView<Ty> DeviceDenseMatrix<Ty>::T()
 {
-    return DenseMatrixView{m_data, m_row, m_col, true, m_sym};
+    return DenseMatrixView<Ty>{m_data, m_row, m_col, true, m_sym};
 }
 
 template <typename Ty>
 CDenseMatrixView<Ty> DeviceDenseMatrix<Ty>::T() const
 {
-    return CDenseMatrixView{m_data, m_row, m_col, true, m_sym};
+    return CDenseMatrixView<Ty>{m_data, m_row, m_col, true, m_sym};
 }
 
 template <typename Ty>

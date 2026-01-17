@@ -7,6 +7,7 @@ option(MUDA_WITH_NVTX3 "turn on nividia tools extension library" OFF)
 # build targets:
 option(MUDA_BUILD_EXAMPLE "build muda examples. if you want to see how to use muda, you could enable this option." ON)
 option(MUDA_BUILD_TEST "build muda test. if you're the developer, you could enable this option." OFF)
+option(MUDA_APP_CXX_STANDARD "set c++ standard for muda app(test/example)" 20)
 
 # short cut
 option(MUDA_DEV "build muda example and unit test. if you're the developer, you could enable this option." OFF)
