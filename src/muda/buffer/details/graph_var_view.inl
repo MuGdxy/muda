@@ -7,7 +7,7 @@ MUDA_INLINE void ComputeGraphVar<VarView<T>>::update(const RWView& view)
     m_value = view;
 }
 template <typename T>
-MUDA_INLINE ComputeGraphVar<VarView<T>>& ComputeGraphVar<VarView<T>>::operator=(const RWView& view)
+MUDA_INLINE auto ComputeGraphVar<VarView<T>>::operator=(const RWView& view) -> ComputeGraphVar<VarType>&
 {
     update(view);
     return *this;
