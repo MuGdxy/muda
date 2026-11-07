@@ -1,0 +1,94 @@
+name: CUDA tests (simulated H100)
+
+# Optional, non-required check. The hosted runners have no GPU, so this builds
+# the muda tests with CUDA and runs them on a simulated NVIDIA H100
+# (https://github.com/pantheongpu/pantheonsim). A simulator cannot reproduce
+# hardware-specific behavior or timing, so it complements real-GPU testing and
+# does not replace it.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - "mini20"
+    paths:
+      - "src/**"
+      - "test/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - "CMakePresets.json"
+      - ".github/workflows/gpu-sim.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  cuda-sim:
+    name: CUDA 12.6, simulated H100
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up the simulated GPU and CUDA toolkit
+        uses: pantheongpu/setup-pantheonsim@ca87fe3143b29166822b923d6050945c5179408c # v0.1.5
+        with:
+          gpu: nvidia/h100
+          cuda-toolkit: "12.6"
+          # the tests link the toolkit's cuSPARSE, cuBLAS and cuSOLVER
+          library-path: 'false'
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ccache ninja-build libeigen3-dev
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-gpu-sim-${{ github.sha }}
+          restore-keys: |
+            ccache-gpu-sim-
+
+      # field_test.cu and thrust_test.cu do not compile (the static_assert in
+      # field_entry_core.inl names an undeclared T), so they are left out. The
+      # test sources are globbed by CMake, so deleting them is enough.
+      - name: Leave out test files that do not compile
+        run: rm test/unit_test/field_test.cu test/unit_test/thrust_test.cu
+
+      # The simulator runs PTX only (90-virtual) and needs a shared CUDA
+      # runtime. Both override the ci-release preset.
+      - name: Configure
+        run: |
+          cmake --preset ci-release \
+                -DCMAKE_CUDA_COMPILER=/usr/local/cuda-12.6/bin/nvcc \
+                -DCUDAToolkit_ROOT=/usr/local/cuda-12.6 \
+                -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+                -DCMAKE_CUDA_ARCHITECTURES=90-virtual \
+                -DCMAKE_CUDA_RUNTIME_LIBRARY=Shared
+
+      - name: Build tests
+        run: |
+          ccache -z
+          cmake --build --preset ci-release --parallel 3
+          ccache -s
+
+      # The 2D/3D buffer copies and everything built on them (buffer_2d_test,
+      # buffer_3d_test, dense_matrix, solve, spmv) fail in the simulator with
+      # cudaErrorInvalidValue from cudaMemcpy3DAsync, so they are not run.
+      - name: Run tests
+        working-directory: build/test
+        run: |
+          vgpu run --gpu nvidia/h100 ./unit_test/muda_unit_test '*' '~buffer_2d_test' '~buffer_3d_test'
+          vgpu run --gpu nvidia/h100 ./eigen_test/muda_eigen_test
+          vgpu run --gpu nvidia/h100 ./linear_system_test/muda_linear_system_test '*' '~dense_matrix' '~solve' '~spmv'
+          vgpu run --gpu nvidia/h100 ./spgrid_test/muda_spgrid_test
